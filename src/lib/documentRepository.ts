@@ -18,7 +18,12 @@ type DocumentRow = {
   updatedAt: string;
 };
 
-function requireAccount() {\n  if (!account) throw new Error("إعدادات Appwrite غير مكتملة.");\n  return account;\n}\n\nfunction requireServices() {
+function requireAccount() {
+  if (!account) throw new Error("إعدادات Appwrite غير مكتملة.");
+  return account;
+}
+
+function requireServices() {
   if (!account || !tablesDB || !appwriteResources.databaseId || !appwriteResources.tables.documents) {
     throw new Error("إعدادات Appwrite غير مكتملة. تحقق من متغيرات البيئة في الاستضافة.");
   }
@@ -36,30 +41,30 @@ function mapRow(row: DocumentRow): CloudDocument {
 }
 
 export async function getCurrentUser() {
-  const { account } = requireServices();
+  const accountService = requireAccount();
   try {
-    return await account.get();
+    return await accountService.get();
   } catch {
     return null;
   }
 }
 
 export async function signIn(email: string, password: string) {
-  const { account } = requireServices();
-  await account.createEmailPasswordSession({ email: email.trim(), password });
-  return account.get();
+  const accountService = requireAccount();
+  await accountService.createEmailPasswordSession({ email: email.trim(), password });
+  return accountService.get();
 }
 
 export async function signUp(name: string, email: string, password: string) {
-  const { account } = requireServices();
-  await account.create({ userId: ID.unique(), email: email.trim(), password, name: name.trim() });
-  await account.createEmailPasswordSession({ email: email.trim(), password });
-  return account.get();
+  const accountService = requireAccount();
+  await accountService.create({ userId: ID.unique(), email: email.trim(), password, name: name.trim() });
+  await accountService.createEmailPasswordSession({ email: email.trim(), password });
+  return accountService.get();
 }
 
 export async function signOut() {
-  const { account } = requireServices();
-  await account.deleteSession({ sessionId: "current" });
+  const accountService = requireAccount();
+  await accountService.deleteSession({ sessionId: "current" });
 }
 
 export async function listDocuments(): Promise<CloudDocument[]> {
