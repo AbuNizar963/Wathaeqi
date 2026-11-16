@@ -17,6 +17,6 @@ export function getDocumentWatermarkStyle(options: WatermarkOptions = {}) {
     backgroundRepeat: "no-repeat",
     backgroundPosition: "center center",
     backgroundSize: "93.75% 93.75%",
-    color: `rgba(80, 92, 106, ${opacity})`,
+    color: "rgba(80, 92, 106, 1)",
   } as const;
 }
