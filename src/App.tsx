@@ -6,7 +6,7 @@ import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import {
-  Archive, ArrowDownToLine, Bell, BookOpen, Check, ChevronDown,
+  Archive, Bell, BookOpen, Check, ChevronDown,
   ClipboardList, Cloud, FilePlus2, FileText, FolderOpen, LayoutDashboard,
   Menu, MoreHorizontal, Printer, Search, Settings2, ShieldCheck,
   Table2, Wifi, WifiOff,
