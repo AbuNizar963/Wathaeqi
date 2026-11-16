@@ -8,3 +8,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <WathaeqiApp />
   </React.StrictMode>,
 );
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch((error) => console.warn("Wathaeqi offline shell registration failed", error));
+  });
+}
