@@ -1,5 +1,5 @@
 {
-  "name": "police-telegrams-platform",
+  "name": "wathaeqi",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
@@ -7,9 +7,9 @@
     "node": "24.x"
   },
   "scripts": {
-    "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
-    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && esbuild server/app.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server/app.js",
-    "start": "NODE_ENV=production node dist/index.js",
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "start": "vite preview --host 0.0.0.0",
     "check": "tsc --noEmit",
     "check:responsive-shell": "node scripts/verify-responsive-shell.mjs",
     "lint": "prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" \"drizzle/**/*.ts\" package.json",
@@ -93,7 +93,18 @@
     "wouter": "^3.3.5",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz",
     "xlsx-populate": "^1.21.0",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "appwrite": "^29.2.0",
+    "@tiptap/core": "^3.0.9",
+    "@tiptap/extension-table": "^3.0.9",
+    "@tiptap/extension-table-cell": "^3.0.9",
+    "@tiptap/extension-table-header": "^3.0.9",
+    "@tiptap/extension-table-row": "^3.0.9",
+    "@tiptap/extension-text-align": "^3.0.9",
+    "@tiptap/extension-underline": "^3.0.9",
+    "@tiptap/react": "^3.0.9",
+    "@tiptap/starter-kit": "^3.0.9",
+    "react-to-print": "^3.1.1"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
