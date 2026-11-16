@@ -56,8 +56,9 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) => FutureBuilder<dynamic>(
     future: session,
     builder: (context, state) {
-      if (state.connectionState != ConnectionState.done)
+      if (state.connectionState != ConnectionState.done) {
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
       return state.data == null
           ? SignInScreen(onSignedIn: refresh)
           : WorkspaceScreen(onSignedOut: refresh);
@@ -368,7 +369,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
                       ),
                     ),
                     Text(
-                      all.length.toString() + ' مستند',
+                      '${all.length} مستند',
                       style: const TextStyle(color: Colors.black54),
                     ),
                   ],
@@ -389,7 +390,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
                   )
                 else if (state.hasError)
                   ErrorPanel(
-                    message: 'تعذر تحميل المستندات: ' + state.error.toString(),
+                    message: 'تعذر تحميل المستندات: ${state.error}',
                     retry: reload,
                   )
                 else if (filtered.isEmpty)
@@ -421,7 +422,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         subtitle: Text(
-                          item.category + ' · ' + dateLabel(item.updatedAt),
+                          '${item.category} · ${dateLabel(item.updatedAt)}',
                         ),
                         trailing: const Icon(Icons.chevron_left),
                         onTap: () => openEditor(item),
@@ -526,7 +527,7 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
       await WathaeqiService.instance.deleteDocument(id);
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      setState(() => error = 'تعذر حذف المستند: ' + e.toString());
+      setState(() => error = 'تعذر حذف المستند: $e');
     }
   }
 
@@ -748,7 +749,7 @@ class _TemplatesTabState extends State<TemplatesTab> {
                 const Center(child: CircularProgressIndicator())
               else if (state.hasError)
                 ErrorPanel(
-                  message: 'تعذر تحميل القوالب: ' + state.error.toString(),
+                  message: 'تعذر تحميل القوالب: ${state.error}',
                   retry: reload,
                 )
               else if ((state.data ?? []).isEmpty)
@@ -903,7 +904,7 @@ class _ContactsTabState extends State<ContactsTab> {
                 const Center(child: CircularProgressIndicator())
               else if (state.hasError)
                 ErrorPanel(
-                  message: 'تعذر تحميل جهات الاتصال: ' + state.error.toString(),
+                  message: 'تعذر تحميل جهات الاتصال: ${state.error}',
                   retry: reload,
                 )
               else if ((state.data ?? []).isEmpty)
@@ -987,9 +988,5 @@ class ErrorPanel extends StatelessWidget {
 String dateLabel(String value) {
   final date = DateTime.tryParse(value)?.toLocal();
   if (date == null) return 'آخر تحديث';
-  return date.year.toString() +
-      '/' +
-      date.month.toString().padLeft(2, '0') +
-      '/' +
-      date.day.toString().padLeft(2, '0');
+  return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
 }
