@@ -21,6 +21,7 @@ export const appwriteResources = {
     documents: import.meta.env.VITE_APPWRITE_DOCUMENTS_COLLECTION_ID?.trim() ?? "",
     templates: import.meta.env.VITE_APPWRITE_TEMPLATES_COLLECTION_ID?.trim() ?? "",
     contacts: import.meta.env.VITE_APPWRITE_CONTACTS_COLLECTION_ID?.trim() ?? "",
+    attachments: import.meta.env.VITE_APPWRITE_ATTACHMENTS_TABLE_ID?.trim() ?? "",
   },
   attachmentsBucketId: import.meta.env.VITE_APPWRITE_ATTACHMENTS_BUCKET_ID?.trim() ?? "",
 } as const;
