@@ -10,7 +10,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { PageBreak } from "./lib/PageBreak";
 import {
   Archive, Bell, BookOpen, Check, ChevronDown,
-  ClipboardList, Cloud, ContactRound, FilePlus2, FileText, FolderOpen, LayoutDashboard,
+  Cloud, ContactRound, FilePlus2, FileText, FolderOpen, LayoutDashboard,
   Menu, MoreHorizontal, Printer, Search, Settings2, ShieldCheck,
   Table2, Wifi, WifiOff,
 } from "lucide-react";
