@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { appwriteConfigured } from "./lib/appwrite";
 import AuthScreen from "./components/AuthScreen";
+import ResourceManager from "./components/ResourceManager";
 import { createDocument, deleteDocument, getCurrentUser, listDocuments, signOut, updateDocument } from "./lib/documentRepository";
 import { getA4DocumentLayoutCss } from "./lib/documentPrintLayout";
 import { getDocumentWatermarkStyle } from "./lib/documentWatermark";
@@ -58,6 +59,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
   const lastSaved = useRef(new Map<string, string>());
   const [activeId, setActiveId] = useState("d-1");
   const [query, setQuery] = useState("");
+  const [activeSection, setActiveSection] = useState<"documents" | "templates" | "contacts">("documents");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [saved, setSaved] = useState(true);
@@ -203,10 +205,10 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
         <button className="workspace-switch"><span className="workspace-avatar">و</span><span><b>مساحة العمل</b><small>الإدارة العامة</small></span><ChevronDown size={16} /></button>
         <div className="nav-caption">القائمة الرئيسية</div>
         <nav className="main-nav">
-          <a href="#dashboard"><LayoutDashboard size={18}/> لوحة التحكم</a>
-          <a className="active" href="#documents"><FolderOpen size={18}/> مستنداتي <span className="nav-count">{drafts.length}</span></a>
-          <a href="#templates"><BookOpen size={18}/> القوالب الرسمية</a>
-          <a href="#register"><ClipboardList size={18}/> سجل الصادر والوارد</a>
+          <a href="#dashboard" onClick={() => setActiveSection("documents")}><LayoutDashboard size={18}/> لوحة التحكم</a>
+          <a className={activeSection === "documents" ? "active" : ""} href="#documents" onClick={() => setActiveSection("documents")}><FolderOpen size={18}/> مستنداتي <span className="nav-count">{drafts.length}</span></a>
+          <a className={activeSection === "templates" ? "active" : ""} href="#templates" onClick={() => setActiveSection("templates")}><BookOpen size={18}/> القوالب الرسمية</a>
+          <a className={activeSection === "contacts" ? "active" : ""} href="#contacts" onClick={() => setActiveSection("contacts")}><ContactRound size={18}/> جهات الاتصال</a>
           <a href="#archive"><Archive size={18}/> الأرشيف</a>
         </nav>
         <div className="sidebar-bottom">
@@ -219,7 +221,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
       <main className="main-area">
         <header className="topbar">
           <button className="icon-button mobile-menu" aria-label="فتح القائمة" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><Menu size={20}/></button>
-          <div className="breadcrumbs"><span>الرئيسية</span><b>/</b><strong>مستنداتي</strong></div>
+          <div className="breadcrumbs"><span>الرئيسية</span><b>/</b><strong>{activeSection === "templates" ? "القوالب الرسمية" : activeSection === "contacts" ? "جهات الاتصال" : "مستنداتي"}</strong></div>
           <div className="top-actions">
             <span className={`connection ${online ? "online" : "offline"}`}>{online ? <Wifi size={15}/> : <WifiOff size={15}/>} {online ? "متصل" : "دون اتصال"}</span>
             <button className="icon-button" aria-label="الإشعارات"><Bell size={19}/></button>
@@ -229,18 +231,26 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
 
         <div className="page-content">
           <section className="welcome-row">
-            <div><div className="eyebrow">مساحة العمل الرقمية</div><h1>إدارة الوثائق والكتب الرسمية</h1><p>أنشئ مستنداتك، نظّم مراسلاتك، وجهّز كتبك للطباعة من مكان واحد.</p></div>
-            <button className="primary-button" onClick={createDraft}><FilePlus2 size={18}/> إنشاء مستند جديد</button>
+            <div><div className="eyebrow">مساحة العمل الرقمية</div><h1>{activeSection === "templates" ? "إدارة القوالب الرسمية" : activeSection === "contacts" ? "إدارة جهات الاتصال" : "إدارة الوثائق والكتب الرسمية"}</h1><p>{activeSection === "templates" ? "أنشئ قوالبك واحفظها لإعادة استخدامها." : activeSection === "contacts" ? "نظّم بيانات الجهات والأشخاص المرتبطين بمراسلاتك." : "أنشئ مستنداتك، نظّم مراسلاتك، وجهّز كتبك للطباعة من مكان واحد."}</p></div>
+            {activeSection === "documents" && <button className="primary-button" onClick={createDraft}><FilePlus2 size={18}/> إنشاء مستند جديد</button>}
           </section>
 
-          <section className="stats-grid">
+          {activeSection === "documents" && <section className="stats-grid">
             <article className="stat-card"><span className="stat-icon blue"><FileText size={20}/></span><div><small>إجمالي المستندات</small><strong>{drafts.length}</strong><em>محفوظة في حسابك</em></div></article>
             <article className="stat-card"><span className="stat-icon green"><Check size={20}/></span><div><small>مستندات مكتملة</small><strong>18</strong><em>جاهزة للأرشفة</em></div></article>
             <article className="stat-card"><span className="stat-icon amber"><FilePlus2 size={20}/></span><div><small>مسودات قيد العمل</small><strong>{drafts.length}</strong><em>في Appwrite السحابي</em></div></article>
             <article className="stat-card"><span className="stat-icon violet"><Cloud size={20}/></span><div><small>حالة المزامنة</small><strong>{appwriteConfigured ? "Appwrite" : "غير مهيأ"}</strong><em>{appwriteConfigured ? "متصل بالخدمة السحابية" : "أضف إعدادات Appwrite"}</em></div></article>
           </section>
 
-          <section className="workspace-grid">
+          </section>}
+          {activeSection !== "documents" ? <ResourceManager type={activeSection} onUseTemplate={async (templateContent) => {
+            try {
+              const created = await createDocument({ title: "مستند من قالب", category: "مسودة", content: templateContent, updatedAt: new Date().toISOString() });
+              const draft: Draft = { ...created };
+              lastSaved.current.set(draft.id, JSON.stringify({ title: draft.title, category: draft.category, content: draft.content }));
+              setDrafts(current => [draft, ...current]); setActiveId(draft.id); setActiveSection("documents"); setCloudError("");
+            } catch (error) { setCloudError(error instanceof Error ? error.message : "تعذر إنشاء مستند من القالب."); }
+          }} /> : <section className="workspace-grid">
             <div className="panel documents-panel">
               <div className="panel-heading"><div><h2>أحدث المستندات</h2><p>تابع آخر ما عملت عليه</p></div><button className="text-button">عرض الكل</button></div>
               <div className="search-box"><Search size={17}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث عن مستند..." /></div>
@@ -270,7 +280,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
               {cloudError && <div className="cloud-error" role="alert">{cloudError}</div>}{loadingCloud && <div className="cloud-loading">جارٍ تحميل مستنداتك من Appwrite...</div>}<div className="paper-wrap"><div className="paper document-paper" ref={printableRef}><div className="document-watermark" style={getDocumentWatermarkStyle({ opacity: 0.1 })} aria-hidden="true">وثائقي</div><div className="document-paper-content"><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div></div>
               <div className="editor-footer"><span><Check size={15}/> يتم حفظ المستند في حسابك السحابي</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
             </div>
-          </section>
+          </section>}
           <footer className="app-footer">وثائقي <span>·</span> منصة تنظيم وإعداد الوثائق الرسمية</footer>
         </div>
       </main>
