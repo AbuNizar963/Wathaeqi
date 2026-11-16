@@ -1,0 +1,73 @@
+name: Restore complete source branches
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/restore-source-branches.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: restore-complete-source-branches
+  cancel-in-progress: false
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source web branch
+        uses: actions/checkout@v4
+        with:
+          repository: AbuNizar963/police-telegrams-platform
+          ref: main
+          path: source-web
+          fetch-depth: 1
+
+      - name: Checkout Wathaeqi web branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: target-web
+          fetch-depth: 1
+          token: ${{ github.token }}
+
+      - name: Copy complete web branch snapshot
+        run: |
+          rsync -a --delete --exclude='.git/' source-web/ target-web/
+          git -C target-web config user.name "github-actions[bot]"
+          git -C target-web config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C target-web add -A
+          if ! git -C target-web diff --cached --quiet; then
+            git -C target-web commit -m "Import complete source main branch"
+            git -C target-web push origin HEAD:main
+          fi
+
+      - name: Checkout source Flutter branch
+        uses: actions/checkout@v4
+        with:
+          repository: AbuNizar963/police-telegrams-platform
+          ref: flutter-mobile-app
+          path: source-mobile
+          fetch-depth: 1
+
+      - name: Checkout Wathaeqi Flutter branch
+        uses: actions/checkout@v4
+        with:
+          ref: flutter-mobile-app
+          path: target-mobile
+          fetch-depth: 1
+          token: ${{ github.token }}
+
+      - name: Copy complete Flutter branch snapshot
+        run: |
+          rsync -a --delete --exclude='.git/' source-mobile/ target-mobile/
+          git -C target-mobile config user.name "github-actions[bot]"
+          git -C target-mobile config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C target-mobile add -A
+          if ! git -C target-mobile diff --cached --quiet; then
+            git -C target-mobile commit -m "Import complete source flutter-mobile-app branch"
+            git -C target-mobile push origin HEAD:flutter-mobile-app
+          fi
