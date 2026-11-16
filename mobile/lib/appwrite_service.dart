@@ -135,7 +135,7 @@ class WathaeqiService {
       tableId: templatesTable,
       queries: [
         Query.equal('ownerId', user.$id),
-        Query.orderDesc('$createdAt'),
+        Query.orderDesc('\$createdAt'),
         Query.limit(100),
       ],
     );
@@ -185,7 +185,7 @@ class WathaeqiService {
       tableId: contactsTable,
       queries: [
         Query.equal('ownerId', user.$id),
-        Query.orderDesc('$createdAt'),
+        Query.orderDesc('\$createdAt'),
         Query.limit(100),
       ],
     );
