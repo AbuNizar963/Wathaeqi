@@ -68,7 +68,7 @@ export async function listDocuments(): Promise<CloudDocument[]> {
   const result = await tablesDB.listRows({
     databaseId,
     tableId,
-    queries: [Query.equal("ownerId", user.$id), Query.orderDesc("$updatedAt"), Query.limit(100)],
+    queries: [Query.equal("ownerId", user.$id), Query.orderDesc("updatedAt"), Query.limit(100)],
   });
   return result.rows.map((row) => mapRow(row as unknown as DocumentRow));
 }
