@@ -1,5 +1,5 @@
 name: police_telegrams
-description: تطبيق برقيات الشرطة لنظام HADIR
+description: تطبيق وثائقي لإدارة الوثائق الرسمية
 publish_to: 'none'
 version: 1.0.127+1
 environment:
@@ -7,6 +7,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  appwrite: ^28.4.0
   archive: ^3.6.1
   cupertino_icons: ^1.0.8
   lucide_icons_flutter: ^3.1.21
@@ -34,7 +35,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/police-telegrams-icon.png
     - assets/fonts/aref-ruqaa-regular.ttf
     - assets/licenses/ArefRuqaa-OFL.txt
   fonts:
