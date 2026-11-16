@@ -7,6 +7,7 @@ import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
+import { PageBreak } from "./lib/PageBreak";
 import {
   Archive, Bell, BookOpen, Check, ChevronDown,
   ClipboardList, Cloud, FilePlus2, FileText, FolderOpen, LayoutDashboard,
@@ -51,6 +52,7 @@ export default function App() {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      PageBreak,
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Table.configure({ resizable: true }),
@@ -178,6 +180,7 @@ export default function App() {
                 <button onClick={() => editor?.chain().focus().setTextAlign("justify").run()} aria-label="ضبط النص">▤</button>
                 <button onClick={() => editor?.chain().focus().toggleBulletList().run()} aria-label="قائمة">•</button>
                 <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} aria-label="قائمة مرقمة">1.</button>
+                <button onClick={() => editor?.chain().focus().insertContent({ type: "pageBreak" }).run()} aria-label="إدراج فاصل صفحة" title="إدراج فاصل صفحة">↵</button>
                 <span></span>
                 <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="إدراج جدول"><Table2 size={17}/></button>
                 <button onClick={() => handlePrint()} aria-label="طباعة"><Printer size={17}/></button>
