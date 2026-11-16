@@ -46,7 +46,7 @@ android {
     }
 
     defaultConfig {
-        // Keep the Android application ID aligned with the published Firebase client configuration.
+        // Keep the Android application ID aligned with the registered Appwrite platform.
         applicationId = "com.wathaeqi.documents"
         minSdk = 24
         targetSdk = flutter.targetSdkVersion
