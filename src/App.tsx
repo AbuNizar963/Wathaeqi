@@ -55,6 +55,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loadingCloud, setLoadingCloud] = useState(true);
   const [cloudError, setCloudError] = useState("");
+  const lastSaved = useRef(new Map<string, string>());
   const [activeId, setActiveId] = useState("d-1");
   const [query, setQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -93,6 +94,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
         const rows = await listDocuments();
         if (!cancelled) {
           setDrafts(rows.map((row) => ({ id: row.id, title: row.title, category: row.category, updatedAt: row.updatedAt, content: row.content })));
+          lastSaved.current = new Map(rows.map((row) => [row.id, JSON.stringify({ title: row.title, category: row.category, content: row.content })]));
           if (rows[0]) setActiveId(rows[0].id);
           setCloudError("");
         }
@@ -108,14 +110,24 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
 
   useEffect(() => {
     if (loadingCloud || drafts.length === 0) return;
+    const changed = drafts.filter((draft) => {
+      const snapshot = JSON.stringify({ title: draft.title, category: draft.category, content: draft.content });
+      return lastSaved.current.get(draft.id) !== snapshot;
+    });
+    if (changed.length === 0) return;
+
     const timeout = window.setTimeout(async () => {
       try {
-        await Promise.all(drafts.map((draft) => updateDocument(draft.id, {
-          title: draft.title,
-          category: draft.category,
-          content: draft.content,
-          updatedAt: new Date().toISOString(),
-        })));
+        await Promise.all(changed.map(async (draft) => {
+          const snapshot = JSON.stringify({ title: draft.title, category: draft.category, content: draft.content });
+          await updateDocument(draft.id, {
+            title: draft.title,
+            category: draft.category,
+            content: draft.content,
+            updatedAt: new Date().toISOString(),
+          });
+          lastSaved.current.set(draft.id, snapshot);
+        }));
         setSaved(true);
         setCloudError("");
       } catch (error) {
@@ -153,6 +165,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
         updatedAt: new Date().toISOString(),
       });
       const draft: Draft = { ...created };
+      lastSaved.current.set(draft.id, JSON.stringify({ title: draft.title, category: draft.category, content: draft.content }));
       setDrafts((current) => [draft, ...current]);
       setActiveId(draft.id);
       editor?.commands.setContent(starterContent);
@@ -176,6 +189,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
   }
 
   function updateTitle(title: string) {
+    setSaved(false);
     setDrafts((current) => current.map((draft) => draft.id === activeId ? { ...draft, title } : draft));
   }
 
