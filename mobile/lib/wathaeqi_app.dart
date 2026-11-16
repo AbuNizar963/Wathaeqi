@@ -476,6 +476,48 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
     super.dispose();
   }
 
+  Future<void> applySavedTemplate() async {
+    try {
+      final templates = await WathaeqiService.instance.listTemplates();
+      if (!mounted) return;
+      if (templates.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('لا توجد قوالب محفوظة بعد.')),
+        );
+        return;
+      }
+      final selected = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: const Text('اختر قالباً'),
+          children: templates
+              .map(
+                (item) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(context, item),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.bookmark_outline, color: blue),
+                    title: Text(item['title'].toString()),
+                    subtitle: Text((item['category'] ?? '').toString()),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      );
+      if (selected == null || !mounted) return;
+      setState(() {
+        title.text = selected['title']?.toString() ?? title.text;
+        category.text = selected['category']?.toString() ?? category.text;
+        content.text = selected['content']?.toString() ?? '';
+        error = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => error = 'تعذر تحميل القوالب: $e');
+    }
+  }
+
   Future<void> save() async {
     if (title.text.trim().isEmpty) {
       setState(() => error = 'عنوان المستند مطلوب.');
@@ -554,6 +596,15 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
         TextField(
           controller: category,
           decoration: const InputDecoration(labelText: 'التصنيف'),
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: OutlinedButton.icon(
+            onPressed: busy ? null : applySavedTemplate,
+            icon: const Icon(Icons.bookmark_add_outlined),
+            label: const Text('استخدام قالب محفوظ'),
+          ),
         ),
         const SizedBox(height: 18),
         const Text(
@@ -650,72 +701,116 @@ class _TemplatesTabState extends State<TemplatesTab> {
 
   void reload() =>
       setState(() => items = WathaeqiService.instance.listTemplates());
-  Future<void> addTemplate() async {
-    final title = TextEditingController(),
-        category = TextEditingController(text: 'كتاب رسمي'),
-        content = TextEditingController();
+  Future<void> editTemplate([Map<String, dynamic>? item]) async {
+    final title = TextEditingController(text: item?['title']?.toString() ?? '');
+    final category = TextEditingController(
+      text: item?['category']?.toString() ?? 'كتاب رسمي',
+    );
+    final content = TextEditingController(
+      text: item?['content']?.toString() ?? '',
+    );
     final form = GlobalKey<FormState>();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('قالب جديد'),
-        content: Form(
-          key: form,
-          child: SizedBox(
-            width: 420,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: title,
-                    decoration: const InputDecoration(labelText: 'اسم القالب'),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'أدخل الاسم' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: category,
-                    decoration: const InputDecoration(labelText: 'التصنيف'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: content,
-                    minLines: 4,
-                    maxLines: 7,
-                    decoration: const InputDecoration(
-                      labelText: 'محتوى القالب',
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(item == null ? 'قالب جديد' : 'تعديل القالب'),
+          content: Form(
+            key: form,
+            child: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: title,
+                      decoration: const InputDecoration(labelText: 'اسم القالب'),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'أدخل الاسم' : null,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: category,
+                      decoration: const InputDecoration(labelText: 'التصنيف'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: content,
+                      minLines: 4,
+                      maxLines: 7,
+                      decoration: const InputDecoration(labelText: 'محتوى القالب'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(context, form.currentState!.validate()),
+              child: const Text('حفظ'),
+            ),
+          ],
         ),
+      );
+      if (ok == true) {
+        await WathaeqiService.instance.saveTemplate(
+          id: item?['id']?.toString(),
+          title: title.text,
+          category: category.text,
+          content: content.text,
+        );
+        if (mounted) reload();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حفظ القالب: $e')),
+        );
+      }
+    } finally {
+      title.dispose();
+      category.dispose();
+      content.dispose();
+    }
+  }
+
+  Future<void> deleteTemplate(Map<String, dynamic> item) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف القالب'),
+        content: Text('هل تريد حذف القالب «${item['title']}»؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('إلغاء'),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, form.currentState!.validate()),
-            child: const Text('حفظ'),
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
           ),
         ],
       ),
     );
-    if (ok == true) {
-      await WathaeqiService.instance.saveTemplate(
-        title: title.text,
-        category: category.text,
-        content: content.text,
-      );
-      reload();
+    if (yes != true) return;
+    try {
+      await WathaeqiService.instance.deleteTemplate(item['id'].toString());
+      if (mounted) reload();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حذف القالب: $e')),
+        );
+      }
     }
-    title.dispose();
-    category.dispose();
-    content.dispose();
   }
 
   @override
@@ -740,7 +835,7 @@ class _TemplatesTabState extends State<TemplatesTab> {
                     ),
                   ),
                   IconButton(
-                    onPressed: addTemplate,
+                    onPressed: () => editTemplate(),
                     icon: const Icon(Icons.add_circle, color: blue, size: 30),
                   ),
                 ],
@@ -768,6 +863,30 @@ class _TemplatesTabState extends State<TemplatesTab> {
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                       subtitle: Text((item['category'] ?? '').toString()),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) {
+                          if (action == 'edit') editTemplate(item);
+                          if (action == 'delete') deleteTemplate(item);
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: ListTile(
+                              dense: true,
+                              leading: Icon(Icons.edit_outlined),
+                              title: Text('تعديل'),
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: ListTile(
+                              dense: true,
+                              leading: Icon(Icons.delete_outline, color: Colors.red),
+                              title: Text('حذف'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -793,80 +912,126 @@ class _ContactsTabState extends State<ContactsTab> {
 
   void reload() =>
       setState(() => items = WathaeqiService.instance.listContacts());
-  Future<void> addContact() async {
-    final name = TextEditingController(),
-        email = TextEditingController(),
-        phone = TextEditingController(),
-        organization = TextEditingController();
+  Future<void> editContact([Map<String, dynamic>? item]) async {
+    final name = TextEditingController(text: item?['name']?.toString() ?? '');
+    final email = TextEditingController(text: item?['email']?.toString() ?? '');
+    final phone = TextEditingController(text: item?['phone']?.toString() ?? '');
+    final organization = TextEditingController(
+      text: item?['organization']?.toString() ?? '',
+    );
     final form = GlobalKey<FormState>();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('جهة اتصال جديدة'),
-        content: Form(
-          key: form,
-          child: SizedBox(
-            width: 420,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: name,
-                    decoration: const InputDecoration(
-                      labelText: 'الاسم أو الجهة',
+    try {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(item == null ? 'جهة اتصال جديدة' : 'تعديل جهة الاتصال'),
+          content: Form(
+            key: form,
+            child: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: name,
+                      decoration: const InputDecoration(
+                        labelText: 'الاسم أو الجهة',
+                      ),
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'الاسم مطلوب' : null,
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'الاسم مطلوب' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: organization,
-                    decoration: const InputDecoration(labelText: 'المؤسسة'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: email,
-                    decoration: const InputDecoration(
-                      labelText: 'البريد الإلكتروني',
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: organization,
+                      decoration: const InputDecoration(labelText: 'المؤسسة'),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: phone,
-                    decoration: const InputDecoration(labelText: 'الهاتف'),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: email,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'البريد الإلكتروني',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: phone,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(labelText: 'الهاتف'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(context, form.currentState!.validate()),
+              child: const Text('حفظ'),
+            ),
+          ],
         ),
+      );
+      if (ok == true) {
+        await WathaeqiService.instance.saveContact(
+          id: item?['id']?.toString(),
+          name: name.text,
+          email: email.text,
+          phone: phone.text,
+          organization: organization.text,
+        );
+        if (mounted) reload();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حفظ جهة الاتصال: $e')),
+        );
+      }
+    } finally {
+      name.dispose();
+      email.dispose();
+      phone.dispose();
+      organization.dispose();
+    }
+  }
+
+  Future<void> deleteContact(Map<String, dynamic> item) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف جهة الاتصال'),
+        content: Text('هل تريد حذف «${item['name']}»؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('إلغاء'),
           ),
           FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, form.currentState!.validate()),
-            child: const Text('حفظ'),
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
           ),
         ],
       ),
     );
-    if (ok == true) {
-      await WathaeqiService.instance.saveContact(
-        name: name.text,
-        email: email.text,
-        phone: phone.text,
-        organization: organization.text,
-      );
-      reload();
+    if (yes != true) return;
+    try {
+      await WathaeqiService.instance.deleteContact(item['id'].toString());
+      if (mounted) reload();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حذف جهة الاتصال: $e')),
+        );
+      }
     }
-    name.dispose();
-    email.dispose();
-    phone.dispose();
-    organization.dispose();
   }
 
   @override
@@ -891,7 +1056,7 @@ class _ContactsTabState extends State<ContactsTab> {
                     ),
                   ),
                   IconButton(
-                    onPressed: addContact,
+                    onPressed: () => editContact(),
                     icon: const Icon(
                       Icons.person_add_alt_1,
                       color: blue,
@@ -928,6 +1093,30 @@ class _ContactsTabState extends State<ContactsTab> {
                         [item['organization'], item['email'], item['phone']]
                             .where((v) => v != null && v.toString().isNotEmpty)
                             .join(' · '),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (action) {
+                          if (action == 'edit') editContact(item);
+                          if (action == 'delete') deleteContact(item);
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: ListTile(
+                              dense: true,
+                              leading: Icon(Icons.edit_outlined),
+                              title: Text('تعديل'),
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: ListTile(
+                              dense: true,
+                              leading: Icon(Icons.delete_outline, color: Colors.red),
+                              title: Text('حذف'),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
