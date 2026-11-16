@@ -115,7 +115,7 @@ export async function deleteDocument(id: string): Promise<void> {
 export type CloudTemplate = { id: string; title: string; category: string; content: string };
 export type CloudContact = { id: string; name: string; email: string; phone: string; organization: string };
 
-async function requireTable(table: "templates" | "contacts") {
+async function requireTable(table: "templates" | "contacts" | "attachments") {
   const { account } = requireServices();
   if (!tablesDB || !appwriteResources.tables[table]) {
     throw new Error(`جدول ${table} غير مهيأ في Appwrite.`);
