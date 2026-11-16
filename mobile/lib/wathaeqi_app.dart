@@ -666,7 +666,7 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
   }
 
   Future<void> delete() async {
-    final id = widget.document?.id;
+    final id = documentId;
     if (id == null) return;
     final yes = await showDialog<bool>(
       context: context,
@@ -704,7 +704,7 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
             onPressed: () => Navigator.pop(context, true),
             child: const Text('تم'),
           ),
-        if (widget.document != null)
+        if (documentId != null)
           IconButton(
             onPressed: delete,
             icon: const Icon(Icons.delete_outline, color: Colors.red),
