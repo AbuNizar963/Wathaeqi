@@ -306,5 +306,4 @@ class WathaeqiService {
       rowId: attachment['id'].toString(),
     );
   }
-
 }

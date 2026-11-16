@@ -542,9 +542,8 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر إرفاق الملف: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر إرفاق الملف: $e')));
       }
     }
   }
@@ -574,9 +573,8 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
       if (mounted) reloadAttachments();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حذف المرفق: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر حذف المرفق: $e')));
       }
     }
   }
@@ -652,9 +650,8 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
           documentId = saved.id;
           attachments = WathaeqiService.instance.listAttachments(saved.id);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم حفظ المستند.')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('تم حفظ المستند.')));
       }
     } on AppwriteException catch (e) {
       setState(() => error = e.message ?? 'تعذر حفظ المستند.');
@@ -831,7 +828,10 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
                   final size = (file['size'] as num?)?.toInt() ?? 0;
                   return Card(
                     child: ListTile(
-                      leading: const Icon(Icons.insert_drive_file_outlined, color: blue),
+                      leading: const Icon(
+                        Icons.insert_drive_file_outlined,
+                        color: blue,
+                      ),
                       title: Text(
                         file['fileName'].toString(),
                         maxLines: 1,
@@ -841,7 +841,10 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
                       trailing: IconButton(
                         tooltip: 'حذف المرفق',
                         onPressed: () => removeAttachment(file),
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
                       ),
                     ),
                   );
