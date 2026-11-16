@@ -104,3 +104,44 @@
     page-break-inside: avoid;
   }
 }
+
+
+/* Explicit page boundaries remain visible in the editor and become real
+   page breaks in print. The document content stays in one TipTap document. */
+.document-page-break {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  margin: 22px 0;
+  border-top: 1px dashed #9aabba;
+  color: #6f8293;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.document-page-break-label {
+  position: absolute;
+  top: -10px;
+  padding: 2px 12px;
+  border: 1px solid #dce4eb;
+  border-radius: 20px;
+  background: #f7f9fb;
+  color: #718294;
+  font-size: 10px;
+  line-height: 16px;
+}
+@media print {
+  .document-page-break {
+    display: block !important;
+    min-height: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+  .document-page-break-label {
+    display: none !important;
+  }
+}
