@@ -188,3 +188,20 @@
 .resource-item-actions button{width:30px;height:30px;display:grid;place-items:center;border:1px solid #e8edf2;border-radius:7px;background:#fff;color:#6b7d8f}
 .resource-item-actions button:last-child{color:#b34a43}
 @media(max-width:800px){.resource-grid{grid-template-columns:1fr}.resource-manager{padding:15px}}
+
+
+/* Private document attachments */
+.attachment-manager{margin-top:16px;border:1px solid #e8edf2;border-radius:10px;padding:13px 14px;background:#fff}
+.attachment-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.attachment-heading>div h3{display:flex;align-items:center;gap:7px;margin:0;color:#34495e;font-size:11px}
+.attachment-heading>div small{display:block;margin-top:5px;color:#98a4af;font-size:9px}
+.attachment-upload{display:flex;align-items:center;gap:7px;border:1px solid #d9e7f3;border-radius:7px;background:#f3f8fc;color:#286fa7;padding:8px 11px;font-size:10px}
+.attachment-upload:disabled{opacity:.55}
+.attachment-empty{padding:14px;text-align:center;color:#9aa5af;font-size:10px}
+.attachment-list{display:grid;gap:7px;margin-top:12px}
+.attachment-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid #edf1f4;border-radius:8px;color:#718396}
+.attachment-item>div{flex:1;min-width:0}.attachment-item b,.attachment-item small{display:block;overflow-wrap:anywhere}
+.attachment-item b{font-size:10px;color:#3c5268}.attachment-item small{font-size:9px;color:#9ba6b0;margin-top:3px}
+.attachment-item a,.attachment-item button{width:29px;height:29px;border:1px solid #e8edf2;border-radius:6px;background:#fff;display:grid;place-items:center;color:#4e7da4}
+.attachment-item button{color:#b34a43}
+@media(max-width:700px){.attachment-heading{align-items:flex-start}.attachment-upload{white-space:nowrap}}
