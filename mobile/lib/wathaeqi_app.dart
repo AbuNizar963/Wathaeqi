@@ -13,6 +13,7 @@ class WathaeqiMobileApp extends StatelessWidget {
     title: 'وثائقي',
     theme: ThemeData(
       useMaterial3: true,
+      fontFamily: 'Cairo',
       colorScheme: ColorScheme.fromSeed(seedColor: blue, surface: Colors.white),
       scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       appBarTheme: const AppBarTheme(backgroundColor: Colors.white, foregroundColor: navy, elevation: 0),
