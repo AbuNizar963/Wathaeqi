@@ -70,8 +70,8 @@ export function getA4DocumentLayoutCss(selector = ".document-paper") {
         min-height: 277mm;
       }
       ${selector} .document-watermark {
-        position: absolute !important;
-        inset: 0 !important;
+        position: fixed !important;
+        inset: 0 auto auto 0 !important;
         width: 210mm !important;
         height: 297mm !important;
         -webkit-print-color-adjust: exact !important;
