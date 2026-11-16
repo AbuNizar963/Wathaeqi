@@ -1,0 +1,2438 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:archive/archive.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:printing/printing.dart';
+import 'package:qr/qr.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
+
+import 'package:police_telegrams/api.dart';
+import 'package:police_telegrams/features/organizations/organization_logo_resolution.dart';
+import 'package:police_telegrams/telegram_display.dart';
+import 'package:police_telegrams/features/reports/telegram_report_labels.dart';
+import 'package:police_telegrams/features/notifications/toast.dart';
+import 'package:police_telegrams/telegram_actions.dart';
+
+const _documentPageWidth = 794;
+const _documentPageHeight = 1123;
+const _documentPageWidthMm = 210;
+const _documentPageHeightMm = 297;
+const _documentMarginMm = 10;
+const _documentMultiPageAreaHeightMm =
+    _documentPageHeightMm - _documentMarginMm;
+const _documentPreviewDpi = 150.0;
+@visibleForTesting
+const officialTelegramDocumentImageExportDpi = 384.0;
+const _documentImageExportDpi = officialTelegramDocumentImageExportDpi;
+
+bool _hasPdfSignature(Uint8List bytes) =>
+    bytes.length >= 5 && String.fromCharCodes(bytes.take(5)) == '%PDF-';
+
+bool _hasPngSignature(Uint8List bytes) =>
+    bytes.length >= 8 &&
+    bytes[0] == 137 &&
+    bytes[1] == 80 &&
+    bytes[2] == 78 &&
+    bytes[3] == 71 &&
+    bytes[4] == 13 &&
+    bytes[5] == 10 &&
+    bytes[6] == 26 &&
+    bytes[7] == 10;
+const _documentPreviewPageGap = 18.0;
+// A4 watermark mosaic; calibrated against the web PDF for visible 3mm margins.
+const _ministryWatermarkColumns = 13;
+const _ministryWatermarkRows = 33;
+const _ministryWatermarkHorizontalGapCss = '6.16mm';
+const _ministryWatermarkInsetCss = '2.4mm 3.2mm 3mm';
+const _documentFooterPersonIcon = '''<svg class="footer-icon" data-icon="person" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+  <circle cx="12" cy="8" r="3.5" />
+  <path d="M5 21c.7-4 3.1-6 7-6s6.3 2 7 6" />
+</svg>''';
+const _documentFooterLocationIcon = '''<svg class="footer-icon" data-icon="location" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+  <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+  <circle cx="12" cy="10" r="2.5" />
+</svg>''';
+const _documentFooterCalendarIcon = '''<svg class="footer-icon" data-icon="calendar" aria-hidden="true" focusable="false" viewBox="0 0 24 24">
+  <rect x="3.5" y="5" width="17" height="16" rx="2" />
+  <path d="M16 3v4M8 3v4M3.5 10h17" />
+</svg>''';
+
+// Font data URLs are cached independently from logo image files.
+Map<int, String>? _officialFontDataUrlsCache;
+Future<Map<int, String>>? _officialFontDataUrlsFuture;
+
+/// Rendering boundary for the official document.
+abstract interface class OfficialTelegramDocumentRenderer {
+  Future<Uint8List> renderPdf(
+    String html, {
+    String? organizationId,
+    String? logoSource,
+  });
+  Future<Uint8List> renderPng(
+    String html, {
+    String? organizationId,
+    String? logoSource,
+  });
+  Future<Uint8List> renderPreview(Uint8List pdfBytes);
+  Future<List<Uint8List>> renderPreviewPages(
+    Uint8List pdfBytes, {
+    bool skipFirstPage = false,
+  });
+  Future<List<Uint8List>> renderHighResolutionImages(Uint8List pdfBytes);
+}
+
+class ServerOfficialTelegramDocumentRenderer
+    implements OfficialTelegramDocumentRenderer {
+  const ServerOfficialTelegramDocumentRenderer(this.api);
+
+  final PoliceApi api;
+
+  @override
+  Future<Uint8List> renderPdf(
+    String html, {
+    String? organizationId,
+    String? logoSource,
+  }) => api.renderTelegramDocument(
+    html: html,
+    format: 'pdf',
+    organizationId: organizationId,
+    logoSource: logoSource,
+  );
+
+  @override
+  Future<Uint8List> renderPng(
+    String html, {
+    String? organizationId,
+    String? logoSource,
+  }) => api.renderTelegramDocument(
+    html: html,
+    format: 'png',
+    organizationId: organizationId,
+    logoSource: logoSource,
+  );
+
+  @override
+  Future<Uint8List> renderPreview(Uint8List pdfBytes) =>
+      _renderFirstPage(pdfBytes, dpi: _documentPreviewDpi);
+
+  @override
+  Future<List<Uint8List>> renderPreviewPages(
+    Uint8List pdfBytes, {
+    bool skipFirstPage = false,
+  }) {
+    final pages = Printing.raster(pdfBytes, dpi: _documentPreviewDpi);
+    final pagesToRender = skipFirstPage ? pages.skip(1) : pages;
+    return pagesToRender.asyncMap((page) => page.toPng()).toList();
+  }
+
+  @override
+  Future<List<Uint8List>> renderHighResolutionImages(Uint8List pdfBytes) =>
+      Printing.raster(
+        pdfBytes,
+        dpi: _documentImageExportDpi,
+      ).asyncMap((page) => page.toPng()).toList();
+
+  Future<Uint8List> _renderFirstPage(
+    Uint8List pdfBytes, {
+    required double dpi,
+  }) async {
+    final firstPage = await Printing.raster(
+      pdfBytes,
+      pages: const [0],
+      dpi: dpi,
+    ).first;
+    return firstPage.toPng();
+  }
+}
+
+@visibleForTesting
+Uint8List createTelegramPageImageArchive(List<Uint8List> pageImages) {
+  if (pageImages.length < 2) {
+    throw ArgumentError.value(pageImages.length, 'pageImages');
+  }
+  final archive = Archive();
+  for (var index = 0; index < pageImages.length; index += 1) {
+    final pageNumber = (index + 1).toString().padLeft(2, '0');
+    final image = pageImages[index];
+    archive.addFile(
+      ArchiveFile('telegram-page-$pageNumber.png', image.length, image),
+    );
+  }
+  final encodedArchive = ZipEncoder().encode(archive);
+  if (encodedArchive == null || encodedArchive.isEmpty) {
+    throw StateError('تعذر إنشاء أرشيف صور صفحات البرقية.');
+  }
+  return Uint8List.fromList(encodedArchive);
+}
+
+class OfficialTelegramDocumentRendererScope extends InheritedWidget {
+  const OfficialTelegramDocumentRendererScope({
+    super.key,
+    required this.renderer,
+    required super.child,
+  });
+
+  final OfficialTelegramDocumentRenderer renderer;
+  static OfficialTelegramDocumentRendererScope? maybeOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<
+            OfficialTelegramDocumentRendererScope
+          >();
+
+  @override
+  bool updateShouldNotify(OfficialTelegramDocumentRendererScope oldWidget) =>
+      renderer != oldWidget.renderer;
+}
+
+bool _hasValidPlatformDocumentSettingsContract(Map result) {
+  final opacity = result['watermarkOpacityPercent'];
+  final color = result['headerDividerColor'];
+  return result['showMinistryWatermarkText'] is bool &&
+      result['showVerificationQr'] is bool &&
+      opacity is int &&
+      opacity >= 0 &&
+      opacity <= 60 &&
+      color is String &&
+      RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(color);
+}
+
+class OfficialTelegramDocumentPage extends StatefulWidget {
+  const OfficialTelegramDocumentPage({
+    super.key,
+    required this.api,
+    required this.telegramId,
+    this.onEdit,
+    this.onDelete,
+    this.onSubmitForReview,
+    this.canReissue = false,
+    this.canOperate = false,
+    this.isAdmin = false,
+    this.onWorkflowChanged,
+  });
+
+  final PoliceApi api;
+  final int telegramId;
+  final Future<void> Function()? onEdit;
+  final Future<void> Function()? onDelete;
+  final Future<void> Function()? onSubmitForReview;
+  final bool canReissue;
+  final bool canOperate;
+  final bool isAdmin;
+  final VoidCallback? onWorkflowChanged;
+
+  @override
+  State<OfficialTelegramDocumentPage> createState() =>
+      _OfficialTelegramDocumentPageState();
+}
+
+class _OfficialTelegramDocumentPageState
+    extends State<OfficialTelegramDocumentPage> {
+  static const _preparationTimeout = Duration(seconds: 120);
+  bool loading = true;
+  bool busy = false;
+  double _progress = 0;
+  String _progressTitle = 'جارٍ تنفيذ الإجراء';
+  String _progressMessage = 'بدء التنفيذ';
+  bool _hasMeasuredProgress = false;
+  String? error;
+  List<Uint8List> previewPages = <Uint8List>[];
+  Map<String, dynamic>? telegram;
+  Map<String, dynamic>? settings;
+  String? _senderOrganizationName;
+  List<Map<String, dynamic>> versions = <Map<String, dynamic>>[];
+  int? selectedVersionNumber;
+  String? documentHtml;
+  String? _documentLogoOrganizationId;
+  String? _documentLogoSource;
+  Timer? _loadingWatchdog;
+  int _loadGeneration = 0;
+  late OfficialTelegramDocumentRenderer _renderer;
+  final TransformationController _previewTransform = TransformationController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final rendererScope = OfficialTelegramDocumentRendererScope.maybeOf(
+      context,
+    );
+    _renderer =
+        rendererScope?.renderer ??
+        ServerOfficialTelegramDocumentRenderer(widget.api);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  Future<void> load({int? versionNumber}) async {
+    final generation = ++_loadGeneration;
+    final preparationClock = Stopwatch()..start();
+    void logPreparationStage(String stage) {
+      if (kDebugMode) {
+        debugPrint(
+          '[telegram-preview] $stage: ${preparationClock.elapsedMilliseconds}ms',
+        );
+      }
+    }
+
+    _loadingWatchdog?.cancel();
+    _loadingWatchdog = Timer(_preparationTimeout, () {
+      if (!mounted || generation != _loadGeneration || !loading) return;
+      _loadingWatchdog = null;
+      _loadGeneration++;
+      setState(() {
+        error = 'استغرق تجهيز معاينة البرقية وقتًا أطول من المتوقع. تحقّق من الاتصال ثم أعد المحاولة.';
+        loading = false;
+      });
+    });
+    if (mounted) {
+      setState(() {
+        loading = true;
+        error = null;
+        // Keep the last successfully rendered pages visible while a refresh
+        // (for example, switching document versions) is in progress. A
+        // transient error must not leave only the action buttons on screen.
+      });
+    }
+    try {
+      final results = await Future.wait<dynamic>([
+        widget.api.call('telegrams.get', input: {'id': widget.telegramId}),
+        widget.api.call('settings.get'),
+        widget.api.call('organizations.routingDirectory'),
+        widget.api.call(
+          'platformDocumentSettings.get',
+          // Reopening a document must be able to render from the last
+          // verified settings snapshot while the server request revalidates.
+          // A transient network state must never strand the document on the
+          // loading screen until the whole application is restarted.
+          allowOfflineCache: true,
+        ),
+      ]);
+      logPreparationStage('initial data');
+      final telegramData = Map<String, dynamic>.from(results[0] as Map);
+      final importNotes = _value(telegramData['importNotes']).trim();
+      final referenceLinksFuture = () async {
+        if (importNotes.isEmpty) return <Map<String, dynamic>>[];
+        try {
+          final resolved = await widget.api.call(
+            'telegrams.resolveImportReferences',
+            input: {'notes': importNotes},
+          );
+          if (resolved is List) {
+            return resolved
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList();
+          }
+        } catch (_) {
+          // Older deployments still show the original note text without links.
+        }
+        return <Map<String, dynamic>>[];
+      }();
+      final fontDataUrlsFuture = _loadFontDataUrls().then((fontDataUrls) {
+        logPreparationStage('font assets ready');
+        return fontDataUrls;
+      });
+      final settingsData = results[1] is Map
+          ? Map<String, dynamic>.from(results[1] as Map)
+          : <String, dynamic>{};
+      if (results[3] is! Map ||
+          !_hasValidPlatformDocumentSettingsContract(results[3] as Map)) {
+        throw Exception('تعذر قراءة إعدادات وثيقة النظام.');
+      }
+      final platformDocumentSettings = Map<String, dynamic>.from(
+        results[3] as Map,
+      );
+      // These reads are independent once the telegram payload is available.
+      // Run them together so opening a document does not pay for two extra
+      // sequential network round trips.
+      final optionalResults = await Future.wait<MapEntry<bool, dynamic>>([
+        (() async {
+          try {
+            return MapEntry<bool, dynamic>(
+              true,
+              await widget.api.call('organizations.context'),
+            );
+          } catch (_) {
+            return const MapEntry<bool, dynamic>(false, null);
+          }
+        })(),
+        (() async {
+          try {
+            return MapEntry<bool, dynamic>(
+              true,
+              await widget.api.call(
+                'telegrams.versions',
+                input: {'telegramId': widget.telegramId},
+                allowOfflineCache: true,
+              ),
+            );
+          } catch (_) {
+            return const MapEntry<bool, dynamic>(false, null);
+          }
+        })(),
+      ]);
+
+      logPreparationStage('organization context and version history');
+      Map<String, dynamic> accountOrganizationContext = <String, dynamic>{};
+      final contextResult = optionalResults[0].value;
+      if (optionalResults[0].key && contextResult is Map) {
+        accountOrganizationContext = Map<String, dynamic>.from(contextResult);
+      }
+
+      List<Map<String, dynamic>> versionsData = <Map<String, dynamic>>[];
+      final versionResult = optionalResults[1].value;
+      final versionHistoryAvailable = optionalResults[1].key;
+      if (versionResult is List) {
+        versionsData = versionResult
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+      }
+      final requestedVersionNumber = versionNumber ?? selectedVersionNumber;
+      if (requestedVersionNumber != null &&
+          (!versionHistoryAvailable ||
+              !versionsData.any(
+                (item) => item['versionNumber'] == requestedVersionNumber,
+              ))) {
+        throw Exception('تعذر تحميل الإصدار التاريخي المطلوب؛ أعد المحاولة.');
+      }
+      final activeVersion = requestedVersionNumber == null
+          ? (versionsData.isNotEmpty ? versionsData.last : <String, dynamic>{})
+          : versionsData.firstWhere(
+              (item) => item['versionNumber'] == requestedVersionNumber,
+            );
+      final hasSelectedVersion = activeVersion.isNotEmpty;
+      if (hasSelectedVersion && activeVersion['snapshot'] is Map) {
+        telegramData.addAll(
+          Map<String, dynamic>.from(activeVersion['snapshot'] as Map),
+        );
+      }
+
+      final historicalLogoUrl = hasSelectedVersion
+          ? _value(activeVersion['logoUrl'], fallback: '').trim()
+          : '';
+      final hasHistoricalLogo =
+          hasSelectedVersion &&
+          isOfficialOrganizationLogoStorageSource(historicalLogoUrl);
+      final logoOrganizationId = hasHistoricalLogo
+          ? _value(
+              telegramData['organizationId'],
+              fallback: '',
+            ).trim().toLowerCase()
+          : resolveOrganizationLogoId(
+                  accountOrganizationId:
+                      accountOrganizationContext['organizationId'] ??
+                      settingsData['organizationId'],
+                  currentOrganizationId: telegramData['currentOrganizationId'],
+                  ownerOrganizationId: telegramData['organizationId'],
+                ) ??
+                '';
+      if (!hasHistoricalLogo) {
+        // Match the web exporter: when no valid historical logo is stored,
+        // use the active account's logo only if settings belong to that org.
+        final settingsOrganizationId =
+            resolveOrganizationLogoId(
+              accountOrganizationId:
+                  accountOrganizationContext['organizationId'] ??
+                  settingsData['organizationId'],
+            ) ??
+            '';
+        final savedSettingsLogo = _value(settingsData['logoUrl'], fallback: '');
+        settingsData['logoUrl'] =
+            logoOrganizationId.isNotEmpty &&
+                settingsOrganizationId == logoOrganizationId &&
+                savedSettingsLogo.isNotEmpty
+            ? savedSettingsLogo
+            : null;
+      }
+
+      final routingDirectory = results[2] is List
+          ? (results[2] as List)
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList()
+          : <Map<String, dynamic>>[];
+      final hierarchyById = <String, Map<String, dynamic>>{
+        for (final organization in routingDirectory)
+          _value(organization['id'], fallback: ''): organization,
+      };
+      final letterhead = telegramData['letterhead'] is Map
+          ? Map<String, dynamic>.from(telegramData['letterhead'] as Map)
+          : const <String, dynamic>{};
+      final historicalOrganizationId = _value(
+        letterhead['organizationId'],
+        fallback: '',
+      );
+      final sourceOrganizationId = _value(
+        telegramData['organizationId'],
+        fallback: '',
+      );
+      final currentOrganizationId = _value(
+        telegramData['currentOrganizationId'],
+        fallback: '',
+      );
+      var hierarchyId = historicalOrganizationId.isNotEmpty
+          ? historicalOrganizationId
+          : sourceOrganizationId.isNotEmpty
+          ? sourceOrganizationId
+          : currentOrganizationId;
+      final visitedOrganizations = <String>{};
+      final hierarchyNames = <String>[];
+      while (hierarchyId.isNotEmpty && visitedOrganizations.add(hierarchyId)) {
+        final organization = hierarchyById[hierarchyId];
+        if (organization == null) break;
+        hierarchyNames.insert(0, _value(organization['name']));
+        hierarchyId = _value(
+          organization['parentOrganizationId'],
+          fallback: '',
+        );
+      }
+      final historicalOrganizationName = _value(
+        letterhead['organizationName'],
+        fallback: '',
+      ).trim();
+      if (historicalOrganizationName.isNotEmpty) {
+        if (hierarchyNames.isNotEmpty) {
+          hierarchyNames[hierarchyNames.length - 1] =
+              historicalOrganizationName;
+        } else {
+          hierarchyNames.add(historicalOrganizationName);
+        }
+      }
+      final resolvedSenderOrganizationName = _value(
+        telegramData['senderOrganizationName'],
+        fallback: _value(
+          hierarchyNames.isNotEmpty
+              ? hierarchyNames.last
+              : _value(
+                  hierarchyById[sourceOrganizationId]?['name'],
+                  fallback: _value(
+                    settingsData['departmentName'],
+                    fallback: _value(
+                      settingsData['unitName'],
+                      fallback: 'الجهة المرسلة',
+                    ),
+                  ),
+                ),
+        ),
+      );
+
+      // Fonts and the optional organization logo are independent resources.
+      // Load them together so preview generation does not wait for them in series.
+      final logoSourceFuture =
+          (hasSelectedVersion
+                  ? _loadHistoricalLogoSource(
+                      activeVersion,
+                      logoOrganizationId,
+                      fallbackUrl: _value(settingsData['logoUrl']),
+                    )
+                  : _loadLogoSource(
+                      settingsData['logoUrl'],
+                      logoOrganizationId,
+                    ))
+              .then((logoSource) {
+                logPreparationStage(
+                  logoSource == null
+                      ? 'organization logo unavailable'
+                      : 'organization logo ready',
+                );
+                return logoSource;
+              });
+      final resources = await Future.wait<Object?>([
+        fontDataUrlsFuture,
+        logoSourceFuture,
+      ]);
+      final fontDataUrls = resources[0] as Map<int, String>;
+      var logoSource = resources[1] as String?;
+
+      if (logoSource == null ||
+          !isOfficialOrganizationLogoStorageSource(logoSource)) {
+        throw Exception(
+          'تعذر تحديد ملف شعار الجهة من التخزين. أعد رفع الشعار من إعدادات الجهة ثم أعد المحاولة.',
+        );
+      }
+      logPreparationStage('fonts and organization logo');
+      final token = _value(telegramData['verificationToken']);
+      final verificationUrl = Uri.parse(widget.api.baseUrl)
+          .resolve('/verify/${Uri.encodeComponent(token)}')
+          .toString();
+      final referenceLinks = await referenceLinksFuture;
+      final html = buildOfficialTelegramHtml(
+        telegram: telegramData,
+        settings: settingsData,
+        platformDocumentSettings: platformDocumentSettings,
+        routingDirectory: routingDirectory,
+        verificationUrl: verificationUrl,
+        referenceLinks: referenceLinks,
+        fontDataUrls: fontDataUrls,
+        logoSource: 'telegram-logo://official',
+      );
+      // The authenticated server-side Chromium renderer is shared with the
+      // web exporter. Its PDF is the single source for preview and all outputs.
+      final pdfBytes = await _renderer
+          .renderPdf(
+            html,
+            organizationId: logoOrganizationId,
+            logoSource: logoSource,
+          )
+          .timeout(
+            const Duration(seconds: 60),
+            onTimeout: () => throw Exception(
+              'تعذر تحويل الوثيقة إلى PDF في الوقت المحدد. أعد المحاولة.',
+            ),
+          );
+      if (pdfBytes.isEmpty) {
+        throw Exception('تعذر إنشاء ملف الوثيقة على الجهاز.');
+      }
+      logPreparationStage('PDF generated');
+      // Render and publish the first page before rasterizing the complete
+      // document. The PDF remains the single source for preview and exports.
+      final firstPage = await _renderer
+          .renderPreview(pdfBytes)
+          .timeout(
+            const Duration(seconds: 25),
+            onTimeout: () => throw Exception(
+              'استغرق تجهيز الصفحة الأولى وقتًا طويلًا. أعد المحاولة.',
+            ),
+          );
+      if (firstPage.isEmpty) {
+        throw Exception('تعذر تجهيز الصفحة الأولى من الوثيقة.');
+      }
+      logPreparationStage('first page rasterized');
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        telegram = telegramData;
+        settings = settingsData;
+        _senderOrganizationName = resolvedSenderOrganizationName;
+        versions = versionsData;
+        selectedVersionNumber = hasSelectedVersion
+            ? activeVersion['versionNumber'] as int?
+            : null;
+        _documentLogoOrganizationId = logoOrganizationId;
+        _documentLogoSource = logoSource;
+        documentHtml = html;
+        previewPages = <Uint8List>[firstPage];
+        // Keep the preparation state visible until every preview page has
+        // finished rasterizing. The first page can remain visible meanwhile.
+      });
+
+      // Render only pages after the first; it is already visible above.
+      // This avoids rasterizing and allocating the first page twice.
+      final images = await _renderer
+          .renderPreviewPages(pdfBytes, skipFirstPage: true)
+          .timeout(
+            const Duration(seconds: 25),
+            onTimeout: () => throw Exception(
+              'استغرق تجهيز بقية صفحات المعاينة وقتًا طويلًا. أعد المحاولة.',
+            ),
+          );
+      if (images.any((image) => image.isEmpty)) {
+        throw Exception('تعذر تجهيز معاينة الوثيقة على الجهاز.');
+      }
+      logPreparationStage('all preview pages rasterized');
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        previewPages = <Uint8List>[firstPage, ...images];
+        loading = false;
+      });
+    } catch (exception) {
+      if (!mounted || generation != _loadGeneration) return;
+      setState(() {
+        error = exception.toString().replaceFirst('Exception: ', '');
+        loading = false;
+      });
+    } finally {
+      if (generation == _loadGeneration) {
+        _loadingWatchdog?.cancel();
+        _loadingWatchdog = null;
+      }
+    }
+  }
+
+  Future<Map<int, String>> _loadFontDataUrls() {
+    final cached = _officialFontDataUrlsCache;
+    if (cached != null) return Future<Map<int, String>>.value(cached);
+
+    final pending = _officialFontDataUrlsFuture;
+    if (pending != null) return pending;
+
+    final request = _readFontDataUrls();
+    _officialFontDataUrlsFuture = request;
+    return request.catchError((Object exception, StackTrace stackTrace) {
+      if (identical(_officialFontDataUrlsFuture, request)) {
+        _officialFontDataUrlsFuture = null;
+      }
+      Error.throwWithStackTrace(exception, stackTrace);
+    });
+  }
+
+  Future<Map<int, String>> _readFontDataUrls() async {
+    const fontWeights = [400, 500, 600, 700];
+    final entries = await Future.wait(
+      fontWeights.map((weight) async {
+        final data = await rootBundle.load('assets/fonts/cairo-$weight.ttf');
+        final bytes = data.buffer.asUint8List(
+          data.offsetInBytes,
+          data.lengthInBytes,
+        );
+        return MapEntry(weight, 'data:font/ttf;base64,${base64Encode(bytes)}');
+      }),
+    );
+    final ruqaaData = await rootBundle.load(
+      'assets/fonts/aref-ruqaa-regular.ttf',
+    );
+    final ruqaaBytes = ruqaaData.buffer.asUint8List(
+      ruqaaData.offsetInBytes,
+      ruqaaData.lengthInBytes,
+    );
+    final fontDataUrls = Map<int, String>.fromEntries(entries)
+      ..[900] = 'data:font/ttf;base64,${base64Encode(ruqaaBytes)}';
+    _officialFontDataUrlsCache = fontDataUrls;
+    return fontDataUrls;
+  }
+
+  Future<String?> _loadHistoricalLogoSource(
+    Map<String, dynamic> version,
+    String organizationId, {
+    String? fallbackUrl,
+  }) async {
+    final historicalUrl = _value(version['logoUrl'], fallback: '').trim();
+    if (organizationId.isNotEmpty &&
+        isOfficialOrganizationLogoStorageSource(historicalUrl)) {
+      return historicalUrl;
+    }
+    return _loadLogoSource(fallbackUrl, organizationId);
+  }
+
+  Future<String?> _loadLogoSource(Object? source, String organizationId) async {
+    if (organizationId.isEmpty) return null;
+    final configuredSource = _value(source, fallback: '').trim();
+    if (isOfficialOrganizationLogoStorageSource(configuredSource)) {
+      return configuredSource;
+    }
+
+    final result = await widget.api.call(
+      'organizations.logoForExport',
+      input: {'organizationId': organizationId},
+      allowOfflineCache: false,
+    );
+    if (result is! Map ||
+        result['organizationId']?.toString().trim() != organizationId) {
+      return null;
+    }
+    final resolvedSource = result['logoUrl']?.toString().trim() ?? '';
+    return isOfficialOrganizationLogoStorageSource(resolvedSource)
+        ? resolvedSource
+        : null;
+  }
+
+  String get _fileBaseName {
+    final serial = _displaySerial == '—' ? 'telegram' : _displaySerial;
+    final safe = serial.replaceAll(RegExp(r'[\\/:*?"<>|\u0000-\u001f]'), '-');
+    return 'telegram-$safe';
+  }
+
+  String get _displaySerial {
+    final data = telegram ?? const <String, dynamic>{};
+    final importedSerial = data['originalSerial']?.toString().trim() ?? '';
+    if (importedSerial.isNotEmpty && importedSerial != 'null') {
+      return importedSerial;
+    }
+    return getTelegramDisplaySerial(data, settings?['numberSystem']);
+  }
+
+  String get _shareDescription {
+    final data = telegram ?? const <String, dynamic>{};
+    final letterhead = data['letterhead'] is Map
+        ? Map<String, dynamic>.from(data['letterhead'] as Map)
+        : const <String, dynamic>{};
+    final dateValue = data['telegramDate'] ?? data['createdAt'];
+    final dateText = dateValue == null
+        ? '—'
+        : _formatConfiguredHeaderDateTime(
+            dateValue,
+            settings ?? const <String, dynamic>{},
+          );
+    final organizationName = _value(
+      _senderOrganizationName,
+      fallback: _value(
+        data['senderOrganizationName'],
+        fallback: _value(
+          letterhead['organizationName'],
+          fallback: _value(
+            settings?['departmentName'],
+            fallback: 'الجهة المرسلة',
+          ),
+        ),
+      ),
+    ).trim();
+
+    return [
+      'برقية رقم : $_displaySerial',
+      'تاريخ : $dateText',
+      'موضوعها : ${_value(data['subject'], fallback: '—')}',
+      'الجهة : ${organizationName.isEmpty ? 'الجهة المرسلة' : organizationName}',
+    ].join('\n');
+  }
+
+  void _updateProgress(double value, String message) {
+    if (!mounted) return;
+    setState(() {
+      _progress = value.clamp(0, 100).toDouble();
+      _progressMessage = message;
+      _hasMeasuredProgress = true;
+    });
+  }
+
+  void _beginIndeterminateProgress(String message) {
+    if (!mounted) return;
+    setState(() {
+      // Keep the last completed milestone visible while Chromium is working.
+      // The displayed percentage represents completed stages, not fabricated
+      // live progress inside the server process.
+      _progressMessage = message;
+    });
+  }
+
+  Future<String> _recordDocumentOutput(String operation, String format) async {
+    final result = await widget.api.call(
+      'telegrams.recordDocumentOutput',
+      mutation: true,
+      allowOfflineCache: false,
+      input: {
+        'id': widget.telegramId,
+        'operation': operation,
+        'format': format,
+      },
+    );
+    if (result is Map) {
+      final occurredAt = result['occurredAt']?.toString().trim();
+      if (occurredAt != null && DateTime.tryParse(occurredAt) != null) {
+        _updateProgress(15, 'تم تسجيل عملية الإخراج');
+        return occurredAt;
+      }
+    }
+    throw Exception('لم يصل وقت الإخراج من الخادم. أعد المحاولة.');
+  }
+
+  String _htmlWithOutputTimestamp(String occurredAt) {
+    final html = documentHtml;
+    if (html == null) throw Exception('تعذر تجهيز قالب الوثيقة.');
+    const placeholder =
+        '<span class="footer-output-time">يُحدَّد عند الإخراج</span>';
+    if (!html.contains(placeholder)) {
+      throw Exception('تعذر تحديث وقت إخراج الوثيقة. أعد فتحها ثم حاول.');
+    }
+    final formatted = _formatConfiguredHeaderDateTime(
+      occurredAt,
+      settings ?? const <String, dynamic>{},
+    );
+    return html.replaceFirst(
+      placeholder,
+      '<span class="footer-output-time">${_escapeHtml(formatted)}</span>',
+    );
+  }
+
+  Future<Uint8List> _renderOutputPdf(String operation, String format) async {
+    final occurredAt = await _recordDocumentOutput(operation, format);
+    final html = _htmlWithOutputTimestamp(occurredAt);
+    _updateProgress(35, 'اكتمل إعداد قالب الوثيقة');
+    _beginIndeterminateProgress('جارٍ تجهيز ملف PDF');
+    final bytes = await _renderer
+        .renderPdf(
+          html,
+          organizationId: _documentLogoOrganizationId,
+          logoSource: _documentLogoSource,
+        )
+        .timeout(
+          const Duration(seconds: 60),
+          onTimeout: () =>
+              throw Exception('انتهت مهلة تجهيز ملف الوثيقة. أعد المحاولة.'),
+        );
+    if (bytes.isEmpty) {
+      throw Exception('تعذر إنشاء ملف الوثيقة على الجهاز.');
+    }
+    _updateProgress(82, 'اكتمل إنشاء ملف PDF');
+    if (mounted) {
+      try {
+        _beginIndeterminateProgress('جارٍ تحديث معاينة الوثيقة');
+        final updatedPreview = await _renderer.renderPreviewPages(bytes);
+        if (mounted) setState(() => previewPages = updatedPreview);
+        _updateProgress(92, 'تم تحديث معاينة الوثيقة');
+      } catch (_) {
+        // A preview refresh must not cancel a valid export or print request.
+        _updateProgress(90, 'ملف PDF جاهز للإخراج');
+      }
+    }
+    return bytes;
+  }
+
+  Future<List<Uint8List>> _renderOutputImages() async {
+    final occurredAt = await _recordDocumentOutput('download', 'png');
+    final html = _htmlWithOutputTimestamp(occurredAt);
+    _updateProgress(35, 'اكتمل إعداد قالب الوثيقة');
+
+    // Always request the complete PDF from Chromium for image export.
+    // The server's PNG response is intentionally a single-page image for
+    // single-page exports; using it here silently dropped every later page
+    // from long telegrams.
+    _beginIndeterminateProgress('جارٍ تجهيز صفحات البرقية من محرك Chromium');
+    final pdfBytes = await _renderer
+        .renderPdf(
+          html,
+          organizationId: _documentLogoOrganizationId,
+          logoSource: _documentLogoSource,
+        )
+        .timeout(
+          const Duration(seconds: 60),
+          onTimeout: () =>
+              throw Exception('انتهت مهلة تجهيز الوثيقة. أعد المحاولة.'),
+        );
+
+    if (!_hasPdfSignature(pdfBytes)) {
+      throw Exception('أعاد محرك Chromium ملف PDF غير صالح لتصدير الصور.');
+    }
+    _updateProgress(72, 'اكتمل إنشاء الوثيقة متعددة الصفحات');
+
+    _beginIndeterminateProgress(
+      'جارٍ تحويل جميع صفحات الوثيقة إلى صور عالية الدقة',
+    );
+    final images = await _renderer.renderHighResolutionImages(pdfBytes);
+    if (images.isEmpty || images.any((image) => !_hasPngSignature(image))) {
+      throw Exception('تعذر تجهيز صور صفحات الوثيقة بدقة الطباعة.');
+    }
+    _updateProgress(96, 'اكتمل تجهيز ${images.length} صفحة كصور');
+    return images;
+  }
+
+  Future<void> _perform(
+    Future<void> Function() action, {
+    String title = 'جارٍ تنفيذ الإجراء',
+  }) async {
+    if (busy) return;
+    setState(() {
+      busy = true;
+      _progress = 0;
+      _progressTitle = title;
+      _progressMessage = 'بدء التنفيذ';
+      _hasMeasuredProgress = false;
+    });
+    var completed = false;
+    try {
+      await action();
+      completed = true;
+    } catch (exception) {
+      if (!mounted) return;
+      Toast.error(
+        context,
+        exception.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) {
+        if (completed) {
+          setState(() {
+            _progress = 100;
+            _progressMessage = 'اكتمل العمل';
+            _hasMeasuredProgress = true;
+          });
+          await Future<void>.delayed(const Duration(milliseconds: 450));
+        }
+        if (mounted) setState(() => busy = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _loadGeneration++;
+    _loadingWatchdog?.cancel();
+    _loadingWatchdog = null;
+    _previewTransform.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selectVersion(int versionNumber) async {
+    if (versionNumber == selectedVersionNumber) return;
+    setState(() => selectedVersionNumber = versionNumber);
+    await load(versionNumber: versionNumber);
+  }
+
+  Future<void> _reissue() async {
+    if (!widget.canReissue || busy) return;
+    final reasonController = TextEditingController();
+    String? reasonError;
+    final reason = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('إعادة إصدار البرقية'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'سيُنشأ إصدار موثق جديد بالشعار الحالي، مع الاحتفاظ بنفس الرقم الرسمي والنسخ السابقة.',
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: reasonController,
+                  minLines: 2,
+                  maxLines: 4,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'سبب إعادة الإصدار',
+                    hintText: 'اكتب سبباً واضحاً (5 أحرف على الأقل)',
+                    errorText: reasonError,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final value = reasonController.text.trim();
+                  if (value.length < 5) {
+                    setDialogState(
+                      () => reasonError =
+                          'سبب إعادة الإصدار مطلوب ويجب ألا يقل عن 5 أحرف',
+                    );
+                    return;
+                  }
+                  Navigator.of(dialogContext).pop(value);
+                },
+                child: const Text('تأكيد إعادة الإصدار'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    reasonController.dispose();
+    if (reason == null || !mounted) return;
+
+    setState(() => busy = true);
+    try {
+      final result = await widget.api.call(
+        'telegrams.reissue',
+        mutation: true,
+        input: {'id': widget.telegramId, 'reason': reason},
+      );
+      final newVersionNumber = result is Map
+          ? result['versionNumber'] as int?
+          : null;
+      if (newVersionNumber == null) {
+        throw Exception('لم يُرجع الخادم رقم الإصدار الجديد.');
+      }
+      await load(versionNumber: newVersionNumber);
+      if (!mounted) return;
+      Toast.success(
+        context,
+        'تم إنشاء الإصدار $newVersionNumber مع الاحتفاظ بالرقم الرسمي.',
+      );
+      if (result is Map &&
+          (result['actionLogRecorded'] == false ||
+              result['auditLogRecorded'] == false)) {
+        Toast.warning(
+          context,
+          'تم حفظ الإصدار، لكن تعذر تسجيل أحد سجلات التدقيق الثانوية',
+        );
+      }
+    } catch (exception) {
+      if (!mounted) return;
+      Toast.error(
+        context,
+        exception.toString().replaceFirst('Exception: ', ''),
+      );
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<String?> _showOutputFormatSheet({required bool share}) =>
+      showModalBottomSheet<String>(
+        context: context,
+        useSafeArea: true,
+        showDragHandle: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        builder: (sheetContext) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+                  child: Text(
+                    share ? 'اختر صيغة المشاركة' : 'اختر صيغة التنزيل',
+                    style: Theme.of(sheetContext).textTheme.titleMedium
+                        ?.copyWith(
+                          fontFamily: 'Cairo',
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf_outlined),
+                  title: Text(share ? 'مشاركة ملف PDF' : 'تنزيل ملف PDF'),
+                  onTap: () => Navigator.of(sheetContext).pop('pdf'),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.image_outlined),
+                  title: Text(
+                    share ? 'مشاركة صور الصفحات' : 'تنزيل صور الصفحات',
+                  ),
+                  onTap: () => Navigator.of(sheetContext).pop('image'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Future<void> _showDownloadOptions() async {
+    final format = await _showOutputFormatSheet(share: false);
+    if (!mounted || format == null) return;
+    if (format == 'pdf') {
+      await _savePdf();
+    } else {
+      await _saveImage();
+    }
+  }
+
+  Future<void> _showShareOptions() async {
+    final format = await _showOutputFormatSheet(share: true);
+    if (!mounted || format == null) return;
+    if (format == 'pdf') {
+      await _sharePdf();
+    } else {
+      await _shareImage();
+    }
+  }
+
+  Future<void> _printPdf() => _perform(() async {
+    final bytes = await _renderOutputPdf('print', 'pdf');
+    await Printing.layoutPdf(
+      name: '$_fileBaseName.pdf',
+      onLayout: (_) async => bytes,
+    );
+  }, title: 'تصدير PDF للطباعة');
+
+  Future<void> _savePdf() => _perform(() async {
+    final bytes = await _renderOutputPdf('download', 'pdf');
+    _updateProgress(95, 'ملف PDF جاهز للحفظ');
+    final path = await FilePicker.saveFile(
+      dialogTitle: 'حفظ الوثيقة الرسمية',
+      fileName: '$_fileBaseName.pdf',
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      bytes: bytes,
+    );
+    if (!mounted) return;
+    if (path == null) {
+      Toast.info(context, 'تم إلغاء حفظ الملف.');
+    } else {
+      Toast.success(context, 'تم حفظ الوثيقة.');
+    }
+  }, title: 'حفظ وثيقة PDF');
+
+  Future<void> _sharePdf() => _perform(() async {
+    final bytes = await _renderOutputPdf('download', 'pdf');
+    _updateProgress(95, 'ملف PDF جاهز للمشاركة');
+    await Printing.sharePdf(bytes: bytes, filename: '$_fileBaseName.pdf');
+  }, title: 'مشاركة وثيقة PDF');
+
+  Future<void> _shareImage() => _perform(() async {
+    final images = await _renderOutputImages();
+    _updateProgress(98, 'صور الصفحات جاهزة للمشاركة');
+    await SharePlus.instance.share(
+      ShareParams(
+        files: List<XFile>.generate(
+          images.length,
+          (index) => XFile.fromData(
+            images[index],
+            name: images.length == 1
+                ? '$_fileBaseName.png'
+                : '$_fileBaseName-page-${(index + 1).toString().padLeft(2, '0')}.png',
+            mimeType: 'image/png',
+          ),
+        ),
+        title: 'برقية رقم $_displaySerial',
+        text: _shareDescription,
+      ),
+    );
+  }, title: 'مشاركة صور الوثيقة');
+
+  Future<void> _saveImage() => _perform(() async {
+    final images = await _renderOutputImages();
+    final isMultiPage = images.length > 1;
+    final bytes = isMultiPage
+        ? createTelegramPageImageArchive(images)
+        : images.single;
+    final extension = isMultiPage ? 'zip' : 'png';
+    _updateProgress(98, 'صور الصفحات جاهزة للحفظ');
+    final path = await FilePicker.saveFile(
+      dialogTitle: isMultiPage
+          ? 'حفظ صور صفحات الوثيقة الرسمية'
+          : 'حفظ صورة الوثيقة الرسمية',
+      fileName: '$_fileBaseName.$extension',
+      type: FileType.custom,
+      allowedExtensions: [extension],
+      bytes: bytes,
+    );
+    if (!mounted) return;
+    if (path == null) {
+      Toast.info(context, 'تم إلغاء حفظ الصورة.');
+    } else {
+      Toast.success(
+        context,
+        isMultiPage ? 'تم حفظ ملف ZIP لصور صفحات البرقية.' : 'تم حفظ الصورة.',
+      );
+    }
+  }, title: 'حفظ صور الوثيقة');
+
+  Future<void> _attachFile() => _perform(() async {
+    final result = await FilePicker.pickFiles(
+      withData: true,
+      type: FileType.custom,
+      allowedExtensions: const [
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'pdf',
+        'mp3',
+        'wav',
+        'webm',
+      ],
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.single;
+    if (file.bytes == null || file.bytes!.isEmpty) {
+      throw Exception('تعذر قراءة الملف المحدد.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw Exception('حجم المرفق يتجاوز 10 ميغابايت.');
+    }
+    final contentType = _attachmentContentType(file.extension);
+    if (contentType == null) throw Exception('نوع الملف غير مسموح');
+    await widget.api.uploadTelegramAttachment(
+      telegramId: widget.telegramId,
+      fileName: file.name,
+      contentType: contentType,
+      bytes: file.bytes!,
+    );
+    if (mounted) {
+      Toast.success(context, 'تم إرفاق الملف بالبرقية');
+    }
+  });
+
+  String? _attachmentContentType(String? extension) {
+    switch ((extension ?? '').toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'pdf':
+        return 'application/pdf';
+      case 'mp3':
+        return 'audio/mpeg';
+      case 'wav':
+        return 'audio/wav';
+      case 'webm':
+        return 'audio/webm';
+    }
+    return null;
+  }
+
+  Future<void> _showWorkflowActions() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.9,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            12,
+            12,
+            12,
+            MediaQuery.viewInsetsOf(sheetContext).bottom + 20,
+          ),
+          child: TelegramActionsPanel(
+            api: widget.api,
+            telegramId: widget.telegramId,
+            telegramStatus: '${telegram?['status'] ?? 'draft'}',
+            canOperate: widget.canOperate,
+            isAdmin: widget.isAdmin,
+            onChanged: widget.onWorkflowChanged ?? () {},
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLocation() async {
+    final latitude = telegram?['gpsLatitude'];
+    final longitude = telegram?['gpsLongitude'];
+    final message = latitude == null || longitude == null
+        ? 'لا يوجد موقع مسجل لهذه البرقية.'
+        : 'إحداثيات الموقع: $latitude, $longitude';
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('موقع البرقية'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _documentAction({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool primary = false,
+    bool danger = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final foreground = danger
+        ? colorScheme.onError
+        : primary
+        ? colorScheme.onPrimary
+        : colorScheme.onSurface;
+    final background = danger
+        ? colorScheme.error
+        : primary
+        ? colorScheme.primary
+        : colorScheme.surfaceContainerLow;
+    final borderColor = danger
+        ? colorScheme.error
+        : primary
+        ? colorScheme.primary
+        : colorScheme.outlineVariant;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: background,
+          foregroundColor: foreground,
+          side: BorderSide(color: borderColor),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(0, 44),
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        icon: Icon(icon, size: 16),
+        label: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Cairo',
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Directionality(
+    textDirection: TextDirection.rtl,
+    child: Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leadingWidth: 0,
+        leading: const SizedBox.shrink(),
+        toolbarHeight: 80,
+        titleSpacing: 12,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Row(
+              textDirection: TextDirection.rtl,
+              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'برقية رقم : ',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  _displaySerial,
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _value(telegram?['subject'], fallback: 'عرض البرقية'),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontFamily: 'Cairo',
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 16,
+                height: 1.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'سير العمل والمرفقات وسجل الإجراءات',
+            onPressed: _showWorkflowActions,
+            icon: const Icon(Icons.account_tree_outlined),
+          ),
+          IconButton(
+            tooltip: 'إغلاق تفاصيل البرقية',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.close_rounded, size: 20),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: loading && previewPages.isEmpty
+          ? ColoredBox(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x120F172A),
+                            blurRadius: 28,
+                            offset: Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEAF7EF),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            alignment: Alignment.center,
+                            child: const SizedBox.square(
+                              dimension: 34,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3.2,
+                                color: Color(0xFF159447),
+                                semanticsLabel: 'جارٍ تجهيز معاينة البرقية',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'نجهّز معاينة البرقية',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontFamily: 'Cairo',
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            'يتم تحميل شعار الجهة وإعداد الوثيقة الرسمية. سيظهر تنبيه إذا استغرق التجهيز وقتًا أطول من المتوقع.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                              fontFamily: 'Cairo',
+                              fontSize: 12,
+                              height: 1.7,
+                            ),
+                          ),
+                          const SizedBox(height: 22),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: const LinearProgressIndicator(
+                              minHeight: 4,
+                              color: Color(0xFF159447),
+                              backgroundColor: Color(0xFFE8F1EB),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : error != null && previewPages.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: load,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Column(
+              children: [
+                if (loading || error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                    child: MaterialBanner(
+                      content: Text(
+                        loading ? 'جارٍ تحديث المعاينة الحالية...' : error!,
+                      ),
+                      leading: Icon(
+                        loading
+                            ? Icons.sync_rounded
+                            : Icons.error_outline_rounded,
+                      ),
+                      // MaterialBanner requires at least one action even
+                      // while the preview is refreshing. Keep the action slot
+                      // present and disable it until retry is meaningful.
+                      actions: [
+                        TextButton.icon(
+                          onPressed: loading ? null : load,
+                          icon: Icon(
+                            loading
+                                ? Icons.sync_rounded
+                                : Icons.refresh_rounded,
+                          ),
+                          label: Text(
+                            loading ? 'جارٍ التحديث' : 'إعادة المحاولة',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (versions.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+                    child: DropdownButtonFormField<int>(
+                      key: ValueKey(selectedVersionNumber),
+                      initialValue: selectedVersionNumber,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'إصدارات الوثيقة',
+                        suffixIcon: Icon(Icons.keyboard_arrow_down_rounded),
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: versions
+                          .map(
+                            (version) => DropdownMenuItem<int>(
+                              value: version['versionNumber'] as int,
+                              child: Text(
+                                'الإصدار ${version['versionNumber']} · ${version['changeReason'] ?? ''}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: busy || loading
+                          ? null
+                          : (value) {
+                              if (value != null) {
+                                _selectVersion(value);
+                              }
+                            },
+                    ),
+                  ),
+                Expanded(
+                  child: Container(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
+                    alignment: Alignment.topCenter,
+                    child: InteractiveViewer(
+                      transformationController: _previewTransform,
+                      constrained: false,
+                      minScale: 1,
+                      maxScale: 2.4,
+                      alignment: Alignment.topCenter,
+                      panEnabled: true,
+                      scaleEnabled: true,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 14, 12, 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < previewPages.length;
+                                index++
+                              ) ...[
+                                if (index > 0)
+                                  const SizedBox(
+                                    height: _documentPreviewPageGap,
+                                  ),
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(3),
+                                    border: Border.all(
+                                      color: const Color(0xFFD7DCE3),
+                                    ),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x180F172A),
+                                        blurRadius: 14,
+                                        offset: Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: AspectRatio(
+                                    // Server-rendered pages are A4. Give each
+                                    // image finite page geometry instead of
+                                    // letting its decoded pixel dimensions
+                                    // dictate an unbounded Flutter layout.
+                                    aspectRatio:
+                                        _documentPageWidth /
+                                        _documentPageHeight,
+                                    child: Image.memory(
+                                      previewPages[index],
+                                      fit: BoxFit.fill,
+                                      filterQuality: FilterQuality.high,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      semanticLabel:
+                                          'معاينة الصفحة ${index + 1} من ${previewPages.length}',
+                                      errorBuilder:
+                                          (context, exception, stackTrace) =>
+                                              const Padding(
+                                                padding: EdgeInsets.all(24),
+                                                child: Text(
+                                                  'تعذر عرض معاينة الوثيقة.',
+                                                ),
+                                              ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (busy)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _progressTitle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface,
+                                    fontFamily: 'Cairo',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              if (_hasMeasuredProgress) ...[
+                                const SizedBox(width: 10),
+                                Text(
+                                  '${_progress.round()}%',
+                                  textDirection: TextDirection.ltr,
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? const Color(0xFF4ADE80)
+                                        : const Color(0xFF15803D),
+                                    fontFamily: 'Cairo',
+                                    fontSize: 24,
+                                    height: 1,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: _hasMeasuredProgress
+                                  ? _progress / 100
+                                  : null,
+                              minHeight: 38,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              color:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? const Color(0xFF4ADE80)
+                                  : const Color(0xFF15803D),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _progressMessage,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    fontFamily: 'Cairo',
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF16A34A)
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 3,
+                                  ),
+                                  child: Text(
+                                    'قيد التنفيذ',
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? const Color(0xFF4ADE80)
+                                          : const Color(0xFF15803D),
+                                      fontFamily: 'Cairo',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                SafeArea(
+                  top: false,
+                  minimum: const EdgeInsets.fromLTRB(12, 7, 12, 8),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const spacing = 8.0;
+                        final itemWidth =
+                            (constraints.maxWidth - spacing * 2) / 3;
+                        final actions = <Widget>[
+                          _documentAction(
+                            label: 'إرفاق ملف',
+                            icon: Icons.attach_file,
+                            onPressed: busy ? null : _attachFile,
+                          ),
+                          _documentAction(
+                            label: busy ? 'جارٍ التجهيز...' : 'طباعة',
+                            icon: Icons.print_outlined,
+                            primary: true,
+                            onPressed: busy ? null : _printPdf,
+                          ),
+                          _documentAction(
+                            label: 'تنزيل',
+                            icon: Icons.download_outlined,
+                            onPressed: busy
+                                ? null
+                                : () => _showDownloadOptions(),
+                          ),
+                          _documentAction(
+                            label: 'مشاركة',
+                            icon: Icons.share_outlined,
+                            onPressed: busy ? null : () => _showShareOptions(),
+                          ),
+                          _documentAction(
+                            label: 'الموقع',
+                            icon: Icons.my_location_outlined,
+                            onPressed: busy ? null : _showLocation,
+                          ),
+                          _documentAction(
+                            label: 'تعديل البرقية',
+                            icon: Icons.edit_outlined,
+                            onPressed: busy || widget.onEdit == null
+                                ? null
+                                : () => widget.onEdit!(),
+                          ),
+                          if (widget.canReissue)
+                            _documentAction(
+                              label: busy ? 'جارٍ التجهيز...' : 'إعادة إصدار',
+                              icon: Icons.history_edu_outlined,
+                              onPressed: busy ? null : _reissue,
+                            ),
+                          _documentAction(
+                            label: 'إرسال للمراجعة',
+                            icon: Icons.send_outlined,
+                            onPressed: busy || widget.onSubmitForReview == null
+                                ? null
+                                : () => widget.onSubmitForReview!(),
+                          ),
+                        ];
+                        return Directionality(
+                          textDirection: TextDirection.rtl,
+                          child: Wrap(
+                            spacing: spacing,
+                            runSpacing: spacing,
+                            children: [
+                              for (final action in actions)
+                                SizedBox(width: itemWidth, child: action),
+                              SizedBox(
+                                width: (actions.length + 1) % 3 == 1
+                                    ? constraints.maxWidth
+                                    : itemWidth,
+                                child: _documentAction(
+                                  label: 'حذف نهائي',
+                                  icon: Icons.delete_outline,
+                                  danger: true,
+                                  onPressed: busy || widget.onDelete == null
+                                      ? null
+                                      : () => widget.onDelete!(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    ),
+  );
+}
+
+/// Builds the same A4 document structure used by the web preview/exporter.
+/// Text values are escaped before insertion because the server renders this
+/// authenticated HTML in headless Chromium.
+String buildOfficialTelegramHtml({
+  required Map<String, dynamic> telegram,
+  required Map<String, dynamic> settings,
+  Map<String, dynamic> platformDocumentSettings = const {},
+  required List<Map<String, dynamic>> routingDirectory,
+  required String verificationUrl,
+  List<Map<String, dynamic>> referenceLinks = const [],
+  required Map<int, String> fontDataUrls,
+  String? logoSource,
+  String? outputTimestamp,
+}) {
+  if (logoSource != null && logoSource != 'telegram-logo://official') {
+    throw ArgumentError.value(
+      logoSource,
+      'logoSource',
+      'يجب استخدام معرّف الشعار المخصص لمحرك التصدير المشترك.',
+    );
+  }
+  final numberSystem = settings['numberSystem'];
+  final showVerificationQr =
+      platformDocumentSettings['showVerificationQr'] != false;
+  final showMinistryWatermarkText =
+      platformDocumentSettings['showMinistryWatermarkText'] != false;
+  final opacityValue =
+      int.tryParse('${platformDocumentSettings['watermarkOpacityPercent']}') ??
+      12;
+  final watermarkOpacity = (opacityValue.clamp(0, 60) / 100).toStringAsFixed(2);
+  final requestedDividerColor =
+      platformDocumentSettings['headerDividerColor']?.toString() ?? '';
+  final headerDividerColor =
+      RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(requestedDividerColor)
+      ? requestedDividerColor
+      : '#b49a55';
+  final letterhead = telegram['letterhead'] is Map
+      ? Map<String, dynamic>.from(telegram['letterhead'] as Map)
+      : <String, dynamic>{};
+  final historicalOrganizationName = _value(
+    letterhead['organizationName'],
+    fallback: '',
+  ).trim();
+  final departmentName = _localizeDigits(
+    _value(
+      letterhead['departmentName'] ?? settings['departmentName'],
+      fallback: 'قسم العمليات',
+    ),
+    numberSystem,
+  );
+  final hierarchyById = <String, Map<String, dynamic>>{
+    for (final organization in routingDirectory)
+      _value(organization['id'], fallback: ''): organization,
+  };
+  final hierarchyNames = <String>[];
+  final historicalOrganizationId = _value(
+    letterhead['organizationId'],
+    fallback: '',
+  );
+  final sourceOrganizationId = _value(telegram['organizationId'], fallback: '');
+  final currentOrganizationId = _value(
+    telegram['currentOrganizationId'],
+    fallback: '',
+  );
+  var hierarchyId = historicalOrganizationId.isNotEmpty
+      ? historicalOrganizationId
+      : sourceOrganizationId.isNotEmpty
+      ? sourceOrganizationId
+      : currentOrganizationId;
+  final visited = <String>{};
+  while (hierarchyId.isNotEmpty && visited.add(hierarchyId)) {
+    final organization = hierarchyById[hierarchyId];
+    if (organization == null) break;
+    hierarchyNames.insert(0, _value(organization['name']));
+    hierarchyId = _value(organization['parentOrganizationId'], fallback: '');
+  }
+  if (historicalOrganizationName.isNotEmpty) {
+    if (hierarchyNames.isNotEmpty) {
+      hierarchyNames[hierarchyNames.length - 1] = historicalOrganizationName;
+    } else {
+      hierarchyNames.add(historicalOrganizationName);
+    }
+  }
+  final hierarchyCandidates = hierarchyNames.isNotEmpty
+      ? [...hierarchyNames]
+      : [
+          _value(
+            letterhead['unitName'] ?? settings['unitName'],
+            fallback: 'قيادة الأمن الداخلي',
+          ),
+          _value(settings['departmentName'], fallback: 'قسم العمليات'),
+        ];
+  final senderOrganizationName = _localizeDigits(
+    _value(
+      telegram['senderOrganizationName'],
+      fallback:
+          _value(hierarchyById[sourceOrganizationId]?['name']).trim().isNotEmpty
+          ? _value(hierarchyById[sourceOrganizationId]?['name'])
+          : hierarchyCandidates.isNotEmpty
+          ? hierarchyCandidates.last
+          : 'الجهة المرسلة',
+    ),
+    numberSystem,
+  );
+  const fixedHeaderNames = {'الجمهورية العربية السورية', 'وزارة الداخلية'};
+  final organizationHierarchy = hierarchyCandidates
+      .where(
+        (name) =>
+            name.trim().isNotEmpty && !fixedHeaderNames.contains(name.trim()),
+      )
+      .map(
+        (name) => '<p>${_escapeHtml(_localizeDigits(name, numberSystem))}</p>',
+      )
+      .join();
+
+  final telegramDate = telegram['telegramDate'] ?? telegram['createdAt'];
+  final documentOutputAt = outputTimestamp == null
+      ? 'يُحدَّد عند الإخراج'
+      : _formatConfiguredHeaderDateTime(outputTimestamp, settings);
+  final headerCreatedAt = _formatConfiguredHeaderDateTime(
+    telegramDate,
+    settings,
+  );
+  final latitude = telegram['gpsLatitude'];
+  final longitude = telegram['gpsLongitude'];
+  final location = _localizeDigits(
+    latitude != null && longitude != null
+        ? '$latitude, $longitude'
+        : 'غير محدد',
+    numberSystem,
+  );
+  final importedSerial = telegram['originalSerial']?.toString().trim() ?? '';
+  final displaySerial = importedSerial.isNotEmpty && importedSerial != 'null'
+      ? importedSerial
+      : _localizeDigits(
+          getTelegramDisplaySerial(telegram, numberSystem),
+          numberSystem,
+        );
+  final importNotes = _value(telegram['importNotes']).trim();
+  final referenceByKey = <String, Map<String, dynamic>>{};
+  for (final reference in referenceLinks) {
+    final serial = _value(reference['serial'])
+        .replaceAllMapped(RegExp(r'[٠-٩۰-۹]'), (match) {
+          const digits = '٠١٢٣٤٥٦٧٨٩';
+          const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+          final character = match.group(0)!;
+          final index = digits.indexOf(character);
+          return index >= 0 ? '$index' : '${persianDigits.indexOf(character)}';
+        });
+    referenceByKey['${_value(reference['direction'])}|$serial'] = reference;
+  }
+  final importNotesMarkup = (() {
+    if (importNotes.isEmpty) return '';
+    final pattern = RegExp(r'ب\s*([وص])\s*([0-9٠-٩۰-۹]+)');
+    final buffer = StringBuffer();
+    var cursor = 0;
+    for (final match in pattern.allMatches(importNotes)) {
+      buffer.write(_escapeHtml(importNotes.substring(cursor, match.start)));
+      final marker = match.group(1) ?? '';
+      final serial = (match.group(2) ?? '').replaceAllMapped(
+        RegExp(r'[٠-٩۰-۹]'),
+        (digitMatch) {
+          const digits = '٠١٢٣٤٥٦٧٨٩';
+          const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+          final character = digitMatch.group(0)!;
+          final index = digits.indexOf(character);
+          return index >= 0 ? '$index' : '${persianDigits.indexOf(character)}';
+        },
+      );
+      final direction = marker == 'و' ? 'incoming' : 'outgoing';
+      final reference = referenceByKey['$direction|$serial'];
+      final label = _escapeHtml(match.group(0) ?? '');
+      final token = _value(reference?['verificationToken']);
+      if (reference != null && token.isNotEmpty) {
+        final href = Uri.parse(verificationUrl)
+            .resolve('/verify/${Uri.encodeComponent(token)}')
+            .toString();
+        buffer.write(
+          '<a href="${_escapeHtml(href)}" target="_blank" rel="noopener noreferrer">$label</a>',
+        );
+      } else {
+        buffer.write(label);
+      }
+      cursor = match.end;
+    }
+    buffer.write(_escapeHtml(importNotes.substring(cursor)));
+    // Original-record notes are retained in the data model for the pending
+    // feature, but are intentionally hidden from official documents for now.
+    return '';
+  })();
+  final outgoing =
+      _value(telegram['organizationId'], fallback: '') ==
+      _value(telegram['currentOrganizationId'], fallback: '');
+  final documentType = outgoing ? 'برقية صادرة' : 'برقية واردة';
+  final classification = _label(
+    telegramClassificationLabels,
+    telegram['classification'],
+  );
+  final priority = _label(telegramPriorityLabels, telegram['priority']);
+  final category = _label(telegramCategoryLabels, telegram['category']);
+  final status = _label(telegramStatusLabels, telegram['status']);
+  final logo = logoSource == null
+      ? ''
+      : '<img class="official-logo" src="telegram-logo://official" alt="الشعار الرسمي" />';
+  final watermarkLogo = logoSource == null
+      ? ''
+      : '<img class="watermark-logo" src="telegram-logo://official" alt="" />';
+  final watermarkItems = showMinistryWatermarkText
+      ? List<String>.generate(_ministryWatermarkRows, (row) {
+          final labels = List<String>.filled(
+            _ministryWatermarkColumns,
+            '<span>وزارة الداخلية</span>',
+          ).join();
+          final rowClass = row.isOdd
+              ? 'watermark-text-row watermark-text-row-offset'
+              : 'watermark-text-row';
+          return '<div class="$rowClass">$labels</div>';
+        }).join()
+      : '';
+  final watermarkText = showMinistryWatermarkText
+      ? '<div class="watermark-text-pattern" aria-hidden="true">$watermarkItems</div>'
+      : '';
+  final watermark =
+      '<div class="page-watermark" aria-hidden="true">$watermarkText$watermarkLogo</div>';
+  final qrSvg = showVerificationQr ? _createQrSvg(verificationUrl) : '';
+  final fontFaces = [400, 500, 600, 700, 900]
+      .map((weight) {
+        final font = fontDataUrls[weight] ?? '';
+        return '''@font-face {
+          font-family: "${weight == 900 ? 'Aref Ruqaa' : 'Cairo'}"; font-style: normal; font-weight: ${weight == 900 ? 400 : weight};
+          font-display: block; src: url("$font") format("truetype");
+        }''';
+      })
+      .join('\n');
+
+  return '''<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8" />
+<style>
+$fontFaces
+.telegram-export-page{position:relative;isolation:isolate;box-sizing:border-box;width:${_documentPageWidth}px;min-height:${_documentPageHeight}px;padding:${_documentMarginMm}mm;margin:0;background:#fff;color:#172033;direction:rtl;font-family:"Cairo",Tahoma,Arial,sans-serif;font-size:19px;line-height:1.85;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.telegram-export-page *{box-sizing:border-box}
+.page-watermark{position:absolute;inset:0;z-index:1;width:210mm;height:297mm;overflow:hidden;pointer-events:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page-watermark .watermark-logo{position:absolute;z-index:1;top:50%;left:50%;width:93.75%;height:93.75%;transform:translate(-50%,-50%);object-fit:contain;opacity:$watermarkOpacity}
+.page-watermark .watermark-text-pattern{position:absolute;z-index:0;inset:$_ministryWatermarkInsetCss;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0;overflow:hidden;opacity:$watermarkOpacity}
+.page-watermark .watermark-text-row{display:flex;flex:0 0 auto;width:max-content;gap:$_ministryWatermarkHorizontalGapCss;white-space:nowrap}
+.page-watermark .watermark-text-row-offset{transform:translateX(-10.3mm)}
+.page-watermark .watermark-text-pattern span{color:#73777d;text-align:center;font-family:"Aref Ruqaa","Noto Naskh Arabic",Tahoma,serif;font-size:11pt;font-weight:400;line-height:1;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.telegram-export-page .official-header,.telegram-export-page .classification,.telegram-export-page .telegram-content,.telegram-export-page .document-footer{position:relative;z-index:2}
+.telegram-export-page .official-header{display:grid;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);align-items:start;gap:2px;padding:0 0 22px;border-bottom:3px solid $headerDividerColor;font-weight:700}
+.telegram-export-page .header-government,.telegram-export-page .header-metadata{min-width:0}.telegram-export-page .header-government{text-align:right}.telegram-export-page .header-metadata{text-align:left}
+.telegram-export-page .header-government p,.telegram-export-page .header-metadata p{margin:0;font-size:15pt;font-weight:700;line-height:1.5;white-space:nowrap;letter-spacing:-.12px;transform:scaleX(.86);transform-origin:left center}
+.telegram-export-page .header-government p{transform-origin:right center}.telegram-export-page .header-date-row{transform:translateX(1ch) scaleX(.86)}
+.telegram-export-page .header-date-value{display:inline-block;direction:ltr;unicode-bidi:isolate;font-size:13pt;letter-spacing:0;white-space:nowrap}
+.telegram-export-page .government-name,.telegram-export-page .government-subtitle{font-size:15pt;font-weight:700;white-space:nowrap}.telegram-export-page .header-metadata{font-size:15pt;font-weight:700;line-height:1.5;white-space:nowrap}
+.telegram-export-page .header-logo-cell{display:flex;align-items:center;justify-content:center;min-width:0}.telegram-export-page .official-logo{display:block;width:120px;height:120px;margin:0 auto;object-fit:contain}
+.telegram-export-page .classification{display:flex;justify-content:space-between;gap:16px;margin:18px 0;padding:10px 14px;border:1px solid #d8dee8;background:#f8fafc;font-size:13px}.telegram-export-page .classification-value{font-weight:500}
+.telegram-export-page .telegram-content{min-height:570px;padding:22px 24px;border:1.5px solid #253247;display:flex;flex-direction:column}
+.telegram-export-page .routing{padding-bottom:14px;border-bottom:1px dotted #7b8493;line-height:2}.telegram-export-page .routing-layout{display:grid;grid-template-columns:${showVerificationQr ? 'minmax(0,1fr) 113px' : '1fr'};align-items:start;gap:16px;direction:rtl}
+.telegram-export-page .routing p{margin:0}.telegram-export-page .routing-details{font-weight:500}.telegram-export-page .routing-qr{width:113px;height:113px;justify-self:start;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden}
+.telegram-export-page .routing-qr svg{display:block;width:100%;height:100%;shape-rendering:crispEdges}
+.telegram-export-page .body-heading{margin:20px 0 14px;text-align:center;font-size:17px;font-weight:700}.telegram-export-page .telegram-body{min-height:150px;white-space:pre-wrap;overflow-wrap:anywhere;text-align:justify;line-height:2;font-size:20px;font-weight:500}.telegram-export-page .telegram-date-token{direction:ltr;unicode-bidi:isolate;white-space:nowrap}
+.telegram-export-page .signature{display:flex;flex-direction:column;align-items:stretch;align-self:flex-end;width:min(48%,320px);margin-top:auto;margin-right:auto;margin-left:0;padding-top:26px;text-align:center;line-height:1.9}
+.telegram-export-page .signature p{width:100%;margin:0;font-size:16px;font-weight:700;text-align:center}.telegram-export-page .signature-label{margin-top:14px!important;color:#667085;font-size:12px}
+.telegram-export-page .document-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr) minmax(0, 1.35fr);
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: #667085;
+  font-size: 11px;
+  direction: rtl;
+  white-space: nowrap;
+}
+.telegram-export-page .document-footer p {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+.telegram-export-page .footer-icon {
+  display: block;
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: #667085;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+}
+.telegram-export-page .document-footer .footer-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.telegram-export-page .footer-creator {
+  justify-content: flex-start;
+  text-align: right;
+}
+.telegram-export-page .footer-location {
+  justify-content: center;
+  text-align: center;
+}
+.telegram-export-page .footer-date {
+  justify-content: flex-end;
+  text-align: left;
+}
+@page {
+  size: A4 portrait;
+  /* The only 10mm inset is inside the A4 sheet, not in the page box. */
+  margin: 0;
+}
+@page telegram-multipage {
+  size: A4 portrait;
+  margin: 0 0 ${_documentMarginMm}mm 0;
+  @bottom-center {
+    content: "صفحة رقم " counter(page) " من " counter(pages);
+    font-family: "Cairo", Tahoma, Arial, sans-serif;
+    font-size: 9pt;
+    color: #667085;
+  }
+}
+.telegram-export-page.telegram-multipage { page: telegram-multipage; }
+@media print {
+  html, body { margin: 0; padding: 0; background: #fff; }
+  .telegram-export-page {
+    width: ${_documentPageWidthMm}mm;
+    min-height: ${_documentPageHeightMm}mm;
+    padding: ${_documentMarginMm}mm;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .telegram-export-page.telegram-multipage {
+    min-height: ${_documentMultiPageAreaHeightMm}mm;
+    padding: ${_documentMarginMm}mm ${_documentMarginMm}mm 0;
+  }
+  /* Fixed watermarks use the physical A4 sheet, not the shorter page area. */
+  .page-watermark {
+    position: fixed;
+    inset: 0 auto auto 0;
+    width: ${_documentPageWidthMm}mm;
+    height: ${_documentPageHeightMm}mm;
+  }
+  .telegram-export-page { z-index: 2; background: transparent; }
+}
+</style></head><body>
+$watermark
+<article class="telegram-export-page" dir="rtl" lang="ar">
+<header class="official-header">
+<div class="header-government"><p class="government-name">الجمهورية العربية السورية</p><p class="government-subtitle">وزارة الداخلية</p>$organizationHierarchy</div>
+<div class="header-logo-cell">$logo</div>
+<div class="header-metadata">
+<p><strong>رقم البرقية:</strong> ${_escapeHtml(displaySerial)}</p>
+<p class="header-date-row"><strong>الوقت والتاريخ:</strong> <span class="header-date-value" dir="ltr">${_escapeHtml(headerCreatedAt)}</span></p>
+<p><strong>درجة السرية:</strong> ${_escapeHtml(classification)}</p>
+<p><strong>درجة الأسبقية:</strong> ${_escapeHtml(priority)}</p>
+</div></header>
+<section class="classification">
+<span><strong>نوع الوثيقة:</strong> <span class="classification-value">${_escapeHtml(documentType)}</span></span>
+<span><strong>التصنيف:</strong> <span class="classification-value">${_escapeHtml(category)}</span></span>
+<span><strong>الحالة:</strong> <span class="classification-value">${_escapeHtml(status)}</span></span>
+</section>
+<main class="telegram-content">
+<section class="routing"><div class="routing-layout"><div class="routing-details">
+<p><strong>من:</strong> ${_escapeHtml(senderOrganizationName)}</p>
+<p><strong>إلى:</strong> ${_escapeHtml(_localizeDigits(_value(telegram['recipient']), numberSystem))}</p>
+<p><strong>الموضوع:</strong> ${_escapeHtml(_localizeDigits(_value(telegram['subject']), numberSystem))}</p>
+</div>${showVerificationQr ? '<div class="routing-qr" role="img" aria-label="رمز QR للتحقق من أصالة البرقية">$qrSvg</div>' : ''}</div></section>
+<h2 class="body-heading">نص البرقية</h2>
+<div class="telegram-body" dir="rtl">${_renderTelegramBodyHtml(telegram['body'], numberSystem)}</div>
+<section class="signature">
+<p><strong>${_escapeHtml(_localizeDigits(_value(letterhead['unitChiefRank'] ?? settings['unitChiefRank'], fallback: 'رئيس الوحدة'), numberSystem))} ${_escapeHtml(_localizeDigits(_value(letterhead['unitChiefName'] ?? settings['unitChiefName'], fallback: ''), numberSystem))}</strong></p>
+<p><strong>رئيس ${_escapeHtml(departmentName)}</strong></p>
+</section></main>
+<footer class="document-footer">
+<p class="footer-creator">$_documentFooterPersonIcon<span class="footer-text">منشئ الوثيقة: ${_escapeHtml(_localizeDigits(_value(telegram['creatorName']), numberSystem))}</span></p>
+<p class="footer-location">$_documentFooterLocationIcon<span class="footer-text">الموقع: ${_escapeHtml(location)}</span></p>
+<p class="footer-date">$_documentFooterCalendarIcon<span class="footer-text"><span class="footer-date-label">تاريخ ووقت إخراج النسخة:</span> <span class="footer-output-time">${_escapeHtml(documentOutputAt)}</span></span></p>
+</footer>
+$importNotesMarkup
+</article></body></html>''';
+}
+
+String _createQrSvg(String value) {
+  // A fixed version leaves ample capacity for the public verification URL.
+  final qrCode = QrCode(10, QrErrorCorrectLevel.L)..addData(value);
+  final image = QrImage(qrCode);
+  const cell = 4;
+  const margin = 4;
+  final modules = image.moduleCount;
+  final dimension = (modules + margin * 2) * cell;
+  final path = StringBuffer();
+  for (var row = 0; row < modules; row++) {
+    for (var column = 0; column < modules; column++) {
+      if (image.isDark(row, column)) {
+        final x = (column + margin) * cell;
+        final y = (row + margin) * cell;
+        path.write('M$x $y h$cell v$cell h-$cell z ');
+      }
+    }
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="$dimension" height="$dimension" viewBox="0 0 $dimension $dimension" role="img" aria-label="QR"><rect width="100%" height="100%" fill="#fff"/><path d="${path.toString()}" fill="#000"/></svg>';
+}
+
+String _formatConfiguredHeaderDateTime(
+  Object? value,
+  Map<String, dynamic> settings, {
+  bool use24HourTime = false,
+}) {
+  final date = _configuredDate(value, settings);
+  final yearMonthDay = '${date.year}/${_pad(date.month)}/${_pad(date.day)}';
+  final hour12 = !use24HourTime && settings['timeFormat'] == '12';
+  return _localizeDigits(
+    '$yearMonthDay - ${_timeText(date, hour12)}',
+    settings['numberSystem'],
+  );
+}
+
+tz.TZDateTime _configuredDate(Object? value, Map<String, dynamic> settings) {
+  if (!_timeZonesInitialized) {
+    tzdata.initializeTimeZones();
+    _timeZonesInitialized = true;
+  }
+  final parsed = DateTime.tryParse(_value(value));
+  final utcDate = (parsed ?? DateTime.now()).toUtc();
+  final timezone = _value(settings['timezone'], fallback: 'Asia/Riyadh');
+  try {
+    return tz.TZDateTime.from(utcDate, tz.getLocation(timezone));
+  } catch (_) {
+    return tz.TZDateTime.from(utcDate, tz.getLocation('Asia/Riyadh'));
+  }
+}
+
+bool _timeZonesInitialized = false;
+
+String _timeText(tz.TZDateTime date, bool hour12) {
+  final hour = hour12 ? ((date.hour + 11) % 12) + 1 : date.hour;
+  final period = hour12 ? _arabicDayPeriod(date.hour) : '';
+  return '${_pad(hour)}:${_pad(date.minute)}:${_pad(date.second)}${period.isEmpty ? '' : ' $period'}';
+}
+
+String _arabicDayPeriod(int hour) => hour < 12 ? 'ص' : 'م';
+String _pad(int value) => value.toString().padLeft(2, '0');
+
+String _localizeDigits(String value, Object? numberSystem) {
+  final useArabic = numberSystem == 'arabic';
+  if (!useArabic) {
+    return value.replaceAllMapped(
+      RegExp(r'[\u0660-\u0669\u06f0-\u06f9\u0966-\u096f]'),
+      (match) {
+        final code = match.group(0)!.runes.single;
+        final zero = code >= 0x6f0 && code <= 0x6f9
+            ? 0x6f0
+            : code >= 0x966 && code <= 0x96f
+            ? 0x966
+            : 0x660;
+        return String.fromCharCode(0x30 + code - zero);
+      },
+    );
+  }
+  return value.replaceAllMapped(RegExp(r'[0-9\u06f0-\u06f9\u0966-\u096f]'), (
+    match,
+  ) {
+    final code = match.group(0)!.runes.single;
+    final zero = code >= 0x6f0 && code <= 0x6f9
+        ? 0x6f0
+        : code >= 0x966 && code <= 0x96f
+        ? 0x966
+        : 0x30;
+    return String.fromCharCode(0x660 + code - zero);
+  });
+}
+
+String _renderTelegramBodyHtml(Object? value, Object? numberSystem) {
+  final escapedBody = _escapeHtml(
+    _localizeDigits(_value(value, fallback: 'لا يوجد نص'), numberSystem),
+  );
+  final datePattern = RegExp(
+    r'(^|[^0-9٠-٩۰-۹])([0-9٠-٩۰-۹]{1,2})[/.-]([0-9٠-٩۰-۹]{1,2})[/.-]([0-9٠-٩۰-۹]{4})(?=$|[^0-9٠-٩۰-۹])',
+  );
+  return escapedBody.replaceAllMapped(datePattern, (match) {
+    final prefix = match.group(1) ?? '';
+    final day = match.group(2) ?? '';
+    final month = match.group(3) ?? '';
+    final year = match.group(4) ?? '';
+    return '$prefix<bdi class="telegram-date-token" dir="ltr">$year/$month/$day</bdi>';
+  });
+}
+
+String _label(Map<String, String> labels, Object? key) =>
+    labels[_value(key)] ?? 'غير محددة';
+
+String _value(Object? value, {String fallback = '—'}) {
+  if (value == null ||
+      value.toString().trim().isEmpty ||
+      value.toString() == 'null') {
+    return fallback;
+  }
+  return value.toString().trim();
+}
+
+String _escapeHtml(String value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');

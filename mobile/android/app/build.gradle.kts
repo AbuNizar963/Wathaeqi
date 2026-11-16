@@ -5,6 +5,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+if (file("google-services.json").isFile) {
+    apply(plugin = "com.google.gms.google-services")
+} else {
+    logger.warn(
+        "Firebase Android client config is missing; FCM registration will be unavailable. " +
+            "Add google-services.json to mobile/android/app before building a configured release."
+    )
+}
+
 // Release signing is supplied by CI through environment variables.
 // Debug builds remain usable without release-signing secrets.
 val releaseStorePath = System.getenv("ANDROID_KEYSTORE_PATH")
@@ -30,25 +39,20 @@ if (releaseTaskRequested && !hasReleaseSigning) {
     )
 }
 
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
-
 android {
-    namespace = "com.wathaeqi.documents"
+    namespace = "com.police_telegrams"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
-        // Keep the Android application ID aligned with the registered Appwrite platform.
-        applicationId = "com.wathaeqi.documents"
-        minSdk = 24
+        // Keep the Android application ID aligned with the published Firebase client configuration.
+        applicationId = "com.police_telegrams"
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
