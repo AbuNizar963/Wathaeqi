@@ -15,31 +15,46 @@ import {
   Table2, Wifi, WifiOff,
 } from "lucide-react";
 import { appwriteConfigured } from "./lib/appwrite";
+import AuthScreen from "./components/AuthScreen";
+import { createDocument, deleteDocument, getCurrentUser, listDocuments, signOut, updateDocument } from "./lib/documentRepository";
 import { getA4DocumentLayoutCss } from "./lib/documentPrintLayout";
 import { getDocumentWatermarkStyle } from "./lib/documentWatermark";
 import { useReactToPrint } from "react-to-print";
 
 type Draft = { id: string; title: string; category: string; updatedAt: string; content: string };
-const STORAGE_KEY = "wathaeqi:drafts:v1";
+type SessionUser = { $id: string; name: string; email: string };
 const starterContent = `<h2>بسم الله الرحمن الرحيم</h2><p>العدد: ....................</p><p>التاريخ: .... / .... / ........</p><p><strong>إلى /</strong> ................................................</p><p><strong>الموضوع /</strong> ............................................</p><p>تحية طيبة...</p><p>يرجى التفضل بالاطلاع واتخاذ ما يلزم بشأن الموضوع أعلاه، مع التقدير.</p><p>وتفضلوا بقبول فائق الاحترام.</p><p><strong>التوقيع:</strong> ............................</p>`;
 
-const initialDrafts: Draft[] = [
-  { id: "d-1", title: "طلب تجهيز مستلزمات إدارية", category: "كتاب صادر", updatedAt: "اليوم، 09:42", content: starterContent },
-  { id: "d-2", title: "محضر اجتماع لجنة العمل", category: "محضر", updatedAt: "أمس، 13:15", content: starterContent },
-  { id: "d-3", title: "خطة توزيع المهام الأسبوعية", category: "ورقة عمل", updatedAt: "12 نوفمبر", content: starterContent },
-];
+export default function App() {
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-function readDrafts(): Draft[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Draft[]) : initialDrafts;
-  } catch {
-    return initialDrafts;
+  async function refreshUser() {
+    try {
+      const current = await getCurrentUser();
+      setUser(current ? { $id: current.$id, name: current.name, email: current.email } : null);
+    } catch {
+      setUser(null);
+    } finally {
+      setCheckingSession(false);
+    }
   }
+
+  useEffect(() => { void refreshUser(); }, []);
+
+  async function handleSignOut() {
+    try { await signOut(); } finally { setUser(null); }
+  }
+
+  if (checkingSession) return <div className="auth-loading" dir="rtl">جارٍ التحقق من جلسة الدخول...</div>;
+  if (!user) return <AuthScreen onAuthenticated={() => { void refreshUser(); }} />;
+  return <Workspace user={user} onSignOut={() => { void handleSignOut(); }} />;
 }
 
-export default function App() {
-  const [drafts, setDrafts] = useState<Draft[]>(readDrafts);
+function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => void }) {
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const [loadingCloud, setLoadingCloud] = useState(true);
+  const [cloudError, setCloudError] = useState("");
   const [activeId, setActiveId] = useState("d-1");
   const [query, setQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,9 +87,44 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(drafts));
-    setSaved(true);
-  }, [drafts]);
+    let cancelled = false;
+    async function loadCloudDocuments() {
+      try {
+        const rows = await listDocuments();
+        if (!cancelled) {
+          setDrafts(rows.map((row) => ({ id: row.id, title: row.title, category: row.category, updatedAt: row.updatedAt, content: row.content })));
+          if (rows[0]) setActiveId(rows[0].id);
+          setCloudError("");
+        }
+      } catch (error) {
+        if (!cancelled) setCloudError(error instanceof Error ? error.message : "تعذر تحميل المستندات من Appwrite.");
+      } finally {
+        if (!cancelled) setLoadingCloud(false);
+      }
+    }
+    void loadCloudDocuments();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (loadingCloud || drafts.length === 0) return;
+    const timeout = window.setTimeout(async () => {
+      try {
+        await Promise.all(drafts.map((draft) => updateDocument(draft.id, {
+          title: draft.title,
+          category: draft.category,
+          content: draft.content,
+          updatedAt: new Date().toISOString(),
+        })));
+        setSaved(true);
+        setCloudError("");
+      } catch (error) {
+        setSaved(false);
+        setCloudError(error instanceof Error ? error.message : "تعذر حفظ التعديلات في Appwrite.");
+      }
+    }, 700);
+    return () => window.clearTimeout(timeout);
+  }, [drafts, loadingCloud]);
 
   useEffect(() => {
     const handleOnline = () => setOnline(navigator.onLine);
@@ -94,17 +144,35 @@ export default function App() {
     draft.title.toLocaleLowerCase("ar").includes(query.toLocaleLowerCase("ar"))
   ), [drafts, query]);
 
-  function createDraft() {
-    const draft: Draft = {
-      id: crypto.randomUUID(),
-      title: "كتاب رسمي جديد",
-      category: "مسودة",
-      updatedAt: "الآن",
-      content: starterContent,
-    };
-    setDrafts((current) => [draft, ...current]);
-    setActiveId(draft.id);
-    editor?.commands.setContent(starterContent);
+  async function createDraft() {
+    try {
+      const created = await createDocument({
+        title: "كتاب رسمي جديد",
+        category: "مسودة",
+        content: starterContent,
+        updatedAt: new Date().toISOString(),
+      });
+      const draft: Draft = { ...created };
+      setDrafts((current) => [draft, ...current]);
+      setActiveId(draft.id);
+      editor?.commands.setContent(starterContent);
+      setCloudError("");
+    } catch (error) {
+      setCloudError(error instanceof Error ? error.message : "تعذر إنشاء المستند في Appwrite.");
+    }
+  }
+
+  async function removeActiveDraft() {
+    if (!activeDraft || !window.confirm("هل تريد حذف هذا المستند نهائياً؟")) return;
+    try {
+      await deleteDocument(activeDraft.id);
+      setDrafts((current) => current.filter((draft) => draft.id !== activeDraft.id));
+      const next = drafts.find((draft) => draft.id !== activeDraft.id);
+      setActiveId(next?.id ?? "");
+      setCloudError("");
+    } catch (error) {
+      setCloudError(error instanceof Error ? error.message : "تعذر حذف المستند.");
+    }
   }
 
   function updateTitle(title: string) {
@@ -130,7 +198,7 @@ export default function App() {
         <div className="sidebar-bottom">
           <div className="security-note"><ShieldCheck size={19}/><span><b>مساحة عمل آمنة</b><small>إعدادات الحماية والنسخ الاحتياطي</small></span></div>
           <a href="#settings"><Settings2 size={18}/> الإعدادات</a>
-          <div className="profile"><div className="profile-avatar">م</div><span><b>المستخدم</b><small>مسؤول النظام</small></span><MoreHorizontal size={20}/></div>
+          <div className="profile"><div className="profile-avatar">{(user.name || user.email).slice(0,1)}</div><span><b>{user.name || "المستخدم"}</b><small>{user.email}</small></span><button className="profile-logout" onClick={onSignOut}>خروج</button></div>
         </div>
       </aside>
 
@@ -152,10 +220,10 @@ export default function App() {
           </section>
 
           <section className="stats-grid">
-            <article className="stat-card"><span className="stat-icon blue"><FileText size={20}/></span><div><small>إجمالي المستندات</small><strong>{drafts.length + 24}</strong><em>في مساحة العمل</em></div></article>
+            <article className="stat-card"><span className="stat-icon blue"><FileText size={20}/></span><div><small>إجمالي المستندات</small><strong>{drafts.length}</strong><em>محفوظة في حسابك</em></div></article>
             <article className="stat-card"><span className="stat-icon green"><Check size={20}/></span><div><small>مستندات مكتملة</small><strong>18</strong><em>جاهزة للأرشفة</em></div></article>
-            <article className="stat-card"><span className="stat-icon amber"><FilePlus2 size={20}/></span><div><small>مسودات قيد العمل</small><strong>{drafts.length}</strong><em>محفوظة محلياً</em></div></article>
-            <article className="stat-card"><span className="stat-icon violet"><Cloud size={20}/></span><div><small>حالة المزامنة</small><strong>{appwriteConfigured ? "Appwrite" : "غير مهيأ"}</strong><em>{appwriteConfigured ? "إعداد الاتصال متوفر" : "أضف إعدادات Appwrite"}</em></div></article>
+            <article className="stat-card"><span className="stat-icon amber"><FilePlus2 size={20}/></span><div><small>مسودات قيد العمل</small><strong>{drafts.length}</strong><em>في Appwrite السحابي</em></div></article>
+            <article className="stat-card"><span className="stat-icon violet"><Cloud size={20}/></span><div><small>حالة المزامنة</small><strong>{appwriteConfigured ? "Appwrite" : "غير مهيأ"}</strong><em>{appwriteConfigured ? "متصل بالخدمة السحابية" : "أضف إعدادات Appwrite"}</em></div></article>
           </section>
 
           <section className="workspace-grid">
@@ -164,12 +232,12 @@ export default function App() {
               <div className="search-box"><Search size={17}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="ابحث عن مستند..." /></div>
               <div className="document-list">
                 {filteredDrafts.map((draft) => <button key={draft.id} className={`document-row ${activeId === draft.id ? "selected" : ""}`} onClick={() => setActiveId(draft.id)}><span className="file-icon"><FileText size={19}/></span><span className="document-info"><b>{draft.title}</b><small>{draft.category} · {draft.updatedAt}</small></span><MoreHorizontal size={18}/></button>)}
-                {filteredDrafts.length === 0 && <div className="empty-state">لا توجد مستندات مطابقة للبحث.</div>}
+                {filteredDrafts.length === 0 && !loadingCloud && <div className="empty-state">لا توجد مستندات بعد. أنشئ مستنداً جديداً للبدء.</div>}
               </div>
             </div>
 
             <div className="panel editor-panel">
-              <div className="panel-heading editor-heading"><div><h2>محرر المستند</h2><p>تحرير وتنسيق الكتاب الرسمي</p></div><div className="editor-status">{saved ? <Check size={14}/> : <span className="saving-dot"/>}{saved ? "تم الحفظ محلياً" : "جارٍ الحفظ..."}</div></div>
+              <div className="panel-heading editor-heading"><div><h2>محرر المستند</h2><p>تحرير وتنسيق الكتاب الرسمي</p></div><div className="editor-heading-actions">{activeDraft && <button className="delete-document-button" onClick={() => void removeActiveDraft()}>حذف المستند</button>}<div className="editor-status">{saved ? <Check size={14}/> : <span className="saving-dot"/>}{saved ? "تم الحفظ سحابياً" : "جارٍ الحفظ..."}</div></div></div>
               <input className="document-title" aria-label="عنوان المستند" value={activeDraft?.title ?? ""} onChange={(event) => updateTitle(event.target.value)} />
               <div className="toolbar">
                 <button onClick={() => editor?.chain().focus().toggleBold().run()} aria-label="عريض"><b>B</b></button>
@@ -185,8 +253,8 @@ export default function App() {
                 <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="إدراج جدول"><Table2 size={17}/></button>
                 <button onClick={() => handlePrint()} aria-label="طباعة"><Printer size={17}/></button>
               </div>
-              <div className="paper-wrap"><div className="paper document-paper" ref={printableRef}><div className="document-watermark" style={getDocumentWatermarkStyle({ opacity: 0.1 })} aria-hidden="true">وثائقي</div><div className="document-paper-content"><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div></div>
-              <div className="editor-footer"><span><Check size={15}/> يتم حفظ المسودة على هذا الجهاز</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
+              {cloudError && <div className="cloud-error" role="alert">{cloudError}</div>}{loadingCloud && <div className="cloud-loading">جارٍ تحميل مستنداتك من Appwrite...</div>}<div className="paper-wrap"><div className="paper document-paper" ref={printableRef}><div className="document-watermark" style={getDocumentWatermarkStyle({ opacity: 0.1 })} aria-hidden="true">وثائقي</div><div className="document-paper-content"><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div></div>
+              <div className="editor-footer"><span><Check size={15}/> يتم حفظ المستند في حسابك السحابي</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
             </div>
           </section>
           <footer className="app-footer">وثائقي <span>·</span> منصة تنظيم وإعداد الوثائق الرسمية</footer>
