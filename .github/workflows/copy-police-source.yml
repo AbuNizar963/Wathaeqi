@@ -1,0 +1,71 @@
+name: Copy police platform into Wathaeqi staging branches
+
+on:
+  push:
+    branches:
+      - migration/bootstrap-copy
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wathaeqi-police-source-copy
+  cancel-in-progress: false
+
+jobs:
+  copy-source-branches:
+    name: Copy source snapshots without modifying the source repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Wathaeqi bootstrap branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Fetch source branches read-only
+        env:
+          SOURCE_REPOSITORY: AbuNizar963/police-telegrams-platform
+        run: |
+          set -euo pipefail
+          git remote add police-source "https://github.com/${SOURCE_REPOSITORY}.git"
+          git fetch --no-tags police-source             refs/heads/main:refs/remotes/police-source/main             refs/heads/flutter-mobile-app:refs/remotes/police-source/flutter-mobile-app
+
+      - name: Refuse to overwrite existing destination branches
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin migration/police-source-main >/dev/null 2>&1; then
+            echo "Destination migration/police-source-main already exists; refusing to overwrite it."
+            exit 1
+          fi
+          if git ls-remote --exit-code --heads origin flutter-mobile-app >/dev/null 2>&1; then
+            echo "Destination flutter-mobile-app already exists; refusing to overwrite it."
+            exit 1
+          fi
+
+      - name: Push exact source branch histories into Wathaeqi
+        run: |
+          set -euo pipefail
+          git push origin refs/remotes/police-source/main:refs/heads/migration/police-source-main
+          git push origin refs/remotes/police-source/flutter-mobile-app:refs/heads/flutter-mobile-app
+
+      - name: Verify copied branch tips and report source immutability
+        env:
+          SOURCE_REPOSITORY: AbuNizar963/police-telegrams-platform
+        run: |
+          set -euo pipefail
+          source_web="$(git rev-parse refs/remotes/police-source/main)"
+          source_mobile="$(git rev-parse refs/remotes/police-source/flutter-mobile-app)"
+          target_web="$(git ls-remote origin refs/heads/migration/police-source-main | cut -f1)"
+          target_mobile="$(git ls-remote origin refs/heads/flutter-mobile-app | cut -f1)"
+          test "$source_web" = "$target_web"
+          test "$source_mobile" = "$target_mobile"
+          {
+            echo "## Wathaeqi source copy verification"
+            echo "- Source repository: `$SOURCE_REPOSITORY` (fetch-only; no write operation was sent to it)"
+            echo "- Web source SHA: `$source_web`"
+            echo "- Wathaeqi web staging SHA: `$target_web`"
+            echo "- Flutter source SHA: `$source_mobile`"
+            echo "- Wathaeqi Flutter branch SHA: `$target_mobile`"
+            echo "- Both destination branch tips exactly match their source branch tips."
+          } >> "$GITHUB_STEP_SUMMARY"
