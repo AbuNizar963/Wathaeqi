@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  workflows: write
 
 concurrency:
   group: wathaeqi-police-source-copy
@@ -16,7 +15,7 @@ concurrency:
 jobs:
   copy-source-branches:
     if: github.event.pull_request.head.ref == 'migration/bootstrap-copy'
-    name: Copy source snapshots without modifying the source repository
+    name: Copy complete source trees into isolated Wathaeqi branches
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Wathaeqi bootstrap branch
@@ -34,6 +33,7 @@ jobs:
           git fetch --no-tags police-source \
             refs/heads/main:refs/remotes/police-source/main \
             refs/heads/flutter-mobile-app:refs/remotes/police-source/flutter-mobile-app
+          git fetch --no-tags origin main:refs/remotes/origin/main
 
       - name: Refuse to overwrite existing destination branches
         run: |
@@ -47,29 +47,59 @@ jobs:
             exit 1
           fi
 
-      - name: Push exact source branch histories into Wathaeqi
+      - name: Copy complete tracked source trees into Wathaeqi
         run: |
           set -euo pipefail
-          git push origin refs/remotes/police-source/main:refs/heads/migration/police-source-main
-          git push origin refs/remotes/police-source/flutter-mobile-app:refs/heads/flutter-mobile-app
 
-      - name: Verify copied branch tips and report source immutability
+          copy_tree() {
+            source_ref="$1"
+            destination_branch="$2"
+            description="$3"
+            worktree="$(mktemp -d)"
+            workflow_backup="$(mktemp -d)"
+
+            git worktree add -b "$destination_branch" "$worktree" refs/remotes/origin/main
+            if [ -d "$worktree/.github/workflows" ]; then
+              cp -a "$worktree/.github/workflows/." "$workflow_backup/"
+            fi
+
+            find "$worktree" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+            git archive "$source_ref" | tar -x -C "$worktree" --exclude='.github/workflows'
+            mkdir -p "$worktree/.github/workflows"
+            if [ -n "$(ls -A "$workflow_backup" 2>/dev/null || true)" ]; then
+              cp -a "$workflow_backup/." "$worktree/.github/workflows/"
+            fi
+
+            git -C "$worktree" add -A
+            git -C "$worktree" -c user.name="Wathaeqi Migration Bot" -c user.email="35205275+AbuNizar963@users.noreply.github.com" commit \
+              -m "Import complete ${description} source snapshot" \
+              -m "Source repository: AbuNizar963/police-telegrams-platform" \
+              -m "Source ref: ${source_ref}"
+
+            git -C "$worktree" push origin "HEAD:refs/heads/${destination_branch}"
+
+            source_manifest="$(git ls-tree -r --full-tree "$source_ref" | grep -v 'blob .*\.github/workflows/' || true)"
+            target_manifest="$(git -C "$worktree" ls-tree -r --full-tree HEAD | grep -v 'blob .*\.github/workflows/' || true)"
+            test "$source_manifest" = "$target_manifest"
+
+            echo "Copied and verified ${description} into ${destination_branch}"
+            git worktree remove --force "$worktree"
+            rm -rf "$workflow_backup"
+          }
+
+          copy_tree refs/remotes/police-source/main migration/police-source-main "web"
+          copy_tree refs/remotes/police-source/flutter-mobile-app flutter-mobile-app "Flutter mobile"
+
+      - name: Verify exact source snapshots and report source immutability
         env:
           SOURCE_REPOSITORY: AbuNizar963/police-telegrams-platform
         run: |
           set -euo pipefail
-          source_web="$(git rev-parse refs/remotes/police-source/main)"
-          source_mobile="$(git rev-parse refs/remotes/police-source/flutter-mobile-app)"
-          target_web="$(git ls-remote origin refs/heads/migration/police-source-main | cut -f1)"
-          target_mobile="$(git ls-remote origin refs/heads/flutter-mobile-app | cut -f1)"
-          test "$source_web" = "$target_web"
-          test "$source_mobile" = "$target_mobile"
           {
-            echo "## Wathaeqi source copy verification"
-            echo "- Source repository: `$SOURCE_REPOSITORY` (fetch-only; no write operation was sent to it)"
-            echo "- Web source SHA: `$source_web`"
-            echo "- Wathaeqi web staging SHA: `$target_web`"
-            echo "- Flutter source SHA: `$source_mobile`"
-            echo "- Wathaeqi Flutter branch SHA: `$target_mobile`"
-            echo "- Both destination branch tips exactly match their source branch tips."
+            echo "## Wathaeqi full source-copy verification"
+            echo "- Source repository: `$SOURCE_REPOSITORY` (read-only fetch; no write operation was sent to it)."
+            echo "- Web files and binary assets were copied from source main into `migration/police-source-main`."
+            echo "- Flutter files and binary assets were copied from source flutter-mobile-app into `flutter-mobile-app`."
+            echo "- All tracked paths and blob contents were verified, excluding GitHub Actions workflow definitions which remain controlled by Wathaeqi until reviewed and ported safely."
+            echo "- Wathaeqi production main was not modified."
           } >> "$GITHUB_STEP_SUMMARY"
