@@ -261,7 +261,7 @@ export async function uploadAttachment(documentId: string, file: File): Promise<
 
 export async function getAttachmentDownloadUrl(fileId: string): Promise<string> {
   const { storage, bucketId } = await requireAttachmentServices();
-  return storage.getFileDownload({ bucketId, fileId }).toString();
+  return (await storage.getFileDownload({ bucketId, fileId })).toString();
 }
 
 export async function deleteAttachment(attachmentId: string, fileId: string): Promise<void> {
