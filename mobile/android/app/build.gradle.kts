@@ -40,7 +40,7 @@ if (releaseTaskRequested && !hasReleaseSigning) {
 }
 
 android {
-    namespace = "com.police_telegrams"
+    namespace = "com.wathaeqi.documents"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -51,8 +51,8 @@ android {
 
     defaultConfig {
         // Keep the Android application ID aligned with the published Firebase client configuration.
-        applicationId = "com.police_telegrams"
-        minSdk = flutter.minSdkVersion
+        applicationId = "com.wathaeqi.documents"
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
