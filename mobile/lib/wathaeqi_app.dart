@@ -514,6 +514,9 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
       );
       if (result == null || result.files.isEmpty) return;
       final file = result.files.single;
+      if (file.size > 10 * 1024 * 1024) {
+        throw Exception('حجم الملف يتجاوز الحد المسموح وهو 10 ميغابايت.');
+      }
       final path = file.path;
       if (path == null) {
         throw Exception('تعذر الوصول إلى مسار الملف المحدد.');
@@ -696,6 +699,11 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
     appBar: AppBar(
       title: Text(widget.document == null ? 'مستند جديد' : 'تحرير المستند'),
       actions: [
+        if (documentId != null)
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تم'),
+          ),
         if (widget.document != null)
           IconButton(
             onPressed: delete,
