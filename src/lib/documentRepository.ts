@@ -1,5 +1,5 @@
 import { ID, Permission, Query, Role } from "appwrite";
-import { account, appwriteResources, tablesDB } from "./appwrite";
+import { account, appwriteResources, storage, tablesDB } from "./appwrite";
 
 export type CloudDocument = {
   id: string;
@@ -183,4 +183,84 @@ export async function saveContact(input: Omit<CloudContact, "id">, id?: string):
 export async function deleteContact(id: string): Promise<void> {
   const { tablesDB, databaseId, tableId } = await requireTable("contacts");
   await tablesDB.deleteRow({ databaseId, tableId, rowId: id });
+}
+
+
+export type CloudAttachment = {
+  id: string;
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+};
+
+async function requireAttachmentServices() {
+  const { user } = await requireTable("attachments");
+  if (!storage || !appwriteResources.attachmentsBucketId) {
+    throw new Error("إعدادات مخزن المرفقات غير مكتملة.");
+  }
+  return {
+    user,
+    storage,
+    tablesDB: tablesDB!,
+    databaseId: appwriteResources.databaseId,
+    tableId: appwriteResources.tables.attachments,
+    bucketId: appwriteResources.attachmentsBucketId,
+  };
+}
+
+export async function listAttachments(documentId: string): Promise<CloudAttachment[]> {
+  const { user, tablesDB, databaseId, tableId } = await requireAttachmentServices();
+  const result = await tablesDB.listRows({
+    databaseId, tableId,
+    queries: [Query.equal("ownerId", user.$id), Query.equal("documentId", documentId), Query.orderDesc("createdAt"), Query.limit(100)],
+  });
+  return result.rows.map((value) => {
+    const row = value as unknown as { $id: string; fileId: string; fileName: string; mimeType: string; size: number; createdAt: string };
+    return { id: row.$id, fileId: row.fileId, fileName: row.fileName, mimeType: row.mimeType, size: row.size, createdAt: row.createdAt };
+  });
+}
+
+export async function uploadAttachment(documentId: string, file: File): Promise<CloudAttachment> {
+  const { user, storage, tablesDB, databaseId, tableId, bucketId } = await requireAttachmentServices();
+  const allowed = ["pdf", "png", "jpg", "jpeg", "webp", "doc", "docx"];
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (!allowed.includes(extension)) throw new Error("نوع الملف غير مسموح. الأنواع المدعومة: PDF وWord والصور.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("حجم الملف يتجاوز الحد الأقصى وهو 10 ميغابايت.");
+  const fileId = ID.unique();
+  const filePermissions = rowPermissions(user.$id);
+  await storage.createFile({ bucketId, fileId, file, permissions: filePermissions });
+  try {
+    const createdAt = new Date().toISOString();
+    const row = await tablesDB.createRow({
+      databaseId, tableId, rowId: ID.unique(),
+      data: {
+        ownerId: user.$id,
+        documentId,
+        fileId,
+        fileName: file.name.slice(0, 256),
+        mimeType: (file.type || "application/octet-stream").slice(0, 128),
+        size: file.size,
+        createdAt,
+      },
+      permissions: filePermissions,
+    });
+    const metadata = row as unknown as { $id: string };
+    return { id: metadata.$id, fileId, fileName: file.name, mimeType: file.type || "application/octet-stream", size: file.size, createdAt };
+  } catch (error) {
+    await storage.deleteFile({ bucketId, fileId }).catch(() => undefined);
+    throw error;
+  }
+}
+
+export async function getAttachmentDownloadUrl(fileId: string): Promise<string> {
+  const { storage, bucketId } = await requireAttachmentServices();
+  return storage.getFileDownload({ bucketId, fileId }).toString();
+}
+
+export async function deleteAttachment(attachmentId: string, fileId: string): Promise<void> {
+  const { storage, tablesDB, databaseId, tableId, bucketId } = await requireAttachmentServices();
+  await storage.deleteFile({ bucketId, fileId });
+  await tablesDB.deleteRow({ databaseId, tableId, rowId: attachmentId });
 }
