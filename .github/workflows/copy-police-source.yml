@@ -1,12 +1,13 @@
 name: Copy police platform into Wathaeqi staging branches
 
 on:
-  push:
+  pull_request:
     branches:
-      - migration/bootstrap-copy
+      - main
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: wathaeqi-police-source-copy
@@ -14,6 +15,7 @@ concurrency:
 
 jobs:
   copy-source-branches:
+    if: github.event.pull_request.head.ref == 'migration/bootstrap-copy'
     name: Copy source snapshots without modifying the source repository
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +31,9 @@ jobs:
         run: |
           set -euo pipefail
           git remote add police-source "https://github.com/${SOURCE_REPOSITORY}.git"
-          git fetch --no-tags police-source             refs/heads/main:refs/remotes/police-source/main             refs/heads/flutter-mobile-app:refs/remotes/police-source/flutter-mobile-app
+          git fetch --no-tags police-source \
+            refs/heads/main:refs/remotes/police-source/main \
+            refs/heads/flutter-mobile-app:refs/remotes/police-source/flutter-mobile-app
 
       - name: Refuse to overwrite existing destination branches
         run: |
