@@ -1,0 +1,16 @@
+{
+  "id": "/",
+  "name": "وثائقي - إدارة الوثائق الرسمية",
+  "short_name": "وثائقي",
+  "description": "مساحة منظمة لإعداد الكتب الرسمية وإدارة الوثائق.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#132b46",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
