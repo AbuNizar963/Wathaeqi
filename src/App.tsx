@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Table from "@tiptap/extension-table";
@@ -11,7 +11,8 @@ import {
   Menu, MoreHorizontal, Printer, Search, Settings2, ShieldCheck,
   Table2, Wifi, WifiOff,
 } from "lucide-react";
-import { firebaseConfigured } from "./lib/firebase";
+import { appwriteConfigured } from "./lib/appwrite";
+import { useReactToPrint } from "react-to-print";
 
 type Draft = { id: string; title: string; category: string; updatedAt: string; content: string };
 const STORAGE_KEY = "wathaeqi:drafts:v1";
@@ -39,6 +40,8 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const [saved, setSaved] = useState(true);
+  const printableRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({ contentRef: printableRef, documentTitle: activeDraft?.title || "وثائقي" });
   const activeDraft = drafts.find((draft) => draft.id === activeId) ?? drafts[0];
 
   const editor = useEditor({
@@ -144,7 +147,7 @@ export default function App() {
             <article className="stat-card"><span className="stat-icon blue"><FileText size={20}/></span><div><small>إجمالي المستندات</small><strong>{drafts.length + 24}</strong><em>في مساحة العمل</em></div></article>
             <article className="stat-card"><span className="stat-icon green"><Check size={20}/></span><div><small>مستندات مكتملة</small><strong>18</strong><em>جاهزة للأرشفة</em></div></article>
             <article className="stat-card"><span className="stat-icon amber"><FilePlus2 size={20}/></span><div><small>مسودات قيد العمل</small><strong>{drafts.length}</strong><em>محفوظة محلياً</em></div></article>
-            <article className="stat-card"><span className="stat-icon violet"><Cloud size={20}/></span><div><small>حالة المزامنة</small><strong>{firebaseConfigured ? "Firebase" : "محلي"}</strong><em>{firebaseConfigured ? "إعداد الاتصال متوفر" : "بانتظار إعداد Firebase"}</em></div></article>
+            <article className="stat-card"><span className="stat-icon violet"><Cloud size={20}/></span><div><small>حالة المزامنة</small><strong>{appwriteConfigured ? "Appwrite" : "غير مهيأ"}</strong><em>{appwriteConfigured ? "إعداد الاتصال متوفر" : "أضف إعدادات Appwrite"}</em></div></article>
           </section>
 
           <section className="workspace-grid">
@@ -167,9 +170,9 @@ export default function App() {
                 <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} aria-label="قائمة مرقمة">1.</button>
                 <span></span>
                 <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="إدراج جدول"><Table2 size={17}/></button>
-                <button onClick={() => window.print()} aria-label="طباعة"><Printer size={17}/></button>
+                <button onClick={() => handlePrint()} aria-label="طباعة"><Printer size={17}/></button>
               </div>
-              <div className="paper-wrap"><div className="paper"><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div>
+              <div className="paper-wrap"><div className="paper" ref={printableRef}><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div>
               <div className="editor-footer"><span><Check size={15}/> يتم حفظ المسودة على هذا الجهاز</span><button className="print-button" onClick={() => window.print()}><Printer size={16}/> طباعة A4</button></div>
             </div>
           </section>
