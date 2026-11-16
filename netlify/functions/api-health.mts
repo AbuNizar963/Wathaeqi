@@ -1,11 +1,12 @@
-import type { Config } from "@netlify/functions";
+type NetlifyRuntime = typeof globalThis & {
+  Netlify?: { env: { get(name: string): string | undefined } };
+};
 
 /**
  * Wathaeqi's independent Netlify API health endpoint.
  *
- * This endpoint intentionally reports configuration presence only. It does
- * not claim that authentication, database reads, or storage operations have
- * been migrated until those integrations are implemented and verified.
+ * This endpoint reports configuration presence only. It does not claim that
+ * authentication, database reads, or storage operations have been migrated.
  */
 export default async function apiHealth(request: Request): Promise<Response> {
   if (request.method !== "GET") {
@@ -15,19 +16,21 @@ export default async function apiHealth(request: Request): Promise<Response> {
     );
   }
 
+  const env = (globalThis as NetlifyRuntime).Netlify?.env;
   const endpoint =
-    Netlify.env.get("APPWRITE_ENDPOINT") ??
-    Netlify.env.get("VITE_APPWRITE_ENDPOINT") ??
+    env?.get("APPWRITE_ENDPOINT") ??
+    env?.get("VITE_APPWRITE_ENDPOINT") ??
     "";
   const projectId =
-    Netlify.env.get("APPWRITE_PROJECT_ID") ??
-    Netlify.env.get("VITE_APPWRITE_PROJECT_ID") ??
+    env?.get("APPWRITE_PROJECT_ID") ??
+    env?.get("VITE_APPWRITE_PROJECT_ID") ??
     "";
 
   let validEndpoint = false;
   try {
     const parsed = new URL(endpoint);
-    validEndpoint = parsed.protocol === "https:" && parsed.pathname.startsWith("/v1");
+    validEndpoint =
+      parsed.protocol === "https:" && parsed.pathname.startsWith("/v1");
   } catch {
     validEndpoint = false;
   }
@@ -59,7 +62,7 @@ export default async function apiHealth(request: Request): Promise<Response> {
   );
 }
 
-export const config: Config = {
+export const config = {
   path: "/api/health",
   method: "GET",
 };
