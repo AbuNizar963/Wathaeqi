@@ -5,6 +5,8 @@ import Table from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
+import Underline from "@tiptap/extension-underline";
+import TextAlign from "@tiptap/extension-text-align";
 import {
   Archive, Bell, BookOpen, Check, ChevronDown,
   ClipboardList, Cloud, FilePlus2, FileText, FolderOpen, LayoutDashboard,
@@ -49,6 +51,8 @@ export default function App() {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Underline,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
@@ -168,6 +172,10 @@ export default function App() {
               <div className="toolbar">
                 <button onClick={() => editor?.chain().focus().toggleBold().run()} aria-label="عريض"><b>B</b></button>
                 <button onClick={() => editor?.chain().focus().toggleItalic().run()} aria-label="مائل"><i>I</i></button>
+                <button onClick={() => editor?.chain().focus().toggleUnderline().run()} aria-label="تسطير"><u>U</u></button>
+                <button onClick={() => editor?.chain().focus().setTextAlign("right").run()} aria-label="محاذاة لليمين">≡</button>
+                <button onClick={() => editor?.chain().focus().setTextAlign("center").run()} aria-label="توسيط">☰</button>
+                <button onClick={() => editor?.chain().focus().setTextAlign("justify").run()} aria-label="ضبط النص">▤</button>
                 <button onClick={() => editor?.chain().focus().toggleBulletList().run()} aria-label="قائمة">•</button>
                 <button onClick={() => editor?.chain().focus().toggleOrderedList().run()} aria-label="قائمة مرقمة">1.</button>
                 <span></span>
