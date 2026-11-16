@@ -208,14 +208,14 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
         <div className="nav-caption">القائمة الرئيسية</div>
         <nav className="main-nav">
           <a href="#dashboard" onClick={() => { setActiveSection("documents"); setMobileMenuOpen(false); }}><LayoutDashboard size={18}/> لوحة التحكم</a>
-          <a className={activeSection === "documents" ? "active" : ""} href="#documents" onClick={() => setActiveSection("documents")}><FolderOpen size={18}/> مستنداتي <span className="nav-count">{drafts.length}</span></a>
+          <a className={activeSection === "documents" ? "active" : ""} href="#documents" onClick={() => { setActiveSection("documents"); setMobileMenuOpen(false); }}><FolderOpen size={18}/> مستنداتي <span className="nav-count">{drafts.length}</span></a>
           <a className={activeSection === "templates" ? "active" : ""} href="#templates" onClick={() => { setActiveSection("templates"); setMobileMenuOpen(false); }}><BookOpen size={18}/> القوالب الرسمية</a>
           <a className={activeSection === "contacts" ? "active" : ""} href="#contacts" onClick={() => { setActiveSection("contacts"); setMobileMenuOpen(false); }}><ContactRound size={18}/> جهات الاتصال</a>
-          <a href="#archive"><Archive size={18}/> الأرشيف</a>
+          <a href="#archive" onClick={() => setMobileMenuOpen(false)}><Archive size={18}/> الأرشيف</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="security-note"><ShieldCheck size={19}/><span><b>مساحة عمل آمنة</b><small>إعدادات الحماية والنسخ الاحتياطي</small></span></div>
-          <a href="#settings"><Settings2 size={18}/> الإعدادات</a>
+          <a href="#settings" onClick={() => setMobileMenuOpen(false)}><Settings2 size={18}/> الإعدادات</a>
           <div className="profile"><div className="profile-avatar">{(user.name || user.email).slice(0,1)}</div><span><b>{user.name || "المستخدم"}</b><small>{user.email}</small></span><button className="profile-logout" onClick={onSignOut}>خروج</button></div>
         </div>
       </aside>
