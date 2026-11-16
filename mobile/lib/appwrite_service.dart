@@ -34,11 +34,14 @@ class WathaeqiService {
   final Client client = Client();
   late final Account account = Account(client);
   late final TablesDB tables = TablesDB(client);
+  late final Storage storage = Storage(client);
 
   static const databaseId = 'wathaeqi-db';
   static const documentsTable = 'documents';
   static const templatesTable = 'templates';
   static const contactsTable = 'contacts';
+  static const attachmentsTable = 'attachments';
+  static const attachmentsBucket = 'document-attachments';
 
   Future<dynamic> currentUser() async {
     try {
@@ -229,4 +232,73 @@ class WathaeqiService {
     tableId: contactsTable,
     rowId: id,
   );
+  Future<List<Map<String, dynamic>>> listAttachments(String documentId) async {
+    final user = await account.get();
+    final result = await tables.listRows(
+      databaseId: databaseId,
+      tableId: attachmentsTable,
+      queries: [
+        Query.equal('ownerId', user.$id),
+        Query.equal('documentId', documentId),
+        Query.orderDesc('createdAt'),
+        Query.limit(100),
+      ],
+    );
+    return result.rows.map((row) => {'id': row.$id, ...row.data}).toList();
+  }
+
+  Future<void> uploadAttachment({
+    required String documentId,
+    required String path,
+    required String fileName,
+    required String mimeType,
+    required int size,
+  }) async {
+    final user = await account.get();
+    final fileId = ID.unique();
+    final permissions = [
+      Permission.read(Role.user(user.$id)),
+      Permission.update(Role.user(user.$id)),
+      Permission.delete(Role.user(user.$id)),
+    ];
+    await storage.createFile(
+      bucketId: attachmentsBucket,
+      fileId: fileId,
+      file: InputFile.fromPath(path: path, filename: fileName),
+      permissions: permissions,
+    );
+    try {
+      await tables.createRow(
+        databaseId: databaseId,
+        tableId: attachmentsTable,
+        rowId: ID.unique(),
+        data: {
+          'ownerId': user.$id,
+          'documentId': documentId,
+          'fileId': fileId,
+          'fileName': fileName,
+          'mimeType': mimeType,
+          'size': size,
+          'createdAt': DateTime.now().toUtc().toIso8601String(),
+        },
+        permissions: permissions,
+      );
+    } catch (_) {
+      await storage.deleteFile(bucketId: attachmentsBucket, fileId: fileId);
+      rethrow;
+    }
+  }
+
+  Future<void> deleteAttachment(Map<String, dynamic> attachment) async {
+    await tables.deleteRow(
+      databaseId: databaseId,
+      tableId: attachmentsTable,
+      rowId: attachment['id'].toString(),
+    );
+    await storage.deleteFile(
+      bucketId: attachmentsBucket,
+      fileId: attachment['fileId'].toString(),
+    );
+  }
+
 }
