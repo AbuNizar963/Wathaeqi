@@ -17,6 +17,7 @@ import {
 import { appwriteConfigured } from "./lib/appwrite";
 import AuthScreen from "./components/AuthScreen";
 import ResourceManager from "./components/ResourceManager";
+import AttachmentManager from "./components/AttachmentManager";
 import { createDocument, deleteDocument, getCurrentUser, listDocuments, signOut, updateDocument } from "./lib/documentRepository";
 import { getA4DocumentLayoutCss } from "./lib/documentPrintLayout";
 import { getDocumentWatermarkStyle } from "./lib/documentWatermark";
@@ -276,7 +277,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
                 <button onClick={() => handlePrint()} aria-label="طباعة"><Printer size={17}/></button>
               </div>
               {cloudError && <div className="cloud-error" role="alert">{cloudError}</div>}{loadingCloud && <div className="cloud-loading">جارٍ تحميل مستنداتك من Appwrite...</div>}<div className="paper-wrap"><div className="paper document-paper" ref={printableRef}><div className="document-watermark" style={getDocumentWatermarkStyle({ opacity: 0.1 })} aria-hidden="true">وثائقي</div><div className="document-paper-content"><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div></div>
-              <div className="editor-footer"><span><Check size={15}/> يتم حفظ المستند في حسابك السحابي</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
+              {activeDraft && <AttachmentManager documentId={activeDraft.id} />}<div className="editor-footer"><span><Check size={15}/> يتم حفظ المستند في حسابك السحابي</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
             </div>
           </section>}
           <footer className="app-footer">وثائقي <span>·</span> منصة تنظيم وإعداد الوثائق الرسمية</footer>
