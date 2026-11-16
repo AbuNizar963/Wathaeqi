@@ -323,7 +323,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     height: auto;
     aspect-ratio: 210 / 297;
     padding: clamp(14px, 4vw, 22px);
-    overflow: hidden;
+    overflow: visible;
   }
   .document-paper-content { min-height: 0; }
   .document-paper .document-editor {
