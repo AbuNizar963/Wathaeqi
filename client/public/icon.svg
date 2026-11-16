@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="وثائقي">
+  <rect width="512" height="512" rx="112" fill="#132b46"/>
+  <path d="M150 86h150l82 82v258H150a34 34 0 0 1-34-34V120a34 34 0 0 1 34-34Z" fill="#fff"/>
+  <path d="M300 86v68a14 14 0 0 0 14 14h68" fill="#d9e8f5"/>
+  <path d="M178 225h146M178 274h146M178 323h94" stroke="#2e80ca" stroke-width="19" stroke-linecap="round"/>
+  <path d="m281 373 23 23 48-53" fill="none" stroke="#2e9b78" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
