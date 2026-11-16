@@ -105,3 +105,82 @@ export async function deleteDocument(id: string): Promise<void> {
   const { tablesDB, databaseId, tableId } = requireServices();
   await tablesDB.deleteRow({ databaseId, tableId, rowId: id });
 }
+
+
+export type CloudTemplate = { id: string; title: string; category: string; content: string };
+export type CloudContact = { id: string; name: string; email: string; phone: string; organization: string };
+
+async function requireTable(table: "templates" | "contacts") {
+  const { account } = requireServices();
+  if (!tablesDB || !appwriteResources.tables[table]) {
+    throw new Error(`جدول ${table} غير مهيأ في Appwrite.`);
+  }
+  const user = await account.get();
+  return { user, tablesDB, databaseId: appwriteResources.databaseId, tableId: appwriteResources.tables[table] };
+}
+
+function rowPermissions(userId: string) {
+  return [
+    Permission.read(Role.user(userId)),
+    Permission.update(Role.user(userId)),
+    Permission.delete(Role.user(userId)),
+  ];
+}
+
+export async function listTemplates(): Promise<CloudTemplate[]> {
+  const { user, tablesDB, databaseId, tableId } = await requireTable("templates");
+  const result = await tablesDB.listRows({
+    databaseId, tableId,
+    queries: [Query.equal("ownerId", user.$id), Query.orderDesc("$createdAt"), Query.limit(100)],
+  });
+  return result.rows.map((value) => {
+    const row = value as unknown as { $id: string; title: string; category: string; content: string };
+    return { id: row.$id, title: row.title, category: row.category, content: row.content };
+  });
+}
+
+export async function saveTemplate(input: Omit<CloudTemplate, "id">, id?: string): Promise<CloudTemplate> {
+  const { user, tablesDB, databaseId, tableId } = await requireTable("templates");
+  const row = id
+    ? await tablesDB.updateRow({ databaseId, tableId, rowId: id, data: input })
+    : await tablesDB.createRow({ databaseId, tableId, rowId: ID.unique(), data: { ownerId: user.$id, ...input }, permissions: rowPermissions(user.$id) });
+  const saved = row as unknown as { $id: string; title: string; category: string; content: string };
+  return { id: saved.$id, title: saved.title, category: saved.category, content: saved.content };
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const { tablesDB, databaseId, tableId } = await requireTable("templates");
+  await tablesDB.deleteRow({ databaseId, tableId, rowId: id });
+}
+
+export async function listContacts(): Promise<CloudContact[]> {
+  const { user, tablesDB, databaseId, tableId } = await requireTable("contacts");
+  const result = await tablesDB.listRows({
+    databaseId, tableId,
+    queries: [Query.equal("ownerId", user.$id), Query.orderDesc("$createdAt"), Query.limit(100)],
+  });
+  return result.rows.map((value) => {
+    const row = value as unknown as { $id: string; name: string; email?: string; phone?: string; organization?: string };
+    return { id: row.$id, name: row.name, email: row.email ?? "", phone: row.phone ?? "", organization: row.organization ?? "" };
+  });
+}
+
+export async function saveContact(input: Omit<CloudContact, "id">, id?: string): Promise<CloudContact> {
+  const { user, tablesDB, databaseId, tableId } = await requireTable("contacts");
+  const data = {
+    name: input.name.trim(),
+    email: input.email.trim() || undefined,
+    phone: input.phone.trim() || undefined,
+    organization: input.organization.trim() || undefined,
+  };
+  const row = id
+    ? await tablesDB.updateRow({ databaseId, tableId, rowId: id, data })
+    : await tablesDB.createRow({ databaseId, tableId, rowId: ID.unique(), data: { ownerId: user.$id, ...data }, permissions: rowPermissions(user.$id) });
+  const saved = row as unknown as { $id: string; name: string; email?: string; phone?: string; organization?: string };
+  return { id: saved.$id, name: saved.name, email: saved.email ?? "", phone: saved.phone ?? "", organization: saved.organization ?? "" };
+}
+
+export async function deleteContact(id: string): Promise<void> {
+  const { tablesDB, databaseId, tableId } = await requireTable("contacts");
+  await tablesDB.deleteRow({ databaseId, tableId, rowId: id });
+}
