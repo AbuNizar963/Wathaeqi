@@ -198,6 +198,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
 
   return (
     <div className="app-shell" dir="rtl">
+      {mobileMenuOpen && <button className="sidebar-backdrop" type="button" aria-label="إغلاق القائمة" onClick={() => setMobileMenuOpen(false)} />}
       <aside className={`sidebar ${mobileMenuOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
           <div className="brand-symbol"><FileText size={23} /></div>
@@ -206,10 +207,10 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
         <button className="workspace-switch"><span className="workspace-avatar">و</span><span><b>مساحة العمل</b><small>الإدارة العامة</small></span><ChevronDown size={16} /></button>
         <div className="nav-caption">القائمة الرئيسية</div>
         <nav className="main-nav">
-          <a href="#dashboard" onClick={() => setActiveSection("documents")}><LayoutDashboard size={18}/> لوحة التحكم</a>
+          <a href="#dashboard" onClick={() => { setActiveSection("documents"); setMobileMenuOpen(false); }}><LayoutDashboard size={18}/> لوحة التحكم</a>
           <a className={activeSection === "documents" ? "active" : ""} href="#documents" onClick={() => setActiveSection("documents")}><FolderOpen size={18}/> مستنداتي <span className="nav-count">{drafts.length}</span></a>
-          <a className={activeSection === "templates" ? "active" : ""} href="#templates" onClick={() => setActiveSection("templates")}><BookOpen size={18}/> القوالب الرسمية</a>
-          <a className={activeSection === "contacts" ? "active" : ""} href="#contacts" onClick={() => setActiveSection("contacts")}><ContactRound size={18}/> جهات الاتصال</a>
+          <a className={activeSection === "templates" ? "active" : ""} href="#templates" onClick={() => { setActiveSection("templates"); setMobileMenuOpen(false); }}><BookOpen size={18}/> القوالب الرسمية</a>
+          <a className={activeSection === "contacts" ? "active" : ""} href="#contacts" onClick={() => { setActiveSection("contacts"); setMobileMenuOpen(false); }}><ContactRound size={18}/> جهات الاتصال</a>
           <a href="#archive"><Archive size={18}/> الأرشيف</a>
         </nav>
         <div className="sidebar-bottom">
@@ -221,7 +222,7 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
 
       <main className="main-area">
         <header className="topbar">
-          <button className="icon-button mobile-menu" aria-label="فتح القائمة" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><Menu size={20}/></button>
+          <button className="icon-button mobile-menu" aria-label="فتح القائمة" aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><Menu size={20}/></button>
           <div className="breadcrumbs"><span>الرئيسية</span><b>/</b><strong>{activeSection === "templates" ? "القوالب الرسمية" : activeSection === "contacts" ? "جهات الاتصال" : "مستنداتي"}</strong></div>
           <div className="top-actions">
             <span className={`connection ${online ? "online" : "offline"}`}>{online ? <Wifi size={15}/> : <WifiOff size={15}/>} {online ? "متصل" : "دون اتصال"}</span>
