@@ -1,0 +1,627 @@
+import type { Express, Request, Response } from "express";
+import chromium from "@sparticuz/chromium";
+import { chromium as playwrightChromium } from "playwright-core";
+import { getAuthenticatedUserFromRequest } from "./_core/auth";
+import { isDepartmentLogoExclusiveToOrganization } from "./db";
+import { getUserOrganizationMembership } from "./features/organizations/organization";
+import {
+  storageDownload,
+  storageKeyFromStoredUrl,
+} from "./features/storage/storage";
+import { ENV } from "./_core/env";
+import { isPlatformOwner } from "./ownerAccess";
+import { detectOfficialDocumentLogoMimeType } from "../shared/officialDocumentLogo";
+
+const MAX_HTML_BYTES = 3_900_000;
+const OFFICIAL_LOGO_PLACEHOLDER = "telegram-logo://official";
+const OFFICIAL_LOGO_RENDER_URL = "https://telegram-logo.invalid/official";
+const MAX_OFFICIAL_LOGO_BYTES = 4_000_000;
+const ALLOWED_FORMATS = new Set(["pdf", "png"]);
+// Render at 384 DPI first, then fall back only when PNG would approach
+// Vercel's 4.5 MB response cap. 4,000,000 bytes leaves protocol headroom.
+export const MAX_TELEGRAM_PNG_BYTES = 4_000_000;
+export const PNG_RENDER_SCALE_FACTORS = [4, 3, 2] as const;
+type OfficialLogoBinary = {
+  body: Buffer;
+  mimeType: string;
+};
+
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+
+function crc32(bytes: Buffer): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createPngChunk(type: string, data: Buffer): Buffer {
+  const typeBytes = Buffer.from(type, "ascii");
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(crc32(Buffer.concat([typeBytes, data])), 0);
+  return Buffer.concat([length, typeBytes, data, checksum]);
+}
+
+/** Add physical resolution metadata without re-encoding or resampling pixels. */
+export function withPngDpiMetadata(png: Buffer, dpi = 384): Buffer {
+  if (
+    !png.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE) ||
+    png.length < 33 ||
+    png.toString("ascii", 12, 16) !== "IHDR"
+  ) {
+    throw new Error("Chromium returned an invalid PNG image");
+  }
+
+  const pixelsPerMeter = Math.round(dpi / 0.0254);
+  const physicalResolution = Buffer.alloc(9);
+  physicalResolution.writeUInt32BE(pixelsPerMeter, 0);
+  physicalResolution.writeUInt32BE(pixelsPerMeter, 4);
+  physicalResolution[8] = 1;
+
+  const ihdrLength = png.readUInt32BE(8);
+  const afterIhdr = 8 + 4 + 4 + ihdrLength + 4;
+  const before = png.subarray(0, afterIhdr);
+  const rest = png.subarray(afterIhdr);
+  // Replace an existing pHYs chunk if the renderer ever starts emitting one.
+  let cleanRest = rest;
+  let offset = 0;
+  while (offset + 12 <= cleanRest.length) {
+    const length = cleanRest.readUInt32BE(offset);
+    const type = cleanRest.toString("ascii", offset + 4, offset + 8);
+    const end = offset + 12 + length;
+    if (end > cleanRest.length) break;
+    if (type === "pHYs") {
+      cleanRest = Buffer.concat([
+        cleanRest.subarray(0, offset),
+        cleanRest.subarray(end),
+      ]);
+      break;
+    }
+    offset = end;
+  }
+
+  return Buffer.concat([
+    before,
+    createPngChunk("pHYs", physicalResolution),
+    cleanRest,
+  ]);
+}
+
+/**
+ * Replace only the explicit official-logo image source marker. The marker is
+ * never allowed to reach Chromium: that isolated browser cannot access the
+ * user's Blob URL or the authenticated storage route.
+ */
+export function replaceOfficialLogoPlaceholder(html: string): string {
+  const markerAttribute = /src=(["'])telegram-logo:\/\/official\1/i;
+  if (!markerAttribute.test(html)) {
+    throw new Error("The official organization logo placeholder is missing");
+  }
+
+  return html.replace(
+    /src=(["'])telegram-logo:\/\/official\1/gi,
+    'src="' + OFFICIAL_LOGO_RENDER_URL + '"'
+  );
+}
+
+class TelegramExportRequestError extends Error {
+  constructor(
+    message: string,
+    readonly statusCode: number
+  ) {
+    super(message);
+    this.name = "TelegramExportRequestError";
+  }
+}
+
+export function resolveDepartmentLogoStorageKey(
+  logoSource: string,
+  bucket = ENV.supabaseStorageBucket
+): string {
+  const storageKey = storageKeyFromStoredUrl(logoSource, bucket);
+  if (!storageKey) {
+    throw new Error("مصدر شعار الجهة ليس مسار تخزين صالحًا");
+  }
+  return storageKey;
+}
+
+async function loadOrganizationLogoBinary(
+  user: NonNullable<
+    Awaited<ReturnType<typeof getAuthenticatedUserFromRequest>>
+  >,
+  organizationId: string,
+  logoSource: string
+): Promise<OfficialLogoBinary> {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      organizationId
+    )
+  ) {
+    throw new TelegramExportRequestError(
+      "معرّف الجهة غير صالح لتصدير الشعار",
+      400
+    );
+  }
+
+  if (!isPlatformOwner(user)) {
+    const membership = await getUserOrganizationMembership(user.id);
+    if (
+      !membership ||
+      !membership.isActive ||
+      membership.organizationId !== organizationId
+    ) {
+      throw new TelegramExportRequestError(
+        "لا تملك صلاحية تصدير شعار هذه الجهة",
+        403
+      );
+    }
+  }
+
+  const storageKey = resolveDepartmentLogoStorageKey(logoSource);
+  const departmentLogoKeyPattern =
+    /^department\/logos\/(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/)?[^/]+\.(?:png|jpe?g|webp)$/i;
+  if (!departmentLogoKeyPattern.test(storageKey)) {
+    throw new TelegramExportRequestError(
+      "مسار شعار الجهة غير صالح للتصدير",
+      422
+    );
+  }
+
+  const scopedStorageKey = storageKey.match(
+    /^department\/logos\/([0-9a-f-]{36})\//i
+  );
+  if (
+    scopedStorageKey &&
+    scopedStorageKey[1].toLowerCase() !== organizationId.toLowerCase()
+  ) {
+    throw new TelegramExportRequestError(
+      "الشعار المحفوظ لا يتبع الجهة المطلوبة",
+      403
+    );
+  }
+
+  if (!isPlatformOwner(user) && !scopedStorageKey) {
+    const isExclusive = await isDepartmentLogoExclusiveToOrganization(
+      storageKey,
+      organizationId
+    );
+    if (!isExclusive) {
+      throw new TelegramExportRequestError(
+        "الشعار القديم مستخدم لأكثر من جهة؛ أعد رفعه من إعدادات الجهة",
+        422
+      );
+    }
+  }
+
+  const asset = await storageDownload(storageKey);
+  if (asset.body.length === 0 || asset.body.length > MAX_OFFICIAL_LOGO_BYTES) {
+    throw new TelegramExportRequestError(
+      "حجم ملف شعار الجهة غير صالح للتصدير",
+      422
+    );
+  }
+
+  const mimeType = detectOfficialDocumentLogoMimeType(
+    asset.body,
+    asset.contentType,
+    storageKey
+  );
+  if (!mimeType) {
+    throw new TelegramExportRequestError(
+      "ملف شعار الجهة ليس صورة صالحة للتصدير",
+      422
+    );
+  }
+
+  return { body: asset.body, mimeType };
+}
+
+export function isSafeExportHtml(html: string): boolean {
+  // Validate executable markup and URL-bearing attributes, not visible text:
+  // a legitimate telegram may contain words such as "javascript:" or "data:".
+  // Only Cairo font data URLs are permitted. Official logos must be supplied
+  // separately as authenticated binary storage objects.
+  const unsafeUrl =
+    /\b(?:src|href|action|formaction|poster|xlink:href)[ \t\r\n]*=[ \t\r\n]*(?:"[ \t\r\n]*(?:javascript|vbscript):|'[ \t\r\n]*(?:javascript|vbscript):|(?:javascript|vbscript):)/i;
+  // prettier-ignore
+  const unsafeDataUrl =
+    /\b(?:src|href|action|formaction|poster|xlink:href)[ \t\r\n]*=[ \t\r\n]*(?:"[ \t\r\n]*data:(?!font\/ttf;base64,)|'[ \t\r\n]*data:(?!font\/ttf;base64,)|data:(?!font\/ttf;base64,))/i;
+  const eventHandler = /\bon[a-z][\w:-]*\s*=\s*(?:["']|[^\s>]+)/i;
+  return (
+    html.length > 0 &&
+    Buffer.byteLength(html, "utf8") <= MAX_HTML_BYTES &&
+    !/<\s*script\b/i.test(html) &&
+    !/<\s*(iframe|object|embed)\b/i.test(html) &&
+    !/<\s*(?:meta|link)\b[^>]*http-equiv\s*=\s*["']?refresh/i.test(html) &&
+    !eventHandler.test(html) &&
+    !unsafeUrl.test(html) &&
+    !unsafeDataUrl.test(html)
+  );
+}
+
+export function isAllowedExportResourceUrl(url: string): boolean {
+  return url === "about:blank" || /^data:font\/ttf;base64,/i.test(url);
+}
+
+const MULTI_PAGE_TELEGRAM_LAYOUT_PATTERN =
+  /<article\b[^>]*class=["'][^"']*\btelegram-export-page\b[^"']*\btelegram-multipage\b[^"']*["']/i;
+
+export function hasMultiPageTelegramLayout(html: string): boolean {
+  return MULTI_PAGE_TELEGRAM_LAYOUT_PATTERN.test(html);
+}
+
+const MULTI_PAGE_PAGE_HEIGHT_THRESHOLD = 1124;
+
+/**
+ * Mirrors the web preview's page-height decision without executing
+ * HTML scripts.
+ */
+export function isTelegramMultiPageHeight(height: number): boolean {
+  return Number.isFinite(height) && height > MULTI_PAGE_PAGE_HEIGHT_THRESHOLD;
+}
+
+/** Keep the A4 page box full-size; the document's sole 10mm inset is its padding. */
+export function getTelegramRenderLayoutCss(printLayout: boolean): string {
+  return `
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: auto !important;
+      min-height: 0 !important;
+      background: #fff !important;
+    }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    ${
+      printLayout
+        ? `
+          .telegram-export-page {
+            box-sizing: border-box !important;
+            width: 210mm !important;
+            height: auto !important;
+            min-height: 297mm !important;
+            max-height: none !important;
+            padding: 10mm !important;
+            display: block !important;
+            margin: 0 auto !important;
+            overflow: visible !important;
+            break-inside: auto !important;
+            page-break-inside: auto !important;
+          }
+          .telegram-export-page.telegram-multipage {
+            min-height: 287mm !important;
+            padding: 10mm 10mm 0 !important;
+          }
+          /* @page may reserve a footer; keep every fixed watermark on full A4. */
+          .telegram-export-page .page-watermark {
+            position: fixed !important;
+            inset: 0 auto auto 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+          }
+        `
+        : `
+          .telegram-export-page,
+          .telegram-export-page.telegram-multipage {
+            box-sizing: border-box !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            padding: 10mm !important;
+            display: block !important;
+            margin: 0 auto !important;
+            overflow: hidden !important;
+          }
+        `
+    }
+  `;
+}
+
+function getChromiumExecutablePath(): string {
+  return process.env.CHROMIUM_PATH || "/usr/bin/chromium";
+}
+
+async function launchBrowser() {
+  const isServerless = Boolean(
+    process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+  );
+  const executablePath = isServerless
+    ? await chromium.executablePath()
+    : getChromiumExecutablePath();
+
+  return playwrightChromium.launch({
+    executablePath,
+    args: isServerless
+      ? chromium.args
+      : ["--no-sandbox", "--disable-setuid-sandbox"],
+    headless: true,
+  });
+}
+
+export async function renderTelegramDocument(
+  html: string,
+  format: "pdf" | "png",
+  officialLogo?: OfficialLogoBinary,
+  onStage?: (stage: string, durationMs: number) => void
+) {
+  const renderStartedAt = Date.now();
+  const reportStage = (stage: string) => {
+    onStage?.(stage, Date.now() - renderStartedAt);
+  };
+  const browser = await launchBrowser();
+  reportStage("chromium-launched");
+  try {
+    // The web preview already marks documents that require paginated output.
+    // Use that same trusted marker before loading Chromium, rather than
+    // measuring a page after applying print CSS and changing its layout.
+    const isMultiPagePng = format === "png" && hasMultiPageTelegramLayout(html);
+    reportStage(
+      isMultiPagePng
+        ? "multipage-layout-detected"
+        : "single-page-layout-selected"
+    );
+
+    const createReadyPage = async (
+      deviceScaleFactor: number,
+      printLayout: boolean
+    ) => {
+      const page = await browser.newPage({
+        viewport: { width: 794, height: 1123 },
+        deviceScaleFactor,
+        javaScriptEnabled: false,
+      });
+      try {
+        // Never allow untrusted export HTML to access localhost, cloud metadata,
+        // the application API, or arbitrary external hosts while rendering.
+        await page.route("**/*", async route => {
+          const requestedUrl = route.request().url();
+          if (officialLogo && requestedUrl === OFFICIAL_LOGO_RENDER_URL) {
+            await route.fulfill({
+              status: 200,
+              contentType: officialLogo.mimeType,
+              body: officialLogo.body,
+              headers: {
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+              },
+            });
+            return;
+          }
+
+          if (isAllowedExportResourceUrl(requestedUrl)) {
+            await route.continue();
+            return;
+          }
+          await route.abort("blockedbyclient");
+        });
+
+        const renderStyles = `<style>${getTelegramRenderLayoutCss(printLayout)}</style>`;
+        const renderHtml = html.replace(/<\/head>/i, `${renderStyles}</head>`);
+        if (renderHtml === html) {
+          throw new Error("قالب البرقية لا يحتوي على وسم head لإعداد التصدير");
+        }
+
+        await page.emulateMedia({
+          media: printLayout ? "print" : "screen",
+        });
+        await page.setContent(renderHtml, { waitUntil: "load" });
+        reportStage("render-layout-styles-injected");
+        reportStage("html-loaded");
+
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          const images = Array.from(document.images);
+          await Promise.all(
+            images.map(async image => {
+              if (!image.complete) {
+                await new Promise<void>((resolve, reject) => {
+                  const cleanup = () => {
+                    image.removeEventListener("load", onLoad);
+                    image.removeEventListener("error", onError);
+                  };
+                  const onLoad = () => {
+                    cleanup();
+                    resolve();
+                  };
+                  const onError = () => {
+                    cleanup();
+                    reject(new Error("تعذر تحميل صورة الشعار في محرك التصدير"));
+                  };
+                  image.addEventListener("load", onLoad, { once: true });
+                  image.addEventListener("error", onError, { once: true });
+                  if (image.complete) {
+                    cleanup();
+                    if (image.naturalWidth > 0) resolve();
+                    else onError();
+                  }
+                });
+              }
+              if (typeof image.decode === "function") await image.decode();
+              if (image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+                throw new Error("صورة الشعار لم تُحمّل بصورة صالحة");
+              }
+            })
+          );
+        });
+        reportStage("fonts-and-images-ready");
+        await page
+          .locator(".telegram-export-page")
+          .waitFor({ state: "visible" });
+        reportStage("paper-ready");
+        return page;
+      } catch (error) {
+        await page.close();
+        throw error;
+      }
+    };
+
+    // Multi-page documents must retain Chromium's paginated print layout.
+    // The client rasterizes this PDF into individual PNG pages at 384 DPI;
+    // clipping the long flowing article as a single screenshot would crop text.
+    if (format === "pdf" || isMultiPagePng) {
+      const page = await createReadyPage(1, true);
+      try {
+        reportStage("pdf-generation-started");
+        const pdfBody = await page.pdf({
+          printBackground: true,
+          preferCSSPageSize: true,
+          tagged: true,
+        });
+        reportStage("pdf-created");
+        return {
+          body: pdfBody,
+          contentType: "application/pdf",
+          fileName:
+            format === "pdf" ? "telegram.pdf" : "telegram-pages-source.pdf",
+        };
+      } finally {
+        await page.close();
+      }
+    }
+
+    for (const deviceScaleFactor of PNG_RENDER_SCALE_FACTORS) {
+      const page = await createReadyPage(deviceScaleFactor, false);
+      try {
+        reportStage("png-generation-started");
+        const renderedPng = await page.screenshot({
+          type: "png",
+          animations: "disabled",
+          clip: {
+            x: 0,
+            y: 0,
+            width: (210 / 25.4) * 96,
+            height: (297 / 25.4) * 96,
+          },
+        });
+        reportStage("png-created");
+        const body = withPngDpiMetadata(renderedPng, deviceScaleFactor * 96);
+        if (body.length <= MAX_TELEGRAM_PNG_BYTES) {
+          return {
+            body,
+            contentType: "image/png",
+            fileName: "telegram.png",
+          };
+        }
+      } finally {
+        await page.close();
+      }
+    }
+    const errorMessage = [
+      "PNG export exceeded the safe Vercel response budget of",
+      MAX_TELEGRAM_PNG_BYTES,
+      "bytes",
+    ].join(" ");
+    throw new Error(errorMessage);
+  } finally {
+    await browser.close();
+  }
+}
+export function registerTelegramExportRoutes(app: Express): void {
+  app.post("/api/telegram-render", async (req: Request, res: Response) => {
+    const requestStartedAt = Date.now();
+    const requestId = req.headers["x-vercel-id"];
+    const logRequestStage = (stage: string) => {
+      console.info(
+        "[telegram-render]",
+        JSON.stringify({
+          requestId: typeof requestId === "string" ? requestId : undefined,
+          stage,
+          durationMs: Date.now() - requestStartedAt,
+        })
+      );
+    };
+    logRequestStage("request-started");
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
+    const user = await getAuthenticatedUserFromRequest(req);
+    logRequestStage("authentication-complete");
+    if (!user) return res.status(401).json({ error: "يجب تسجيل الدخول أولًا" });
+
+    const body = req.body as {
+      html?: unknown;
+      format?: unknown;
+      organizationId?: unknown;
+      logoSource?: unknown;
+    };
+    let html = typeof body.html === "string" ? body.html : "";
+    let officialLogo: OfficialLogoBinary | undefined;
+    const format =
+      body.format === "pdf" || body.format === "png" ? body.format : null;
+
+    if (
+      !format ||
+      !ALLOWED_FORMATS.has(format) ||
+      Buffer.byteLength(html, "utf8") > 3_900_000
+    ) {
+      return res.status(400).json({ error: "بيانات التصدير غير صالحة" });
+    }
+
+    try {
+      if (html.includes(OFFICIAL_LOGO_PLACEHOLDER)) {
+        if (
+          typeof body.organizationId !== "string" ||
+          typeof body.logoSource !== "string"
+        ) {
+          return res
+            .status(400)
+            .json({ error: "معرّف الجهة مطلوب لتصدير الشعار" });
+        }
+        officialLogo = await loadOrganizationLogoBinary(
+          user,
+          body.organizationId,
+          body.logoSource
+        );
+        logRequestStage("organization-logo-loaded");
+        html = replaceOfficialLogoPlaceholder(html);
+      }
+
+      if (!isSafeExportHtml(html)) {
+        return res.status(400).json({ error: "بيانات التصدير غير صالحة" });
+      }
+
+      const logRenderStage = (stage: string, durationMs: number) => {
+        console.info(
+          "[telegram-render]",
+          JSON.stringify({
+            requestId: typeof requestId === "string" ? requestId : undefined,
+            stage,
+            durationMs,
+            format,
+          })
+        );
+      };
+      const result = await renderTelegramDocument(
+        html,
+        format,
+        officialLogo,
+        logRenderStage
+      );
+      logRequestStage("response-ready");
+      res.setHeader("Content-Type", result.contentType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${result.fileName}"`
+      );
+      return res.status(200).send(result.body);
+    } catch (error) {
+      if (error instanceof TelegramExportRequestError) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+
+      console.error("Telegram Chromium export failed:", error);
+      return res
+        .status(503)
+        .json({ error: "تعذر إنشاء الوثيقة الرسمية حاليًا" });
+    }
+  });
+}
