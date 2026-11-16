@@ -1,4 +1,5 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'appwrite_service.dart';
@@ -468,6 +469,115 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
   );
   bool busy = false;
   String? error;
+  String? documentId;
+  late Future<List<Map<String, dynamic>>> attachments;
+
+  @override
+  void initState() {
+    super.initState();
+    documentId = widget.document?.id;
+    attachments = documentId == null
+        ? Future.value(<Map<String, dynamic>>[])
+        : WathaeqiService.instance.listAttachments(documentId!);
+  }
+
+  void reloadAttachments() {
+    final id = documentId;
+    if (id == null) return;
+    setState(() => attachments = WathaeqiService.instance.listAttachments(id));
+  }
+
+  String attachmentMimeType(String fileName) {
+    final extension = fileName.split('.').last.toLowerCase();
+    return switch (extension) {
+      'pdf' => 'application/pdf',
+      'png' => 'image/png',
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'webp' => 'image/webp',
+      'doc' => 'application/msword',
+      'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      _ => 'application/octet-stream',
+    };
+  }
+
+  Future<void> pickAttachment() async {
+    if (documentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('احفظ المستند أولاً ثم أرفق الملفات.')),
+      );
+      return;
+    }
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'doc', 'docx'],
+      );
+      if (result == null || result.files.isEmpty) return;
+      final file = result.files.single;
+      final path = file.path;
+      if (path == null) {
+        throw Exception('تعذر الوصول إلى مسار الملف المحدد.');
+      }
+      await WathaeqiService.instance.uploadAttachment(
+        documentId: documentId!,
+        path: path,
+        fileName: file.name,
+        mimeType: attachmentMimeType(file.name),
+        size: file.size,
+      );
+      if (mounted) {
+        reloadAttachments();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إرفاق الملف بالمستند.')),
+        );
+      }
+    } on AppwriteException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'تعذر رفع المرفق.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر إرفاق الملف: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> removeAttachment(Map<String, dynamic> attachment) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف المرفق'),
+        content: Text('هل تريد حذف الملف «${attachment['fileName']}»؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    try {
+      await WathaeqiService.instance.deleteAttachment(attachment);
+      if (mounted) reloadAttachments();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('تعذر حذف المرفق: $e')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     title.dispose();
@@ -528,13 +638,21 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
       error = null;
     });
     try {
-      await WathaeqiService.instance.saveDocument(
-        id: widget.document?.id,
+      final saved = await WathaeqiService.instance.saveDocument(
+        id: documentId,
         title: title.text,
         category: category.text,
         content: content.text,
       );
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) {
+        setState(() {
+          documentId = saved.id;
+          attachments = WathaeqiService.instance.listAttachments(saved.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم حفظ المستند.')),
+        );
+      }
     } on AppwriteException catch (e) {
       setState(() => error = e.message ?? 'تعذر حفظ المستند.');
     } catch (_) {
@@ -652,6 +770,77 @@ class _DocumentEditorScreenState extends State<DocumentEditorScreen> {
             padding: const EdgeInsets.symmetric(vertical: 15),
           ),
         ),
+        const SizedBox(height: 22),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'المرفقات',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: navy,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: pickAttachment,
+              icon: const Icon(Icons.attach_file),
+              label: const Text('إرفاق ملف'),
+            ),
+          ],
+        ),
+        if (documentId == null)
+          const Text(
+            'احفظ المستند أولاً لتتمكن من إرفاق الملفات.',
+            style: TextStyle(color: Colors.black54),
+          )
+        else
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: attachments,
+            builder: (context, state) {
+              if (state.connectionState != ConnectionState.done) {
+                return const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              if (state.hasError) {
+                return ErrorPanel(
+                  message: 'تعذر تحميل المرفقات: ${state.error}',
+                  retry: reloadAttachments,
+                );
+              }
+              final files = state.data ?? [];
+              if (files.isEmpty) {
+                return const Text(
+                  'لا توجد ملفات مرفقة بهذا المستند.',
+                  style: TextStyle(color: Colors.black54),
+                );
+              }
+              return Column(
+                children: files.map((file) {
+                  final size = (file['size'] as num?)?.toInt() ?? 0;
+                  return Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.insert_drive_file_outlined, color: blue),
+                      title: Text(
+                        file['fileName'].toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text('${(size / 1024).toStringAsFixed(1)} KB'),
+                      trailing: IconButton(
+                        tooltip: 'حذف المرفق',
+                        onPressed: () => removeAttachment(file),
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
         const SizedBox(height: 18),
         const Text(
           'معاينة سريعة',
