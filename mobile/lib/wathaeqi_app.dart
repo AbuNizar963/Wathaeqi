@@ -725,7 +725,9 @@ class _TemplatesTabState extends State<TemplatesTab> {
                   children: [
                     TextFormField(
                       controller: title,
-                      decoration: const InputDecoration(labelText: 'اسم القالب'),
+                      decoration: const InputDecoration(
+                        labelText: 'اسم القالب',
+                      ),
                       validator: (v) =>
                           v == null || v.trim().isEmpty ? 'أدخل الاسم' : null,
                     ),
@@ -739,7 +741,9 @@ class _TemplatesTabState extends State<TemplatesTab> {
                       controller: content,
                       minLines: 4,
                       maxLines: 7,
-                      decoration: const InputDecoration(labelText: 'محتوى القالب'),
+                      decoration: const InputDecoration(
+                        labelText: 'محتوى القالب',
+                      ),
                     ),
                   ],
                 ),
@@ -770,9 +774,8 @@ class _TemplatesTabState extends State<TemplatesTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حفظ القالب: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر حفظ القالب: $e')));
       }
     } finally {
       title.dispose();
@@ -806,9 +809,8 @@ class _TemplatesTabState extends State<TemplatesTab> {
       if (mounted) reload();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حذف القالب: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر حذف القالب: $e')));
       }
     }
   }
@@ -881,7 +883,10 @@ class _TemplatesTabState extends State<TemplatesTab> {
                             value: 'delete',
                             child: ListTile(
                               dense: true,
-                              leading: Icon(Icons.delete_outline, color: Colors.red),
+                              leading: Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
                               title: Text('حذف'),
                             ),
                           ),
@@ -990,9 +995,8 @@ class _ContactsTabState extends State<ContactsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حفظ جهة الاتصال: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر حفظ جهة الاتصال: $e')));
       }
     } finally {
       name.dispose();
@@ -1027,9 +1031,8 @@ class _ContactsTabState extends State<ContactsTab> {
       if (mounted) reload();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تعذر حذف جهة الاتصال: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('تعذر حذف جهة الاتصال: $e')));
       }
     }
   }
@@ -1112,7 +1115,10 @@ class _ContactsTabState extends State<ContactsTab> {
                             value: 'delete',
                             child: ListTile(
                               dense: true,
-                              leading: Icon(Icons.delete_outline, color: Colors.red),
+                              leading: Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
                               title: Text('حذف'),
                             ),
                           ),
