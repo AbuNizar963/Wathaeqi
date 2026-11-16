@@ -125,11 +125,17 @@ class WathaeqiService {
     return WathaeqiDocument.fromRow(row);
   }
 
-  Future<void> deleteDocument(String id) => tables.deleteRow(
-    databaseId: databaseId,
-    tableId: documentsTable,
-    rowId: id,
-  );
+  Future<void> deleteDocument(String id) async {
+    final attachedFiles = await listAttachments(id);
+    for (final attachment in attachedFiles) {
+      await deleteAttachment(attachment);
+    }
+    await tables.deleteRow(
+      databaseId: databaseId,
+      tableId: documentsTable,
+      rowId: id,
+    );
+  }
 
   Future<List<Map<String, dynamic>>> listTemplates() async {
     final user = await account.get();
@@ -290,14 +296,14 @@ class WathaeqiService {
   }
 
   Future<void> deleteAttachment(Map<String, dynamic> attachment) async {
+    await storage.deleteFile(
+      bucketId: attachmentsBucket,
+      fileId: attachment['fileId'].toString(),
+    );
     await tables.deleteRow(
       databaseId: databaseId,
       tableId: attachmentsTable,
       rowId: attachment['id'].toString(),
-    );
-    await storage.deleteFile(
-      bucketId: attachmentsBucket,
-      fileId: attachment['fileId'].toString(),
     );
   }
 
