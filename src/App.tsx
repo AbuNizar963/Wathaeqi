@@ -173,7 +173,7 @@ export default function App() {
                 <button onClick={() => handlePrint()} aria-label="طباعة"><Printer size={17}/></button>
               </div>
               <div className="paper-wrap"><div className="paper" ref={printableRef}><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div>
-              <div className="editor-footer"><span><Check size={15}/> يتم حفظ المسودة على هذا الجهاز</span><button className="print-button" onClick={() => window.print()}><Printer size={16}/> طباعة A4</button></div>
+              <div className="editor-footer"><span><Check size={15}/> يتم حفظ المسودة على هذا الجهاز</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
             </div>
           </section>
           <footer className="app-footer">وثائقي <span>·</span> منصة تنظيم وإعداد الوثائق الرسمية</footer>
