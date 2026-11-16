@@ -2,12 +2,16 @@ name: Wathaeqi Flutter CI
 
 on:
   push:
-    branches: [feat/wathaeqi-appwrite-mobile]
+    branches: [feat/wathaeqi-appwrite-mobile, flutter-mobile-app]
   pull_request:
     branches: [flutter-mobile-app]
 
 permissions:
   contents: write
+
+concurrency:
+  group: wathaeqi-mobile-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   flutter:
@@ -29,7 +33,7 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
       - name: Format Dart sources
-        run: dart format lib
+        run: dart format lib test
       - name: Commit formatter and lockfile changes on feature push
         if: github.event_name == 'push'
         working-directory: .
