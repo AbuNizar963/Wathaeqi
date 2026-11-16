@@ -43,8 +43,8 @@ export default function App() {
   const [online, setOnline] = useState(navigator.onLine);
   const [saved, setSaved] = useState(true);
   const printableRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({ contentRef: printableRef, documentTitle: activeDraft?.title || "وثائقي", pageStyle: getA4DocumentLayoutCss(".document-paper") });
   const activeDraft = drafts.find((draft) => draft.id === activeId) ?? drafts[0];
+  const handlePrint = useReactToPrint({ contentRef: printableRef, documentTitle: activeDraft?.title || "وثائقي", pageStyle: getA4DocumentLayoutCss(".document-paper") });
 
   const editor = useEditor({
     extensions: [
