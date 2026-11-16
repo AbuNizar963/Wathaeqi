@@ -10,7 +10,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import { PageBreak } from "./lib/PageBreak";
 import {
   Archive, Bell, BookOpen, Check, ChevronDown,
-  ClipboardList, Cloud, FilePlus2, FileText, FolderOpen, LayoutDashboard,
+  ClipboardList, Cloud, ContactRound, FilePlus2, FileText, FolderOpen, LayoutDashboard,
   Menu, MoreHorizontal, Printer, Search, Settings2, ShieldCheck,
   Table2, Wifi, WifiOff,
 } from "lucide-react";
@@ -240,8 +240,6 @@ function Workspace({ user, onSignOut }: { user: SessionUser; onSignOut: () => vo
             <article className="stat-card"><span className="stat-icon green"><Check size={20}/></span><div><small>مستندات مكتملة</small><strong>18</strong><em>جاهزة للأرشفة</em></div></article>
             <article className="stat-card"><span className="stat-icon amber"><FilePlus2 size={20}/></span><div><small>مسودات قيد العمل</small><strong>{drafts.length}</strong><em>في Appwrite السحابي</em></div></article>
             <article className="stat-card"><span className="stat-icon violet"><Cloud size={20}/></span><div><small>حالة المزامنة</small><strong>{appwriteConfigured ? "Appwrite" : "غير مهيأ"}</strong><em>{appwriteConfigured ? "متصل بالخدمة السحابية" : "أضف إعدادات Appwrite"}</em></div></article>
-          </section>
-
           </section>}
           {activeSection !== "documents" ? <ResourceManager type={activeSection} onUseTemplate={async (templateContent) => {
             try {
