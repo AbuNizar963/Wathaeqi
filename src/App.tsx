@@ -12,6 +12,7 @@ import {
   Table2, Wifi, WifiOff,
 } from "lucide-react";
 import { appwriteConfigured } from "./lib/appwrite";
+import { getA4DocumentLayoutCss } from "./lib/documentPrintLayout";
 import { useReactToPrint } from "react-to-print";
 
 type Draft = { id: string; title: string; category: string; updatedAt: string; content: string };
@@ -41,7 +42,7 @@ export default function App() {
   const [online, setOnline] = useState(navigator.onLine);
   const [saved, setSaved] = useState(true);
   const printableRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({ contentRef: printableRef, documentTitle: activeDraft?.title || "وثائقي" });
+  const handlePrint = useReactToPrint({ contentRef: printableRef, documentTitle: activeDraft?.title || "وثائقي", pageStyle: getA4DocumentLayoutCss(".document-paper") });
   const activeDraft = drafts.find((draft) => draft.id === activeId) ?? drafts[0];
 
   const editor = useEditor({
@@ -172,7 +173,7 @@ export default function App() {
                 <button onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} aria-label="إدراج جدول"><Table2 size={17}/></button>
                 <button onClick={() => handlePrint()} aria-label="طباعة"><Printer size={17}/></button>
               </div>
-              <div className="paper-wrap"><div className="paper" ref={printableRef}><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div>
+              <div className="paper-wrap"><div className="paper document-paper" ref={printableRef}><div className="document-watermark" aria-hidden="true">وثائقي</div><div className="document-paper-content"><div className="paper-letterhead"><div className="letterhead-mark">شعار الجهة</div><div><b>اسم الجهة الرسمية</b><small>القسم / الشعبة الإدارية</small></div><div className="letterhead-number">العدد: ........<br/>التاريخ: .... / .... / ....</div></div><EditorContent editor={editor}/><div className="paper-footer">وثائقي · نموذج أولي قابل للتخصيص</div></div></div></div>
               <div className="editor-footer"><span><Check size={15}/> يتم حفظ المسودة على هذا الجهاز</span><button className="print-button" onClick={() => handlePrint()}><Printer size={16}/> طباعة A4</button></div>
             </div>
           </section>
