@@ -18,7 +18,7 @@ type DocumentRow = {
   updatedAt: string;
 };
 
-function requireServices() {
+function requireAccount() {\n  if (!account) throw new Error("إعدادات Appwrite غير مكتملة.");\n  return account;\n}\n\nfunction requireServices() {
   if (!account || !tablesDB || !appwriteResources.databaseId || !appwriteResources.tables.documents) {
     throw new Error("إعدادات Appwrite غير مكتملة. تحقق من متغيرات البيئة في الاستضافة.");
   }
