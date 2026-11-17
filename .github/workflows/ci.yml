@@ -38,6 +38,10 @@ jobs:
             exit 1
           fi
 
+      - name: Show login rate limiter formatting diff
+        run: |
+          pnpm exec prettier server/_core/loginRateLimit.ts server/_core/loginRateLimit.test.ts | diff -u server/_core/loginRateLimit.ts - || true
+
       - name: Check formatting
         run: pnpm lint
 
