@@ -89,7 +89,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
           ? result['items'] as List
           : const [];
       if (items.isEmpty) {
-        if (mounted) setState(() => message = 'لا توجد برقيات قابلة للتصدير.');
+        if (mounted) setState(() => message = 'لا توجد وثائق قابلة للتصدير.');
         return;
       }
       final rows = <Map<String, String>>[];
@@ -150,7 +150,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       }
       final outputName = value(exported['fileName']);
       final path = await FilePicker.saveFile(
-        dialogTitle: 'حفظ سجل البرقيات بصيغة Excel',
+        dialogTitle: 'حفظ سجل الوثائق بصيغة Excel',
         fileName: outputName,
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
@@ -160,7 +160,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
         setState(
           () => message = path == null
               ? 'تم إلغاء حفظ الملف.'
-              : 'تم تجهيز ${rows.length} برقية في ورقتي صادر ووارد بصيغة Excel.',
+              : 'تم تجهيز ${rows.length} وثيقة في ورقتي صادر ووارد بصيغة Excel.',
         );
       }
     } catch (exception) {
@@ -186,7 +186,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
         builder: (context, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('معاينة تصدير سجل البرقيات'),
+            title: const Text('معاينة تصدير سجل الوثائق'),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
@@ -487,7 +487,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       if (mounted) {
         setState(() {
           message =
-              'اكتمل استيراد Excel: أُنشئت $created برقية، وتم تخطي $skipped مكررة${failed > 0 ? '، وتعذر استيراد $failed صفًا' : ''}.';
+              'اكتمل استيراد Excel: أُنشئت $created وثيقة، وتم تخطي $skipped مكررة${failed > 0 ? '، وتعذر استيراد $failed صفًا' : ''}.';
           clearPreview();
         });
       }
@@ -552,7 +552,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
                               'time': 'الوقت',
                               'sender': 'المرسل',
                               'date': 'التاريخ',
-                              'body': 'نص البرقية',
+                              'body': 'نص الوثيقة',
                               'recipient': 'المستلم',
                               'signature': 'التوقيع',
                               'notes': 'ملاحظات',
@@ -664,13 +664,13 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'ينشئ ملف Excel حقيقياً بصيغة XLSX، مع فصل البرقيات الصادرة والواردة في ورقتين.',
+                    'ينشئ ملف Excel حقيقياً بصيغة XLSX، مع فصل الوثائق الصادرة والواردة في ورقتين.',
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: busy ? null : exportExcel,
                     icon: const Icon(Icons.download_outlined),
-                    label: const Text('تصدير سجل البرقيات إلى Excel'),
+                    label: const Text('تصدير سجل الوثائق إلى Excel'),
                   ),
                 ],
               ),
