@@ -10,6 +10,10 @@ import { getAppwriteAuthenticatedUserFromRequest } from "./appwriteAuth";
 export const SESSION_COOKIE = "police_telegrams_session";
 export type PublicUser = Omit<User, "passwordHash">;
 
+const SCRYPT_N = 16384;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+
 function deriveKey(
   password: string,
   salt: Buffer,
@@ -26,78 +30,24 @@ function deriveKey(
     });
   });
 }
-export const SESSION_COOKIE = "police_telegrams_session";
-
-function serializeSessionCookie(
-  value: string,
-  options: { maxAge: number; expires?: Date }
-): string {
-  const parts = [
-    SESSION_COOKIE + "=" + encodeURIComponent(value),
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    "Max-Age=" + options.maxAge,
-  ];
-
-  if (ENV.isProduction) parts.push("Secure");
-  if (options.expires) parts.push("Expires=" + options.expires.toUTCString());
-
-  return parts.join("; ");
-}
-const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
-const SCRYPT_N = 16384;
-const SCRYPT_R = 8;
-const SCRYPT_P = 1;
-
-function getSessionKey(): Uint8Array {
-  if (ENV.authSessionSecret.length < 32) {
-    throw new Error("AUTH_SESSION_SECRET must contain at least 32 characters");
-  }
-  return new TextEncoder().encode(ENV.authSessionSecret);
-}
-
-export type PublicUser = Omit<User, "passwordHash">;
 
 export function publicUser(user: User): PublicUser {
   const { passwordHash: _passwordHash, ...safe } = user;
   return safe;
 }
 
-export async function setAuthenticatedSession(
-  res: Response,
-  user: Pick<User, "id" | "role" | "authUserId" | "sessionVersion">
-): Promise<void> {
-  const token = await new SignJWT({
-    role: user.role,
-    sessionVersion: user.sessionVersion ?? user.authUserId,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(String(user.id))
-    .setIssuedAt()
-    .setExpirationTime("30d")
-    .sign(getSessionKey());
-
-  res.setHeader(
-    "Set-Cookie",
-    serializeSessionCookie(token, { maxAge: SESSION_MAX_AGE })
-  );
-}
-
-export function clearAuthenticatedSession(res: Response): void {
-  res.setHeader(
-    "Set-Cookie",
-    serializeSessionCookie("", { maxAge: 0, expires: new Date(0) })
-  );
-}
-
+/**
+ * Legacy password-hash utilities remain for the organization/user-management
+ * workflows until their account provisioning is migrated to Appwrite Auth.
+ * They are no longer used for interactive web login.
+ */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
-  const derived = (await deriveKey(password, salt, 64, {
+  const derived = await deriveKey(password, salt, 64, {
     N: SCRYPT_N,
     r: SCRYPT_R,
     p: SCRYPT_P,
-  })) as Buffer;
+  });
 
   return [
     "scrypt",
@@ -113,8 +63,6 @@ export async function verifyPassword(
   password: string,
   encodedHash: string
 ): Promise<boolean> {
-  // Password hashes are persisted data. Never let their parameters control
-  // scrypt's CPU/memory cost or the derived-key allocation.
   if (typeof encodedHash !== "string" || encodedHash.length > 256) return false;
 
   const parts = encodedHash.split("$");
@@ -132,7 +80,6 @@ export async function verifyPassword(
     return false;
   }
 
-  // Enforce the exact encoding and lengths emitted by hashPassword().
   const salt = Buffer.from(saltText, "base64url");
   const expected = Buffer.from(hashText, "base64url");
   if (
@@ -154,16 +101,8 @@ export async function verifyPassword(
       derived.length === expected.length && timingSafeEqual(derived, expected)
     );
   } catch {
-    // Malformed or unsupported persisted hashes must fail closed, not crash
-    // the authentication request.
     return false;
   }
-}
-
-
-export function publicUser(user: User): PublicUser {
-  const { passwordHash: _passwordHash, ...safe } = user;
-  return safe;
 }
 
 export async function getAuthenticatedUserFromRequest(
