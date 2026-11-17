@@ -2,17 +2,20 @@ import { createHmac } from "node:crypto";
 import type { Request, Response } from "express";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./env";
-import { getSupabaseAdmin } from "./supabase";
 
 type LoginRateLimitResult = {
   allowed: boolean;
   retryAfterSeconds: number;
 };
 
-type RateLimitRpcRow = {
-  allowed?: unknown;
-  retry_after_seconds?: unknown;
+type LoginRateLimitBucket = {
+  attempts: number;
+  windowStartedAt: number;
+  blockedUntil: number;
 };
+
+const WINDOW_MS = 15 * 60 * 1000;
+const loginRateLimitBuckets = new Map<string, LoginRateLimitBucket>();
 
 function hashLoginRateLimitKey(value: string): string {
   if (ENV.authSessionSecret.length < 32) {
@@ -24,48 +27,54 @@ function hashLoginRateLimitKey(value: string): string {
     .digest("hex");
 }
 
-async function consumeLoginRateLimit(
+function consumeLoginRateLimit(
   keyHash: string,
-  maxAttempts: number
-): Promise<LoginRateLimitResult> {
-  const { data, error } = await getSupabaseAdmin().rpc(
-    "consume_auth_login_rate_limit",
-    {
-      p_key_hash: keyHash,
-      p_max_attempts: maxAttempts,
-      p_window_seconds: 15 * 60,
-      p_block_seconds: 15 * 60,
+  maxAttempts: number,
+  now = Date.now()
+): LoginRateLimitResult {
+  let bucket = loginRateLimitBuckets.get(keyHash);
+
+  if (!bucket || now - bucket.windowStartedAt >= WINDOW_MS) {
+    bucket = {
+      attempts: 0,
+      windowStartedAt: now,
+      blockedUntil: 0,
+    };
+    loginRateLimitBuckets.set(keyHash, bucket);
+  }
+
+  if (bucket.blockedUntil > now) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil((bucket.blockedUntil - now) / 1000),
+    };
+  }
+
+  bucket.attempts += 1;
+  if (bucket.attempts > maxAttempts) {
+    bucket.blockedUntil = now + WINDOW_MS;
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil(WINDOW_MS / 1000),
+    };
+  }
+
+  if (loginRateLimitBuckets.size > 10_000) {
+    for (const [key, value] of loginRateLimitBuckets) {
+      if (value.blockedUntil <= now && now - value.windowStartedAt >= WINDOW_MS) {
+        loginRateLimitBuckets.delete(key);
+      }
     }
-  );
-
-  if (error) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "تعذر التحقق من محاولات تسجيل الدخول",
-    });
   }
 
-  const row = (Array.isArray(data) ? data[0] : data) as RateLimitRpcRow | null;
-  if (!row || typeof row.allowed !== "boolean") {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "تعذر التحقق من محاولات تسجيل الدخول",
-    });
-  }
-
-  const retryAfterSeconds = Number(row.retry_after_seconds);
-  return {
-    allowed: row.allowed,
-    retryAfterSeconds:
-      Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-        ? Math.ceil(retryAfterSeconds)
-        : 0,
-  };
+  return { allowed: true, retryAfterSeconds: 0 };
 }
 
 /**
- * Rate-limit login before password verification. Keys are HMACs so raw
- * usernames and client IP addresses are never persisted in the database.
+ * Appwrite Auth enforces provider-side limits. This process-local account/IP
+ * guard adds a short-window layer without requiring the legacy Supabase RPC.
+ * Netlify instances are ephemeral, so this is defense in depth rather than
+ * the durable cross-instance limiter used before the Appwrite migration.
  */
 export async function enforceLoginRateLimit(
   req: Request,
@@ -79,10 +88,8 @@ export async function enforceLoginRateLimit(
     `login:account-ip:${normalizedUsername}:${clientIp}`
   );
 
-  const [ipLimit, accountIpLimit] = await Promise.all([
-    consumeLoginRateLimit(ipKeyHash, 60),
-    consumeLoginRateLimit(accountIpKeyHash, 10),
-  ]);
+  const ipLimit = consumeLoginRateLimit(ipKeyHash, 60);
+  const accountIpLimit = consumeLoginRateLimit(accountIpKeyHash, 10);
 
   if (!ipLimit.allowed || !accountIpLimit.allowed) {
     const retryAfterSeconds = Math.max(
@@ -100,19 +107,9 @@ export async function enforceLoginRateLimit(
   return accountIpKeyHash;
 }
 
-/**
- * Successful authentication clears only the account/IP bucket. The broader
- * per-IP bucket remains in place to protect the endpoint from request floods.
- */
+/** Clear only the account/IP bucket after a successful Appwrite login. */
 export async function clearSuccessfulLoginRateLimit(
   accountIpKeyHash: string
 ): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("auth_login_rate_limits")
-    .delete()
-    .eq("keyHash", accountIpKeyHash);
-
-  if (error) {
-    throw new Error("Failed to clear the successful login rate-limit bucket");
-  }
+  loginRateLimitBuckets.delete(accountIpKeyHash);
 }
