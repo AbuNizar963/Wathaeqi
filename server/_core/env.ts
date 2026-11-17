@@ -81,8 +81,10 @@ export function assertProductionEnvironment(env: typeof ENV = ENV): void {
   if (!env.appwriteApiKey.trim()) missing.push("APPWRITE_API_KEY");
   if (!env.appwriteDatabaseId.trim()) missing.push("APPWRITE_DATABASE_ID");
   if (!env.appwriteBucketId.trim()) missing.push("APPWRITE_BUCKET_ID");
-  if (env.authSessionSecret.length < 32) {
-    missing.push("AUTH_SESSION_SECRET (at least 32 characters)");
+  // The API may start without a session-signing key so public health and
+  // non-auth routes remain available. Auth helpers fail closed until it exists.
+  if (env.authSessionSecret && env.authSessionSecret.length < 32) {
+    throw new Error("AUTH_SESSION_SECRET must contain at least 32 characters");
   }
 
   if (missing.length > 0) {
