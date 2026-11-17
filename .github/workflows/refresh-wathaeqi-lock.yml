@@ -5,6 +5,10 @@ on:
     branches:
       - feat/wathaeqi-appwrite-web
       - migration/appwrite-phase-1
+    paths:
+      - package.json
+      - pnpm-workspace.yaml
+      - patches/**
 
 permissions:
   contents: write
