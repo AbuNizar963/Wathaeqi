@@ -131,7 +131,7 @@ String _cleanReleaseNotes(String raw) {
     'add native excel import and export to mobile':
         'إضافة استيراد وتصدير ملفات Excel أصليًا إلى تطبيق الهاتف.',
     'match telegram details and serial display with web':
-        'تحسين عرض تفاصيل البرقية والرقم التسلسلي ليتوافق مع نظام الويب.',
+        'تحسين عرض تفاصيل الوثيقة والرقم التسلسلي ليتوافق مع نظام الويب.',
   };
 
   for (final sourceLine in raw.replaceAll('\r\n', '\n').split('\n')) {
@@ -455,7 +455,7 @@ Future<void> _downloadAndInstall(
                     (data['totalBytes'] as num?)?.toInt() ?? release.apkSize;
                 final isComplete = data['status'] == 'completed';
                 return AlertDialog(
-                  title: const Text('تنزيل تحديث برقيات الشرطة'),
+                  title: const Text('تنزيل تحديث وثائقي'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
