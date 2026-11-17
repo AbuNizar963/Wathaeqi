@@ -144,7 +144,7 @@
 - ملف `server/_core/appwrite.ts` لإنشاء عميل خادمي واحد وإعادة استخدام خدمتي TablesDB وStorage.
 - متغيرات Appwrite اختيارية في `server/_core/env.ts`. لا تُفرض في فحص إعدادات الإنتاج الحالي، حتى لا يتعطل التطبيق قبل التحويل.
 - لا يقرأ العميل أي متغير `VITE_*`، ولا يعيد المفتاح السري أو يطبعه في الأخطاء.
-- اختبارات إعدادات العميل موجودة في `server/_core/appwrite.test.ts`، واختبار معالجة ReDoS لـ picomatch في `server/_core/picomatchSecurity.test.ts`.
+- اختبارات إعدادات العميل موجودة في `server/_core/appwrite.test.ts`، واختبار معالجة ReDoS لـ picomatch في `server/_core/picomatchSecurity.test.ts`. تم تصحيح patch ليطابق Git diff metadata الرسمي، وتصحيح استدعاء matcher في الاختبار؛ النتيجة النهائية بانتظار CI على commit الجديد.
 - إعدادات pnpm 12 و`patchedDependencies` موجودة في `pnpm-workspace.yaml`، وتم تجديد `pnpm-lock.yaml` بواسطة workflow. تم السماح صراحةً فقط بسكربتات البناء المطلوبة للحزم المحددة.
 - لم تتم إضافة أي استدعاء Appwrite إلى `server/app.ts` أو `server/db.ts` أو المصادقة أو التخزين الحالي. Supabase لا يزال المسار التشغيلي الوحيد.
 
