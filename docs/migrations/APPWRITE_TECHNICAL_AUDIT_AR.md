@@ -26,6 +26,9 @@
 - `server/features/organizations/organization.ts`: عمليات المؤسسات والعضويات والإحالات والموافقات والحذف الآمن.
 - `server/features/platform-settings/platformDocumentSettingsRepository.ts`: إعدادات المستندات والعلامة المائية.
 - `server/_core/loginRateLimit.ts`: حدّ محاولات الدخول المستمر.
+- `server/features/organizations/organizationScope.ts` و`server/ownerAccess.ts`: قراءات خادمية مباشرة للمؤسسات والمستخدمين.
+- `server/features/users/userManagementRouter.ts`: عمليات إدارة المستخدمين والجهات، ويتضمن استدعاء purge إضافياً.
+- `server/telegramExport.ts`: يعتمد على إعداد مخزن Supabase الحالي في مسارات التصدير.
 - `server/_core/storageProvider.ts`: مزود تخزين Supabase الحالي خلف واجهة provider.
 - `server/features/storage/storage.ts` و`storageRoutes.ts`: مفاتيح الملفات والرفع الموقّع والتحقق والتنزيل والتنظيف.
 - `server/app.ts`: تحقق البرقيات العام، health، وتهيئة Express.
@@ -55,6 +58,7 @@
 - `receive_telegram_route`
 - `decide_telegram_route_receiver`
 - `consume_auth_login_rate_limit`
+- `purge_inactive_user_safely`
 
 كما تحتوي migrations على سلوك إضافي لا يجوز إسقاطه عند استبدال PostgreSQL:
 
