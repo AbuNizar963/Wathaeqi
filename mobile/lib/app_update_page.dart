@@ -98,7 +98,7 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
           ),
           const SizedBox(height: 18),
           Text(
-            'برقيات الشرطة',
+            'وثائقي',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
@@ -108,7 +108,7 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'منصة رسمية لإدارة البرقيات والعمليات',
+            'منصة رسمية لإدارة الوثائق والعمليات',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
