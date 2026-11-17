@@ -10,6 +10,10 @@ import {
   setAppwriteSessionCookie,
   verifyAppwriteUserPassword,
 } from "./_core/appwriteAuth";
+import {
+  clearSuccessfulLoginRateLimit,
+  enforceLoginRateLimit,
+} from "./_core/loginRateLimit";
 import { ENV } from "./_core/env";
 import { isAllowedPushEndpoint } from "./_core/pushEndpoint";
 import { isPlatformOwner, isPlatformOwnerUserId } from "./ownerAccess";
@@ -713,6 +717,11 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        const rateLimitKey = await enforceLoginRateLimit(
+          ctx.req,
+          ctx.res,
+          input.username
+        );
         const authenticated = await authenticateForLogin(
           input.username.trim(),
           input.password
@@ -730,6 +739,7 @@ export const appRouter = router({
           authenticated.session,
           authenticated.user
         );
+        await clearSuccessfulLoginRateLimit(rateLimitKey);
         return publicUser(authenticated.user);
       }),
 
