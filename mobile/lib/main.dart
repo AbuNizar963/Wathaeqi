@@ -117,7 +117,7 @@ class PoliceTelegramsApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         ),
       ),
-      title: 'برقيات الشرطة',
+      title: 'وثائقي',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: mode,
@@ -428,7 +428,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'برقيات الشرطة',
+                      'وثائقي',
                       style: TextStyle(
                         color: navy,
                         fontSize: 27,
@@ -437,7 +437,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'منصة رسمية آمنة لإدارة البرقيات والعمليات',
+                      'منصة رسمية آمنة لإدارة الوثائق والعمليات',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 26),
@@ -662,7 +662,7 @@ String _dashboardRefreshError(Object error) {
 
 class _DashboardPageState extends State<DashboardPage>
     with WidgetsBindingObserver {
-  static const _idleOutboxMessage = 'لا توجد برقيات معلقة محليًا.';
+  static const _idleOutboxMessage = 'لا توجد وثائق معلقة محليًا.';
   String get _greetingName =>
       (_account['name'] ?? _account['username'] ?? 'أبو نزار').toString();
 
@@ -751,8 +751,8 @@ class _DashboardPageState extends State<DashboardPage>
     }
     if (_serverReachable == false) {
       return _pendingOutbox > 0
-          ? 'الخادم غير متصل؛ ستبقى البرقيات محفوظة محليًا حتى عودة الاتصال.'
-          : 'الخادم غير متصل؛ لا توجد برقيات معلقة محليًا.';
+          ? 'الخادم غير متصل؛ ستبقى الوثائق محفوظة محليًا حتى عودة الاتصال.'
+          : 'الخادم غير متصل؛ لا توجد وثائق معلقة محليًا.';
     }
     return 'لم يُتحقق من اتصال الخادم بعد.';
   }
@@ -914,7 +914,7 @@ class _DashboardPageState extends State<DashboardPage>
     final fallback = Image.asset(
       'assets/police-telegrams-icon.png',
       fit: BoxFit.contain,
-      semanticLabel: 'الصورة الافتراضية لنظام برقيات الشرطة',
+      semanticLabel: 'الصورة الافتراضية لوثائقي',
     );
 
     return Container(
@@ -1061,7 +1061,7 @@ class _DashboardPageState extends State<DashboardPage>
           _outboxSyncing = true;
           _syncPhase = 'syncing';
           _lastSyncMessage =
-              'جارٍ فحص صندوق الخروج وإرسال البرقيات بالترتيب...';
+              'جارٍ فحص صندوق الخروج وإرسال الوثائق بالترتيب...';
         }
       });
     }
@@ -1081,13 +1081,13 @@ class _DashboardPageState extends State<DashboardPage>
         } else if (result.synced > 0) {
           _syncPhase = pending == 0 ? 'success' : 'partial';
           _lastSyncMessage =
-              'تمت مزامنة ${result.synced} برقية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
+              'تمت مزامنة ${result.synced} وثيقة بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
         } else if (pending == 0) {
           _syncPhase = 'idle';
           _lastSyncMessage = _idleOutboxMessage;
         } else {
           _syncPhase = 'waiting';
-          _lastSyncMessage = 'تنتظر $pending برقية عودة الاتصال للمزامنة.';
+          _lastSyncMessage = 'تنتظر $pending وثيقة عودة الاتصال للمزامنة.';
         }
       });
       if (_syncPhase == 'success') {
@@ -1097,7 +1097,7 @@ class _DashboardPageState extends State<DashboardPage>
             _syncPhase = 'idle';
             _lastSyncMessage = _pendingOutbox == 0
                 ? _idleOutboxMessage
-                : 'تنتظر $_pendingOutbox برقية عودة الاتصال للمزامنة.';
+                : 'تنتظر $_pendingOutbox وثيقة عودة الاتصال للمزامنة.';
           });
         });
       }
@@ -1179,7 +1179,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (registered) {
           Toast.success(
             context,
-            'تم تفعيل الإشعارات وتسجيل هذا الجهاز لاستقبال البرقيات',
+            'تم تفعيل الإشعارات وتسجيل هذا الجهاز لاستقبال الوثائق',
           );
         } else {
           Toast.error(
@@ -1970,7 +1970,7 @@ class _DashboardPageState extends State<DashboardPage>
         Expanded(
           child: _dashboardActionButton(
             icon: LucideIcons.fileText,
-            label: 'تقرير البرقيات',
+            label: 'تقرير الوثائق',
             onPressed: () => _pushPage(ReportsPage(api: widget.api)),
           ),
         ),
@@ -2027,7 +2027,7 @@ class _DashboardPageState extends State<DashboardPage>
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('تخصيص عرض سجل البرقيات'),
+          title: const Text('تخصيص عرض سجل الوثائق'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2039,13 +2039,13 @@ class _DashboardPageState extends State<DashboardPage>
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('تصنيف البرقية'),
+                title: const Text('تصنيف الوثيقة'),
                 value: category,
                 onChanged: (value) => setDialogState(() => category = value),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('اسم منشئ البرقية'),
+                title: const Text('اسم منشئ الوثيقة'),
                 value: creator,
                 onChanged: (value) => setDialogState(() => creator = value),
               ),
@@ -2104,7 +2104,7 @@ class _DashboardPageState extends State<DashboardPage>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'تنبيه أمني: توجد $numericCount برقية عاجلة موجّهة إلى الجهة الحالية بانتظار الاستلام.',
+              'تنبيه أمني: توجد $numericCount وثيقة عاجلة موجّهة إلى الجهة الحالية بانتظار الاستلام.',
               style: TextStyle(
                 color: context.appDangerText,
                 fontSize: 12,
@@ -2153,7 +2153,7 @@ class _DashboardPageState extends State<DashboardPage>
     final detailMessage =
         _lastSyncMessage ??
         (_pendingOutbox > 0
-            ? 'لديك $_pendingOutbox برقية بانتظار المزامنة.'
+            ? 'لديك $_pendingOutbox وثيقة بانتظار المزامنة.'
             : _idleOutboxMessage);
 
     return Container(
@@ -2288,7 +2288,7 @@ class _DashboardPageState extends State<DashboardPage>
                     children: [
                       Text(
                         _lastSyncAt == null
-                            ? 'مزامنة البرقيات'
+                            ? 'مزامنة الوثائق'
                             : 'آخر فحص ${_syncTime(_lastSyncAt!)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -2379,13 +2379,13 @@ class _DashboardPageState extends State<DashboardPage>
                 width: 36,
                 height: 36,
                 fit: BoxFit.contain,
-                semanticLabel: 'أيقونة نظام برقيات الشرطة',
+                semanticLabel: 'أيقونة وثائقي',
               ),
             ),
             const SizedBox(width: 8),
             const Flexible(
               child: Text(
-                'مركز البرقيات',
+                'وثائقي',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
@@ -2517,8 +2517,8 @@ class _DashboardPageState extends State<DashboardPage>
                   title: _pushBusy
                       ? 'جارٍ تحديث الإشعارات...'
                       : _pushEnabled
-                      ? 'إيقاف إشعارات البرقيات'
-                      : 'تفعيل إشعارات البرقيات',
+                      ? 'إيقاف إشعارات الوثائق'
+                      : 'تفعيل إشعارات الوثائق',
                 ),
               ),
               const PopupMenuDivider(),
@@ -2671,7 +2671,7 @@ class _DashboardPageState extends State<DashboardPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'نظام برقيات الشرطة',
+                              'وثائقي',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
@@ -2749,7 +2749,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ListTile(
                   leading: const Icon(LucideIcons.plus),
-                  title: const Text('إنشاء برقية'),
+                  title: const Text('إنشاء وثيقة'),
                   onTap: () {
                     Navigator.pop(context);
                     create();
@@ -2862,7 +2862,7 @@ class _DashboardPageState extends State<DashboardPage>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'إنشاء برقية',
+        tooltip: 'إنشاء وثيقة',
         backgroundColor: navy,
         foregroundColor: Colors.white,
         elevation: 4,
@@ -3102,7 +3102,7 @@ class _DashboardPageState extends State<DashboardPage>
   Widget _sectionBody() {
     final values = <(String, String, String, IconData, Color)>[
       (
-        'إجمالي البرقيات',
+        'إجمالي الوثائق',
         'total',
         'الرصيد التشغيلي',
         LucideIcons.fileText,
@@ -3261,7 +3261,7 @@ class _DashboardPageState extends State<DashboardPage>
                       children: [
                         const Expanded(
                           child: Text(
-                            'سجل البرقيات الكامل',
+                            'سجل الوثائق الكامل',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w900,
@@ -3327,21 +3327,21 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   children: [
                     _telegramViewButton(
-                      'كل البرقيات',
+                      'كل الوثائق',
                       stats['total'] ?? 0,
                       LucideIcons.listFilter,
                       0,
                     ),
                     const SizedBox(width: 7),
                     _telegramViewButton(
-                      'البرقيات الصادرة',
+                      'الوثائق الصادرة',
                       stats['outgoing'] ?? 0,
                       LucideIcons.send,
                       1,
                     ),
                     const SizedBox(width: 7),
                     _telegramViewButton(
-                      'البرقيات الواردة',
+                      'الوثائق الواردة',
                       stats['incoming'] ?? 0,
                       LucideIcons.inbox,
                       2,
@@ -3364,7 +3364,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   String get _activeKpiLabel => switch (_activeKpi) {
-    'total' => 'إجمالي البرقيات',
+    'total' => 'إجمالي الوثائق',
     'today' => 'الصادرة اليوم',
     'urgent' => 'أولوية عاجلة اليوم',
     'incoming' => 'الواردة اليوم',
@@ -3497,7 +3497,7 @@ class _DashboardPageState extends State<DashboardPage>
               const SizedBox(width: 6),
               const Expanded(
                 child: Text(
-                  'تصفية سجل البرقيات',
+                  'تصفية سجل الوثائق',
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                 ),
               ),
@@ -3691,7 +3691,7 @@ class _DashboardPageState extends State<DashboardPage>
             Text(
               query.isNotEmpty
                   ? 'غيّر عبارة البحث أو الفلاتر.'
-                  : 'غيّر الفلاتر أو أنشئ برقية جديدة.',
+                  : 'غيّر الفلاتر أو أنشئ وثيقة جديدة.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: context.appMutedText),
             ),
@@ -3768,7 +3768,7 @@ class _DashboardPageState extends State<DashboardPage>
         row['receiverOrganizationName'] ??
         row['currentOrganizationName'] ??
         row['recipient'];
-    final subject = '${row['subject'] ?? 'برقية بدون موضوع'}';
+    final subject = '${row['subject'] ?? 'وثيقة بدون موضوع'}';
     final creator =
         row['creatorName'] ??
         row['senderName'] ??
@@ -3815,7 +3815,7 @@ class _DashboardPageState extends State<DashboardPage>
               children: [
                 Expanded(
                   child: Text(
-                    'برقية رقم: $serial',
+                    'وثيقة رقم: $serial',
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       fontFamily: 'Cairo',
@@ -4354,13 +4354,13 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
     if (!mounted) return;
     final currentTelegram = telegram;
     if (currentTelegram == null) {
-      Toast.error(context, error ?? 'تعذر تحميل بيانات البرقية للتعديل.');
+      Toast.error(context, error ?? 'تعذر تحميل بيانات الوثيقة للتعديل.');
       return;
     }
     if (_managementExpired) {
       Toast.error(
         context,
-        'انتهت مهلة تعديل البرقية البالغة 48 ساعة؛ الصلاحية الدائمة للمالك فقط.',
+        'انتهت مهلة تعديل الوثيقة البالغة 48 ساعة؛ الصلاحية الدائمة للمالك فقط.',
       );
       return;
     }
@@ -4388,20 +4388,20 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
     if (saved != true) return;
     await load();
     if (!mounted) return;
-    Toast.success(context, 'تم حفظ تعديلات البرقية');
+    Toast.success(context, 'تم حفظ تعديلات الوثيقة');
   }
 
   Future<void> _deleteTelegram() async {
     if (telegram == null) await load();
     if (!mounted) return;
     if (telegram == null) {
-      Toast.error(context, error ?? 'تعذر تحميل بيانات البرقية للحذف.');
+      Toast.error(context, error ?? 'تعذر تحميل بيانات الوثيقة للحذف.');
       return;
     }
     if (_managementExpired) {
       Toast.error(
         context,
-        'انتهت مهلة حذف البرقية البالغة 48 ساعة؛ الصلاحية الدائمة للمالك فقط.',
+        'انتهت مهلة حذف الوثيقة البالغة 48 ساعة؛ الصلاحية الدائمة للمالك فقط.',
       );
       return;
     }
@@ -4414,13 +4414,13 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('حذف البرقية نهائيًا'),
+            title: const Text('حذف الوثيقة نهائيًا'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'سيتم حذف البرقية وسجلها والمرفقات المرتبطة بها نهائياً. '
+                  'سيتم حذف الوثيقة وسجلها والمرفقات المرتبطة بها نهائياً. '
                   'لا يمكن التراجع عن هذا الإجراء.',
                 ),
                 const SizedBox(height: 14),
@@ -4511,7 +4511,7 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
           backgroundColor: Theme.of(context).colorScheme.surface,
           foregroundColor: Theme.of(context).colorScheme.onSurface,
           title: const Text(
-            'تفاصيل البرقية',
+            'تفاصيل الوثيقة',
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
           actions: [
@@ -4530,12 +4530,12 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
               icon: const Icon(Icons.print_outlined),
             ),
             IconButton(
-              tooltip: 'تعديل البرقية',
+              tooltip: 'تعديل الوثيقة',
               onPressed: loading || data == null ? null : _editTelegram,
               icon: const Icon(Icons.edit_outlined),
             ),
             IconButton(
-              tooltip: 'حذف البرقية نهائيًا',
+              tooltip: 'حذف الوثيقة نهائيًا',
               onPressed: loading || data == null ? null : _deleteTelegram,
               icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
             ),
@@ -4567,7 +4567,7 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'برقية رقم: $displaySerial',
+                          'وثيقة رقم: $displaySerial',
                           style: const TextStyle(
                             fontFamily: 'Cairo',
                             color: brandBlue,
@@ -4597,7 +4597,7 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _infoCard('بيانات البرقية', [
+                  _infoCard('بيانات الوثيقة', [
                     _infoRow(
                       'الجهة المرسلة',
                       data?['senderOrganizationName'] ??
@@ -4622,10 +4622,10 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
                       _formatDate(data?['createdAt'] ?? '—'),
                     ),
                     if (data?['creatorName'] != null)
-                      _infoRow('منشئ البرقية', data?['creatorName']),
+                      _infoRow('منشئ الوثيقة', data?['creatorName']),
                   ]),
                   const SizedBox(height: 12),
-                  _infoCard('نص البرقية', [
+                  _infoCard('نص الوثيقة', [
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
@@ -4797,7 +4797,7 @@ class _CreateTelegramSheetState extends State<CreateTelegramSheet> {
     if (subject.text.trim().length < 2 ||
         recipient.text.trim().length < 2 ||
         body.text.trim().length < 3) {
-      setState(() => error = 'أكمل الموضوع والجهة ونص البرقية');
+      setState(() => error = 'أكمل الموضوع والجهة ونص الوثيقة');
       return;
     }
     setState(() {
@@ -4845,7 +4845,7 @@ class _CreateTelegramSheetState extends State<CreateTelegramSheet> {
               children: [
                 const Expanded(
                   child: Text(
-                    'إنشاء برقية جديدة',
+                    'إنشاء وثيقة جديدة',
                     style: TextStyle(
                       color: navy,
                       fontSize: 20,
@@ -4865,7 +4865,7 @@ class _CreateTelegramSheetState extends State<CreateTelegramSheet> {
               autocorrect: false,
               enableSuggestions: false,
               decoration: const InputDecoration(
-                labelText: 'موضوع البرقية',
+                labelText: 'موضوع الوثيقة',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -4915,7 +4915,7 @@ class _CreateTelegramSheetState extends State<CreateTelegramSheet> {
             DropdownButtonFormField<String>(
               initialValue: category,
               decoration: const InputDecoration(
-                labelText: 'تصنيف البرقية',
+                labelText: 'تصنيف الوثيقة',
                 border: OutlineInputBorder(),
               ),
               items: const [
@@ -4965,7 +4965,7 @@ class _CreateTelegramSheetState extends State<CreateTelegramSheet> {
               autocorrect: false,
               enableSuggestions: false,
               decoration: const InputDecoration(
-                labelText: 'نص البرقية',
+                labelText: 'نص الوثيقة',
                 alignLabelWithHint: true,
                 border: OutlineInputBorder(),
               ),
@@ -4979,7 +4979,7 @@ class _CreateTelegramSheetState extends State<CreateTelegramSheet> {
             FilledButton.icon(
               onPressed: busy ? null : submit,
               icon: const Icon(Icons.send),
-              label: Text(busy ? 'جارٍ الإرسال...' : 'إرسال البرقية'),
+              label: Text(busy ? 'جارٍ الإرسال...' : 'إرسال الوثيقة'),
             ),
           ],
         ),
