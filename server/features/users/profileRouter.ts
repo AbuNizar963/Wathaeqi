@@ -5,13 +5,13 @@ import {
   AppwriteInvalidCurrentPasswordError,
   changeAppwritePassword,
   dismissAppwritePasswordChange,
+  updateAppwriteUserProfile,
 } from "../../_core/appwriteAuth";
 import {
   authenticatedProcedure,
   protectedProcedure,
   router,
 } from "../../_core/trpc";
-import { updateUserProfile } from "../../db";
 
 export const profileRouter = router({
   get: authenticatedProcedure.query(({ ctx }) => ctx.user),
@@ -32,7 +32,7 @@ export const profileRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const updated = await updateUserProfile(ctx.user.id, {
+      const updated = await updateAppwriteUserProfile(ctx.user.id, {
         name: input.name,
         badgeNumber: input.badgeNumber || null,
         phone: input.phone || null,
