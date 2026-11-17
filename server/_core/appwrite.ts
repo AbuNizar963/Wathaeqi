@@ -43,7 +43,7 @@ function readAdminConfig(): AppwriteAdminConfig {
     );
   }
 
-  const normalizedPath = parsedEndpoint.pathname.replace(/\/+$/, "");
+  const normalizedPath = parsedEndpoint.pathname.replace(/\/+$/u, "");
   if (
     parsedEndpoint.protocol !== "https:" ||
     !parsedEndpoint.hostname ||
