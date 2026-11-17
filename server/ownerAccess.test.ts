@@ -1,77 +1,79 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  from: vi.fn(),
-  select: vi.fn(),
-  eq: vi.fn(),
-  maybeSingle: vi.fn(),
+  getAppwriteProfileById: vi.fn(),
 }));
 
-vi.mock("./_core/supabase", () => ({
-  getSupabaseAdmin: vi.fn(() => ({ from: mocks.from })),
+vi.mock("./_core/appwriteAuth", () => ({
+  getAppwriteProfileById: mocks.getAppwriteProfileById,
 }));
 
-import { ENV } from "./_core/env";
 import { isPlatformOwner, isPlatformOwnerUserId } from "./ownerAccess";
 
 describe("isPlatformOwner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.from.mockReturnValue({ select: mocks.select });
-    mocks.select.mockReturnValue({ eq: mocks.eq });
-    mocks.eq.mockReturnValue({ maybeSingle: mocks.maybeSingle });
   });
 
-  it("recognizes only the configured owner account with an admin role", () => {
-    expect(
-      isPlatformOwner({ username: ENV.ownerUsername, role: "admin" })
-    ).toBe(true);
+  it("recognizes only an explicitly flagged platform owner with admin role", () => {
     expect(
       isPlatformOwner({
-        username: ` ${ENV.ownerUsername.toUpperCase()} `,
-        role: "admin",
-      })
-    ).toBe(true);
-  });
-
-  it("does not grant the owner flag to another administrator or a non-admin", () => {
-    expect(isPlatformOwner({ username: "another-admin", role: "admin" })).toBe(
-      false
-    );
-    expect(isPlatformOwner({ username: ENV.ownerUsername, role: "user" })).toBe(
-      false
-    );
-    expect(isPlatformOwner(null)).toBe(false);
-  });
-
-  it("recognizes the persisted platform-owner flag even if the configured username changes", () => {
-    expect(
-      isPlatformOwner({
-        username: "the-persisted-owner",
+        username: "AbuNizar",
         role: "admin",
         isPlatformOwner: true,
       })
     ).toBe(true);
   });
 
-  it("looks up only identity fields when a membership change targets a user", async () => {
-    mocks.maybeSingle.mockResolvedValueOnce({
-      data: { id: 1, username: ENV.ownerUsername, role: "admin" },
-      error: null,
+  it("does not grant owner access based on username or admin role alone", () => {
+    expect(
+      isPlatformOwner({
+        username: "AbuNizar",
+        role: "admin",
+        isPlatformOwner: false,
+      })
+    ).toBe(false);
+    expect(
+      isPlatformOwner({
+        username: "another-admin",
+        role: "admin",
+        isPlatformOwner: true,
+      })
+    ).toBe(true);
+    expect(
+      isPlatformOwner({
+        username: "AbuNizar",
+        role: "user",
+        isPlatformOwner: true,
+      })
+    ).toBe(false);
+    expect(isPlatformOwner(null)).toBe(false);
+  });
+
+  it("loads owner identity from the Appwrite user profile", async () => {
+    mocks.getAppwriteProfileById.mockResolvedValueOnce({
+      user: {
+        id: 1,
+        username: "AbuNizar",
+        role: "admin",
+        isPlatformOwner: true,
+      },
     });
 
     await expect(isPlatformOwnerUserId(1)).resolves.toBe(true);
-    expect(mocks.select).toHaveBeenCalledWith(
-      "id, username, role, isPlatformOwner"
-    );
-    expect(mocks.eq).toHaveBeenCalledWith("id", 1);
+    expect(mocks.getAppwriteProfileById).toHaveBeenCalledWith(1);
+  });
+
+  it("returns false when the target profile is missing", async () => {
+    mocks.getAppwriteProfileById.mockResolvedValueOnce(null);
+
+    await expect(isPlatformOwnerUserId(404)).resolves.toBe(false);
   });
 
   it("propagates lookup errors instead of allowing an uncertain assignment", async () => {
-    mocks.maybeSingle.mockResolvedValueOnce({
-      data: null,
-      error: { message: "lookup failed" },
-    });
+    mocks.getAppwriteProfileById.mockRejectedValueOnce(
+      new Error("lookup failed")
+    );
 
     await expect(isPlatformOwnerUserId(1)).rejects.toThrow("lookup failed");
   });
