@@ -125,7 +125,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
         input: {'id': widget.telegramId},
       );
       if (result is! Map) {
-        throw Exception('تعذر تحميل بيانات البرقية للمشاركة.');
+        throw Exception('تعذر تحميل بيانات الوثيقة للمشاركة.');
       }
 
       final telegram = Map<String, dynamic>.from(result);
@@ -137,8 +137,8 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
       }
 
       final text = [
-        'برقيات الشرطة',
-        'رقم البرقية: ${value(telegram['serialCode'] ?? telegram['serialNumber'] ?? telegram['number'])}',
+        'وثائقي',
+        'رقم الوثيقة: ${value(telegram['serialCode'] ?? telegram['serialNumber'] ?? telegram['number'])}',
         'الموضوع: ${value(telegram['subject'], 'بدون موضوع')}',
         'الجهة المستلمة: ${value(telegram['recipient'])}',
         'الحالة: ${value(telegram['status'])}',
@@ -146,14 +146,14 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
         'التصنيف: ${value(telegram['classification'])}',
         'تاريخ الإنشاء: ${value(telegram['createdAt'])}',
         '',
-        'نص البرقية:',
+        'نص الوثيقة:',
         value(telegram['body'], 'لا يوجد نص'),
       ].join('\n');
 
       await SharePlus.instance.share(
         ShareParams(
           text: text,
-          subject: 'برقية الشرطة — ${value(telegram['subject'], 'بدون موضوع')}',
+          subject: 'وثيقة الشرطة — ${value(telegram['subject'], 'بدون موضوع')}',
         ),
       );
     });
@@ -162,7 +162,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
   Future<void> transition(String status, String actionLabel) async {
     final reason = await _reasonDialog(
       context,
-      title: 'تغيير حالة البرقية',
+      title: 'تغيير حالة الوثيقة',
       requiredReason: status == 'rejected' || status == 'returned',
     );
     if (reason == null || !mounted) return;
@@ -171,7 +171,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: const Text('تأكيد القرار'),
-          content: Text('هل تريد تأكيد القرار «$actionLabel» لهذه البرقية؟'),
+          content: Text('هل تريد تأكيد القرار «$actionLabel» لهذه الوثيقة؟'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
@@ -336,7 +336,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
   Future<void> decide(int routeId, bool accepted) async {
     final reason = await _reasonDialog(
       context,
-      title: accepted ? 'تأكيد استلام البرقية' : 'رفض استلام البرقية',
+      title: accepted ? 'تأكيد استلام الوثيقة' : 'رفض استلام الوثيقة',
       requiredReason: !accepted,
     );
     if (reason == null) return;
@@ -393,7 +393,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
     }
 
     final fileName =
-        '${attachment['originalName'] ?? attachment['fileName'] ?? 'مرفق البرقية'}';
+        '${attachment['originalName'] ?? attachment['fileName'] ?? 'مرفق الوثيقة'}';
     final extension = fileName.contains('.')
         ? fileName.split('.').last.toLowerCase()
         : '';
@@ -484,7 +484,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
       final fileName =
           '${attachment['originalName'] ?? attachment['fileName'] ?? 'telegram-attachment'}';
       final savedPath = await FilePicker.saveFile(
-        dialogTitle: 'حفظ مرفق البرقية',
+        dialogTitle: 'حفظ مرفق الوثيقة',
         fileName: fileName,
         bytes: bytes,
       );
@@ -640,9 +640,9 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
     final action = Map<String, dynamic>.from(item as Map);
     final value = '${action['action'] ?? 'إجراء'}';
     final label = switch (value) {
-      'status.transition' => 'تغيير حالة البرقية',
+      'status.transition' => 'تغيير حالة الوثيقة',
       'attachment.upload' => 'رفع مرفق',
-      'telegram.reissue' => 'إعادة إصدار البرقية',
+      'telegram.reissue' => 'إعادة إصدار الوثيقة',
       _ => value,
     };
     final statuses = [
@@ -672,7 +672,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'إجراءات البرقية',
+            'إجراءات الوثيقة',
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurface,
               fontSize: 17,
@@ -715,7 +715,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
               OutlinedButton.icon(
                 onPressed: busy ? null : shareTelegram,
                 icon: const Icon(Icons.share_outlined),
-                label: const Text('مشاركة البرقية'),
+                label: const Text('مشاركة الوثيقة'),
               ),
               ..._transitionButtons(),
               if (_canRoute)
@@ -839,7 +839,7 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
           else if (attachments.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('لا توجد مرفقات لهذه البرقية.'),
+              child: Text('لا توجد مرفقات لهذه الوثيقة.'),
             )
           else
             ...attachments.map((item) {
