@@ -56,7 +56,9 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("returns defaults without writing when the singleton is absent", async () => {
+  it(
+    "returns defaults without writing when the singleton is absent",
+    async () => {
     mocks.listRows.mockResolvedValue({ rows: [] });
     await expect(getPlatformDocumentSettings()).resolves.toEqual({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
@@ -120,7 +122,9 @@ describe("platform document settings Appwrite persistence", () => {
     }
   );
 
-  it("retries a concurrent first save against the row that won the unique index", async () => {
+  it(
+    "retries a concurrent first save against the row that won the unique index",
+    async () => {
     mocks.listRows
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [existingRow] });
