@@ -38,6 +38,9 @@ jobs:
             exit 1
           fi
 
+      - name: Show Appwrite auth formatting diff
+        run: pnpm exec prettier server/_core/appwriteAuth.ts | diff -u server/_core/appwriteAuth.ts - || true
+
       - name: Check formatting
         run: pnpm lint
 
