@@ -1,5 +1,5 @@
 name: police_telegrams
-description: تطبيق وثائقي لنظام HADIR
+description: تطبيق وثائقي لإدارة الوثائق
 publish_to: 'none'
 version: 1.0.127+1
 environment:
