@@ -4,16 +4,16 @@ import 'package:police_telegrams/features/reports/audit_log_presentation.dart';
 void main() {
   group('audit log presentation', () {
     test('translates known actions and avoids raw unknown action codes', () {
-      expect(auditActionLabel('telegram.create'), 'إنشاء برقية');
-      expect(auditActionLabel('telegram.document.print'), 'طباعة وثيقة برقية');
+      expect(auditActionLabel('telegram.create'), 'إنشاء وثيقة');
+      expect(auditActionLabel('telegram.document.print'), 'طباعة وثيقة وثيقة');
       expect(auditActionLabel('unknown.action_code'), 'إجراء مسجل');
     });
 
     test('shows a human-readable resource reference without UUIDs', () {
-      expect(auditEntitySummary('telegram', '93'), 'البرقية رقم 93');
+      expect(auditEntitySummary('telegram', '93'), 'الوثيقة رقم 93');
       expect(
         auditEntitySummary('telegram', '550e8400-e29b-41d4-a716-446655440000'),
-        'البرقية',
+        'الوثيقة',
       );
     });
 
@@ -25,7 +25,7 @@ void main() {
       );
 
       expect(fields.map((field) => field.label), [
-        'رقم البرقية',
+        'رقم الوثيقة',
         'درجة السرية',
         'صيغة الملف',
       ]);
