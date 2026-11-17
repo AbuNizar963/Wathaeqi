@@ -12,12 +12,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'package:police_telegrams/api.dart';
-import 'package:police_telegrams/features/organizations/organization_logo_resolution.dart';
-import 'package:police_telegrams/telegram_display.dart';
-import 'package:police_telegrams/features/reports/telegram_report_labels.dart';
-import 'package:police_telegrams/features/notifications/toast.dart';
-import 'package:police_telegrams/telegram_actions.dart';
+import 'package:wathaeqi/api.dart';
+import 'package:wathaeqi/features/organizations/organization_logo_resolution.dart';
+import 'package:wathaeqi/telegram_display.dart';
+import 'package:wathaeqi/features/reports/telegram_report_labels.dart';
+import 'package:wathaeqi/features/notifications/toast.dart';
+import 'package:wathaeqi/telegram_actions.dart';
 
 const _documentPageWidth = 794;
 const _documentPageHeight = 1123;
@@ -166,7 +166,7 @@ Uint8List createTelegramPageImageArchive(List<Uint8List> pageImages) {
   }
   final encodedArchive = ZipEncoder().encode(archive);
   if (encodedArchive == null || encodedArchive.isEmpty) {
-    throw StateError('تعذر إنشاء أرشيف صور صفحات البرقية.');
+    throw StateError('تعذر إنشاء أرشيف صور صفحات الوثيقة.');
   }
   return Uint8List.fromList(encodedArchive);
 }
@@ -289,7 +289,7 @@ class _OfficialTelegramDocumentPageState
       _loadingWatchdog = null;
       _loadGeneration++;
       setState(() {
-        error = 'استغرق تجهيز معاينة البرقية وقتًا أطول من المتوقع. تحقّق من الاتصال ثم أعد المحاولة.';
+        error = 'استغرق تجهيز معاينة الوثيقة وقتًا أطول من المتوقع. تحقّق من الاتصال ثم أعد المحاولة.';
         loading = false;
       });
     });
@@ -777,7 +777,7 @@ class _OfficialTelegramDocumentPageState
     ).trim();
 
     return [
-      'برقية رقم : $_displaySerial',
+      'وثيقة رقم : $_displaySerial',
       'تاريخ : $dateText',
       'موضوعها : ${_value(data['subject'], fallback: '—')}',
       'الجهة : ${organizationName.isEmpty ? 'الجهة المرسلة' : organizationName}',
@@ -885,7 +885,7 @@ class _OfficialTelegramDocumentPageState
     // The server's PNG response is intentionally a single-page image for
     // single-page exports; using it here silently dropped every later page
     // from long telegrams.
-    _beginIndeterminateProgress('جارٍ تجهيز صفحات البرقية من محرك Chromium');
+    _beginIndeterminateProgress('جارٍ تجهيز صفحات الوثيقة من محرك Chromium');
     final pdfBytes = await _renderer
         .renderPdf(
           html,
@@ -977,7 +977,7 @@ class _OfficialTelegramDocumentPageState
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('إعادة إصدار البرقية'),
+            title: const Text('إعادة إصدار الوثيقة'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1175,7 +1175,7 @@ class _OfficialTelegramDocumentPageState
             mimeType: 'image/png',
           ),
         ),
-        title: 'برقية رقم $_displaySerial',
+        title: 'وثيقة رقم $_displaySerial',
         text: _shareDescription,
       ),
     );
@@ -1204,7 +1204,7 @@ class _OfficialTelegramDocumentPageState
     } else {
       Toast.success(
         context,
-        isMultiPage ? 'تم حفظ ملف ZIP لصور صفحات البرقية.' : 'تم حفظ الصورة.',
+        isMultiPage ? 'تم حفظ ملف ZIP لصور صفحات الوثيقة.' : 'تم حفظ الصورة.',
       );
     }
   }, title: 'حفظ صور الوثيقة');
@@ -1241,7 +1241,7 @@ class _OfficialTelegramDocumentPageState
       bytes: file.bytes!,
     );
     if (mounted) {
-      Toast.success(context, 'تم إرفاق الملف بالبرقية');
+      Toast.success(context, 'تم إرفاق الملف بالوثيقة');
     }
   });
 
@@ -1297,13 +1297,13 @@ class _OfficialTelegramDocumentPageState
     final latitude = telegram?['gpsLatitude'];
     final longitude = telegram?['gpsLongitude'];
     final message = latitude == null || longitude == null
-        ? 'لا يوجد موقع مسجل لهذه البرقية.'
+        ? 'لا يوجد موقع مسجل لهذه الوثيقة.'
         : 'إحداثيات الموقع: $latitude, $longitude';
     if (!mounted) return;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('موقع البرقية'),
+        title: const Text('موقع الوثيقة'),
         content: Text(message),
         actions: [
           TextButton(
@@ -1392,7 +1392,7 @@ class _OfficialTelegramDocumentPageState
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'برقية رقم : ',
+                  'وثيقة رقم : ',
                   style: TextStyle(
                     fontFamily: 'Cairo',
                     color: Theme.of(context).colorScheme.onSurface,
@@ -1413,7 +1413,7 @@ class _OfficialTelegramDocumentPageState
             ),
             const SizedBox(height: 4),
             Text(
-              _value(telegram?['subject'], fallback: 'عرض البرقية'),
+              _value(telegram?['subject'], fallback: 'عرض الوثيقة'),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
@@ -1434,7 +1434,7 @@ class _OfficialTelegramDocumentPageState
             icon: const Icon(Icons.account_tree_outlined),
           ),
           IconButton(
-            tooltip: 'إغلاق تفاصيل البرقية',
+            tooltip: 'إغلاق تفاصيل الوثيقة',
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.close_rounded, size: 20),
           ),
@@ -1483,13 +1483,13 @@ class _OfficialTelegramDocumentPageState
                               child: CircularProgressIndicator(
                                 strokeWidth: 3.2,
                                 color: Color(0xFF159447),
-                                semanticsLabel: 'جارٍ تجهيز معاينة البرقية',
+                                semanticsLabel: 'جارٍ تجهيز معاينة الوثيقة',
                               ),
                             ),
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            'نجهّز معاينة البرقية',
+                            'نجهّز معاينة الوثيقة',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.onSurface,
@@ -1870,7 +1870,7 @@ class _OfficialTelegramDocumentPageState
                             onPressed: busy ? null : _showLocation,
                           ),
                           _documentAction(
-                            label: 'تعديل البرقية',
+                            label: 'تعديل الوثيقة',
                             icon: Icons.edit_outlined,
                             onPressed: busy || widget.onEdit == null
                                 ? null
@@ -2117,7 +2117,7 @@ String buildOfficialTelegramHtml({
   final outgoing =
       _value(telegram['organizationId'], fallback: '') ==
       _value(telegram['currentOrganizationId'], fallback: '');
-  final documentType = outgoing ? 'برقية صادرة' : 'برقية واردة';
+  final documentType = outgoing ? 'وثيقة صادرة' : 'وثيقة واردة';
   final classification = _label(
     telegramClassificationLabels,
     telegram['classification'],
@@ -2281,7 +2281,7 @@ $watermark
 <div class="header-government"><p class="government-name">الجمهورية العربية السورية</p><p class="government-subtitle">وزارة الداخلية</p>$organizationHierarchy</div>
 <div class="header-logo-cell">$logo</div>
 <div class="header-metadata">
-<p><strong>رقم البرقية:</strong> ${_escapeHtml(displaySerial)}</p>
+<p><strong>رقم الوثيقة:</strong> ${_escapeHtml(displaySerial)}</p>
 <p class="header-date-row"><strong>الوقت والتاريخ:</strong> <span class="header-date-value" dir="ltr">${_escapeHtml(headerCreatedAt)}</span></p>
 <p><strong>درجة السرية:</strong> ${_escapeHtml(classification)}</p>
 <p><strong>درجة الأسبقية:</strong> ${_escapeHtml(priority)}</p>
@@ -2296,8 +2296,8 @@ $watermark
 <p><strong>من:</strong> ${_escapeHtml(senderOrganizationName)}</p>
 <p><strong>إلى:</strong> ${_escapeHtml(_localizeDigits(_value(telegram['recipient']), numberSystem))}</p>
 <p><strong>الموضوع:</strong> ${_escapeHtml(_localizeDigits(_value(telegram['subject']), numberSystem))}</p>
-</div>${showVerificationQr ? '<div class="routing-qr" role="img" aria-label="رمز QR للتحقق من أصالة البرقية">$qrSvg</div>' : ''}</div></section>
-<h2 class="body-heading">نص البرقية</h2>
+</div>${showVerificationQr ? '<div class="routing-qr" role="img" aria-label="رمز QR للتحقق من أصالة الوثيقة">$qrSvg</div>' : ''}</div></section>
+<h2 class="body-heading">نص الوثيقة</h2>
 <div class="telegram-body" dir="rtl">${_renderTelegramBodyHtml(telegram['body'], numberSystem)}</div>
 <section class="signature">
 <p><strong>${_escapeHtml(_localizeDigits(_value(letterhead['unitChiefRank'] ?? settings['unitChiefRank'], fallback: 'رئيس الوحدة'), numberSystem))} ${_escapeHtml(_localizeDigits(_value(letterhead['unitChiefName'] ?? settings['unitChiefName'], fallback: ''), numberSystem))}</strong></p>
