@@ -103,92 +103,87 @@ afterEach(() => {
 
 describe("Appwrite authentication adapter", () => {
   it("authenticates an Appwrite user", async () => {
-      const result = await authenticateAppwriteUser(
-        "AbuNizar",
-        "strong-test-secret"
-      );
+    const result = await authenticateAppwriteUser(
+      "AbuNizar",
+      "strong-test-secret"
+    );
 
-      expect(result?.user.isPlatformOwner).toBe(true);
-      expect(result?.user.role).toBe("admin");
-      expect(result?.user.passwordHash).toBeNull();
-      expect(mocks.createEmailPasswordSession).toHaveBeenCalledWith({
-        email: "owner@example.com",
-        password: "strong-test-secret",
-      });
-      expect(mocks.updateRow).toHaveBeenCalledWith(
-        expect.objectContaining({
-          databaseId: "wathaeqi-db",
-          tableId: "users",
-          rowId: "1",
-        })
-      );
-    }
-  );
+    expect(result?.user.isPlatformOwner).toBe(true);
+    expect(result?.user.role).toBe("admin");
+    expect(result?.user.passwordHash).toBeNull();
+    expect(mocks.createEmailPasswordSession).toHaveBeenCalledWith({
+      email: "owner@example.com",
+      password: "strong-test-secret",
+    });
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "wathaeqi-db",
+        tableId: "users",
+        rowId: "1",
+      })
+    );
+  });
 
   it("rejects a mismatched Appwrite identity", async () => {
-      mocks.get.mockResolvedValueOnce({ $id: "different-user-id" });
+    mocks.get.mockResolvedValueOnce({ $id: "different-user-id" });
 
-      const result = await authenticateAppwriteUser(
-        "AbuNizar",
-        "strong-test-secret"
-      );
+    const result = await authenticateAppwriteUser(
+      "AbuNizar",
+      "strong-test-secret"
+    );
 
-      expect(result).toBeNull();
-      expect(mocks.deleteSession).toHaveBeenCalledWith({
-        sessionId: "current",
-      });
-      expect(mocks.updateRow).not.toHaveBeenCalled();
-    }
-  );
+    expect(result).toBeNull();
+    expect(mocks.deleteSession).toHaveBeenCalledWith({
+      sessionId: "current",
+    });
+    expect(mocks.updateRow).not.toHaveBeenCalled();
+  });
 
   it("validates the signed Appwrite session", async () => {
-      const request = {
-        headers: {
-          cookie: await createSessionCookie("session-version-1"),
-        },
-      } as never;
+    const request = {
+      headers: {
+        cookie: await createSessionCookie("session-version-1"),
+      },
+    } as never;
 
-      const user = await getAppwriteAuthenticatedUserFromRequest(request);
+    const user = await getAppwriteAuthenticatedUserFromRequest(request);
 
-      expect(user?.authUserId).toBe("appwrite-user-id");
-      expect(mocks.getAppwriteSessionClient).toHaveBeenCalledWith(
-        "appwrite-session-secret"
-      );
-    }
-  );
+    expect(user?.authUserId).toBe("appwrite-user-id");
+    expect(mocks.getAppwriteSessionClient).toHaveBeenCalledWith(
+      "appwrite-session-secret"
+    );
+  });
 
   it("rejects stale session versions", async () => {
-      const request = {
-        headers: {
-          cookie: await createSessionCookie("stale-session-version"),
-        },
-      } as never;
+    const request = {
+      headers: {
+        cookie: await createSessionCookie("stale-session-version"),
+      },
+    } as never;
 
-      await expect(
-        getAppwriteAuthenticatedUserFromRequest(request)
-      ).resolves.toBeNull();
-    }
-  );
+    await expect(
+      getAppwriteAuthenticatedUserFromRequest(request)
+    ).resolves.toBeNull();
+  });
 
   it("sets secure session cookies", async () => {
-      const response = { setHeader: vi.fn() } as never;
+    const response = { setHeader: vi.fn() } as never;
 
-      await setAppwriteSessionCookie(response, session as never, {
-        id: 1,
-        authUserId: "appwrite-user-id",
-        sessionVersion: "session-version-1",
-      });
+    await setAppwriteSessionCookie(response, session as never, {
+      id: 1,
+      authUserId: "appwrite-user-id",
+      sessionVersion: "session-version-1",
+    });
 
-      expect(response.setHeader).toHaveBeenCalledWith(
-        "Set-Cookie",
-        expect.stringContaining("HttpOnly")
-      );
-      expect(response.setHeader).toHaveBeenCalledWith(
-        "Set-Cookie",
-        expect.stringContaining("Secure")
-      );
-    }
-  );
+    expect(response.setHeader).toHaveBeenCalledWith(
+      "Set-Cookie",
+      expect.stringContaining("HttpOnly")
+    );
+    expect(response.setHeader).toHaveBeenCalledWith(
+      "Set-Cookie",
+      expect.stringContaining("Secure")
+    );
+  });
 
   it("clears the session cookie", () => {
     const response = { setHeader: vi.fn() } as never;
