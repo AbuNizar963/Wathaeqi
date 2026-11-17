@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const loadRateLimiter = async () => {
   vi.resetModules();
-  vi.stubEnv("AUTH_SESSION_SECRET", "test-only-session-secret-with-more-than-32-chars");
+  vi.stubEnv(
+    "AUTH_SESSION_SECRET",
+    "test-only-session-secret-with-more-than-32-chars"
+  );
   return import("./loginRateLimit");
 };
 
