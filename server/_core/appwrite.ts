@@ -18,6 +18,14 @@ let adminClient: Client | null = null;
 let tablesDb: TablesDB | null = null;
 let storage: Storage | null = null;
 
+function normalizeEndpointPath(pathname: string): string {
+  let normalizedPath = pathname;
+  while (normalizedPath.endsWith("/")) {
+    normalizedPath = normalizedPath.slice(0, -1);
+  }
+  return normalizedPath;
+}
+
 function readAdminConfig(): AppwriteAdminConfig {
   const endpoint = ENV.appwriteEndpoint.trim();
   const projectId = ENV.appwriteProjectId.trim();
