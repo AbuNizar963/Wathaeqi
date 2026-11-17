@@ -61,7 +61,7 @@ export function assertProductionEnvironment(env: typeof ENV = ENV): void {
       );
     }
 
-    const endpointPath = parsedEndpoint.pathname.replace(/\\/+$/, "");
+    const endpointPath = parsedEndpoint.pathname.replace(/\/+$/, "");
     if (
       parsedEndpoint.protocol !== "https:" ||
       !parsedEndpoint.hostname ||
