@@ -709,7 +709,11 @@ export const appRouter = router({
           });
         }
 
-        setAppwriteSessionCookie(ctx.res, authenticated.session);
+        await setAppwriteSessionCookie(
+          ctx.res,
+          authenticated.session,
+          authenticated.user
+        );
         return publicUser(authenticated.user);
       }),
 
