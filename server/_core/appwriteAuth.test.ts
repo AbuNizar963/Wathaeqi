@@ -140,6 +140,29 @@ describe("Appwrite authentication adapter", () => {
     );
   });
 
+  it("rejects an Appwrite session after the profile session version changes", async () => {
+    const token = await new SignJWT({
+      appwriteSessionSecret: "appwrite-session-secret",
+      sessionVersion: "stale-session-version",
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("1")
+      .setIssuedAt()
+      .setExpirationTime("1h")
+      .sign(
+        new TextEncoder().encode(
+          "test-only-session-secret-with-more-than-32-chars"
+        )
+      );
+    const request = {
+      headers: { cookie: `police_telegrams_session=${token}` },
+    } as never;
+
+    await expect(
+      getAppwriteAuthenticatedUserFromRequest(request)
+    ).resolves.toBeNull();
+  });
+
   it("sets an HttpOnly secure cookie using the signed Appwrite session expiry", async () => {
     const response = { setHeader: vi.fn() } as never;
 
