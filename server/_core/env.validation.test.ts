@@ -50,7 +50,16 @@ describe("assertProductionEnvironment", () => {
     ).toThrow("APPWRITE_DATABASE_ID");
   });
 
-  it("rejects a missing or weak session secret", () => {
+  it("allows the API to start without a session secret while auth remains gated", () => {
+    expect(() =>
+      assertProductionEnvironment({
+        ...validEnvironment,
+        authSessionSecret: "",
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects a configured but weak session secret", () => {
     expect(() =>
       assertProductionEnvironment({
         ...validEnvironment,
