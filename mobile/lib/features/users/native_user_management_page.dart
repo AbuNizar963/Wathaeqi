@@ -231,7 +231,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
     final accepted = await _confirmAction(
       title: 'تعطيل الحساب',
       message:
-          'سيتم تعطيل الحساب مع الاحتفاظ ببرقياته وسجلاته. '
+          'سيتم تعطيل الحساب مع الاحتفاظ بوثائقه وسجلاته. '
           'يمكن إعادة تفعيله لاحقًا.',
     );
     if (!accepted) return;
@@ -243,7 +243,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
         mutation: true,
         input: {'id': user['id'], 'confirmPassword': password},
       );
-      _showMessage('تم تعطيل الحساب مع الحفاظ على سجلاته وبرقياته');
+      _showMessage('تم تعطيل الحساب مع الحفاظ على سجلاته ووثائقه');
     });
   }
 
@@ -271,8 +271,8 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
     final accepted = await _confirmAction(
       title: 'حذف الحساب نهائيًا',
       message:
-          'قد يرفض الخادم الحذف إذا كان الحساب مرتبطًا ببرقيات أو سجلات تدقيق. '
-          'لن تُحذف أي برقيات تلقائيًا.',
+          'قد يرفض الخادم الحذف إذا كان الحساب مرتبطًا بوثائق أو سجلات تدقيق. '
+          'لن تُحذف أي وثائق تلقائيًا.',
     );
     if (!accepted) return;
     final password = await _confirmPassword('تأكيد الحذف النهائي');
