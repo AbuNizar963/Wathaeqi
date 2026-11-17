@@ -744,7 +744,7 @@ export default function Home() {
   const importExcel = trpc.telegrams.importRows.useMutation({
     onSuccess: result => {
       toast.success(
-        `تم استيراد ${result.created} برقية${result.skipped ? `، وتخطي ${result.skipped} مكررة` : ""}`
+        `تم استيراد ${result.created} وثيقة${result.skipped ? `، وتخطي ${result.skipped} مكررة` : ""}`
       );
       if (result.errors.length > 0) {
         toast.warning(`تعذر استيراد ${result.errors.length} صفًا`);
@@ -773,7 +773,7 @@ export default function Home() {
   const composerAttachmentRef = useRef<File | null>(null);
   const create = trpc.telegrams.create.useMutation({
     onSuccess: async telegram => {
-      toast.success("تم تسجيل البرقية وربطها بهويتك الرقمية");
+      toast.success("تم تسجيل الوثيقة وربطها بهويتك الرقمية");
       void showLocalTelegramNotification({
         serialCode: getTelegramDisplayNumber(
           getTelegramSerialCode(telegram),
@@ -788,12 +788,12 @@ export default function Home() {
       if (attachment) {
         try {
           await uploadTelegramAttachmentBinary(telegram.id, attachment);
-          toast.success("تم إرفاق الملف بالبرقية");
+          toast.success("تم إرفاق الملف بالوثيقة");
         } catch (error) {
           toast.error(
             error instanceof Error
-              ? `تم إنشاء البرقية لكن تعذر إرفاق الملف: ${error.message}`
-              : "تم إنشاء البرقية لكن تعذر إرفاق الملف"
+              ? `تم إنشاء الوثيقة لكن تعذر إرفاق الملف: ${error.message}`
+              : "تم إنشاء الوثيقة لكن تعذر إرفاق الملف"
           );
         }
       }
@@ -807,7 +807,7 @@ export default function Home() {
     },
     onError: error => {
       composerAttachmentRef.current = null;
-      toast.error(error.message || "تعذر إنشاء البرقية");
+      toast.error(error.message || "تعذر إنشاء الوثيقة");
     },
   });
   const data = stats.data ?? {
@@ -1056,7 +1056,7 @@ export default function Home() {
               onClick={() => setReportOpen(true)}
               aria-haspopup="dialog"
             >
-              تقرير البرقيات
+              تقرير الوثائق
             </Button>
           )}
           <Button
@@ -1110,7 +1110,7 @@ export default function Home() {
               <p className="text-sm font-bold">تنبيه أمني يحتاج إلى متابعة</p>
               <p className="text-xs opacity-80">
                 يوجد {formatCount(data.urgentAwaitingReceipt, numberSystem)}{" "}
-                برقية ذات أولوية عاجلة موجّهة إلى الجهة الحالية بانتظار
+                وثيقة ذات أولوية عاجلة موجّهة إلى الجهة الحالية بانتظار
                 الاستلام.
               </p>
             </div>
@@ -1119,18 +1119,18 @@ export default function Home() {
             onClick={() => setPriority("urgent")}
             className="rounded-lg border border-current/20 px-3 py-1.5 text-xs font-semibold hover:bg-red-500/10"
           >
-            عرض البرقيات <ArrowUpLeft className="mr-1 inline h-3 w-3" />
+            عرض الوثائق <ArrowUpLeft className="mr-1 inline h-3 w-3" />
           </button>
         </div>
       )}
 
       <section
-        aria-label="إحصائيات البرقيات"
+        aria-label="إحصائيات الوثائق"
         className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-6"
       >
         <Kpi
           numberSystem={numberSystem}
-          label="إجمالي البرقيات"
+          label="إجمالي الوثائق"
           value={data.total}
           detail="الرصيد التشغيلي"
           icon={FileText}
@@ -1195,7 +1195,7 @@ export default function Home() {
           <div className="flex flex-col gap-4 border-b p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold">سجل البرقيات الكامل</h2>
+                <h2 className="text-lg font-bold">سجل الوثائق الكامل</h2>
                 <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
                   {formatCount(rows.length, numberSystem)} نتيجة
                 </span>
@@ -1216,7 +1216,7 @@ export default function Home() {
                             ? "قيد الإجراء"
                             : activeKpi === "resolved"
                               ? "مكتملة نهائيًا"
-                              : "إجمالي البرقيات"}
+                              : "إجمالي الوثائق"}
                     <X className="h-3 w-3" />
                   </button>
                 ) : null}
@@ -1241,21 +1241,21 @@ export default function Home() {
             <TelegramViewButton
               active={telegramView === "all"}
               icon={ListFilter}
-              label="كل البرقيات"
+              label="كل الوثائق"
               count={data.total}
               onClick={() => setTelegramView("all")}
             />
             <TelegramViewButton
               active={telegramView === "outgoing"}
               icon={Send}
-              label="البرقيات الصادرة"
+              label="الوثائق الصادرة"
               count={data.outgoing}
               onClick={() => setTelegramView("outgoing")}
             />
             <TelegramViewButton
               active={telegramView === "incoming"}
               icon={Inbox}
-              label="البرقيات الواردة"
+              label="الوثائق الواردة"
               count={data.incoming}
               onClick={() => setTelegramView("incoming")}
             />
@@ -1265,7 +1265,7 @@ export default function Home() {
               <Filter className="h-3.5 w-3.5 text-muted-foreground" />
               {organizationContext.data?.isOwner ? (
                 <span className="rounded-md border bg-background px-2.5 py-1.5 text-xs">
-                  برقيات جهة العمل المحددة فقط
+                  وثائق جهة العمل المحددة فقط
                 </span>
               ) : (
                 <select
@@ -1361,7 +1361,7 @@ export default function Home() {
           <div className="divide-y">
             {list.isLoading && (
               <div className="p-12 text-center text-sm text-muted-foreground">
-                جارٍ تحديث سجل البرقيات...
+                جارٍ تحديث سجل الوثائق...
               </div>
             )}
             {!list.isLoading && rows.length === 0 && (
@@ -1369,7 +1369,7 @@ export default function Home() {
                 <FileText className="mx-auto h-10 w-10 text-muted-foreground/30" />
                 <p className="mt-3 font-semibold">لا توجد نتائج</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  غيّر الفلاتر أو أنشئ برقية جديدة.
+                  غيّر الفلاتر أو أنشئ وثيقة جديدة.
                 </p>
               </div>
             )}
@@ -1388,7 +1388,7 @@ export default function Home() {
                 <div className="relative flex flex-wrap items-center gap-2 pl-16">
                   {isOutgoingTelegram(row) ? (
                     <span
-                      aria-label="برقية صادرة"
+                      aria-label="وثيقة صادرة"
                       className="absolute left-0 top-1/2 inline-flex w-fit -translate-y-1/2 items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-bold leading-4 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300"
                     >
                       <ArrowUp aria-hidden="true" className="h-3.5 w-3.5" />
@@ -1396,7 +1396,7 @@ export default function Home() {
                     </span>
                   ) : (
                     <span
-                      aria-label="برقية واردة"
+                      aria-label="وثيقة واردة"
                       className="absolute left-0 top-1/2 inline-flex w-fit -translate-y-1/2 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold leading-4 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
                     >
                       <ArrowDown aria-hidden="true" className="h-3.5 w-3.5" />
@@ -1404,7 +1404,7 @@ export default function Home() {
                     </span>
                   )}
                   <span className="text-base font-bold text-foreground sm:text-lg">
-                    برقية رقم: {getTelegramDisplaySerial(row, numberSystem)}
+                    وثيقة رقم: {getTelegramDisplaySerial(row, numberSystem)}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 gap-1 text-sm font-medium leading-6 text-muted-foreground">
@@ -1480,12 +1480,12 @@ export default function Home() {
       <Button
         type="button"
         onClick={() => setComposerOpen(true)}
-        aria-label="إنشاء برقية جديدة"
-        title="إنشاء برقية جديدة"
+        aria-label="إنشاء وثيقة جديدة"
+        title="إنشاء وثيقة جديدة"
         className="group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
       >
         <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
-        <span className="sr-only">برقية جديدة</span>
+        <span className="sr-only">وثيقة جديدة</span>
       </Button>
 
       {displayCustomizeOpen && (
@@ -1666,7 +1666,7 @@ function ExcelExportPreviewModal({
 }) {
   return (
     <Modal
-      title="معاينة تصدير سجل البرقيات"
+      title="معاينة تصدير سجل الوثائق"
       subtitle="القالب الرسمي — صادر ووارد"
       close={close}
       wide
@@ -1762,14 +1762,14 @@ function ExcelToolsModal({
 }) {
   return (
     <Modal
-      title="استيراد وتصدير سجل البرقيات"
+      title="استيراد وتصدير سجل الوثائق"
       subtitle="أدوات السجل بصيغة Excel"
       close={close}
     >
       <div className="space-y-4">
         <p className="text-sm leading-7 text-muted-foreground">
           استخدم هذه النافذة لتصدير النتائج المفلترة أو استيراد سجل مطابق لنموذج
-          البرقيات المعتمد.
+          الوثائق المعتمد.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <button
@@ -1780,7 +1780,7 @@ function ExcelToolsModal({
           >
             <FileSpreadsheet className="h-8 w-8 text-primary" />
             <span className="font-bold">
-              {exporting ? "جارٍ تجهيز الملف..." : "تصدير سجل البرقيات"}
+              {exporting ? "جارٍ تجهيز الملف..." : "تصدير سجل الوثائق"}
             </span>
             <span className="text-xs text-muted-foreground">
               ملف Excel بورقتي صادر ووارد
@@ -1805,7 +1805,7 @@ function ExcelToolsModal({
                 className="flex min-h-32 flex-col items-center justify-center gap-3 rounded-2xl border border-[#b4945a]/30 bg-[#b4945a]/[0.06] p-5 text-center transition-colors hover:border-[#b4945a] hover:bg-[#b4945a]/[0.12]"
               >
                 <Upload className="h-8 w-8 text-brand-accent" />
-                <span className="font-bold">استيراد سجل البرقيات</span>
+                <span className="font-bold">استيراد سجل الوثائق</span>
                 <span className="text-xs text-muted-foreground">
                   معاينة وفحص قبل الاعتماد
                 </span>
@@ -1822,7 +1822,7 @@ function ExcelToolsModal({
         </div>
         <div className="rounded-xl border bg-muted/20 p-3 text-xs leading-6 text-muted-foreground">
           يحافظ التصدير والاستيراد على ترتيب أعمدة السجل، بما في ذلك عمود تاريخ
-          البرقية، ولا يؤدي الاستيراد إلى حذف أو استبدال السجلات الموجودة.
+          الوثيقة، ولا يؤدي الاستيراد إلى حذف أو استبدال السجلات الموجودة.
         </div>
       </div>
     </Modal>
@@ -1858,7 +1858,7 @@ function ExcelImportPreviewModal({
 }) {
   return (
     <Modal
-      title="مراجعة استيراد سجل البرقيات"
+      title="مراجعة استيراد سجل الوثائق"
       subtitle="استيراد ذكي وآمن من Excel"
       close={close}
       wide
@@ -1886,7 +1886,7 @@ function ExcelImportPreviewModal({
         </div>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-6 text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-100">
           سيُنشئ النظام رقمًا جديدًا لكل سجل داخل المنصة، ويحفظ رقم الصف والورقة
-          والوقت الأصلي في سجل التدقيق. لن تُحذف البرقيات الموجودة، وإعادة رفع
+          والوقت الأصلي في سجل التدقيق. لن تُحذف الوثائق الموجودة، وإعادة رفع
           الملف نفسه ستتخطى الصفوف المستوردة سابقًا.
         </div>
         {issues.length > 0 && (
@@ -1919,8 +1919,8 @@ function ExcelImportPreviewModal({
                 <th className="p-3">الرقم الأصلي</th>
                 <th className="p-3">الوقت</th>
                 <th className="p-3">المرسل</th>
-                <th className="p-3">تاريخ البرقية</th>
-                <th className="p-3">نص البرقية</th>
+                <th className="p-3">تاريخ الوثيقة</th>
+                <th className="p-3">نص الوثيقة</th>
                 <th className="p-3">المستلم</th>
               </tr>
             </thead>
@@ -2027,7 +2027,7 @@ function ExcelImportPreviewModal({
           >
             {pending
               ? "جارٍ استيراد السجلات..."
-              : `اعتماد استيراد ${selectedRows.size} برقية`}
+              : `اعتماد استيراد ${selectedRows.size} وثيقة`}
           </Button>
         </div>
       </div>
@@ -2054,7 +2054,7 @@ function DisplayCustomizationModal({
     {
       key: "category",
       label: "التصنيف",
-      description: "يعرض نوع البرقية مثل جنائي أو إداري.",
+      description: "يعرض نوع الوثيقة مثل جنائي أو إداري.",
     },
     {
       key: "priority",
@@ -2064,19 +2064,19 @@ function DisplayCustomizationModal({
     {
       key: "creator",
       label: "المنشئ والوقت",
-      description: "يعرض اسم المنشئ ووقت إنشاء البرقية.",
+      description: "يعرض اسم المنشئ ووقت إنشاء الوثيقة.",
     },
   ];
 
   return (
     <Modal
-      title="تخصيص عرض سجل البرقيات"
+      title="تخصيص عرض سجل الوثائق"
       subtitle="إعدادات عرض السجل"
       close={close}
     >
       <div className="space-y-4">
         <div className="rounded-xl border bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
-          اختر المعلومات التي تظهر في سجل البرقيات على الشاشات الكبيرة. الرقم
+          اختر المعلومات التي تظهر في سجل الوثائق على الشاشات الكبيرة. الرقم
           والموضوع يبقيان ظاهرين دائمًا حتى لا تفقد هوية السجل الأساسية.
         </div>
         <div className="space-y-2">
@@ -2153,7 +2153,7 @@ function TelegramReportModal({
   };
   const downloadCsv = () => {
     const header = [
-      "رقم البرقية",
+      "رقم الوثيقة",
       "الموضوع",
       "الجهة",
       "الحالة",
@@ -2186,7 +2186,7 @@ function TelegramReportModal({
   };
   return (
     <Modal
-      title="تقرير البرقيات"
+      title="تقرير الوثائق"
       subtitle={
         report.data
           ? `أُنشئ في ${formatConfiguredDate(report.data.generatedAt, settings)}`
@@ -2455,7 +2455,7 @@ function TelegramComposer({
   const save = () => {
     if (!online) {
       toast.error(
-        "لا يوجد اتصال؛ لم تُحفظ البرقية مركزيًا. أعد المحاولة عند عودة الاتصال."
+        "لا يوجد اتصال؛ لم تُحفظ الوثيقة مركزيًا. أعد المحاولة عند عودة الاتصال."
       );
       return;
     }
@@ -2464,12 +2464,12 @@ function TelegramComposer({
       recipient.trim().length < 2 ||
       body.trim().length < 3
     ) {
-      toast.error("أكمل الموضوع والجهة ونص البرقية");
+      toast.error("أكمل الموضوع والجهة ونص الوثيقة");
       return;
     }
 
     if (!/^[1-9]\d{0,8}$/.test(serialNumber)) {
-      toast.error("أدخل رقم برقية صحيحًا");
+      toast.error("أدخل رقم وثيقة صحيحًا");
       return;
     }
 
@@ -2490,7 +2490,7 @@ function TelegramComposer({
   };
 
   return (
-    <Modal title="إنشاء برقية جديدة" close={close} fullScreenOnMobile compact>
+    <Modal title="إنشاء وثيقة جديدة" close={close} fullScreenOnMobile compact>
       <div className="grid min-w-0 max-w-full gap-4">
         {!online && (
           <div
@@ -2502,7 +2502,7 @@ function TelegramComposer({
           </div>
         )}
         <label className="grid gap-1.5 text-xs font-bold">
-          رقم البرقية
+          رقم الوثيقة
           <Input
             value={localizeDigits(serialNumber, numberSystem)}
             onChange={event => {
@@ -2515,7 +2515,7 @@ function TelegramComposer({
             inputMode="numeric"
             dir="rtl"
             placeholder={
-              suggestedSerial.isLoading ? "جارٍ اقتراح الرقم..." : "رقم البرقية"
+              suggestedSerial.isLoading ? "جارٍ اقتراح الرقم..." : "رقم الوثيقة"
             }
             aria-describedby="telegram-serial-help"
             className="h-11 w-full min-w-0 max-w-full rounded-lg text-right font-mono tracking-wide"
@@ -2654,7 +2654,7 @@ function TelegramComposer({
         </label>
 
         <label className="grid gap-1.5 text-xs font-bold">
-          نص البرقية
+          نص الوثيقة
           <div className="relative">
             <Textarea
               value={body}
@@ -2715,7 +2715,7 @@ function TelegramComposer({
             )}
             <button
               type="button"
-              aria-label="إرفاق ملف بالبرقية"
+              aria-label="إرفاق ملف بالوثيقة"
               title="اختيار مرفق من المعرض أو الملفات"
               onClick={() => setAttachmentPickerOpen(current => !current)}
               disabled={pending}
@@ -2750,7 +2750,7 @@ function TelegramComposer({
           disabled={pending || !online}
           className="h-11 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          {pending ? "جارٍ الإرسال..." : "إرسال البرقية"}
+          {pending ? "جارٍ الإرسال..." : "إرسال الوثيقة"}
         </Button>
       </div>
     </Modal>
@@ -2801,7 +2801,7 @@ async function waitForOfficialDocumentImages(root: ParentNode): Promise<void> {
             };
             const onError = () => {
               cleanup();
-              reject(new Error("تعذر تحميل صورة الشعار داخل البرقية"));
+              reject(new Error("تعذر تحميل صورة الشعار داخل الوثيقة"));
             };
 
             image.addEventListener("load", onLoad, { once: true });
@@ -2822,7 +2822,7 @@ async function waitForOfficialDocumentImages(root: ParentNode): Promise<void> {
 
         if (image.naturalWidth <= 0 || image.naturalHeight <= 0) {
           throw new Error(
-            "صورة الشعار داخل البرقية غير صالحة للطباعة أو التصدير"
+            "صورة الشعار داخل الوثيقة غير صالحة للطباعة أو التصدير"
           );
         }
       } catch (error) {
@@ -2830,7 +2830,7 @@ async function waitForOfficialDocumentImages(root: ParentNode): Promise<void> {
         // The caller can show a clear retry/error message instead.
         throw error instanceof Error
           ? error
-          : new Error("تعذر تحميل صورة الشعار داخل البرقية");
+          : new Error("تعذر تحميل صورة الشعار داخل الوثيقة");
       }
     })
   );
@@ -3026,7 +3026,7 @@ function TelegramDetail({
           );
         }
       );
-      toast.success("تم حفظ تعديلات البرقية");
+      toast.success("تم حفظ تعديلات الوثيقة");
       setEditOpen(false);
       await Promise.all([
         utils.telegrams.get.invalidate({ id: telegram.id }),
@@ -3034,7 +3034,7 @@ function TelegramDetail({
         utils.dashboard.stats.invalidate(),
       ]);
     },
-    onError: error => toast.error(error.message || "تعذر تعديل البرقية"),
+    onError: error => toast.error(error.message || "تعذر تعديل الوثيقة"),
   });
   const reissueTelegram = trpc.telegrams.reissue.useMutation({
     onSuccess: async result => {
@@ -3053,7 +3053,7 @@ function TelegramDetail({
         utils.telegrams.get.invalidate({ id: telegram.id }),
       ]);
     },
-    onError: error => toast.error(error.message || "تعذرت إعادة إصدار البرقية"),
+    onError: error => toast.error(error.message || "تعذرت إعادة إصدار الوثيقة"),
   });
   const deleteTelegram = trpc.telegrams.delete.useMutation({
     onSuccess: async result => {
@@ -3075,12 +3075,12 @@ function TelegramDetail({
       close();
       toast.success(
         result.deletedAttachmentCount > 0
-          ? `تم حذف البرقية ${getTelegramDisplayNumber(result.serialCode)} نهائيًا مع ${result.deletedAttachmentCount} مرفق`
-          : `تم حذف البرقية ${getTelegramDisplayNumber(result.serialCode)} نهائيًا`
+          ? `تم حذف الوثيقة ${getTelegramDisplayNumber(result.serialCode)} نهائيًا مع ${result.deletedAttachmentCount} مرفق`
+          : `تم حذف الوثيقة ${getTelegramDisplayNumber(result.serialCode)} نهائيًا`
       );
       if (result.pendingStorageCleanup > 0) {
         toast.warning(
-          "تم حذف البرقية، لكن تعذر تنظيف بعض ملفات المرفقات من مساحة التخزين"
+          "تم حذف الوثيقة، لكن تعذر تنظيف بعض ملفات المرفقات من مساحة التخزين"
         );
       }
       await Promise.all([
@@ -3090,11 +3090,11 @@ function TelegramDetail({
         utils.reports.telegrams.invalidate(),
       ]);
     },
-    onError: error => toast.error(error.message || "تعذر حذف البرقية"),
+    onError: error => toast.error(error.message || "تعذر حذف الوثيقة"),
   });
   const notifyManagementExpired = () =>
     toast.info(
-      "انتهت مهلة تعديل وحذف البرقية البالغة 48 ساعة. يرجى التواصل مع مسؤول الجهة إذا كان هناك خطأ."
+      "انتهت مهلة تعديل وحذف الوثيقة البالغة 48 ساعة. يرجى التواصل مع مسؤول الجهة إذا كان هناك خطأ."
     );
   const requestPermanentDelete = () => {
     if (managementExpired) {
@@ -3112,7 +3112,7 @@ function TelegramDetail({
     }
     if (
       window.confirm(
-        `سيتم حذف البرقية ${getTelegramDisplayNumber(telegram.serialCode)} حذفًا نهائيًا مع مرفقاتها وسجل مسارها، ولن تبقى في قاعدة البيانات. لا يمكن التراجع عن هذا الإجراء. هل تريد المتابعة؟`
+        `سيتم حذف الوثيقة ${getTelegramDisplayNumber(telegram.serialCode)} حذفًا نهائيًا مع مرفقاتها وسجل مسارها، ولن تبقى في قاعدة البيانات. لا يمكن التراجع عن هذا الإجراء. هل تريد المتابعة؟`
       )
     ) {
       deleteTelegram.mutate({ id: telegram.id, reason: normalizedReason });
@@ -3133,7 +3133,7 @@ function TelegramDetail({
     }
     if (
       !window.confirm(
-        `سيتم إنشاء إصدار جديد للبرقية ${getTelegramDisplayNumber(telegram.serialCode)} بالشعار الحالي للجهة، مع الاحتفاظ بالرقم الرسمي والنسخ السابقة. هل تريد المتابعة؟`
+        `سيتم إنشاء إصدار جديد للوثيقة ${getTelegramDisplayNumber(telegram.serialCode)} بالشعار الحالي للجهة، مع الاحتفاظ بالرقم الرسمي والنسخ السابقة. هل تريد المتابعة؟`
       )
     ) {
       return;
@@ -3165,14 +3165,14 @@ function TelegramDetail({
           }
         );
       }
-      toast.success("تم تسجيل انتقال البرقية وتحديث سجل التدقيق");
+      toast.success("تم تسجيل انتقال الوثيقة وتحديث سجل التدقيق");
       await Promise.all([
         utils.telegrams.get.invalidate({ id: telegram.id }),
         utils.telegrams.list.invalidate(),
         utils.dashboard.stats.invalidate(),
       ]);
     },
-    onError: error => toast.error(error.message || "تعذر تغيير حالة البرقية"),
+    onError: error => toast.error(error.message || "تعذر تغيير حالة الوثيقة"),
   });
   const [routeTarget, setRouteTarget] = useState("");
   const [routeNote, setRouteNote] = useState("");
@@ -3184,7 +3184,7 @@ function TelegramDetail({
       toast.success(
         route.approvalStatus === "pending"
           ? "تم إرسال طلب الإحالة إلى قيادة المحافظة للموافقة"
-          : "تمت إحالة البرقية إلى الوحدة الشرطية"
+          : "تمت إحالة الوثيقة إلى الوحدة الشرطية"
       );
       await Promise.all([
         utils.telegrams.get.invalidate({ id: telegram.id }),
@@ -3193,7 +3193,7 @@ function TelegramDetail({
       setRouteTarget("");
       setRouteNote("");
     },
-    onError: error => toast.error(error.message || "تعذر إحالة البرقية"),
+    onError: error => toast.error(error.message || "تعذر إحالة الوثيقة"),
   });
   const incomingRoutes = trpc.telegrams.incomingRoutes.useQuery({
     telegramId: telegram.id,
@@ -3215,8 +3215,8 @@ function TelegramDetail({
       onSuccess: async route => {
         toast.success(
           route.receiverDecisionStatus === "accepted"
-            ? "تم تأكيد استلام البرقية"
-            : "تم رفض استلام البرقية وتسجيل السبب"
+            ? "تم تأكيد استلام الوثيقة"
+            : "تم رفض استلام الوثيقة وتسجيل السبب"
         );
         await Promise.all([
           utils.telegrams.incomingRoutes.invalidate({
@@ -3333,7 +3333,7 @@ function TelegramDetail({
       return;
     }
     if (
-      !window.confirm(`تأكيد نقل البرقية إلى حالة: ${statusLabels[toStatus]}؟`)
+      !window.confirm(`تأكيد نقل الوثيقة إلى حالة: ${statusLabels[toStatus]}؟`)
     )
       return;
     transition.mutate({ id: telegram.id, toStatus, reason: reason || null });
@@ -3501,7 +3501,7 @@ function TelegramDetail({
         "قسم العمليات",
       numberSystem
     );
-    const documentType = isOutgoing ? "برقية صادرة" : "برقية واردة";
+    const documentType = isOutgoing ? "وثيقة صادرة" : "وثيقة واردة";
     const unitName = localizeDigits(
       historicalLetterhead?.unitName ??
         settings?.unitName ??
@@ -3626,7 +3626,7 @@ function TelegramDetail({
             cellSize: 4,
             margin: 4,
             scalable: true,
-            alt: "رمز QR للتحقق من أصالة البرقية",
+            alt: "رمز QR للتحقق من أصالة الوثيقة",
           });
         })()
       : "";
@@ -3849,7 +3849,7 @@ function TelegramDetail({
           </div>
           <div class="header-logo-cell">${logo}</div>
           <div class="header-metadata">
-            <p><strong>رقم البرقية:</strong> ${escapeHtml(displaySerial)}</p>
+            <p><strong>رقم الوثيقة:</strong> ${escapeHtml(displaySerial)}</p>
             <p class="header-date-row"><strong>الوقت والتاريخ:</strong> <span class="header-date-value" dir="ltr">${escapeHtml(headerCreatedAt)}</span></p>
             <p><strong>درجة السرية:</strong> ${escapeHtml(classificationLabels[documentTelegram.classification])}</p>
             <p><strong>درجة الأسبقية:</strong> ${escapeHtml(priorityLabels[documentTelegram.priority])}</p>
@@ -3868,10 +3868,10 @@ function TelegramDetail({
                 <p><strong>إلى:</strong> ${escapeHtml(localizeDigits(documentTelegram.recipient, numberSystem))}</p>
                 <p><strong>الموضوع:</strong> ${escapeHtml(localizeDigits(documentTelegram.subject, numberSystem))}</p>
               </div>
-              ${showVerificationQr ? `<div class="routing-qr" role="img" aria-label="رمز QR لبيانات البرقية">${qrSvg}</div>` : ""}
+              ${showVerificationQr ? `<div class="routing-qr" role="img" aria-label="رمز QR لبيانات الوثيقة">${qrSvg}</div>` : ""}
             </div>
           </section>
-          <h2 class="body-heading">نص البرقية</h2>
+          <h2 class="body-heading">نص الوثيقة</h2>
           <div class="telegram-body" dir="rtl">${renderTelegramBodyHtml(documentTelegram.body, numberSystem)}</div>
           <section class="signature">
             <p><strong>${escapeHtml(localizeDigits(historicalLetterhead?.unitChiefRank ?? settings?.unitChiefRank ?? "رئيس الوحدة", numberSystem))} ${escapeHtml(localizeDigits(historicalLetterhead?.unitChiefName ?? settings?.unitChiefName ?? "", numberSystem))}</strong></p>
@@ -3913,7 +3913,7 @@ function TelegramDetail({
       if (preparedTelegramIdRef.current !== historyErrorKey) {
         preparedTelegramIdRef.current = historyErrorKey;
         toast.error(
-          "تعذر تحميل سجل إصدارات البرقية؛ ستُعرض النسخة الحالية ويمكن إعادة المحاولة لاحقًا."
+          "تعذر تحميل سجل إصدارات الوثيقة؛ ستُعرض النسخة الحالية ويمكن إعادة المحاولة لاحقًا."
         );
       }
     }
@@ -3976,7 +3976,7 @@ function TelegramDetail({
       const createPreviewSheet = (pageIndex: number) => {
         const sheet = document.createElement("section");
         sheet.className = "telegram-preview-page";
-        sheet.setAttribute("aria-label", `صفحة البرقية ${pageIndex + 1}`);
+        sheet.setAttribute("aria-label", `صفحة الوثيقة ${pageIndex + 1}`);
         sheet.style.position = "relative";
         sheet.style.flex = "0 0 auto";
         sheet.style.width = `${PRINT_PAGE_WIDTH_PX}px`;
@@ -4089,7 +4089,7 @@ function TelegramDetail({
             utils.settings.get.fetch(undefined, { staleTime: 0 }),
           ]),
           OFFICIAL_DOCUMENT_PREPARATION_TIMEOUT_MS,
-          "استغرق تحميل إعدادات البرقية وقتًا أطول من المتوقع. أعد المحاولة."
+          "استغرق تحميل إعدادات الوثيقة وقتًا أطول من المتوقع. أعد المحاولة."
         );
         if (cancelled) return;
         let immediateLogoUrl = getTelegramPreviewLogoSource(exportSettings);
@@ -4162,7 +4162,7 @@ function TelegramDetail({
         utils.settings.get.fetch(undefined, { staleTime: 0 }),
       ]),
       OFFICIAL_DOCUMENT_PREPARATION_TIMEOUT_MS,
-      "استغرق تحميل إعدادات البرقية وقتًا أطول من المتوقع. أعد المحاولة."
+      "استغرق تحميل إعدادات الوثيقة وقتًا أطول من المتوقع. أعد المحاولة."
     );
     reportExportProgress(25, "اكتملت قراءة إعدادات الجهة والوثيقة");
 
@@ -4180,7 +4180,7 @@ function TelegramDetail({
 
     if (!logoForDocument) {
       throw new Error(
-        "لا يمكن تصدير صورة البرقية دون شعار الجهة المعتمد. تحقق من إعدادات الشعار ثم أعد المحاولة."
+        "لا يمكن تصدير صورة الوثيقة دون شعار الجهة المعتمد. تحقق من إعدادات الشعار ثم أعد المحاولة."
       );
     }
 
@@ -4190,7 +4190,7 @@ function TelegramDetail({
       outputTimestamp
     );
     const paper = wrapper.querySelector<HTMLElement>(".telegram-export-page");
-    if (!paper) throw new Error("تعذر تجهيز قالب البرقية للتصدير");
+    if (!paper) throw new Error("تعذر تجهيز قالب الوثيقة للتصدير");
     reportExportProgress(50, "اكتمل تجهيز قالب الوثيقة الرسمية");
 
     await withPreparationTimeout(
@@ -4453,7 +4453,7 @@ function TelegramDetail({
         ".telegram-export-page"
       );
       if (!printablePaper) {
-        throw new Error("تعذر تجهيز صفحة البرقية للطباعة.");
+        throw new Error("تعذر تجهيز صفحة الوثيقة للطباعة.");
       }
       applyTelegramPageNumbering(printablePaper);
 
@@ -4511,7 +4511,7 @@ function TelegramDetail({
       anchor.click();
 
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast.success("تم تنزيل صورة البرقية بدقة عالية");
+      toast.success("تم تنزيل صورة الوثيقة بدقة عالية");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر تصدير الصورة");
     } finally {
@@ -4637,12 +4637,12 @@ function TelegramDetail({
       settings?.unitName?.trim() ||
       "الجهة المرسلة";
     const shareText = [
-      `برقية رقم : ${shareNumber}`,
+      `وثيقة رقم : ${shareNumber}`,
       `تاريخ : ${shareDate}`,
       `موضوعها : ${documentTelegram.subject?.trim() || "—"}`,
       `الجهة : ${shareOrganization}`,
     ].join("\n");
-    const title = `برقية ${shareNumber}`;
+    const title = `وثيقة ${shareNumber}`;
 
     const prepareShareFile = async (format: "pdf" | "png") => {
       const outputTimestamp = await auditDocumentOutput("share", format);
@@ -4723,10 +4723,10 @@ function TelegramDetail({
         { type: "application/pdf" }
       );
       downloadExportFile(file);
-      toast.success("تم تنزيل البرقية بصيغة PDF مطابقة للطباعة");
+      toast.success("تم تنزيل الوثيقة بصيغة PDF مطابقة للطباعة");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "تعذر تصدير البرقية"
+        error instanceof Error ? error.message : "تعذر تصدير الوثيقة"
       );
     } finally {
       setExporting(null);
@@ -4736,7 +4736,7 @@ function TelegramDetail({
   return (
     <Modal
       title={documentTelegram.subject}
-      subtitle={`برقية رقم : ${getTelegramDisplaySerial(
+      subtitle={`وثيقة رقم : ${getTelegramDisplaySerial(
         telegram,
         settings?.numberSystem ?? "latin"
       )}`}
@@ -4772,7 +4772,7 @@ function TelegramDetail({
         className="telegram-preview-stage w-full overflow-hidden rounded-xl bg-[#eef1f5]"
         dir="rtl"
         lang="ar"
-        aria-label="معاينة البرقية بحجم الورقة"
+        aria-label="معاينة الوثيقة بحجم الورقة"
       />
       {documentSettingsUnavailable && !documentSettingsQuery.isLoading && (
         <div
@@ -4951,7 +4951,7 @@ function TelegramDetail({
       {attachments.data && attachments.data.length > 0 && (
         <div className="mt-4 rounded-xl border bg-muted/20 p-3 print:hidden">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold">مرفقات البرقية</p>
+            <p className="text-xs font-bold">مرفقات الوثيقة</p>
             <span className="text-[11px] text-muted-foreground">
               {attachments.data.length} ملف
             </span>
@@ -5071,11 +5071,11 @@ function TelegramDetail({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold">
                       {action.action === "status.transition"
-                        ? "تغيير حالة البرقية"
+                        ? "تغيير حالة الوثيقة"
                         : action.action === "attachment.upload"
                           ? "رفع مرفق"
                           : action.action === "telegram.reissue"
-                            ? "إعادة إصدار البرقية"
+                            ? "إعادة إصدار الوثيقة"
                             : action.action}
                     </span>
                     <time
@@ -5107,7 +5107,7 @@ function TelegramDetail({
       <div className="mt-3 print:hidden">
         <div
           className="grid w-full grid-cols-3 items-center gap-2 rounded-xl border bg-muted/20 p-2 [&>*:last-child:nth-child(3n+1)]:col-span-3"
-          aria-label="إجراءات البرقية"
+          aria-label="إجراءات الوثيقة"
           dir="rtl"
         >
           <label
@@ -5133,8 +5133,8 @@ function TelegramDetail({
             type="button"
             onClick={printTelegram}
             disabled={!!exporting || documentSettingsUnavailable}
-            title="طباعة البرقية"
-            aria-label="طباعة البرقية"
+            title="طباعة الوثيقة"
+            aria-label="طباعة الوثيقة"
             className="h-11 w-full min-w-0 justify-center gap-1 rounded-lg bg-primary px-1.5 text-[11px] whitespace-nowrap text-primary-foreground hover:bg-primary/90"
           >
             <Printer className="h-4 w-4" aria-hidden="true" />
@@ -5144,7 +5144,7 @@ function TelegramDetail({
           <details className="group relative w-full min-w-0">
             <summary
               title="تنزيل"
-              aria-label="خيارات تنزيل البرقية"
+              aria-label="خيارات تنزيل الوثيقة"
               className="flex h-11 w-full min-w-0 cursor-pointer list-none items-center justify-center gap-1 rounded-lg border bg-background px-1.5 text-[11px] whitespace-nowrap font-semibold marker:hidden transition hover:bg-muted [&::-webkit-details-marker]:hidden"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
@@ -5193,7 +5193,7 @@ function TelegramDetail({
           >
             <summary
               title="مشاركة"
-              aria-label="خيارات مشاركة البرقية"
+              aria-label="خيارات مشاركة الوثيقة"
               className="flex h-11 w-full min-w-0 cursor-pointer list-none items-center justify-center gap-1 rounded-lg border bg-background px-1.5 text-[11px] whitespace-nowrap font-semibold marker:hidden transition hover:bg-muted [&::-webkit-details-marker]:hidden"
             >
               <Share2 className="h-4 w-4" aria-hidden="true" />
@@ -5260,7 +5260,7 @@ function TelegramDetail({
                 longitude < -180 ||
                 longitude > 180
               ) {
-                toast.info("لا يوجد موقع جغرافي صالح مسجل لهذه البرقية");
+                toast.info("لا يوجد موقع جغرافي صالح مسجل لهذه الوثيقة");
                 return;
               }
               window.open(
@@ -5269,8 +5269,8 @@ function TelegramDetail({
                 "noopener,noreferrer"
               );
             }}
-            title="موقع البرقية"
-            aria-label="موقع البرقية"
+            title="موقع الوثيقة"
+            aria-label="موقع الوثيقة"
             className="h-11 w-full min-w-0 justify-center gap-1 rounded-lg px-1.5 text-[11px] whitespace-nowrap"
           >
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
@@ -5290,7 +5290,7 @@ function TelegramDetail({
               title={
                 managementExpired
                   ? "انتهت مهلة التعديل البالغة 48 ساعة"
-                  : "تعديل البرقية"
+                  : "تعديل الوثيقة"
               }
               className="h-11 w-full min-w-0 justify-center gap-1 rounded-lg px-1.5 text-[11px] whitespace-nowrap"
             >
@@ -5410,7 +5410,7 @@ function TelegramDetail({
                 variant="outline"
                 onClick={() => requestTransition("archived")}
                 disabled={transition.isPending}
-                title="أرشفة البرقية"
+                title="أرشفة الوثيقة"
                 className="h-11 w-full min-w-0 justify-center gap-1 rounded-lg px-1.5 text-[11px] whitespace-nowrap"
               >
                 <Archive className="h-4 w-4" aria-hidden="true" />
@@ -5508,7 +5508,7 @@ function TelegramDetail({
       )}
       <p className="mt-4 flex items-center gap-2 text-[11px] text-muted-foreground print:hidden">
         <Shield className="h-3.5 w-3.5" />
-        تُحفظ هوية المنشئ الأصلية في سجل البرقية، وتُسجل عمليات الإدارة في سجل
+        تُحفظ هوية المنشئ الأصلية في سجل الوثيقة، وتُسجل عمليات الإدارة في سجل
         التدقيق.
       </p>
     </Modal>
@@ -5560,7 +5560,7 @@ function TelegramEditModal({
   const [category, setCategory] = useState<Category>(telegram.category);
 
   return (
-    <Modal title="تعديل البرقية" subtitle="تحديث بيانات السجل" close={close}>
+    <Modal title="تعديل الوثيقة" subtitle="تحديث بيانات السجل" close={close}>
       <form
         className="space-y-4"
         onSubmit={event => {
@@ -5578,7 +5578,7 @@ function TelegramEditModal({
         }}
       >
         <label className="grid gap-1.5 text-sm font-semibold">
-          رقم البرقية الظاهر
+          رقم الوثيقة الظاهر
           <Input
             required
             minLength={1}
@@ -5595,7 +5595,7 @@ function TelegramEditModal({
           </span>
         </label>
         <label className="grid gap-1.5 text-sm font-semibold">
-          موضوع البرقية
+          موضوع الوثيقة
           <Input
             required
             minLength={2}
@@ -5621,7 +5621,7 @@ function TelegramEditModal({
           />
         </label>
         <label className="grid gap-1.5 text-sm font-semibold">
-          نص البرقية
+          نص الوثيقة
           <Textarea
             required
             minLength={3}
@@ -5900,7 +5900,7 @@ function DepartmentSettingsModal({
       setNumberSystem(normalizeNumberSystem(result.numberSystem));
       setLogoUrl(result?.logoUrl ?? null);
       await utils.settings.get.invalidate();
-      toast.success("تم تحديث هوية القسم وستظهر في البرقيات الجديدة");
+      toast.success("تم تحديث هوية القسم وستظهر في الوثائق الجديدة");
     },
     onError: error => toast.error(error.message || "تعذر تحديث إعدادات الجهة"),
   });
@@ -6026,7 +6026,7 @@ function DepartmentSettingsModal({
             </Button>
             <p className="mt-2 text-[11px] font-normal text-muted-foreground">
               يحدد هذا الاختيار الجهة المستخدمة في إعدادات العمل والترقيم
-              والبرقيات الجديدة، مع بقاء صلاحية المالك لإدارة جميع الجهات.
+              والوثائق الجديدة، مع بقاء صلاحية المالك لإدارة جميع الجهات.
             </p>
           </div>
         )}
@@ -6037,12 +6037,12 @@ function DepartmentSettingsModal({
             <strong className="mx-1 text-foreground">
               {organizationName ?? "الجهة الحالية"}
             </strong>
-            فقط، ولن تظهر هوية جهة أخرى في برقيات هذه الجهة.
+            فقط، ولن تظهر هوية جهة أخرى في وثائق هذه الجهة.
           </p>
         </div>
         <div className="rounded-xl border bg-muted/20 p-4">
           <p className="text-xs font-bold text-muted-foreground">
-            معاينة ترويسة البرقية
+            معاينة ترويسة الوثيقة
           </p>
           <div className="mt-4 border-b-2 border-[#b4945a] pb-4 text-center">
             <div className="flex items-center justify-center gap-3">
@@ -6059,7 +6059,7 @@ function DepartmentSettingsModal({
               )}
               <div className="min-w-0 text-center">
                 <p className="text-[10px] font-semibold tracking-[0.16em] text-muted-foreground">
-                  برقية رسمية
+                  وثيقة رسمية
                 </p>
                 <p className="text-xs font-semibold text-muted-foreground">
                   {localizeDigits(unitChiefRank, numberSystem)}{" "}
@@ -6090,7 +6090,7 @@ function DepartmentSettingsModal({
             className="h-11 rounded-lg"
           />
           <span className="text-[11px] font-normal text-muted-foreground">
-            اسم الجهة الشرطية الأساسية التي تصدر البرقيات.
+            اسم الجهة الشرطية الأساسية التي تصدر الوثائق.
           </span>
         </label>
         <label className="grid gap-1.5 text-xs font-bold">
@@ -6126,7 +6126,7 @@ function DepartmentSettingsModal({
           </label>
         </div>
         <label className="grid gap-1.5 text-xs font-bold">
-          رقم بادئة برقية صادرة
+          رقم بادئة وثيقة صادرة
           <Input
             value={serialPrefix}
             onChange={event =>
@@ -6143,7 +6143,7 @@ function DepartmentSettingsModal({
           </span>
         </label>
         <label className="grid gap-1.5 text-xs font-bold">
-          رقم بادئة برقية واردة
+          رقم بادئة وثيقة واردة
           <Input
             value={incomingSerialPrefix}
             onChange={event =>
@@ -6262,7 +6262,7 @@ function DepartmentSettingsModal({
               <option value="arabic">عربية: ٠١٢٣٤٥٦٧٨٩</option>
             </select>
             <span className="text-[10px] font-normal text-muted-foreground">
-              تُحوّل الأرقام المكتوبة في نص البرقية ورأسها عند الحفظ إلى النمط
+              تُحوّل الأرقام المكتوبة في نص الوثيقة ورأسها عند الحفظ إلى النمط
               المحدد.
             </span>
           </label>
@@ -6284,7 +6284,7 @@ function DepartmentSettingsModal({
             <div className="min-w-0">
               <p className="text-sm font-semibold">ارفع شعارًا رسميًا</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                PNG أو JPG، بحد أقصى 5 ميغابايت. سيظهر في منتصف ترويسة كل برقية.
+                PNG أو JPG، بحد أقصى 5 ميغابايت. سيظهر في منتصف ترويسة كل وثيقة.
               </p>
               <label className="mt-3 inline-flex cursor-pointer items-center rounded-lg border px-3 py-2 text-xs font-semibold hover:bg-muted">
                 <Upload className="ml-2 h-3.5 w-3.5" />
@@ -6303,7 +6303,7 @@ function DepartmentSettingsModal({
           <Shield className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             هذه الإعدادات خاصة بالجهة الحالية، ومتاحة للمالك أو مدير الجهة
-            المخول، وتُحفظ في الخادم وتظهر في ترويسة برقيات هذه الجهة فقط عند
+            المخول، وتُحفظ في الخادم وتظهر في ترويسة وثائق هذه الجهة فقط عند
             العرض والطباعة.
           </span>
         </div>
