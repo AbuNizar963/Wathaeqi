@@ -41,7 +41,7 @@ export default async function apiHealth(request: Request): Promise<Response> {
     validEndpoint =
       parsed.protocol === "https:" &&
       Boolean(parsed.hostname) &&
-      parsed.pathname.replace(/\\/+$/, "") === "/v1" &&
+      parsed.pathname.replace(/\/+$/, "") === "/v1" &&
       !parsed.username &&
       !parsed.password &&
       !parsed.search &&
@@ -50,7 +50,7 @@ export default async function apiHealth(request: Request): Promise<Response> {
     validEndpoint = false;
   }
 
-  // Report presence only; this does not prove the key's scopes or API reachability.
+  // This checks configuration presence, not key scopes or API reachability.
   const appwriteConfigured =
     validEndpoint &&
     projectId.trim().length > 0 &&
