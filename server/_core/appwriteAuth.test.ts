@@ -71,6 +71,23 @@ const session = {
   expire: "2099-01-01T00:00:00.000Z",
 };
 
+const createSessionCookie = async (sessionVersion: string) => {
+  const token = await new SignJWT({
+    appwriteSessionSecret: "appwrite-session-secret",
+    sessionVersion,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject("1")
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(
+      new TextEncoder().encode(
+        "test-only-session-secret-with-more-than-32-chars"
+      )
+    );
+  return `police_telegrams_session=${token}`;
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.listRows.mockResolvedValue({ rows: [profileRow], total: 1 });
@@ -131,76 +148,57 @@ describe("Appwrite authentication adapter", () => {
   it(
     "resolves the profile only after validating the signed Appwrite session",
     async () => {
-    const token = await new SignJWT({
-      appwriteSessionSecret: "appwrite-session-secret",
-      sessionVersion: "session-version-1",
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setSubject("1")
-      .setIssuedAt()
-      .setExpirationTime("1h")
-      .sign(
-        new TextEncoder().encode(
-          "test-only-session-secret-with-more-than-32-chars"
-        )
+      const request = {
+        headers: {
+          cookie: await createSessionCookie("session-version-1"),
+        },
+      } as never;
+
+      const user = await getAppwriteAuthenticatedUserFromRequest(request);
+
+      expect(user?.authUserId).toBe("appwrite-user-id");
+      expect(mocks.getAppwriteSessionClient).toHaveBeenCalledWith(
+        "appwrite-session-secret"
       );
-    const request = {
-      headers: { cookie: `police_telegrams_session=${token}` },
-    } as never;
-
-    const user = await getAppwriteAuthenticatedUserFromRequest(request);
-
-    expect(user?.authUserId).toBe("appwrite-user-id");
-    expect(mocks.getAppwriteSessionClient).toHaveBeenCalledWith(
-      "appwrite-session-secret"
-    );
-  });
+    }
+  );
 
   it(
     "rejects an Appwrite session after the profile session version changes",
     async () => {
-    const token = await new SignJWT({
-      appwriteSessionSecret: "appwrite-session-secret",
-      sessionVersion: "stale-session-version",
-    })
-      .setProtectedHeader({ alg: "HS256" })
-      .setSubject("1")
-      .setIssuedAt()
-      .setExpirationTime("1h")
-      .sign(
-        new TextEncoder().encode(
-          "test-only-session-secret-with-more-than-32-chars"
-        )
-      );
-    const request = {
-      headers: { cookie: `police_telegrams_session=${token}` },
-    } as never;
+      const request = {
+        headers: {
+          cookie: await createSessionCookie("stale-session-version"),
+        },
+      } as never;
 
-    await expect(
-      getAppwriteAuthenticatedUserFromRequest(request)
-    ).resolves.toBeNull();
-  });
+      await expect(
+        getAppwriteAuthenticatedUserFromRequest(request)
+      ).resolves.toBeNull();
+    }
+  );
 
   it(
     "sets an HttpOnly secure cookie using the signed Appwrite session expiry",
     async () => {
-    const response = { setHeader: vi.fn() } as never;
+      const response = { setHeader: vi.fn() } as never;
 
-    await setAppwriteSessionCookie(response, session as never, {
-      id: 1,
-      authUserId: "appwrite-user-id",
-      sessionVersion: "session-version-1",
-    });
+      await setAppwriteSessionCookie(response, session as never, {
+        id: 1,
+        authUserId: "appwrite-user-id",
+        sessionVersion: "session-version-1",
+      });
 
-    expect(response.setHeader).toHaveBeenCalledWith(
-      "Set-Cookie",
-      expect.stringContaining("HttpOnly")
-    );
-    expect(response.setHeader).toHaveBeenCalledWith(
-      "Set-Cookie",
-      expect.stringContaining("Secure")
-    );
-  });
+      expect(response.setHeader).toHaveBeenCalledWith(
+        "Set-Cookie",
+        expect.stringContaining("HttpOnly")
+      );
+      expect(response.setHeader).toHaveBeenCalledWith(
+        "Set-Cookie",
+        expect.stringContaining("Secure")
+      );
+    }
+  );
 
   it("clears the current Appwrite session cookie", () => {
     const response = { setHeader: vi.fn() } as never;
