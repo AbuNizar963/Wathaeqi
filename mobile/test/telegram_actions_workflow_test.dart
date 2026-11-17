@@ -67,7 +67,7 @@ void main() {
     await tester.tap(workflowButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('إجراءات البرقية'), findsOneWidget);
+    expect(find.text('إجراءات الوثيقة'), findsOneWidget);
   });
 
   testWidgets('view-only users do not receive workflow transition controls', (
