@@ -350,9 +350,7 @@ export default function HeaderActions() {
           >
             <Bell className="h-4 w-4" />
             <span>
-              {pushEnabled
-                ? "إيقاف إشعارات الوثائق"
-                : "تفعيل إشعارات الوثائق"}
+              {pushEnabled ? "إيقاف إشعارات الوثائق" : "تفعيل إشعارات الوثائق"}
             </span>
           </DropdownMenuItem>
           {canManageOrganizationSettings && (
