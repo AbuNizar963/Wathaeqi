@@ -28,12 +28,12 @@ describe("picomatch repeated-extglob ReDoS mitigation", () => {
       }
 
       expect(compiled.source).toBe(expectedSource);
-      expect(picomatch("a".repeat(30) + "!", pattern)).toBe(false);
+      expect(picomatch(pattern)("a".repeat(30) + "!")).toBe(false);
     }
   );
 
   it("preserves repeated extglobs that do not contain the unsafe shape", () => {
-    expect(picomatch("abc", "+(*)")).toBe(true);
-    expect(picomatch("aaa", "+(a*)")).toBe(true);
+    expect(picomatch("+(*)")("abc")).toBe(true);
+    expect(picomatch("+(a*)")("aaa")).toBe(true);
   });
 });
