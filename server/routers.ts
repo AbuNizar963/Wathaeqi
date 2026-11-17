@@ -68,7 +68,6 @@ import {
   updateRouteIncomingSerial,
   updateRouteOutgoingSerial,
   writeAuditLog,
-  getUserById,
   deletePushSubscription,
   deleteMobilePushToken,
   listUserNotifications,
