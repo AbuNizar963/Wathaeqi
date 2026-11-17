@@ -46,8 +46,9 @@ describe("incrementAppwriteCounter", () => {
     expect(request.databaseId).toBe("test-database");
     expect(request.tableId).toBe("department_settings");
     expect(request.rowId).toBe("department-1");
-    expect(request.data.nextSerial).toBeDefined();
-    expect(typeof request.data.nextSerial).toBe("object");
+    expect(request.data.nextSerial).toBe(
+      JSON.stringify({ method: "increment", values: [1] })
+    );
   });
 
   it("rejects invalid increments before contacting Appwrite", async () => {
