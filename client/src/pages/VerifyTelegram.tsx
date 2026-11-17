@@ -85,9 +85,9 @@ export default function VerifyTelegram() {
           <BrandMark size="sm" imageClassName="brightness-110" />
           <div>
             <p className="text-sm text-primary-foreground/75">
-              منظومة البرقيات الرسمية
+              منظومة الوثائق الرسمية
             </p>
-            <h1 className="text-xl font-bold">التحقق من صحة البرقية</h1>
+            <h1 className="text-xl font-bold">التحقق من صحة الوثيقة</h1>
           </div>
         </header>
 
@@ -122,8 +122,8 @@ export default function VerifyTelegram() {
                   : "تم التحقق من صحة الوثيقة"}
               </h2>
               <p className="text-sm leading-7 text-muted-foreground">
-                الرمز مرتبط بسجل موجود في منظومة البرقيات. هذه الصفحة تؤكد صحة
-                المرجع فقط ولا تعرض محتوى البرقية أو بياناتها السرية.
+                الرمز مرتبط بسجل موجود في منظومة الوثائق. هذه الصفحة تؤكد صحة
+                المرجع فقط ولا تعرض محتوى الوثيقة أو بياناتها السرية.
               </p>
 
               <dl className="space-y-3 rounded-xl border border-border bg-muted/40 p-4 text-right">
@@ -136,7 +136,7 @@ export default function VerifyTelegram() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-muted-foreground">رقم البرقية</dt>
+                  <dt className="text-xs text-muted-foreground">رقم الوثيقة</dt>
                   <dd className="mt-1 font-semibold text-foreground" dir="ltr">
                     {getTelegramDisplayNumber(
                       result.displaySerialCode ||
@@ -146,7 +146,7 @@ export default function VerifyTelegram() {
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">
-                    تاريخ البرقية
+                    تاريخ الوثيقة
                   </dt>
                   <dd className="mt-1 font-semibold text-foreground">
                     {formatTelegramDate(result.createdAt)}
@@ -165,7 +165,7 @@ export default function VerifyTelegram() {
                 aria-hidden="true"
               />
               <h2 className="text-xl font-bold text-foreground">
-                تعذر إثبات صحة البرقية
+                تعذر إثبات صحة الوثيقة
               </h2>
               <p className="text-sm leading-7 text-muted-foreground">
                 {result?.error ??
