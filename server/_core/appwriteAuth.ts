@@ -260,6 +260,7 @@ export async function getAppwriteAuthenticatedUserFromRequest(
 
     if (
       !profile ||
+      authUser.status === false ||
       profile.user.id !== claims.userId ||
       profile.user.sessionVersion !== claims.sessionVersion ||
       !profile.user.isActive ||
