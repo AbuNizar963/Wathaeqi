@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-} from "../../../shared/features/platform-settings/platformDocumentSettings";
+import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
@@ -58,18 +56,15 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it(
-    "returns defaults without writing when the singleton is absent",
-    async () => {
-      mocks.listRows.mockResolvedValue({ rows: [] });
-      await expect(getPlatformDocumentSettings()).resolves.toEqual({
-        ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-        updatedAt: null,
-      });
-      expect(mocks.createRow).not.toHaveBeenCalled();
-      expect(mocks.updateRow).not.toHaveBeenCalled();
-    }
-  );
+  it("returns defaults without writing when the singleton is absent", async () => {
+    mocks.listRows.mockResolvedValue({ rows: [] });
+    await expect(getPlatformDocumentSettings()).resolves.toEqual({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      updatedAt: null,
+    });
+    expect(mocks.createRow).not.toHaveBeenCalled();
+    expect(mocks.updateRow).not.toHaveBeenCalled();
+  });
 
   it("updates the existing Appwrite singleton", async () => {
     const values = {
@@ -112,36 +107,27 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it(
-    "surfaces Appwrite read errors rather than pretending defaults were loaded",
-    async () => {
-      mocks.listRows.mockRejectedValue(new Error("permission denied"));
-      await expect(getPlatformDocumentSettings()).rejects.toThrow(
-        "permission denied"
-      );
-    }
-  );
+  it("surfaces Appwrite read errors rather than pretending defaults were loaded", async () => {
+    mocks.listRows.mockRejectedValue(new Error("permission denied"));
+    await expect(getPlatformDocumentSettings()).rejects.toThrow(
+      "permission denied"
+    );
+  });
 
-  it(
-    "retries a concurrent first save against the row that won the unique index",
-    async () => {
-      mocks.listRows
-        .mockResolvedValueOnce({ rows: [] })
-        .mockResolvedValueOnce({ rows: [existingRow] });
-      mocks.createRow.mockRejectedValueOnce({ code: 409, message: "Conflict" });
+  it("retries a concurrent first save against the row that won the unique index", async () => {
+    mocks.listRows
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [existingRow] });
+    mocks.createRow.mockRejectedValueOnce({ code: 409, message: "Conflict" });
 
-      await updatePlatformDocumentSettings(
-        DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-        3
-      );
+    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 3);
 
-      expect(mocks.createRow).toHaveBeenCalledOnce();
-      expect(mocks.updateRow).toHaveBeenCalledWith(
-        expect.objectContaining({
-          rowId: "platform-settings",
-          data: expect.objectContaining({ id: 1, updatedByUserId: 3 }),
-        })
-      );
-    }
-  );
+    expect(mocks.createRow).toHaveBeenCalledOnce();
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rowId: "platform-settings",
+        data: expect.objectContaining({ id: 1, updatedByUserId: 3 }),
+      })
+    );
+  });
 });
