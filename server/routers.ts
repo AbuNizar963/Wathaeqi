@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { publicUser } from "./_core/auth";
 import {
+  AppwritePasswordResetRequiredError,
   authenticateAppwriteUser,
   clearAppwriteSessionCookie,
   deleteCurrentAppwriteSession,
@@ -697,10 +698,23 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const authenticated = await authenticateAppwriteUser(
-          input.username.trim(),
-          input.password
-        );
+        let authenticated: Awaited<
+          ReturnType<typeof authenticateAppwriteUser>
+        >;
+        try {
+          authenticated = await authenticateAppwriteUser(
+            input.username.trim(),
+            input.password
+          );
+        } catch (error) {
+          if (error instanceof AppwritePasswordResetRequiredError) {
+            throw new TRPCError({
+              code: "PRECONDITION_FAILED",
+              message: "يجب إعادة تعيين كلمة المرور قبل تسجيل الدخول",
+            });
+          }
+          throw error;
+        }
 
         if (!authenticated) {
           throw new TRPCError({
