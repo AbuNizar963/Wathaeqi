@@ -126,8 +126,7 @@ export default function Terms() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">الشروط والأحكام</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            إطار واضح للاستخدام المصرح والسرية وحماية المعلومات في مركز
-            الوثائق.
+            إطار واضح للاستخدام المصرح والسرية وحماية المعلومات في مركز الوثائق.
           </p>
         </div>
       </div>
