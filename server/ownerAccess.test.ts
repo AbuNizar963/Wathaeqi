@@ -8,6 +8,7 @@ vi.mock("./_core/appwriteAuth", () => ({
   getAppwriteProfileById: mocks.getAppwriteProfileById,
 }));
 
+import { ENV } from "./_core/env";
 import { isPlatformOwner, isPlatformOwnerUserId } from "./ownerAccess";
 
 describe("isPlatformOwner", () => {
@@ -15,46 +16,43 @@ describe("isPlatformOwner", () => {
     vi.clearAllMocks();
   });
 
-  it("recognizes only an explicitly flagged platform owner with admin role", () => {
+  it("recognizes the configured owner account with an admin role", () => {
+    expect(
+      isPlatformOwner({ username: ENV.ownerUsername, role: "admin" })
+    ).toBe(true);
     expect(
       isPlatformOwner({
-        username: "AbuNizar",
+        username: ` ${ENV.ownerUsername.toUpperCase()} `,
         role: "admin",
-        isPlatformOwner: true,
       })
     ).toBe(true);
   });
 
-  it("does not grant owner access based on username or admin role alone", () => {
-    expect(
-      isPlatformOwner({
-        username: "AbuNizar",
-        role: "admin",
-        isPlatformOwner: false,
-      })
-    ).toBe(false);
-    expect(
-      isPlatformOwner({
-        username: "another-admin",
-        role: "admin",
-        isPlatformOwner: true,
-      })
-    ).toBe(true);
-    expect(
-      isPlatformOwner({
-        username: "AbuNizar",
-        role: "user",
-        isPlatformOwner: true,
-      })
-    ).toBe(false);
+  it("does not grant owner access to another administrator or a non-admin", () => {
+    expect(isPlatformOwner({ username: "another-admin", role: "admin" })).toBe(
+      false
+    );
+    expect(isPlatformOwner({ username: ENV.ownerUsername, role: "user" })).toBe(
+      false
+    );
     expect(isPlatformOwner(null)).toBe(false);
   });
 
-  it("loads owner identity from the Appwrite user profile", async () => {
+  it("recognizes the persisted Appwrite owner flag if the configured name changes", () => {
+    expect(
+      isPlatformOwner({
+        username: "the-persisted-owner",
+        role: "admin",
+        isPlatformOwner: true,
+      })
+    ).toBe(true);
+  });
+
+  it("loads the platform-owner identity from Appwrite", async () => {
     mocks.getAppwriteProfileById.mockResolvedValueOnce({
       user: {
         id: 1,
-        username: "AbuNizar",
+        username: ENV.ownerUsername,
         role: "admin",
         isPlatformOwner: true,
       },
@@ -64,13 +62,13 @@ describe("isPlatformOwner", () => {
     expect(mocks.getAppwriteProfileById).toHaveBeenCalledWith(1);
   });
 
-  it("returns false when the target profile is missing", async () => {
+  it("returns false when the Appwrite profile is missing", async () => {
     mocks.getAppwriteProfileById.mockResolvedValueOnce(null);
 
     await expect(isPlatformOwnerUserId(404)).resolves.toBe(false);
   });
 
-  it("propagates lookup errors instead of allowing an uncertain assignment", async () => {
+  it("propagates lookup errors instead of allowing uncertain owner access", async () => {
     mocks.getAppwriteProfileById.mockRejectedValueOnce(
       new Error("lookup failed")
     );
