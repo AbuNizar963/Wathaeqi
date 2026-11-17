@@ -10,6 +10,7 @@ on:
       - pnpm-workspace.yaml
       - patches/**
       - server/_core/appwrite.test.ts
+      - server/_core/env.ts
       - .github/workflows/refresh-wathaeqi-lock.yml
 
 permissions:
@@ -35,7 +36,7 @@ jobs:
       - name: Regenerate pnpm lockfile
         run: pnpm install --no-frozen-lockfile
       - name: Format Appwrite foundation tests
-        run: pnpm exec prettier --write server/_core/appwrite.test.ts
+        run: pnpm exec prettier --write server/_core/appwrite.test.ts server/_core/env.ts
       - name: Commit generated maintenance changes if needed
         run: |
           set -euo pipefail
