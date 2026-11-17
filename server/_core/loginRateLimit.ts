@@ -61,7 +61,10 @@ function consumeLoginRateLimit(
 
   if (loginRateLimitBuckets.size > 10_000) {
     for (const [key, value] of loginRateLimitBuckets) {
-      if (value.blockedUntil <= now && now - value.windowStartedAt >= WINDOW_MS) {
+      if (
+        value.blockedUntil <= now &&
+        now - value.windowStartedAt >= WINDOW_MS
+      ) {
         loginRateLimitBuckets.delete(key);
       }
     }
