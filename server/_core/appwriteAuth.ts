@@ -428,11 +428,12 @@ export async function changeAppwritePassword(
     throw error;
   }
 
-  const newSession = await new Account(getAppwriteSessionClient())
-    .createEmailPasswordSession({
-      email: profile.user.email,
-      password: newPassword,
-    });
+  const newSession = await new Account(
+    getAppwriteSessionClient()
+  ).createEmailPasswordSession({
+    email: profile.user.email,
+    password: newPassword,
+  });
 
   const now = new Date();
   const sessionVersion = randomUUID();
