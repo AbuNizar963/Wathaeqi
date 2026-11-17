@@ -43,10 +43,7 @@ describe("server-side Appwrite configuration", () => {
     vi.stubEnv("VITE_APPWRITE_ENDPOINT", "https://fra.cloud.appwrite.io/v1");
     vi.stubEnv("VITE_APPWRITE_PROJECT_ID", "wathaeqi");
     vi.stubEnv("VITE_APPWRITE_DATABASE_ID", "wathaeqi-db");
-    vi.stubEnv(
-      "VITE_APPWRITE_ATTACHMENTS_BUCKET_ID",
-      "document-attachments"
-    );
+    vi.stubEnv("VITE_APPWRITE_ATTACHMENTS_BUCKET_ID", "document-attachments");
     vi.stubEnv("VITE_APPWRITE_API_KEY", "not-a-server-secret");
 
     const appwrite = await loadAppwriteModule();
