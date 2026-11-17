@@ -137,7 +137,7 @@ void main() {
       expect(
         html,
         contains(
-          'نوع الوثيقة:</strong> <span class="classification-value">برقية صادرة</span>',
+          'نوع الوثيقة:</strong> <span class="classification-value">وثيقة صادرة</span>',
         ),
       );
       expect(html, contains('درجة الأسبقية:</strong> عاجلة'));
@@ -163,17 +163,17 @@ void main() {
       expect(html, isNot(contains('وزارة التربية')));
       expect(html, isNot(contains('class="official-logo"')));
       expect(html, isNot(contains('class="official-seal"')));
-      expect(html, contains('رمز QR للتحقق من أصالة البرقية'));
+      expect(html, contains('رمز QR للتحقق من أصالة الوثيقة'));
       expect(
         html,
         contains(
-          '<div class="routing-qr" role="img" aria-label="رمز QR للتحقق من أصالة البرقية">',
+          '<div class="routing-qr" role="img" aria-label="رمز QR للتحقق من أصالة الوثيقة">',
         ),
       );
       expect(html, contains('<svg xmlns="http://www.w3.org/2000/svg" width="'));
       expect(html, contains('<path d="M'));
       expect(html, contains('اسم المسؤول'));
-      expect(html, contains('<h2 class="body-heading">نص البرقية</h2>'));
+      expect(html, contains('<h2 class="body-heading">نص الوثيقة</h2>'));
       expect(html, isNot(contains('نص الوثيقة')));
     },
   );
@@ -368,10 +368,10 @@ void main() {
     );
 
     expect(html, isNot(contains('class="routing-qr"')));
-    expect(html, isNot(contains('رمز QR للتحقق من أصالة البرقية')));
+    expect(html, isNot(contains('رمز QR للتحقق من أصالة الوثيقة')));
     expect(html, contains('data-icon="person"'));
     expect(html, contains('موضوع رسمي'));
-    expect(html, contains('<h2 class="body-heading">نص البرقية</h2>'));
+    expect(html, contains('<h2 class="body-heading">نص الوثيقة</h2>'));
   });
 
   test(
