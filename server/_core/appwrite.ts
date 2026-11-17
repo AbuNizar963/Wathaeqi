@@ -51,7 +51,7 @@ function readAdminConfig(): AppwriteAdminConfig {
     );
   }
 
-  const normalizedPath = parsedEndpoint.pathname.replace(/\/+$/u, "");
+  const normalizedPath = normalizeEndpointPath(parsedEndpoint.pathname);
   if (
     parsedEndpoint.protocol !== "https:" ||
     !parsedEndpoint.hostname ||
@@ -112,7 +112,7 @@ export function getAppwriteSessionClient(sessionSecret?: string): Client {
     );
   }
 
-  const normalizedPath = parsedEndpoint.pathname.replace(/\\/+$/, "");
+  const normalizedPath = normalizeEndpointPath(parsedEndpoint.pathname);
   if (
     parsedEndpoint.protocol !== "https:" ||
     !parsedEndpoint.hostname ||
