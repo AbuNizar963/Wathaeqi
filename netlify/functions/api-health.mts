@@ -5,8 +5,8 @@ type NetlifyRuntime = typeof globalThis & {
 /**
  * Wathaeqi's independent Netlify API health endpoint.
  *
- * This endpoint reports configuration presence only. It does not claim that
- * authentication, database reads, or storage operations have been migrated.
+ * This endpoint reports configuration presence only; it does not claim API
+ * reachability or successful database/storage operations.
  */
 export default async function apiHealth(request: Request): Promise<Response> {
   if (request.method !== "GET") {
@@ -67,7 +67,7 @@ export default async function apiHealth(request: Request): Promise<Response> {
         appwrite: appwriteConfigured ? "configured" : "configuration-required",
       },
       capabilities: {
-        authentication: "migration-pending",
+        authentication: "appwrite-auth",
         records: "migration-pending",
         storage: "migration-pending",
       },
