@@ -8,7 +8,7 @@ import {
   canOrganizationHaveParent,
   wouldCreateOrganizationCycle,
 } from "../../../shared/features/organizations/organizationHierarchy";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { Query } from "node-appwrite";
 import { hashPassword } from "../../_core/auth";
 import {
@@ -964,22 +964,89 @@ export async function addOrganizationMembership(input: {
   userId: number;
   role: OrganizationMemberRole;
 }): Promise<OrganizationMembership> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organization_memberships")
-    .upsert(
-      {
-        organizationId: input.organizationId,
-        userId: input.userId,
+  const tables = getAppwriteTablesDB();
+  const existingRows = await listOrganizationRows(
+    "organization_memberships",
+    [
+      Query.equal("organizationId", input.organizationId),
+      Query.equal("userId", input.userId),
+    ]
+  );
+  const now = new Date().toISOString();
+
+  if (existingRows[0]) {
+    const existing = appwriteRowData(existingRows[0]);
+    const updated = await tables.updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "organization_memberships",
+      rowId: existingRows[0].$id,
+      data: {
         role: input.role,
         isActive: true,
+        updatedAt: now,
       },
-      { onConflict: "organizationId,userId" }
-    )
-    .select("*")
-    .single();
+    });
+    return mapMembership(appwriteRowData(updated as AppwriteOrganizationRow));
+  }
 
-  throwIfError(error, "Failed to assign organization membership");
-  return mapMembership(data as Record<string, unknown>);
+  const profile = await getAppwriteProfileById(input.userId);
+  if (!profile) {
+    throw new Error("لا يمكن إسناد العضوية إلى مستخدم غير موجود");
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const id = randomInt(1, 2_147_483_647);
+    try {
+      const created = await tables.createRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "organization_memberships",
+        rowId: randomUUID(),
+        data: {
+          id,
+          organizationId: input.organizationId,
+          organization: input.organizationId,
+          userId: input.userId,
+          user: profile.rowId,
+          role: input.role,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      return mapMembership(appwriteRowData(created as AppwriteOrganizationRow));
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code !== 409 || attempt === 2) throw error;
+
+      const racedRows = await listOrganizationRows(
+        "organization_memberships",
+        [
+          Query.equal("organizationId", input.organizationId),
+          Query.equal("userId", input.userId),
+        ]
+      );
+      if (racedRows[0]) {
+        const updated = await tables.updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "organization_memberships",
+          rowId: racedRows[0].$id,
+          data: {
+            role: input.role,
+            isActive: true,
+            updatedAt: now,
+          },
+        });
+        return mapMembership(
+          appwriteRowData(updated as AppwriteOrganizationRow)
+        );
+      }
+    }
+  }
+
+  throw new Error("تعذر حفظ عضوية الجهة");
 }
 
 export async function listRoutingTargets(
