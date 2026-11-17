@@ -100,7 +100,7 @@ export default function HeaderActions() {
     onSuccess: () => void notificationInbox.refetch(),
   });
   const subscribe = trpc.notifications.subscribe.useMutation({
-    onSuccess: () => toast.success("تم تفعيل إشعارات البرقيات على هذا الجهاز"),
+    onSuccess: () => toast.success("تم تفعيل إشعارات الوثائق على هذا الجهاز"),
     onError: error => toast.error(error.message || "تعذر تفعيل الإشعارات"),
   });
   const unsubscribe = trpc.notifications.unsubscribe.useMutation({
@@ -351,8 +351,8 @@ export default function HeaderActions() {
             <Bell className="h-4 w-4" />
             <span>
               {pushEnabled
-                ? "إيقاف إشعارات البرقيات"
-                : "تفعيل إشعارات البرقيات"}
+                ? "إيقاف إشعارات الوثائق"
+                : "تفعيل إشعارات الوثائق"}
             </span>
           </DropdownMenuItem>
           {canManageOrganizationSettings && (
