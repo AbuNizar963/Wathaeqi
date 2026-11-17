@@ -26,10 +26,10 @@ const tabLabels: Record<WorkspaceTab, string> = {
 };
 
 const tabDescriptions: Record<WorkspaceTab, string> = {
-  locations: "عرض المواقع المسجلة في البرقيات وفتحها على الخريطة.",
-  units: "عرض الجهات المتاحة وعدد البرقيات المفتوحة لديها.",
-  resources: "ملخص توزيع البرقيات المفتوحة على الجهات.",
-  archive: "البحث في البرقيات المغلقة المحفوظة للتدقيق.",
+  locations: "عرض المواقع المسجلة في الوثائق وفتحها على الخريطة.",
+  units: "عرض الجهات المتاحة وعدد الوثائق المفتوحة لديها.",
+  resources: "ملخص توزيع الوثائق المفتوحة على الجهات.",
+  archive: "البحث في الوثائق المغلقة المحفوظة للتدقيق.",
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
@@ -132,7 +132,7 @@ export default function OperationsWorkspace() {
               </span>
             </div>
             <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
-              اختر قسمًا أدناه. هذه شاشة متابعة للبرقيات والمواقع المسجلة، وليست
+              اختر قسمًا أدناه. هذه شاشة متابعة للوثائق والمواقع المسجلة، وليست
               لتتبع الأشخاص. يتم تحديث البيانات تلقائياً كل 15 ثانية.
             </p>
           </div>
@@ -169,8 +169,8 @@ export default function OperationsWorkspace() {
                   : item === "units"
                     ? "الجهات والإحالات"
                     : item === "resources"
-                      ? "توزيع البرقيات"
-                      : "البرقيات المغلقة"}
+                      ? "توزيع الوثائق"
+                      : "الوثائق المغلقة"}
               </span>
             </button>
           ))}
@@ -243,7 +243,7 @@ function LocationsPanel({
           icon={MapPinned}
           label="مواقع مسجلة"
           value={locations.length}
-          detail="مضافة إلى البرقيات"
+          detail="مضافة إلى الوثائق"
         />
         <SummaryCard
           icon={FileSearch}
@@ -258,14 +258,14 @@ function LocationsPanel({
             <div>
               <h3 className="font-bold">الخريطة التشغيلية</h3>
               <p className="text-xs text-muted-foreground">
-                تعرض المواقع المضافة إلى البرقيات فقط.
+                تعرض المواقع المضافة إلى الوثائق فقط.
               </p>
             </div>
             <MapPinned className="h-5 w-5 text-brand-accent" />
           </div>
           {loading ? (
             <div className="flex min-h-48 items-center justify-center p-6 text-center text-sm text-muted-foreground sm:min-h-64">
-              جارٍ تحميل مواقع البرقيات...
+              جارٍ تحميل مواقع الوثائق...
             </div>
           ) : error ? (
             <QueryError onRetry={onRetry} />
@@ -276,7 +276,7 @@ function LocationsPanel({
               <MapPinned className="h-8 w-8 text-brand-accent" />
               <p className="font-semibold">لا توجد مواقع مسجلة بعد</p>
               <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                لا توجد إحداثيات مرتبطة بالبرقيات المعروضة حاليًا. عند توفر موقع
+                لا توجد إحداثيات مرتبطة بالوثائق المعروضة حاليًا. عند توفر موقع
                 مسجل سيظهر هنا وفي سجل المواقع. لا تُعرض حركة الأشخاص في هذه
                 الخريطة.
               </p>
@@ -355,7 +355,7 @@ function UnitsPanel({
           {currentUnitName
             ? `جهتك الحالية: ${currentUnitName}. `
             : "تعرض هذه الصفحة الجهات المتاحة للإحالة. "}
-          الأعداد مبنية على البرقيات المفتوحة، ولا تتبع مواقع الأشخاص.
+          الأعداد مبنية على الوثائق المفتوحة، ولا تتبع مواقع الأشخاص.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -385,7 +385,7 @@ function UnitsPanel({
               </span>
             </div>
             <div className="mt-4 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">برقيات مرتبطة</span>
+              <span className="text-muted-foreground">وثائق مرتبطة</span>
               <strong>{unit.openCount}</strong>
             </div>
           </div>
@@ -424,9 +424,9 @@ function ResourcesPanel({
         />
         <SummaryCard
           icon={Clock3}
-          label="البرقيات المفتوحة"
+          label="الوثائق المفتوحة"
           value={openCount}
-          detail="برقيات غير مؤرشفة"
+          detail="وثائق غير مؤرشفة"
         />
         <SummaryCard
           icon={MapPinned}
@@ -437,9 +437,9 @@ function ResourcesPanel({
       </div>
       <section className="rounded-2xl border">
         <div className="border-b px-5 py-4">
-          <h3 className="font-bold">توزيع البرقيات المفتوحة</h3>
+          <h3 className="font-bold">توزيع الوثائق المفتوحة</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            يوضح عدد البرقيات غير المؤرشفة في كل جهة لمساعدة المسؤول على متابعة
+            يوضح عدد الوثائق غير المؤرشفة في كل جهة لمساعدة المسؤول على متابعة
             العمل؛ ولا ينشئ إحالات تلقائيًا.
           </p>
         </div>
@@ -471,7 +471,7 @@ function ResourcesPanel({
           {!loading && error && <QueryError onRetry={onRetry} />}
           {!loading && !error && !units.length && (
             <p className="p-8 text-center text-sm text-muted-foreground">
-              ستظهر هنا الجهات وأعداد البرقيات بعد إضافتها إلى الهيكل التنظيمي.
+              ستظهر هنا الجهات وأعداد الوثائق بعد إضافتها إلى الهيكل التنظيمي.
             </p>
           )}
         </div>
@@ -501,7 +501,7 @@ function ArchivePanel({
         <div>
           <div className="flex items-center gap-2">
             <Archive className="h-5 w-5 text-brand-accent" />
-            <h3 className="font-bold">البرقيات المغلقة</h3>
+            <h3 className="font-bold">الوثائق المغلقة</h3>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             السجل مغلق تشغيليًا ومحفوظ للتدقيق، ولا يعني الحذف.
@@ -541,7 +541,7 @@ function ArchivePanel({
               className="hidden grid-cols-[110px_minmax(0,1fr)_130px_100px] items-center gap-3 px-4 py-3 text-sm md:grid"
             >
               <span className="text-sm font-bold text-foreground">
-                برقية رقم: {getTelegramDisplayNumber(row.serialCode)}
+                وثيقة رقم: {getTelegramDisplayNumber(row.serialCode)}
               </span>
               <span className="truncate font-semibold">{row.subject}</span>
               <span className="truncate text-xs text-muted-foreground">
@@ -564,7 +564,7 @@ function ArchivePanel({
                   {row.subject}
                 </p>
                 <span className="shrink-0 text-sm font-bold text-foreground">
-                  برقية رقم: {getTelegramDisplayNumber(row.serialCode)}
+                  وثيقة رقم: {getTelegramDisplayNumber(row.serialCode)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
