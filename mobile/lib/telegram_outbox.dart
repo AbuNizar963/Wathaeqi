@@ -191,7 +191,7 @@ class TelegramOutbox {
   }) async {
     final telegramId = int.tryParse('${payload['id']}');
     if (telegramId == null) {
-      throw const FormatException('رقم البرقية غير صالح للحفظ المحلي.');
+      throw const FormatException('رقم الوثيقة غير صالح للحفظ المحلي.');
     }
     final entries = await list();
     final index = entries.indexWhere((entry) => entry.telegramId == telegramId);
