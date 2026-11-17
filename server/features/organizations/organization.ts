@@ -965,13 +965,10 @@ export async function addOrganizationMembership(input: {
   role: OrganizationMemberRole;
 }): Promise<OrganizationMembership> {
   const tables = getAppwriteTablesDB();
-  const existingRows = await listOrganizationRows(
-    "organization_memberships",
-    [
-      Query.equal("organizationId", input.organizationId),
-      Query.equal("userId", input.userId),
-    ]
-  );
+  const existingRows = await listOrganizationRows("organization_memberships", [
+    Query.equal("organizationId", input.organizationId),
+    Query.equal("userId", input.userId),
+  ]);
   const now = new Date().toISOString();
 
   if (existingRows[0]) {
@@ -1012,7 +1009,9 @@ export async function addOrganizationMembership(input: {
           updatedAt: now,
         },
       });
-      return mapMembership(appwriteRowData(created as AppwriteOrganizationRow));
+      return mapMembership(
+        appwriteRowData(created as AppwriteOrganizationRow)
+      );
     } catch (error) {
       const code =
         error && typeof error === "object" && "code" in error
