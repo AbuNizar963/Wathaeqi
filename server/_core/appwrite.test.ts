@@ -107,6 +107,18 @@ describe("server-side Appwrite configuration", () => {
     expect(appwrite.getAppwriteBucketId()).toBe("document-attachments");
   });
 
+  it("creates a user-scoped session client without an API key", async () => {
+    const appwrite = await loadAppwriteModule({
+      APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
+      APPWRITE_PROJECT_ID: "wathaeqi",
+    });
+
+    expect(appwrite.isAppwriteConfigured()).toBe(false);
+    expect(() =>
+      appwrite.getAppwriteSessionClient("appwrite-user-session")
+    ).not.toThrow();
+  });
+
   it("requires database and bucket IDs when used", async () => {
     const appwrite = await loadAppwriteModule({
       APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
