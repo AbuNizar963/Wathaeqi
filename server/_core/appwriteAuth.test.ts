@@ -85,36 +85,52 @@ afterEach(() => {
 });
 
 describe("Appwrite authentication adapter", () => {
-  it("authenticates by username email mapping and preserves platform-owner profile", async () => {
-    const result = await authenticateAppwriteUser("AbuNizar", "strong-test-secret");
+  it(
+    "authenticates by username email mapping and preserves platform-owner profile",
+    async () => {
+      const result = await authenticateAppwriteUser(
+        "AbuNizar",
+        "strong-test-secret"
+      );
 
-    expect(result?.user.isPlatformOwner).toBe(true);
-    expect(result?.user.role).toBe("admin");
-    expect(result?.user.passwordHash).toBeNull();
-    expect(mocks.createEmailPasswordSession).toHaveBeenCalledWith({
-      email: "owner@example.com",
-      password: "strong-test-secret",
-    });
-    expect(mocks.updateRow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        databaseId: "wathaeqi-db",
-        tableId: "users",
-        rowId: "1",
-      })
-    );
-  });
+      expect(result?.user.isPlatformOwner).toBe(true);
+      expect(result?.user.role).toBe("admin");
+      expect(result?.user.passwordHash).toBeNull();
+      expect(mocks.createEmailPasswordSession).toHaveBeenCalledWith({
+        email: "owner@example.com",
+        password: "strong-test-secret",
+      });
+      expect(mocks.updateRow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          databaseId: "wathaeqi-db",
+          tableId: "users",
+          rowId: "1",
+        })
+      );
+    }
+  );
 
-  it("rejects an Appwrite session whose user ID does not match the profile", async () => {
-    mocks.get.mockResolvedValueOnce({ $id: "different-user-id" });
+  it(
+    "rejects an Appwrite session whose user ID does not match the profile",
+    async () => {
+      mocks.get.mockResolvedValueOnce({ $id: "different-user-id" });
 
-    const result = await authenticateAppwriteUser("AbuNizar", "strong-test-secret");
+      const result = await authenticateAppwriteUser(
+        "AbuNizar",
+        "strong-test-secret"
+      );
 
-    expect(result).toBeNull();
-    expect(mocks.deleteSession).toHaveBeenCalledWith({ sessionId: "current" });
-    expect(mocks.updateRow).not.toHaveBeenCalled();
-  });
+      expect(result).toBeNull();
+      expect(mocks.deleteSession).toHaveBeenCalledWith({
+        sessionId: "current",
+      });
+      expect(mocks.updateRow).not.toHaveBeenCalled();
+    }
+  );
 
-  it("resolves the profile only after validating the signed Appwrite session", async () => {
+  it(
+    "resolves the profile only after validating the signed Appwrite session",
+    async () => {
     const token = await new SignJWT({
       appwriteSessionSecret: "appwrite-session-secret",
       sessionVersion: "session-version-1",
@@ -140,7 +156,9 @@ describe("Appwrite authentication adapter", () => {
     );
   });
 
-  it("rejects an Appwrite session after the profile session version changes", async () => {
+  it(
+    "rejects an Appwrite session after the profile session version changes",
+    async () => {
     const token = await new SignJWT({
       appwriteSessionSecret: "appwrite-session-secret",
       sessionVersion: "stale-session-version",
@@ -163,7 +181,9 @@ describe("Appwrite authentication adapter", () => {
     ).resolves.toBeNull();
   });
 
-  it("sets an HttpOnly secure cookie using the signed Appwrite session expiry", async () => {
+  it(
+    "sets an HttpOnly secure cookie using the signed Appwrite session expiry",
+    async () => {
     const response = { setHeader: vi.fn() } as never;
 
     await setAppwriteSessionCookie(response, session as never, {
