@@ -159,6 +159,17 @@ export function createApp(
   );
   app.use(express.urlencoded({ limit: "64kb", extended: false }));
 
+  // Appwrite enforces authentication endpoint limits; this bounded local
+  // limiter adds per-instance protection without depending on the old database.
+  app.use(
+    "/api/trpc/auth.login",
+    createRateLimit({
+      windowMs: 15 * 60_000,
+      maxRequests: 10,
+      message: "تم تجاوز عدد محاولات تسجيل الدخول. حاول لاحقًا.",
+    })
+  );
+
   registerStorageRoutes(app);
   registerTelegramExportRoutes(app);
 
