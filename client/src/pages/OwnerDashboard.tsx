@@ -56,7 +56,7 @@ const chartColors = [
   "#9a6476",
 ];
 const categoryLabels: Record<string, string> = {
-  telegram: "البرقيات",
+  telegram: "الوثائق",
   user: "الحسابات",
   organization: "الجهات",
   platform: "المنصة والإعدادات",
@@ -349,7 +349,7 @@ export default function OwnerDashboardPage() {
             </p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-primary-foreground/75">
               تجمع اللوحة النشاط الموثق، وتفصل بين حجم العمل والحالة الحالية
-              للجهات والحسابات، دون عرض محتوى البرقيات الحساسة.
+              للجهات والحسابات، دون عرض محتوى الوثائق الحساسة.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-primary-foreground/10 bg-primary-foreground/5 px-3 py-2 text-xs text-primary-foreground/80">
@@ -676,7 +676,7 @@ export default function OwnerDashboardPage() {
       <p className="flex items-start gap-2 rounded-2xl border border-border bg-muted px-4 py-3 text-xs leading-5 text-muted-foreground">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         المؤشرات مبنية على سجلات الإجراءات الموثقة؛ لا تعرض هذه الصفحة نصوص
-        البرقيات أو بيانات الشبكة أو تفاصيل المرفقات.
+        الوثائق أو بيانات الشبكة أو تفاصيل المرفقات.
       </p>
     </section>
   );
