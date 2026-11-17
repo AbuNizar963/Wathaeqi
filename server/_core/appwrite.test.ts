@@ -47,26 +47,31 @@ describe("server-side Appwrite configuration", () => {
     const appwrite = await loadAppwriteModule();
 
     expect(appwrite.isAppwriteConfigured()).toBe(false);
-    expect(captureErrorMessage(() => appwrite.getAppwriteAdminClient())).toContain(
+    expect(
+      captureErrorMessage(() => appwrite.getAppwriteAdminClient())
+    ).toContain(
       "APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY"
     );
   });
 
-  it("requires all server credentials without exposing their values", async () => {
-    const appwrite = await loadAppwriteModule({
-      APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
-      APPWRITE_PROJECT_ID: "wathaeqi",
-    });
+  it(
+    "requires all server credentials without exposing their values",
+    async () => {
+      const appwrite = await loadAppwriteModule({
+        APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
+        APPWRITE_PROJECT_ID: "wathaeqi",
+      });
 
-    expect(appwrite.isAppwriteConfigured()).toBe(false);
+      expect(appwrite.isAppwriteConfigured()).toBe(false);
 
-    const errorMessage = captureErrorMessage(() =>
-      appwrite.getAppwriteAdminClient()
-    );
+      const errorMessage = captureErrorMessage(() =>
+        appwrite.getAppwriteAdminClient()
+      );
 
-    expect(errorMessage).toContain("APPWRITE_API_KEY");
-    expect(errorMessage).not.toContain("not-a-server-secret");
-  });
+      expect(errorMessage).toContain("APPWRITE_API_KEY");
+      expect(errorMessage).not.toContain("not-a-server-secret");
+    }
+  );
 
   it("rejects insecure or malformed endpoints", async () => {
     const appwrite = await loadAppwriteModule({
@@ -76,47 +81,53 @@ describe("server-side Appwrite configuration", () => {
     });
 
     expect(appwrite.isAppwriteConfigured()).toBe(false);
-    expect(captureErrorMessage(() => appwrite.getAppwriteAdminClient())).toContain(
-      "valid absolute HTTPS URL ending in /v1"
-    );
+    expect(
+      captureErrorMessage(() => appwrite.getAppwriteAdminClient())
+    ).toContain("valid absolute HTTPS URL ending in /v1");
   });
 
-  it("creates and reuses server SDK services with valid configuration", async () => {
-    const appwrite = await loadAppwriteModule({
-      APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1/",
-      APPWRITE_PROJECT_ID: "wathaeqi",
-      APPWRITE_API_KEY: "test-key",
-      APPWRITE_DATABASE_ID: "wathaeqi-db",
-      APPWRITE_BUCKET_ID: "document-attachments",
-    });
+  it(
+    "creates and reuses server SDK services with valid configuration",
+    async () => {
+      const appwrite = await loadAppwriteModule({
+        APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1/",
+        APPWRITE_PROJECT_ID: "wathaeqi",
+        APPWRITE_API_KEY: "test-key",
+        APPWRITE_DATABASE_ID: "wathaeqi-db",
+        APPWRITE_BUCKET_ID: "document-attachments",
+      });
 
-    expect(appwrite.isAppwriteConfigured()).toBe(true);
-    expect(appwrite.getAppwriteAdminClient()).toBe(
-      appwrite.getAppwriteAdminClient()
-    );
-    expect(appwrite.getAppwriteTablesDB()).toBe(
-      appwrite.getAppwriteTablesDB()
-    );
-    expect(appwrite.getAppwriteStorage()).toBe(
-      appwrite.getAppwriteStorage()
-    );
-    expect(appwrite.getAppwriteDatabaseId()).toBe("wathaeqi-db");
-    expect(appwrite.getAppwriteBucketId()).toBe("document-attachments");
-  });
+      expect(appwrite.isAppwriteConfigured()).toBe(true);
+      expect(appwrite.getAppwriteAdminClient()).toBe(
+        appwrite.getAppwriteAdminClient()
+      );
+      expect(appwrite.getAppwriteTablesDB()).toBe(
+        appwrite.getAppwriteTablesDB()
+      );
+      expect(appwrite.getAppwriteStorage()).toBe(
+        appwrite.getAppwriteStorage()
+      );
+      expect(appwrite.getAppwriteDatabaseId()).toBe("wathaeqi-db");
+      expect(appwrite.getAppwriteBucketId()).toBe("document-attachments");
+    }
+  );
 
-  it("requires database and bucket identifiers only when those services are used", async () => {
-    const appwrite = await loadAppwriteModule({
-      APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
-      APPWRITE_PROJECT_ID: "wathaeqi",
-      APPWRITE_API_KEY: "test-key",
-    });
+  it(
+    "requires database and bucket identifiers only when those services are used",
+    async () => {
+      const appwrite = await loadAppwriteModule({
+        APPWRITE_ENDPOINT: "https://fra.cloud.appwrite.io/v1",
+        APPWRITE_PROJECT_ID: "wathaeqi",
+        APPWRITE_API_KEY: "test-key",
+      });
 
-    expect(appwrite.isAppwriteConfigured()).toBe(true);
-    expect(captureErrorMessage(() => appwrite.getAppwriteDatabaseId())).toContain(
-      "APPWRITE_DATABASE_ID"
-    );
-    expect(captureErrorMessage(() => appwrite.getAppwriteBucketId())).toContain(
-      "APPWRITE_BUCKET_ID"
-    );
-  });
+      expect(appwrite.isAppwriteConfigured()).toBe(true);
+      expect(
+        captureErrorMessage(() => appwrite.getAppwriteDatabaseId())
+      ).toContain("APPWRITE_DATABASE_ID");
+      expect(
+        captureErrorMessage(() => appwrite.getAppwriteBucketId())
+      ).toContain("APPWRITE_BUCKET_ID");
+    }
+  );
 });
