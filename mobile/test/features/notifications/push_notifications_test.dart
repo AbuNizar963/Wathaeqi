@@ -119,14 +119,14 @@ void main() {
         'type': 'telegram.created',
         'priority': 'normal',
       }),
-      'برقية صادرة جديدة',
+      'وثيقة صادرة جديدة',
     );
     expect(
       telegramPushNotificationTitle({
         'type': 'telegram.incoming',
         'priority': 'urgent',
       }),
-      'برقية واردة عاجلة',
+      'وثيقة واردة عاجلة',
     );
   });
 
@@ -137,7 +137,7 @@ void main() {
           'type': 'telegram.created',
           'priority': priority,
         }),
-        'برقية صادرة عاجلة',
+        'وثيقة صادرة عاجلة',
       );
     }
   });
@@ -148,14 +148,14 @@ void main() {
         'type': 'telegram.created',
         'serialCode': 'POL-2026-00123',
       }),
-      'هناك برقية صادرة برقم: 00123.',
+      'هناك وثيقة صادرة برقم: 00123.',
     );
     expect(
       telegramPushNotificationBody({
         'type': 'telegram.incoming',
         'serialCode': 'UNIT-00072',
       }),
-      'هناك برقية واردة برقم: 00072.',
+      'هناك وثيقة واردة برقم: 00072.',
     );
   });
 
