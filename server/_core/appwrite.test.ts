@@ -1,28 +1,36 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const APPWRITE_ENVIRONMENT_VARIABLES = [
+  "APPWRITE_ENDPOINT",
+  "APPWRITE_PROJECT_ID",
+  "APPWRITE_API_KEY",
+  "APPWRITE_DATABASE_ID",
+  "APPWRITE_BUCKET_ID",
+] as const;
+
+type AppwriteEnvironmentVariable =
+  (typeof APPWRITE_ENVIRONMENT_VARIABLES)[number];
+
 const loadAppwriteModule = async (
-  values: Partial<Record<
-    | "APPWRITE_ENDPOINT"
-    | "APPWRITE_PROJECT_ID"
-    | "APPWRITE_API_KEY"
-    | "APPWRITE_DATABASE_ID"
-    | "APPWRITE_BUCKET_ID",
-    string
-  >> = {}
+  values: Partial<Record<AppwriteEnvironmentVariable, string>> = {}
 ) => {
   vi.resetModules();
 
-  for (const name of [
-    "APPWRITE_ENDPOINT",
-    "APPWRITE_PROJECT_ID",
-    "APPWRITE_API_KEY",
-    "APPWRITE_DATABASE_ID",
-    "APPWRITE_BUCKET_ID",
-  ] as const) {
+  for (const name of APPWRITE_ENVIRONMENT_VARIABLES) {
     vi.stubEnv(name, values[name] ?? "");
   }
 
   return import("./appwrite");
+};
+
+const captureErrorMessage = (callback: () => unknown): string => {
+  try {
+    callback();
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+
+  return "";
 };
 
 afterEach(() => {
@@ -39,7 +47,7 @@ describe("server-side Appwrite configuration", () => {
     const appwrite = await loadAppwriteModule();
 
     expect(appwrite.isAppwriteConfigured()).toBe(false);
-    expect(() => appwrite.getAppwriteAdminClient()).toThrow(
+    expect(captureErrorMessage(() => appwrite.getAppwriteAdminClient())).toContain(
       "APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY"
     );
   });
@@ -51,12 +59,13 @@ describe("server-side Appwrite configuration", () => {
     });
 
     expect(appwrite.isAppwriteConfigured()).toBe(false);
-    expect(() => appwrite.getAppwriteAdminClient()).toThrow(
-      "APPWRITE_API_KEY"
+
+    const errorMessage = captureErrorMessage(() =>
+      appwrite.getAppwriteAdminClient()
     );
-    expect(() => appwrite.getAppwriteAdminClient()).not.toThrow(
-      "not-a-server-secret"
-    );
+
+    expect(errorMessage).toContain("APPWRITE_API_KEY");
+    expect(errorMessage).not.toContain("not-a-server-secret");
   });
 
   it("rejects insecure or malformed endpoints", async () => {
@@ -67,7 +76,7 @@ describe("server-side Appwrite configuration", () => {
     });
 
     expect(appwrite.isAppwriteConfigured()).toBe(false);
-    expect(() => appwrite.getAppwriteAdminClient()).toThrow(
+    expect(captureErrorMessage(() => appwrite.getAppwriteAdminClient())).toContain(
       "valid absolute HTTPS URL ending in /v1"
     );
   });
@@ -103,10 +112,10 @@ describe("server-side Appwrite configuration", () => {
     });
 
     expect(appwrite.isAppwriteConfigured()).toBe(true);
-    expect(() => appwrite.getAppwriteDatabaseId()).toThrow(
+    expect(captureErrorMessage(() => appwrite.getAppwriteDatabaseId())).toContain(
       "APPWRITE_DATABASE_ID"
     );
-    expect(() => appwrite.getAppwriteBucketId()).toThrow(
+    expect(captureErrorMessage(() => appwrite.getAppwriteBucketId())).toContain(
       "APPWRITE_BUCKET_ID"
     );
   });
