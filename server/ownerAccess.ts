@@ -1,3 +1,4 @@
+import { ENV } from "./_core/env";
 import { getAppwriteProfileById } from "./_core/appwriteAuth";
 
 export interface OwnerIdentity {
@@ -6,11 +7,18 @@ export interface OwnerIdentity {
   isPlatformOwner?: boolean | null;
 }
 
-/** Owner-only operations must match the persisted owner flag and admin role. */
+/** Prefer the persisted Appwrite owner flag, retaining the configured bootstrap identity. */
 export function isPlatformOwner(
   user: OwnerIdentity | null | undefined
 ): boolean {
-  return user?.isPlatformOwner === true && user.role === "admin";
+  if (user?.isPlatformOwner === true && user.role === "admin") return true;
+
+  const configuredOwner = ENV.ownerUsername.trim().toLowerCase();
+  return (
+    user?.role === "admin" &&
+    typeof user.username === "string" &&
+    user.username.trim().toLowerCase() === configuredOwner
+  );
 }
 
 export async function isPlatformOwnerUserId(userId: number): Promise<boolean> {
