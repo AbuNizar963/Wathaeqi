@@ -15,7 +15,7 @@ vi.mock("../../_core/appwrite", () => ({
 import {
   getPlatformDocumentSettings,
   updatePlatformDocumentSettings,
-} from "../platform-settings/platformDocumentSettingsRepository";
+} from "./platformDocumentSettingsRepository";
 
 const ownerSettings = {
   id: 1,
