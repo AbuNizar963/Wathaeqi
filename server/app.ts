@@ -9,7 +9,7 @@ import { serveStatic } from "./_core/static";
 import { getSupabaseAdmin } from "./_core/supabase";
 import { registerTelegramExportRoutes } from "./telegramExport";
 import { getTelegramSerialCode } from "@shared/telegramSerial";
-import { getAuthenticatedUserFromRequest } from "./_core/auth";
+import { getAppwriteAuthenticatedUserFromRequest } from "./_core/appwriteAuth";
 import { assertProductionEnvironment, ENV } from "./_core/env";
 import { getContentSecurityPolicy } from "./_core/csp";
 import { notifyMobileRelease } from "./features/notifications/notification";
@@ -132,7 +132,7 @@ export function createApp(
       if (!requiresAuthenticatedLargeBody(path)) return next();
 
       void (async () => {
-        const user = await getAuthenticatedUserFromRequest(req);
+        const user = await getAppwriteAuthenticatedUserFromRequest(req);
         if (!user) {
           res.status(401).json({ error: "يجب تسجيل الدخول أولًا" });
           return;
