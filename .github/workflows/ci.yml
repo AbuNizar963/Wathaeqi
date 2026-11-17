@@ -38,6 +38,9 @@ jobs:
             exit 1
           fi
 
+      - name: Show router formatting diff
+        run: pnpm exec prettier server/routers.ts | diff -u server/routers.ts - || true
+
       - name: Check formatting
         run: pnpm lint
 
