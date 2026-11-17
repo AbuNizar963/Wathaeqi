@@ -1344,10 +1344,7 @@ export const appRouter = router({
           owner.role !== "admin" ||
           owner.isPlatformOwner !== true ||
           !ctx.user.username ||
-          !(await verifyAppwriteUserPassword(
-            ctx.user.username,
-            input.password
-          ))
+          !(await verifyAppwriteUserPassword(ctx.user.username, input.password))
         ) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
