@@ -657,6 +657,20 @@ async function buildTelegramVersionSnapshot(telegram: {
   };
 }
 
+async function authenticateForLogin(username: string, password: string) {
+  try {
+    return await authenticateAppwriteUser(username, password);
+  } catch (error) {
+    if (error instanceof AppwritePasswordResetRequiredError) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "يجب إعادة تعيين كلمة المرور قبل تسجيل الدخول",
+      });
+    }
+    throw error;
+  }
+}
+
 export const appRouter = router({
   system: systemRouter,
   profile: profileRouter,
@@ -698,21 +712,10 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        let authenticated: Awaited<ReturnType<typeof authenticateAppwriteUser>>;
-        try {
-          authenticated = await authenticateAppwriteUser(
-            input.username.trim(),
-            input.password
-          );
-        } catch (error) {
-          if (error instanceof AppwritePasswordResetRequiredError) {
-            throw new TRPCError({
-              code: "PRECONDITION_FAILED",
-              message: "يجب إعادة تعيين كلمة المرور قبل تسجيل الدخول",
-            });
-          }
-          throw error;
-        }
+        const authenticated = await authenticateForLogin(
+          input.username.trim(),
+          input.password
+        );
 
         if (!authenticated) {
           throw new TRPCError({
