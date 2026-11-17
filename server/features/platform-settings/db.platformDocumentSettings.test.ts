@@ -113,11 +113,12 @@ describe("platform document settings Appwrite persistence", () => {
   it(
     "surfaces Appwrite read errors rather than pretending defaults were loaded",
     async () => {
-    mocks.listRows.mockRejectedValue(new Error("permission denied"));
-    await expect(getPlatformDocumentSettings()).rejects.toThrow(
-      "permission denied"
-    );
-  });
+      mocks.listRows.mockRejectedValue(new Error("permission denied"));
+      await expect(getPlatformDocumentSettings()).rejects.toThrow(
+        "permission denied"
+      );
+    }
+  );
 
   it("retries a concurrent first save against the row that won the unique index", async () => {
     mocks.listRows
