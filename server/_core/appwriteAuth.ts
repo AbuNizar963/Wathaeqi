@@ -120,9 +120,7 @@ export async function getAppwriteProfileByAuthUserId(
 ): Promise<ProfileLookup | null> {
   if (!authUserId) return null;
 
-  const profiles = await listProfiles(
-    Query.equal("authUserId", authUserId)
-  );
+  const profiles = await listProfiles(Query.equal("authUserId", authUserId));
   return profiles.length === 1 ? profiles[0] : null;
 }
 
