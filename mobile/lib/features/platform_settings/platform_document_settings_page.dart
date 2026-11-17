@@ -298,7 +298,7 @@ class _PlatformDocumentSettingsPageState
                         ),
                         const SizedBox(height: 18),
                         const Text(
-                          'لون الخط الفاصل في ترويسة البرقية',
+                          'لون الخط الفاصل في ترويسة الوثيقة',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 10),
@@ -383,7 +383,7 @@ class _PlatformDocumentSettingsPageState
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                           subtitle: const Text(
-                            'إخفاء الرمز المطبوع لا يعطّل رابط التحقق أو صلاحية التحقق من البرقية.',
+                            'إخفاء الرمز المطبوع لا يعطّل رابط التحقق أو صلاحية التحقق من الوثيقة.',
                           ),
                           value: _showVerificationQr,
                           onChanged: _saving
