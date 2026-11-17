@@ -119,13 +119,13 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
 
   String _actionLabel(dynamic value) {
     const labels = {
-      'telegram.create': 'إنشاء برقية',
-      'telegram.update': 'تعديل برقية',
-      'telegram.delete': 'حذف برقية',
-      'telegram.route': 'إحالة برقية',
-      'telegram.status.transition': 'تغيير حالة برقية',
-      'telegram.document.print': 'طباعة وثيقة برقية',
-      'telegram.document.download': 'تنزيل أو مشاركة وثيقة برقية',
+      'telegram.create': 'إنشاء وثيقة',
+      'telegram.update': 'تعديل وثيقة',
+      'telegram.delete': 'حذف وثيقة',
+      'telegram.route': 'إحالة وثيقة',
+      'telegram.status.transition': 'تغيير حالة وثيقة',
+      'telegram.document.print': 'طباعة وثيقة وثيقة',
+      'telegram.document.download': 'تنزيل أو مشاركة وثيقة وثيقة',
       'user.create': 'إنشاء حساب مستخدم',
       'user.update': 'تعديل بيانات مستخدم',
       'user.disable': 'تعطيل حساب مستخدم',
@@ -602,7 +602,7 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
 
   Widget _distributionCard() {
     const labels = {
-      'telegram': 'البرقيات',
+      'telegram': 'الوثائق',
       'user': 'الحسابات',
       'organization': 'الجهات',
       'platform': 'المنصة والإعدادات',
