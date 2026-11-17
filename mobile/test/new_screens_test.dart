@@ -112,7 +112,7 @@ void main() {
     await tester.pumpWidget(_host(AdvancedCreateTelegramSheet(api: api)));
     await tester.pumpAndSettle();
 
-    expect(find.text('إنشاء برقية جديدة'), findsOneWidget);
+    expect(find.text('إنشاء وثيقة جديدة'), findsOneWidget);
     expect(find.text('73'), findsOneWidget);
     expect(find.text('قيادة الأمن الداخلي'), findsOneWidget);
     expect(find.text('درجة السرية'), findsOneWidget);
@@ -135,11 +135,11 @@ void main() {
     );
     expect(find.text('إرفاق صورة أو PDF أو ملف صوتي'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('إرسال البرقية'),
+      find.text('إرسال الوثيقة'),
       240,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('إرسال البرقية'), findsOneWidget);
+    expect(find.text('إرسال الوثيقة'), findsOneWidget);
     expect(api.calls, contains('organizations.routingDirectory'));
   });
 
@@ -176,14 +176,14 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('إرسال البرقية'),
+      find.text('إرسال الوثيقة'),
       240,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('إرسال البرقية'));
+    await tester.tap(find.text('إرسال الوثيقة'));
     await tester.pump();
 
-    expect(find.text('أكمل الموضوع والجهة ونص البرقية.'), findsOneWidget);
+    expect(find.text('أكمل الموضوع والجهة ونص الوثيقة.'), findsOneWidget);
     expect(api.calls, isNot(contains('telegrams.create')));
   });
 
@@ -206,7 +206,7 @@ void main() {
       'بلاغ اختباري',
     );
     await tester.scrollUntilVisible(
-      find.text('نص البرقية'),
+      find.text('نص الوثيقة'),
       240,
       scrollable: find.byType(Scrollable).last,
     );
@@ -225,11 +225,11 @@ void main() {
     );
     await tester.tap(find.text('عاجلة').first);
     await tester.scrollUntilVisible(
-      find.text('إرسال البرقية'),
+      find.text('إرسال الوثيقة'),
       240,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('إرسال البرقية'));
+    await tester.tap(find.text('إرسال الوثيقة'));
     await tester.pumpAndSettle();
 
     expect(api.lastInput?['requestedOrganizationSerialNumber'], 73);
@@ -555,7 +555,7 @@ void main() {
     final api = _ScreenTestApi();
     await tester.pumpWidget(_host(VerifyTelegramPage(api: api)));
 
-    await tester.tap(find.text('تحقق من البرقية'));
+    await tester.tap(find.text('تحقق من الوثيقة'));
     await tester.pump();
 
     expect(find.text('أدخل رمز التحقق الموجود في الوثيقة.'), findsOneWidget);
