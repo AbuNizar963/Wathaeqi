@@ -233,8 +233,8 @@ export function createApp(
     res.status(200).json({
       ok: true,
       service: "police-telegrams-platform",
-      auth: "local-password",
-      database: "supabase-postgres",
+      auth: "appwrite-auth",
+      database: "supabase-legacy-migration-pending",
       timestamp: new Date().toISOString(),
     });
   });
