@@ -1060,8 +1060,7 @@ class _DashboardPageState extends State<DashboardPage>
         if (showProgress) {
           _outboxSyncing = true;
           _syncPhase = 'syncing';
-          _lastSyncMessage =
-              'جارٍ فحص صندوق الخروج وإرسال الوثائق بالترتيب...';
+          _lastSyncMessage = 'جارٍ فحص صندوق الخروج وإرسال الوثائق بالترتيب...';
         }
       });
     }
