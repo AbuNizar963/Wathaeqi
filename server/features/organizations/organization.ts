@@ -15,6 +15,7 @@ import {
   getAppwriteDatabaseId,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
+import { getSupabaseAdmin } from "../../_core/supabase";
 import { getAppwriteProfileById } from "../../_core/appwriteAuth";
 import { writeAuditLog } from "../../db";
 import { isPlatformOwner } from "../../ownerAccess";
@@ -164,9 +165,9 @@ export async function selectPlatformOwnerWorkplace(input: {
   const existingMembership = memberships[0];
   const now = new Date().toISOString();
   let membershipUpdated = false;
+  let createdMembershipRowId: string | null = null;
 
   if (existingMembership) {
-    const data = appwriteRowData(existingMembership);
     await getAppwriteTablesDB().updateRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: "organization_memberships",
@@ -182,10 +183,11 @@ export async function selectPlatformOwnerWorkplace(input: {
     membershipUpdated = true;
   } else {
     const membershipId = Date.now();
+    createdMembershipRowId = String(membershipId);
     await getAppwriteTablesDB().createRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: "organization_memberships",
-      rowId: String(membershipId),
+      rowId: createdMembershipRowId,
       data: {
         id: membershipId,
         organizationId: organization.id,
@@ -212,7 +214,15 @@ export async function selectPlatformOwnerWorkplace(input: {
       },
     });
   } catch (error) {
-    if (membershipUpdated && existingMembership) {
+    if (createdMembershipRowId) {
+      await getAppwriteTablesDB()
+        .deleteRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "organization_memberships",
+          rowId: createdMembershipRowId,
+        })
+        .catch(() => undefined);
+    } else if (membershipUpdated && existingMembership) {
       const previous = appwriteRowData(existingMembership);
       await getAppwriteTablesDB()
         .updateRow({
