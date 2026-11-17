@@ -975,7 +975,6 @@ export async function addOrganizationMembership(input: {
   const now = new Date().toISOString();
 
   if (existingRows[0]) {
-    const existing = appwriteRowData(existingRows[0]);
     const updated = await tables.updateRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: "organization_memberships",
