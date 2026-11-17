@@ -7,15 +7,28 @@ const mocks = vi.hoisted(() => ({
   createEmailPasswordSession: vi.fn(),
   get: vi.fn(),
   deleteSession: vi.fn(),
+  updatePassword: vi.fn(),
   getAppwriteSessionClient: vi.fn((secret?: string) => ({ secret })),
 }));
 
 vi.mock("node-appwrite", () => ({
-  Account: vi.fn().mockImplementation(() => ({
-    createEmailPasswordSession: mocks.createEmailPasswordSession,
-    get: mocks.get,
-    deleteSession: mocks.deleteSession,
-  })),
+  Account: class MockAccount {
+    createEmailPasswordSession(...args: unknown[]) {
+      return mocks.createEmailPasswordSession(...args);
+    }
+
+    get() {
+      return mocks.get();
+    }
+
+    deleteSession(...args: unknown[]) {
+      return mocks.deleteSession(...args);
+    }
+
+    updatePassword(...args: unknown[]) {
+      return mocks.updatePassword(...args);
+    }
+  },
   Query: {
     equal: (attribute: string, value: unknown) =>
       JSON.stringify({ method: "equal", attribute, values: [value] }),
@@ -94,6 +107,7 @@ beforeEach(() => {
   mocks.createEmailPasswordSession.mockResolvedValue(session);
   mocks.get.mockResolvedValue({ $id: "appwrite-user-id" });
   mocks.deleteSession.mockResolvedValue({});
+  mocks.updatePassword.mockResolvedValue({});
   mocks.updateRow.mockResolvedValue({});
 });
 
