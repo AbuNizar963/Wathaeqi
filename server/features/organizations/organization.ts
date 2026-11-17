@@ -61,7 +61,9 @@ type AppwriteOrganizationRow = {
   data?: Record<string, unknown>;
 } & Record<string, unknown>;
 
-function appwriteRowData(row: AppwriteOrganizationRow): Record<string, unknown> {
+function appwriteRowData(
+  row: AppwriteOrganizationRow
+): Record<string, unknown> {
   return row.data ?? row;
 }
 
@@ -110,22 +112,21 @@ export async function getUserOrganizationMembership(
   const memberships = rows.map(appwriteRowData);
   const homeOrganizationId = profile.user.organizationId;
   const membership = homeOrganizationId
-    ? memberships.find(
-        row => row.organizationId === homeOrganizationId
-      )
+    ? memberships.find(row => row.organizationId === homeOrganizationId)
     : memberships[0];
 
   if (!membership || typeof membership.organizationId !== "string") {
     return null;
   }
 
-  const organization = await getOrganizationById(
-    membership.organizationId
-  );
+  const organization = await getOrganizationById(membership.organizationId);
   if (!organization) return null;
 
-  const { organization: _organization, user: _user, ...membershipData } =
-    membership;
+  const {
+    organization: _organization,
+    user: _user,
+    ...membershipData
+  } = membership;
   return mapMembership(membershipData);
 }
 
@@ -262,9 +263,8 @@ export async function listOrganizationsForUser(
     })
   );
 
-  return organizations.filter(
-    (organization): organization is Organization =>
-      Boolean(organization?.isActive)
+  return organizations.filter((organization): organization is Organization =>
+    Boolean(organization?.isActive)
   );
 }
 
