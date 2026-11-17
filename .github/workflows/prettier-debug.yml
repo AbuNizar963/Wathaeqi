@@ -1,0 +1,25 @@
+name: Temporary Prettier Debug
+on:
+  push:
+    branches:
+      - migration/netlify-appwrite-foundation
+    paths:
+      - server/features/platform-settings/db.platformDocumentSettings.test.ts
+      - .github/workflows/prettier-debug.yml
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Print Prettier-formatted test file
+        run: |
+          pnpm exec prettier --write server/features/platform-settings/db.platformDocumentSettings.test.ts
+          cat server/features/platform-settings/db.platformDocumentSettings.test.ts
