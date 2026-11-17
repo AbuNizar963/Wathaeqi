@@ -995,9 +995,11 @@ export async function listRoutingTargets(
     throw new Error("Current organization is unavailable");
   }
 
-  const organizations = (await listAllOrganizationRows("organizations", [
-    Query.equal("isActive", true),
-  ])).map(row => mapOrganization(appwriteRowData(row)));
+  const organizations = (
+    await listAllOrganizationRows("organizations", [
+      Query.equal("isActive", true),
+    ])
+  ).map(row => mapOrganization(appwriteRowData(row)));
   return organizations
     .filter(
       organization =>
