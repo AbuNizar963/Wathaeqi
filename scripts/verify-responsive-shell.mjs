@@ -41,13 +41,23 @@ assert(
   "The mobile dashboard header must provide the primary brand mark."
 );
 
-assert(
-  dashboardLayout.includes('<BrandMark size="sm" />') &&
-    dashboardLayout.includes("وثائقي") &&
-    dashboardLayout.includes("النظام متصل") &&
-    !homePage.includes("TELEGRAM OPERATIONS"),
-  "The top bar must contain the brand, title, and status while the legacy label is removed."
-);
+const mobileMain = await readProjectFile("mobile/lib/main.dart").catch(() => null);
+
+if (mobileMain) {
+  assert(
+    mobileMain.includes("title: 'وثائقي'") &&
+      !mobileMain.includes("'برقيات الشرطة'"),
+    "The Flutter application must use the Wathaeqi brand and remove the legacy app name."
+  );
+} else {
+  assert(
+    dashboardLayout.includes('<BrandMark size="sm" />') &&
+      dashboardLayout.includes("وثائقي") &&
+      dashboardLayout.includes("النظام متصل") &&
+      !homePage.includes("TELEGRAM OPERATIONS"),
+    "The web top bar must contain the Wathaeqi brand, title, and status while the legacy label is removed."
+  );
+}
 
 assert(
   dashboardLayout.includes(
