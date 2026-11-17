@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SignJWT } from "jose";
 
 const mocks = vi.hoisted(() => ({
@@ -95,10 +95,6 @@ beforeEach(() => {
   mocks.get.mockResolvedValue({ $id: "appwrite-user-id" });
   mocks.deleteSession.mockResolvedValue({});
   mocks.updateRow.mockResolvedValue({});
-});
-
-afterEach(() => {
-  vi.resetAllMocks();
 });
 
 describe("Appwrite authentication adapter", () => {
