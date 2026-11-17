@@ -81,6 +81,52 @@ export function isAppwriteConfigured(): boolean {
  * only from APPWRITE_API_KEY and is deliberately excluded from all return
  * values, logs, and error messages.
  */
+export function getAppwriteSessionClient(sessionSecret?: string): Client {
+  const endpoint = ENV.appwriteEndpoint.trim();
+  const projectId = ENV.appwriteProjectId.trim();
+  const missing: string[] = [];
+
+  if (!endpoint) missing.push("APPWRITE_ENDPOINT");
+  if (!projectId) missing.push("APPWRITE_PROJECT_ID");
+
+  if (missing.length > 0) {
+    throw new AppwriteConfigurationError(
+      `Missing public Appwrite configuration: ${missing.join(", ")}`
+    );
+  }
+
+  let parsedEndpoint: URL;
+  try {
+    parsedEndpoint = new URL(endpoint);
+  } catch {
+    throw new AppwriteConfigurationError(
+      "APPWRITE_ENDPOINT must be a valid absolute HTTPS URL ending in /v1"
+    );
+  }
+
+  const normalizedPath = parsedEndpoint.pathname.replace(/\\/+$/, "");
+  if (
+    parsedEndpoint.protocol !== "https:" ||
+    !parsedEndpoint.hostname ||
+    !normalizedPath.endsWith("/v1") ||
+    parsedEndpoint.username ||
+    parsedEndpoint.password ||
+    parsedEndpoint.search ||
+    parsedEndpoint.hash
+  ) {
+    throw new AppwriteConfigurationError(
+      "APPWRITE_ENDPOINT must be a valid absolute HTTPS URL ending in /v1"
+    );
+  }
+
+  const client = new Client()
+    .setEndpoint(`${parsedEndpoint.origin}${normalizedPath}`)
+    .setProject(projectId);
+
+  if (sessionSecret) client.setSession(sessionSecret);
+  return client;
+}
+
 export function getAppwriteAdminClient(): Client {
   if (adminClient) return adminClient;
 
