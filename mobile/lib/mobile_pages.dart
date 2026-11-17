@@ -333,7 +333,7 @@ class _ReportsPageState extends State<ReportsPage> {
 
     final rows = <List<String>>[
       [
-        'رقم البرقية',
+        'رقم الوثيقة',
         'الموضوع',
         'الجهة',
         'الحالة',
@@ -362,7 +362,7 @@ class _ReportsPageState extends State<ReportsPage> {
     try {
       final date = DateTime.now().toIso8601String().substring(0, 10);
       await FilePicker.saveFile(
-        dialogTitle: 'تصدير سجل البرقيات',
+        dialogTitle: 'تصدير سجل الوثائق',
         fileName: 'telegram-report-$date.csv',
         type: FileType.custom,
         allowedExtensions: const ['csv'],
@@ -442,7 +442,7 @@ class _ReportsPageState extends State<ReportsPage> {
                           DropdownButtonFormField<String>(
                             initialValue: _status,
                             decoration: const InputDecoration(
-                              labelText: 'حالة البرقية',
+                              labelText: 'حالة الوثيقة',
                             ),
                             items: [
                               const DropdownMenuItem(
@@ -531,7 +531,7 @@ class _ReportSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'ملخص البرقيات',
+          'ملخص الوثائق',
           style: TextStyle(
             color: Theme.of(context).colorScheme.primary,
             fontSize: 20,
@@ -611,7 +611,7 @@ class _ReportRows extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             title: Text(
-              _stringValue(row['subject'], 'برقية بدون موضوع'),
+              _stringValue(row['subject'], 'وثيقة بدون موضوع'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -841,7 +841,7 @@ class _AuditLogPageState extends State<AuditLogPage> {
                           onSubmitted: (_) => _applyFilters(),
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.search),
-                            hintText: 'الموظف أو الإجراء أو رقم البرقية',
+                            hintText: 'الموظف أو الإجراء أو رقم الوثيقة',
                             suffixIcon: IconButton(
                               tooltip: 'تطبيق البحث',
                               onPressed: _applyFilters,
@@ -857,7 +857,7 @@ class _AuditLogPageState extends State<AuditLogPage> {
                                 onChanged: (value) => resourceId = value,
                                 onSubmitted: (_) => _applyFilters(),
                                 decoration: const InputDecoration(
-                                  labelText: 'معرّف المورد أو رقم البرقية',
+                                  labelText: 'معرّف المورد أو رقم الوثيقة',
                                   prefixIcon: Icon(Icons.tag_outlined),
                                 ),
                               ),
@@ -2147,7 +2147,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'هوية الجهة وترويسة البرقية',
+                          'هوية الجهة وترويسة الوثيقة',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 17,
@@ -2251,12 +2251,12 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                   children: [
                     _input(
                       _serialPrefix,
-                      'بادئة البرقية الصادرة',
+                      'بادئة الوثيقة الصادرة',
                       maxLength: 24,
                     ),
                     _input(
                       _incomingSerialPrefix,
-                      'بادئة البرقية الواردة',
+                      'بادئة الوثيقة الواردة',
                       maxLength: 24,
                     ),
                     _input(
