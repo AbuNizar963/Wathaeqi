@@ -31,7 +31,9 @@ async function findSettingsRow(): Promise<AppwriteRow | null> {
   });
   const rows = result.rows as AppwriteRow[];
   if (rows.length > 1) {
-    throw new Error("Platform document settings contains duplicate singleton rows");
+    throw new Error(
+      "Platform document settings contains duplicate singleton rows"
+    );
   }
   return rows[0] ?? null;
 }
@@ -96,9 +98,7 @@ export async function updatePlatformDocumentSettings(
       rowId: existing.$id,
       data,
     });
-    return mapPlatformDocumentSettings(
-      rowData(updated as AppwriteRow)
-    );
+    return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
 
   try {
@@ -118,7 +118,9 @@ export async function updatePlatformDocumentSettings(
         : 0;
     if (code !== 409) {
       throw new Error(
-        `Failed to save platform document settings: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to save platform document settings: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
     const raced = await findSettingsRow();
