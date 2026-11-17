@@ -231,18 +231,18 @@ describe("organization repository", () => {
     expect(getAllowedOrganizationChildTypes("region")).toEqual([]);
   });
 
-  it("writes a membership with an active role", async () => {
-    mocks.single.mockResolvedValueOnce({
+  it("updates an existing Appwrite membership with the requested role", async () => {
+    mocks.appwriteUpdateRow.mockResolvedValueOnce({
+      $id: "membership-7",
       data: {
-        id: 2,
+        id: 1,
         organizationId: "00000000-0000-0000-0000-000000000001",
         userId: 7,
         role: "reviewer",
         isActive: true,
         createdAt: "2026-10-01T00:00:00.000Z",
-        updatedAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-02T00:00:00.000Z",
       },
-      error: null,
     });
 
     await expect(
@@ -253,15 +253,18 @@ describe("organization repository", () => {
       })
     ).resolves.toMatchObject({ role: "reviewer", userId: 7 });
 
-    expect(mocks.upsert).toHaveBeenCalledWith(
-      {
-        organizationId: "00000000-0000-0000-0000-000000000001",
-        userId: 7,
-        role: "reviewer",
-        isActive: true,
-      },
-      { onConflict: "organizationId,userId" }
+    expect(mocks.appwriteUpdateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "wathaeqi-db",
+        tableId: "organization_memberships",
+        rowId: "membership-7",
+        data: expect.objectContaining({
+          role: "reviewer",
+          isActive: true,
+        }),
+      })
     );
+    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
   it("rotates the application session version when resetting the organization account password", async () => {
