@@ -94,12 +94,8 @@ describe("server-side Appwrite configuration", () => {
     expect(appwrite.getAppwriteAdminClient()).toBe(
       appwrite.getAppwriteAdminClient()
     );
-    expect(appwrite.getAppwriteTablesDB()).toBe(
-      appwrite.getAppwriteTablesDB()
-    );
-    expect(appwrite.getAppwriteStorage()).toBe(
-      appwrite.getAppwriteStorage()
-    );
+    expect(appwrite.getAppwriteTablesDB()).toBe(appwrite.getAppwriteTablesDB());
+    expect(appwrite.getAppwriteStorage()).toBe(appwrite.getAppwriteStorage());
     expect(appwrite.getAppwriteDatabaseId()).toBe("wathaeqi-db");
     expect(appwrite.getAppwriteBucketId()).toBe("document-attachments");
   });
@@ -115,8 +111,8 @@ describe("server-side Appwrite configuration", () => {
     expect(
       captureErrorMessage(() => appwrite.getAppwriteDatabaseId())
     ).toContain("APPWRITE_DATABASE_ID");
-    expect(
-      captureErrorMessage(() => appwrite.getAppwriteBucketId())
-    ).toContain("APPWRITE_BUCKET_ID");
+    expect(captureErrorMessage(() => appwrite.getAppwriteBucketId())).toContain(
+      "APPWRITE_BUCKET_ID"
+    );
   });
 });
