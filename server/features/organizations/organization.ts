@@ -1080,9 +1080,11 @@ export async function listOrganizationDescendants(
   if (!membership) {
     throw new Error("User is not assigned to an active organization");
   }
-  const organizations = (await listAllOrganizationRows("organizations", [
-    Query.equal("isActive", true),
-  ])).map(row => mapOrganization(appwriteRowData(row)));
+  const organizations = (
+    await listAllOrganizationRows("organizations", [
+      Query.equal("isActive", true),
+    ])
+  ).map(row => mapOrganization(appwriteRowData(row)));
   const descendants = new Set<string>();
   let frontier = [membership.organizationId];
   while (frontier.length > 0) {
