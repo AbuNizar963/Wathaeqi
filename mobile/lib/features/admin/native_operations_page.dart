@@ -318,7 +318,7 @@ class _NativeOperationsPageState extends State<NativeOperationsPage>
         ),
         const SizedBox(height: 12),
         Text(
-          'مواقع البرقيات',
+          'مواقع الوثائق',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurface,
             fontSize: 18,
@@ -330,7 +330,7 @@ class _NativeOperationsPageState extends State<NativeOperationsPage>
           const _InfoCard(
             icon: Icons.location_off_outlined,
             title: 'لا توجد إحداثيات مسجلة',
-            detail: 'تظهر هنا البرقيات التي تحتوي على خط العرض وخط الطول.',
+            detail: 'تظهر هنا الوثائق التي تحتوي على خط العرض وخط الطول.',
           )
         else
           ..._locations.map((row) {
@@ -349,7 +349,7 @@ class _NativeOperationsPageState extends State<NativeOperationsPage>
                   ),
                 ),
                 title: Text(
-                  _value(row['subject'], 'برقية بدون موضوع'),
+                  _value(row['subject'], 'وثيقة بدون موضوع'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -447,7 +447,7 @@ class _NativeOperationsPageState extends State<NativeOperationsPage>
         Row(
           children: [
             _metric(
-              'البرقيات المفتوحة',
+              'الوثائق المفتوحة',
               openRows.length,
               Icons.pending_actions_outlined,
             ),
@@ -552,15 +552,15 @@ class _NativeOperationsPageState extends State<NativeOperationsPage>
                 ? 'الأرشيف فارغ'
                 : 'لا توجد نتائج مطابقة',
             detail: _archiveSearch.isEmpty
-                ? 'لا توجد برقيات مؤرشفة متاحة لهذا الحساب.'
-                : 'جرّب البحث برقم البرقية أو جزء من الموضوع.',
+                ? 'لا توجد وثائق مؤرشفة متاحة لهذا الحساب.'
+                : 'جرّب البحث برقم الوثيقة أو جزء من الموضوع.',
           )
         else
           ...rows.map(
             (row) => Card(
               child: ListTile(
                 leading: const Icon(Icons.description_outlined, color: _gold),
-                title: Text(_value(row['subject'], 'برقية بدون موضوع')),
+                title: Text(_value(row['subject'], 'وثيقة بدون موضوع')),
                 subtitle: Text(
                   '${_value(row['serialCode'] ?? row['serialNumber'])} · '
                   '${_value(row['recipient'])}',
