@@ -490,3 +490,37 @@ export async function dismissAppwritePasswordChange(
     },
   });
 }
+
+export async function updateAppwriteUserProfile(
+  userId: number,
+  input: {
+    name: string;
+    badgeNumber: string | null;
+    phone: string | null;
+    rank: string | null;
+    unit: string | null;
+    bio: string | null;
+  }
+): Promise<User> {
+  const profile = await getAppwriteProfileById(userId);
+  if (!profile || !profile.user.isActive) {
+    throw new Error("The Appwrite user profile is unavailable");
+  }
+
+  const now = new Date();
+  await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: USERS_TABLE_ID,
+    rowId: profile.rowId,
+    data: {
+      ...input,
+      updatedAt: now.toISOString(),
+    },
+  });
+
+  return {
+    ...profile.user,
+    ...input,
+    updatedAt: now,
+  };
+}
