@@ -32,7 +32,7 @@
 | mobile_push_tokens | رموز إشعارات الهاتف | mobile_push_tokens |
 | audit_logs | سجل التدقيق وسلسلة التجزئة | audit_logs |
 
-المخطط يحتوي أيضاً على 9 أنواع enum يجب تحويلها إلى قيم مقيدة والتحقق منها في طبقة التطبيق:
+المخطط يحتوي أيضاً على 9 أنواع enum. فحص Appwrite الحالي أظهر أعمدة بصيغة enum وقوائم عناصر لهذه القيم في الجداول المقابلة؛ يجب مطابقة عناصرها مع المصدر آلياً، والإبقاء على تحقق الخادم واختبارات رفض القيم غير المسموحة:
 `user_role`, `telegram_classification`, `telegram_priority`, `telegram_category`, `telegram_status`, `number_system`, `organization_type`, `organization_member_role`, `telegram_route_status`.
 
 يوجد إجراء PostgreSQL باسم `public.allocate_serial_number`. يجب استبداله بعملية خادمية آمنة تمنع تكرار الأرقام تحت الضغط، لا بمجرد قراءة العداد ثم زيادته من العميل.
