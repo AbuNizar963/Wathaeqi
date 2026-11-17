@@ -698,9 +698,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        let authenticated: Awaited<
-          ReturnType<typeof authenticateAppwriteUser>
-        >;
+        let authenticated: Awaited<ReturnType<typeof authenticateAppwriteUser>>;
         try {
           authenticated = await authenticateAppwriteUser(
             input.username.trim(),
