@@ -657,6 +657,7 @@ async function buildTelegramVersionSnapshot(telegram: {
   };
 }
 
+// Keep Appwrite's forced password-reset response consistent with the web login API.
 async function authenticateForLogin(username: string, password: string) {
   try {
     return await authenticateAppwriteUser(username, password);
