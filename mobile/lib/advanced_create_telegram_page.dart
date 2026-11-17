@@ -344,14 +344,14 @@ class _AdvancedCreateTelegramSheetState
     if (_serial.text.trim().isNotEmpty &&
         (serial == null || serial < 1 || serial > 999999999)) {
       setState(
-        () => _error = 'أدخل رقم برقية صحيحًا بين 1 و999999999 أو اتركه فارغًا ليحدده الخادم.',
+        () => _error = 'أدخل رقم وثيقة صحيحًا بين 1 و999999999 أو اتركه فارغًا ليحدده الخادم.',
       );
       return;
     }
     if (_subject.text.trim().length < 2 ||
         _recipient.text.trim().length < 2 ||
         _body.text.trim().length < 3) {
-      setState(() => _error = 'أكمل الموضوع والجهة ونص البرقية.');
+      setState(() => _error = 'أكمل الموضوع والجهة ونص الوثيقة.');
       return;
     }
     setState(() {
@@ -448,13 +448,13 @@ class _AdvancedCreateTelegramSheetState
                           children: [
                             if (_error != null) _errorCard(_error!),
                             _offlineStyleNotice(),
-                            _fieldLabel('رقم البرقية'),
+                            _fieldLabel('رقم الوثيقة'),
                             TextField(
                               controller: _serial,
                               keyboardType: TextInputType.number,
                               onChanged: (_) => _serialEdited = true,
                               decoration: const InputDecoration(
-                                hintText: 'رقم البرقية',
+                                hintText: 'رقم الوثيقة',
                                 prefixIcon: Icon(Icons.numbers_outlined),
                               ),
                             ),
@@ -597,7 +597,7 @@ class _AdvancedCreateTelegramSheetState
                               ),
                             ),
                             const SizedBox(height: 14),
-                            _fieldLabel('نص البرقية'),
+                            _fieldLabel('نص الوثيقة'),
                             TextField(
                               controller: _body,
                               // Keep the editor bounded: an unbounded multiline
@@ -680,7 +680,7 @@ class _AdvancedCreateTelegramSheetState
                                   label: Text(
                                     _saving
                                         ? 'جارٍ الإرسال...'
-                                        : 'إرسال البرقية',
+                                        : 'إرسال الوثيقة',
                                   ),
                                   style: FilledButton.styleFrom(
                                     backgroundColor: Theme.of(context)
@@ -736,7 +736,7 @@ class _AdvancedCreateTelegramSheetState
         ),
         const Expanded(
           child: Text(
-            'إنشاء برقية جديدة',
+            'إنشاء وثيقة جديدة',
             textAlign: TextAlign.right,
             style: TextStyle(
               color: Colors.white,
@@ -810,7 +810,7 @@ class _AdvancedCreateTelegramSheetState
   Widget _offlineStyleNotice() => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Text(
-      'تُحفظ البرقية مركزيًا بعد نجاح الإرسال، وتُطبق الصلاحيات والتحقق النهائي على الخادم.',
+      'تُحفظ الوثيقة مركزيًا بعد نجاح الإرسال، وتُطبق الصلاحيات والتحقق النهائي على الخادم.',
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontSize: 12,
