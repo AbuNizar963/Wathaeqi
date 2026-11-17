@@ -460,7 +460,7 @@ describe("organization repository", () => {
   });
 
   it("does not select a missing or inactive organization", async () => {
-    mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    mocks.appwriteListRows.mockResolvedValueOnce({ rows: [] });
 
     await expect(
       selectPlatformOwnerWorkplace({
