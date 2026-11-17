@@ -17,6 +17,13 @@ type AppwriteSession = Awaited<
   ReturnType<Account["createEmailPasswordSession"]>
 >;
 
+export class AppwritePasswordResetRequiredError extends Error {
+  constructor() {
+    super("Appwrite requires the user to reset their password");
+    this.name = "AppwritePasswordResetRequiredError";
+  }
+}
+
 type AppwriteRow = Record<string, unknown> & {
   $id: string;
   data?: Record<string, unknown>;
@@ -152,6 +159,7 @@ export async function authenticateAppwriteUser(
   username: string,
   password: string
 ): Promise<{ user: User; session: AppwriteSession } | null> {
+  getSessionSigningKey();
   const profile = await getAppwriteProfileByUsername(username);
   if (
     !profile ||
@@ -171,6 +179,9 @@ export async function authenticateAppwriteUser(
     });
   } catch (error) {
     const appwriteError = asRecord(error);
+    if (appwriteError?.type === "user_password_reset_required") {
+      throw new AppwritePasswordResetRequiredError();
+    }
     if (
       appwriteError?.code === 401 ||
       appwriteError?.type === "user_invalid_credentials"
@@ -314,15 +325,23 @@ export async function setAppwriteSessionCookie(
     throw new Error("Appwrite returned an invalid authentication session");
   }
 
-  const token = await new SignJWT({
-    appwriteSessionSecret: session.secret,
-    sessionVersion: user.sessionVersion ?? user.authUserId,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(String(user.id))
-    .setIssuedAt()
-    .setExpirationTime(Math.floor(expiresAt / 1000))
-    .sign(getSessionSigningKey());
+  let token: string;
+  try {
+    token = await new SignJWT({
+      appwriteSessionSecret: session.secret,
+      sessionVersion: user.sessionVersion ?? user.authUserId,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(String(user.id))
+      .setIssuedAt()
+      .setExpirationTime(Math.floor(expiresAt / 1000))
+      .sign(getSessionSigningKey());
+  } catch (error) {
+    await new Account(getAppwriteSessionClient(session.secret))
+      .deleteSession({ sessionId: "current" })
+      .catch(() => undefined);
+    throw error;
+  }
 
   res.setHeader("Set-Cookie", serializeCookie(token, maxAge));
 }
@@ -338,7 +357,13 @@ export async function verifyAppwriteUserPassword(
   username: string,
   password: string
 ): Promise<boolean> {
-  const authenticated = await authenticateAppwriteUser(username, password);
+  let authenticated: Awaited<ReturnType<typeof authenticateAppwriteUser>>;
+  try {
+    authenticated = await authenticateAppwriteUser(username, password);
+  } catch (error) {
+    if (error instanceof AppwritePasswordResetRequiredError) return false;
+    throw error;
+  }
   if (!authenticated) return false;
 
   try {
