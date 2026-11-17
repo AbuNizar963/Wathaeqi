@@ -1,61 +1,6 @@
-import {
-  randomBytes,
-  scrypt as scryptCallback,
-  timingSafeEqual,
-} from "node:crypto";
-import type { Request, Response } from "express";
-import { parse } from "cookie";
-import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
-import * as db from "../db";
-import { ENV } from "./env";
 
-function deriveKey(
-  password: string,
-  salt: Buffer,
-  keyLength: number,
-  options: { N: number; r: number; p: number }
-): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    scryptCallback(password, salt, keyLength, options, (error, derivedKey) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(derivedKey);
-    });
-  });
-}
 export const SESSION_COOKIE = "police_telegrams_session";
-
-function serializeSessionCookie(
-  value: string,
-  options: { maxAge: number; expires?: Date }
-): string {
-  const parts = [
-    SESSION_COOKIE + "=" + encodeURIComponent(value),
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    "Max-Age=" + options.maxAge,
-  ];
-
-  if (ENV.isProduction) parts.push("Secure");
-  if (options.expires) parts.push("Expires=" + options.expires.toUTCString());
-
-  return parts.join("; ");
-}
-const SESSION_MAX_AGE = 60 * 60 * 24 * 30;
-const SCRYPT_N = 16384;
-const SCRYPT_R = 8;
-const SCRYPT_P = 1;
-
-function getSessionKey(): Uint8Array {
-  if (ENV.authSessionSecret.length < 32) {
-    throw new Error("AUTH_SESSION_SECRET must contain at least 32 characters");
-  }
-  return new TextEncoder().encode(ENV.authSessionSecret);
-}
 
 export type PublicUser = Omit<User, "passwordHash">;
 
@@ -64,102 +9,10 @@ export function publicUser(user: User): PublicUser {
   return safe;
 }
 
-export async function setAuthenticatedSession(
-  res: Response,
-  user: Pick<User, "id" | "role" | "authUserId" | "sessionVersion">
-): Promise<void> {
-  const token = await new SignJWT({
-    role: user.role,
-    sessionVersion: user.sessionVersion ?? user.authUserId,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(String(user.id))
-    .setIssuedAt()
-    .setExpirationTime("30d")
-    .sign(getSessionKey());
-
-  res.setHeader(
-    "Set-Cookie",
-    serializeSessionCookie(token, { maxAge: SESSION_MAX_AGE })
-  );
-}
-
-export function clearAuthenticatedSession(res: Response): void {
-  res.setHeader(
-    "Set-Cookie",
-    serializeSessionCookie("", { maxAge: 0, expires: new Date(0) })
-  );
-}
-
-export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16);
-  const derived = (await deriveKey(password, salt, 64, {
-    N: SCRYPT_N,
-    r: SCRYPT_R,
-    p: SCRYPT_P,
-  })) as Buffer;
-
-  return [
-    "scrypt",
-    SCRYPT_N,
-    SCRYPT_R,
-    SCRYPT_P,
-    salt.toString("base64url"),
-    derived.toString("base64url"),
-  ].join("$");
-}
-
-export async function verifyPassword(
-  password: string,
-  encodedHash: string
-): Promise<boolean> {
-  // Password hashes are persisted data. Never let their parameters control
-  // scrypt's CPU/memory cost or the derived-key allocation.
-  if (typeof encodedHash !== "string" || encodedHash.length > 256) return false;
-
-  const parts = encodedHash.split("$");
-  if (parts.length !== 6) return false;
-
-  const [algorithm, n, r, p, saltText, hashText] = parts;
-  if (
-    algorithm !== "scrypt" ||
-    n !== String(SCRYPT_N) ||
-    r !== String(SCRYPT_R) ||
-    p !== String(SCRYPT_P) ||
-    !saltText ||
-    !hashText
-  ) {
-    return false;
-  }
-
-  // Enforce the exact encoding and lengths emitted by hashPassword().
-  const salt = Buffer.from(saltText, "base64url");
-  const expected = Buffer.from(hashText, "base64url");
-  if (
-    salt.length !== 16 ||
-    expected.length !== 64 ||
-    salt.toString("base64url") !== saltText ||
-    expected.toString("base64url") !== hashText
-  ) {
-    return false;
-  }
-
-  try {
-    const derived = await deriveKey(password, salt, expected.length, {
-      N: SCRYPT_N,
-      r: SCRYPT_R,
-      p: SCRYPT_P,
-    });
-    return (
-      derived.length === expected.length && timingSafeEqual(derived, expected)
-    );
-  } catch {
-    // Malformed or unsupported persisted hashes must fail closed, not crash
-    // the authentication request.
-    return false;
-  }
-}
-
+/**
+ * Retained for compatibility with legacy session-version tests and migration
+ * checks. Appwrite session validity is now verified by Appwrite Auth itself.
+ */
 export function isSessionVersionValid(
   tokenSessionVersion: unknown,
   currentSessionVersion: string,
@@ -168,59 +21,5 @@ export function isSessionVersionValid(
   if (typeof tokenSessionVersion === "string") {
     return tokenSessionVersion === currentSessionVersion;
   }
-  // JWTs issued before sessionVersion was introduced have no version claim.
-  // They remain valid only until the account's session version is rotated.
   return currentSessionVersion === authUserId;
-}
-
-export async function getAuthenticatedUserFromRequest(
-  req: Request
-): Promise<PublicUser | null> {
-  const token = parse(req.headers.cookie ?? "")[SESSION_COOKIE];
-  if (!token) return null;
-
-  try {
-    const { payload } = await jwtVerify(token, getSessionKey(), {
-      algorithms: ["HS256"],
-    });
-    const userId = Number(payload.sub);
-    if (!Number.isInteger(userId) || userId < 1) return null;
-
-    const user = await db.getUserById(userId);
-    if (!user || user.isActive === false || user.loginMethod === "disabled")
-      return null;
-    const currentSessionVersion = user.sessionVersion ?? user.authUserId;
-    if (
-      !isSessionVersionValid(
-        payload.sessionVersion,
-        currentSessionVersion,
-        user.authUserId
-      )
-    ) {
-      return null;
-    }
-    return publicUser(user);
-  } catch {
-    return null;
-  }
-}
-
-export async function authenticateLocalUser(
-  username: string,
-  password: string
-): Promise<PublicUser | null> {
-  const user = await db.getUserByUsername(username);
-  if (
-    !user?.passwordHash ||
-    user.isActive === false ||
-    user.loginMethod === "disabled"
-  )
-    return null;
-
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) return null;
-
-  await db.updateUserLastSignedIn(user.id);
-  const refreshed = await db.getUserById(user.id);
-  return refreshed ? publicUser(refreshed) : publicUser(user);
 }
