@@ -90,32 +90,111 @@
 
 لا يحتوي جدول Appwrite الحالي `users` على `passwordHash`. قبل تنفيذ المصادقة يجب اعتماد مكان خادمي آمن لتخزين تجزئات كلمات المرور الحالية، مثل جدول بيانات اعتماد منفصل أو حقل محمي مخصص، مع ترحيل قابل للتحقق. لا تُرسل التجزئات إلى المتصفح ولا تُسجّل في السجلات. كما يجب الحفاظ على إبطال الجلسات وتدوير `sessionVersion` وسياسة الحسابات المعطلة.
 
-## 5. فروق مخطط مؤكدة بين Drizzle وAppwrite
+## 5. مقارنة مخطط Drizzle وAppwrite بعد قراءة جميع الأعمدة
 
-هذه فروق من المخططين المقروءَين، وليست تخميناً عن بيانات الصفوف:
+تمت قراءة جميع أعمدة الجداول الأربعة عشر باستخدام استعلام يرفع حد النتائج إلى 100 عمود؛ لم نعتمد على أول 25 عموداً فقط. جميع الجداول الأربعة عشر المقابلة موجودة في قاعدة Appwrite، ولم يظهر عمود بيانات مفقود سوى `password_hash` في جدول `users`. توجد أيضاً أعمدة علاقات إضافية في Appwrite لبعض الجداول.
 
-| الجدول | فرق/مخاطرة مؤكدة | المطلوب قبل الترحيل |
-|---|---|---|
-| `organizations` | `type` في المصدر enum مطلوب وله مجموعة قيم محددة؛ عمود Appwrite نصي اختياري. فهرس المصدر الجزئي الذي يضمن جذر central واحداً غير ظاهر في Appwrite. | فرض القيم والتحقق من جذر واحد ذرياً. |
-| `users` | المصدر يحتوي `password_hash` و`sessionVersion` UUID؛ Appwrite لا يحتوي عمود كلمة المرور، و`sessionVersion` نص. فهرس username في المصدر فريد بعد lower-case وبشرط عدم null؛ Appwrite لديه فهرس عادي فقط. | تصميم تخزين الاعتمادات والفهرس الفريد غير الحساس للحالة. |
-| `department_settings` | `configKey` مطلوب وفريد في المصدر؛ في Appwrite اختياري ولا يظهر له فهرس فريد. عدة إعدادات `NOT NULL` في المصدر معرفة كاختيارية في Appwrite. | مطابقة القيود والافتراضيات والتفرّد قبل الكتابة. |
-| `platform_document_settings` | `id` في المصدر smallint ومبدؤه الافتراضي 1؛ في Appwrite integer مطلوب دون default ظاهر. | تثبيت هوية السجل الافتراضي والتوافق العددي. |
-| `telegrams` | حقول enum في المصدر صارت نصوصاً؛ يجب فرض قيمها. يجب التحقق من كل قيود NOT NULL والافتراضيات والفهارس الفريدة و`idempotencyKey`. | التحقق من مخطط كامل وقيود متكافئة قبل النقل. |
-| `telegram_versions` | `snapshot` نص في المصدر وlongtext في Appwrite، مع اختلاف تمثيل العلاقات. | التحقق من حفظ snapshot حرفياً وعلاقات النسخ. |
-| `telegram_attachments` | `storageKey` نص غير محدود في المصدر، بينما عمود Appwrite varchar بطول 512. | إثبات أن كل المفاتيح الحالية تقع ضمن الطول أو توسيع المخطط بعد الموافقة. |
-| `telegram_actions` | `fromStatus` و`toStatus` enum في المصدر وأعمدة نصية في Appwrite. | فرض قيم الحالات واختبار سجل الانتقالات. |
-| `telegram_routes` | حالة المسار enum في المصدر وحقل نصي في Appwrite؛ يجب الحفاظ على قيم الموافقات وقرارات المستلم والحقول الزمنية. | فرض القيم وحفظ دورة حياة المسار. |
-| `push_subscriptions` | المصدر يستخدم نصاً لـ `p256dh` و`auth`؛ Appwrite يحدهما إلى 512 و256 حرفاً. فهرس المصدر الفريد المركب (userId, endpoint) غير ظاهر في Appwrite. | فحص الأطوال ومنع التكرار على مستوى المستخدم. |
-| `audit_logs` | المصدر يفرض append-only وسلسلة hash عبر triggers؛ لا يوجد في جدول Appwrite الحالي ما يثبت فرض هذا السلوك تلقائياً. | فرض الإلحاق فقط والتسلسل/الهاش في الخادم واختبارات عدم التعديل. |
+| الجدول | أعمدة المصدر في Drizzle | أعمدة Appwrite | النتيجة الأساسية |
+|---|---:|---:|---|
+| `organizations` | 10 | 10 | الأسماء متطابقة؛ `id` لا يملك مولداً افتراضياً، وحقلا `type` و`isActive` اختياريان في Appwrite رغم إلزامهما في المصدر |
+| `users` | 22 | 22 بما فيها علاقة المؤسسة | `password_hash` غير موجود؛ أعمدة الدور والحالة وبعض بيانات الحساب اختيارية في Appwrite |
+| `department_settings` | 23 | 25 بما فيها علاقتان | الحقول موجودة؛ `configKey` وبعض حقول الإعدادات المطلوبة في المصدر اختيارية في Appwrite، ولا يوجد فهرس فريد مطابق لـ `configKey` |
+| `platform_document_settings` | 7 | 8 بما فيها علاقة | `id` في المصدر smallint افتراضيه 1، وفي Appwrite integer بلا default؛ بعض الحقول الإلزامية أصبحت اختيارية |
+| `organization_memberships` | 7 | 9 بما فيها علاقتان | الحقول موجودة؛ `role` و`isActive` اختياريان في Appwrite رغم NOT NULL في المصدر |
+| `telegrams` | 35 | 37 بما فيها علاقتان | جميع حقول البيانات موجودة؛ توجد فروق في إلزامية revision وحقول الحالة، وفي تمثيل creatorEmail |
+| `telegram_versions` | 7 | 9 بما فيها علاقتان | تطابق حقول البيانات؛ تمثيل snapshot في Appwrite longtext مقابل text في المصدر |
+| `telegram_attachments` | 11 | 13 بما فيها علاقتان | `storageKey` محدود إلى 512 في Appwrite مقابل text غير محدود في المصدر؛ scanStatus اختياري هناك |
+| `telegram_actions` | 9 | 11 بما فيها علاقتان | حقول البيانات والقيم المقيدة للحالات موجودة |
+| `telegram_routes` | 22 | 22 | الحقول موجودة؛ status وحقلا حالة الموافقة/قرار المستلم اختياريان في Appwrite، ولا تظهر علاقات Appwrite مقابلة لمفاتيح المصدر الأجنبية |
+| `notifications` | 10 | 10 | الحقول موجودة، لكن علاقات المستخدم والمؤسسة والبرقية والمسار لا تظهر كعلاقات Appwrite |
+| `push_subscriptions` | 10 | 10 | `p256dh` و`auth` محدودان في Appwrite إلى 512 و256 حرفاً، بينما هما text في المصدر |
+| `mobile_push_tokens` | 8 | 8 | حقول البيانات موجودة، لكن علاقات المستخدم والمؤسسة غير معرفة كعلاقات Appwrite |
+| `audit_logs` | 19 | 19 | الحقول موجودة؛ deviceType اختياري في Appwrite رغم NOT NULL في المصدر، وسلوك append-only لا ينشأ تلقائياً من المخطط |
 
-يجب استكمال مقارنة جميع الأعمدة والعلاقات والفهارس لكل جدول قبل أي importer. هذا الجدول يسجل الفروق الواضحة التي ظهرت أثناء التدقيق ولا يدّعي أنه يغطي كل اختلاف.
+### 5.1 توليد المعرّفات والتواريخ
 
-## 6. حدود صلاحيات Appwrite
+هذه من أهم نقاط الترحيل، ولا يجوز تجاوزها:
 
-- قاعدة Appwrite تحتوي 19 جدولاً: 14 جدولاً تقابل أسماء جداول المصدر وخمسة جداول إضافية هي `documents`, `templates`, `contacts`, `attachments`, `app_records`. لا تُحذف الجداول الإضافية ولا يعاد استخدامها دون معرفة غرضها.
-- Row Security مفعّل في 4 جداول فقط من أصل 19 وفق الجرد الحالي.
-- صلاحيات الجداول الأساسية التي فُحصت فارغة.
-- استخدام API key خادمي يتجاوز فحوص صلاحيات Appwrite على مستوى الجدول/الصف/الملف؛ لذلك يجب أن يفرض الخادم عزل المؤسسات والتحقق من الملكية في كل عملية. لا يجوز الاعتماد على صلاحيات Appwrite وحدها عند استعمال API key.
+- المصدر ينشئ `organizations.id` كـ UUID افتراضياً. عمود Appwrite المقابل varchar بطول 36 ومطلوب، لكن لا يظهر له default.
+- المصدر يستخدم `serial` لتوليد المعرّفات الرقمية في 12 جدولاً: `users`, `department_settings`, `organization_memberships`, `telegrams`, `telegram_versions`, `telegram_attachments`, `telegram_actions`, `telegram_routes`, `notifications`, `push_subscriptions`, `mobile_push_tokens`, `audit_logs`. أعمدة Appwrite الرقمية المطلوبة لا تعرض مولداً تلقائياً.
+- `platform_document_settings.id` في المصدر smallint مع default يساوي 1؛ عمود Appwrite integer مطلوب بلا default.
+- حقول `createdAt` و`updatedAt` تعتمد `defaultNow()` في المصدر. Appwrite يطلب قيمها صراحة ولا يعرض default لها. وينطبق ذلك أيضاً على `users.lastSignedIn`.
+- لا يجوز الاعتماد على معرفات صفوف Appwrite الداخلية `$id` كبديل مباشر قبل تصميم طبقة تحويل؛ التطبيق الحالي يعتمد معرّفات رقمية في الروابط والعلاقات وواجهات API.
+
+**قرار التنفيذ المطلوب:** تصميم مولّد معرفات خادمي ذري لكل جدول رقمي، مع اختبار ضغط وتزامن وإعادة محاولة عند تعارض المعاملة، أو اعتماد إعادة تصميم شاملة للمعرّفات بعد تحليل كل المستهلكين. لا تُنشأ جداول عدادات على قاعدة الإنتاج في مرحلة التدقيق.
+
+### 5.2 الفروق في أنواع الحقول والقيود
+
+- عمودا `users.email` و`telegrams.creatorEmail` في المصدر varchar بطول 320، بينما Appwrite يستخدم string بصيغة email. يجب فرض حد الطول نفسه في التحقق الخادمي.
+- `telegram_attachments.storageKey` في المصدر text، بينما Appwrite varchar بطول 512. يلزم فحص أطوال المفاتيح الفعلية قبل اعتماد الترحيل.
+- `push_subscriptions.p256dh` و`auth` في المصدر text، بينما Appwrite يحدهما إلى 512 و256. يلزم التحقق من أطوال القيم الحالية.
+- `telegram_versions.snapshot` وحقول النصوص الطويلة ممثلة كـ longtext في Appwrite؛ هذا توسيع سعة في العادة، لكن يلزم اختبار round-trip للمحتوى العربي وJSON حرفياً.
+- أعمدة enum في Appwrite ليست نصوصاً مفتوحة كما ورد في التقييم الأولي. فحص المخطط الكامل أظهر حقول string بصيغة enum وقوائم عناصر في `organizations.type`, `users.role`, `department_settings.numberSystem`, `organization_memberships.role`, `telegrams.classification/priority/category/status`, `telegram_actions.fromStatus/toStatus`, و`telegram_routes.status`. القيم المقروءة تطابق قوائم enum في Drizzle حالياً. يجب مع ذلك إبقاء تحقق الخادم واختبارات رفض القيم غير المسموحة.
+- توجد حقول لها default مطابق تقريباً لكنها اختيارية في Appwrite مقابل NOT NULL في المصدر؛ يجب عدم تمرير null إليها، وإضافة تحقق خادمي صريح بدلاً من اعتبار وجود default تكافؤاً كاملاً.
+
+### 5.3 اختلافات الفهارس والتفرّد
+
+الفهارس التي تمت قراءتها في Appwrite وعددها لكل جدول: organizations (5)، users (4)، department_settings (2)، platform_document_settings (1)، organization_memberships (3)، telegrams (10)، telegram_versions (3)، telegram_attachments (5)، telegram_actions (3)، telegram_routes (5)، notifications (3)، push_subscriptions (4)، mobile_push_tokens (4)، audit_logs (7).
+
+الفروق المؤثرة التي ظهرت عند مقارنتها بفهرسة المصدر وملفات SQL migrations:
+
+- `organizations_single_central_root_idx`: فهرس فريد جزئي في المصدر يضمن وجود جذر مركزي واحد؛ غير موجود في Appwrite.
+- `organizations_parent_name_unique_idx`: يمنع تكرار اسم الجهة بعد trim/lower داخل الجهة الأم؛ غير موجود في Appwrite.
+- `users_username_lower_unique_idx`: يضمن username فريداً دون حساسية لحالة الأحرف؛ Appwrite يملك فهرساً عادياً غير فريد على username.
+- `users_single_platform_owner_idx`: يمنع وجود أكثر من مالك منصة؛ غير موجود في Appwrite.
+- `department_settings.configKey`: فريد في المصدر، بما في ذلك قواعد المفتاح القديم الجزئية التي أضافتها migrations؛ Appwrite يملك فهرساً فريداً على organizationId فقط ولا يظهر فهرس فريد لـ configKey.
+- فهارس المسارات `telegram_routes_route_serial_idx` وفهارس الأرقام الواردة/الصادرة، وفهرس `telegram_routes_receiver_decision_by_user_fk_idx` غير ظاهرة في Appwrite.
+- فهرسا المفاتيح الأجنبية `notifications_route_id_fk_idx` و`notifications_telegram_id_fk_idx` غير ظاهرين في Appwrite.
+- فهرس `push_subscriptions` الفريد على endpoint موجود في Appwrite كما هو في المصدر. فهرس المصدر الإضافي المركب (userId, endpoint) غير ظاهر، لكنه لا يضيف قيد فرادة جديداً ما دام endpoint نفسه فريداً عالمياً؛ لذلك لا يصنف كاختلاف سلوكي مثبت.
+- فهارس الجداول الأخرى التي تمت قراءتها متقاربة في الأعمدة والغرض، لكن يلزم اختبار أداء الاستعلامات الفعلية بعد بناء المستودعات.
+
+لا يمكن استبدال الفهارس الجزئية أو الفريدة الحساسة لحالة الأحرف بمجرد تحقق واجهة المستخدم؛ يجب فرضها على الخادم ضمن معاملات متزامنة، واختبار طلبين متزامنين يحاولان إنشاء قيم متعارضة.
+
+### 5.4 العلاقات والمفاتيح الأجنبية
+
+توجد أعمدة علاقات Appwrite لبعض الجداول، لكن لا يوجد تماثل كامل مع مفاتيح PostgreSQL الأجنبية. من الفروق الواضحة:
+
+- `telegrams.currentOrganizationId` يحتاج علاقة منفصلة إلى organizations؛ علاقة `organization` الحالية لا تغطي تلقائياً هذا الحقل.
+- `telegram_routes` يحتوي مفاتيح مصدرية إلى telegrams والمؤسستين والمستخدم المحيل، لكن لم تظهر أعمدة علاقة Appwrite مقابلة.
+- `notifications` يحتوي مفاتيح مصدرية إلى users وorganizations وtelegrams وtelegram_routes، ولا تظهر علاقات Appwrite مقابلة.
+- `push_subscriptions` و`mobile_push_tokens` يحتويان مفاتيح مصدرية إلى users وorganizations، ولا تظهر علاقات Appwrite مقابلة.
+- `audit_logs.organizationId` متروك بلا FK في المصدر عمداً حتى تبقى الأحداث التاريخية بعد تغيّر دورة حياة المؤسسة؛ يجب الحفاظ على هذا القرار وعدم إضافة حذف متسلسل له.
+
+يجب توثيق سلوك onDelete لكل علاقة قبل اعتماد schema النهائي. لا نضيف علاقات Appwrite عشوائياً، لأن cascade أو restrict الخاطئ قد يحذف سجلات تاريخية أو يمنع عمليات أرشفة صحيحة.
+
+## 6. جداول المصدر الإضافية والصلاحيات
+
+### 6.1 جداول SQL الموجودة خارج مخطط Drizzle
+
+كشفت migrations عن ثلاثة جداول تشغيلية إضافية لا تظهر في جرد Appwrite الحالي:
+
+- `auth_login_rate_limits`: تخزين مستمر لحد محاولات تسجيل الدخول.
+- `audit_purge_receipts`: إيصالات مرتبطة بعمليات تنظيف/حذف سجل التدقيق المصرح بها.
+- `user_purge_receipts`: إيصالات مرتبطة بعمليات حذف المستخدم الآمنة.
+
+لا توجد جداول مطابقة لهذه الأسماء ضمن قاعدة Appwrite الحالية. يجب تصميم بدائلها قبل نقل ميزات الحماية أو purge، وعدم إسقاط هذه الوظائف أو اعتبارها سجلات اختيارية.
+
+### 6.2 Triggers ووظائف قاعدة البيانات
+
+من migrations تم تحديد سلوك triggers التالي، ويجب إعادة بنائه واختباره على الخادم أو ضمن معاملات Appwrite:
+
+- تحديث `updatedAt` تلقائياً في users وdepartment_settings وtelegrams وorganizations وorganization_memberships.
+- منع دورات شجرة المؤسسات عبر `organizations_parent_acyclic_guard`.
+- حماية عضوية مالك المنصة عبر `guard_owner_membership_change`.
+- رفع revision للبرقية ومنع الكتابة فوق نسخة أحدث عبر `telegrams_revision_update`.
+- إعادة تخصيص/استرداد أرقام المؤسسة عند حذف البرقية أو المسار عبر `telegrams_reclaim_organization_serial` و`telegram_routes_reclaim_organization_serial`.
+- إنشاء hash chain لسجل التدقيق ومنع تعديل الصفوف أو حذفها أو truncate عبر `audit_logs_assign_integrity_hash`, `audit_logs_prevent_row_mutation`, و`audit_logs_prevent_truncate`.
+
+وتتضمن وظائف PostgreSQL التي تحتاج مقابلاً خادمياً مكافئاً: `allocate_serial_number`, `allocate_organization_serial`, `preview_organization_outgoing_serial`, `reserve_organization_outgoing_serial`, `save_department_settings_atomic`, `set_owner_workplace`, `route_telegram`, `route_telegram_broadcast_atomic`, `transition_telegram`, `approve_telegram_route`, `receive_telegram_route`, `decide_telegram_route_receiver`, `consume_auth_login_rate_limit`, `owner_dashboard_summary`, `archive_organization_safely`, `purge_archived_organization_safely`, و`purge_inactive_user_safely`. كما توجد وظائف مساعدة خاصة بالتحقق من شجرة المؤسسات وسجل التدقيق واسترداد الأرقام.
+
+لا يجوز استبدال هذه الوظائف بعمليات CRUD متفرقة أو من المتصفح. كل عملية يجب أن تتحقق من المستخدم الفعلي والعضوية والصلاحية ونطاق المؤسسة، وأن تنفذ التغييرات المرتبطة كوحدة ذرية أو بتصميم تعويض موثق عند تعذر ذلك.
+
+### 6.3 صلاحيات Appwrite الحالية
+
+- قاعدة Appwrite تحتوي 19 جدولاً: 14 جدولاً تقابل أسماء جداول المصدر، وخمسة جداول إضافية هي `documents`, `templates`, `contacts`, `attachments`, `app_records`. لا تُحذف الجداول الإضافية ولا يعاد استخدامها دون معرفة غرضها وموافقة منفصلة.
+- Row Security مفعّل في أربعة جداول فقط من أصل 19: `documents`, `templates`, `contacts`, `attachments`. جميع جداول الأعمال الأربعة عشر المقابلة للمصدر لديها rowSecurity=false وصلاحيات الجدول الظاهرة فارغة؛ وكذلك `app_records`.
+- هذا لا يثبت أن البيانات مكشوفة للعامة، لكنه يعني أن ربط التطبيق بهذه الجداول يتطلب سياسة وصول مصممة ومختبرة قبل أول كتابة.
+- عند استعمال API key خادمي، لا يكفي الاعتماد على صلاحيات الصفوف في Appwrite؛ يجب أن يفرض الخادم عزل المؤسسات والتحقق من الملكية في كل قراءة وكتابة.
 - يجب أن تبقى مفاتيح الخادم خارج `VITE_*` وألا تصل إلى bundle المتصفح أو ملفات السجل.
 
 مرجع Appwrite للصلاحيات وسلوك API key: https://appwrite.io/docs/advanced/security/authentication
