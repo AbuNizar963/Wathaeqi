@@ -55,6 +55,7 @@ vi.mock("./env", () => ({
 
 import {
   authenticateAppwriteUser,
+  changeAppwritePassword,
   clearAppwriteSessionCookie,
   getAppwriteAuthenticatedUserFromRequest,
   setAppwriteSessionCookie,
@@ -192,6 +193,54 @@ describe("Appwrite authentication adapter", () => {
     expect(response.setHeader).toHaveBeenCalledWith(
       "Set-Cookie",
       expect.stringContaining("Secure")
+    );
+  });
+
+  it("changes the Appwrite password and rotates the application session", async () => {
+    const request = {
+      headers: {
+        cookie: await createSessionCookie("session-version-1"),
+      },
+    } as never;
+    const response = { setHeader: vi.fn() } as never;
+    const newSession = {
+      secret: "new-appwrite-session-secret",
+      expire: "2099-01-01T00:00:00.000Z",
+    };
+    mocks.createEmailPasswordSession.mockResolvedValueOnce(newSession);
+
+    const updated = await changeAppwritePassword(
+      request,
+      response,
+      "old-password",
+      "new-strong-password-123"
+    );
+
+    expect(updated.mustChangePassword).toBe(false);
+    expect(updated.sessionVersion).not.toBe("session-version-1");
+    expect(mocks.updatePassword).toHaveBeenCalledWith({
+      password: "new-strong-password-123",
+      oldPassword: "old-password",
+    });
+    expect(mocks.createEmailPasswordSession).toHaveBeenCalledWith({
+      email: "owner@example.com",
+      password: "new-strong-password-123",
+    });
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tableId: "users",
+        rowId: "1",
+        data: expect.objectContaining({
+          mustChangePassword: false,
+        }),
+      })
+    );
+    expect(mocks.deleteSession).toHaveBeenCalledWith({
+      sessionId: "current",
+    });
+    expect(response.setHeader).toHaveBeenCalledWith(
+      "Set-Cookie",
+      expect.stringContaining("HttpOnly")
     );
   });
 
