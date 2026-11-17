@@ -36,7 +36,7 @@ Map<String, dynamic> _sampleTelegram() => {
   'subject': _telegramSubject,
   'senderOrganizationName': 'قسم شرطة الشهباء',
   'recipient': 'قيادة الأمن الداخلي في محافظة حلب',
-  'body': 'نص اختبار للبرقية.',
+  'body': 'نص اختبار للوثيقة.',
   'status': 'draft',
   'priority': 'normal',
   'classification': 'normal',
@@ -407,7 +407,7 @@ void main() {
     );
     await _pumpDashboardFrames(tester, frameCount: 4);
 
-    final qrSetting = find.text('إظهار رمز QR للتحقق في البرقية');
+    final qrSetting = find.text('إظهار رمز QR للتحقق في الوثيقة');
     expect(qrSetting, findsNothing);
 
     final saveButton = find.text('حفظ إعدادات الجهة');
@@ -582,7 +582,7 @@ void main() {
         ),
       );
 
-      expect(find.text('نجهّز معاينة البرقية'), findsOneWidget);
+      expect(find.text('نجهّز معاينة الوثيقة'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     },
@@ -898,7 +898,7 @@ void main() {
     await _pumpDashboardFrames(tester, frameCount: 12);
 
     expect(find.text('تسجيل الدخول'), findsOneWidget);
-    expect(find.byTooltip('إنشاء برقية'), findsNothing);
+    expect(find.byTooltip('إنشاء وثيقة'), findsNothing);
     expect(api.logoutCalled, isTrue);
   });
 
@@ -967,7 +967,7 @@ void main() {
     await tester.pumpWidget(PoliceTelegramsApp(api: _TestPoliceApi()));
     await tester.pumpAndSettle();
 
-    expect(find.text('برقيات الشرطة'), findsOneWidget);
+    expect(find.text('وثائقي'), findsOneWidget);
     expect(find.text('تسجيل الدخول'), findsOneWidget);
     expect(find.text('اسم المستخدم'), findsOneWidget);
     expect(
@@ -992,8 +992,8 @@ void main() {
       await _pumpDashboardFrames(tester);
       await _unlockAppIfLocked(tester);
 
-      expect(find.byTooltip('إنشاء برقية'), findsOneWidget);
-      expect(find.text('تقرير البرقيات'), findsOneWidget);
+      expect(find.byTooltip('إنشاء وثيقة'), findsOneWidget);
+      expect(find.text('تقرير الوثائق'), findsOneWidget);
       expect(find.text('تخصيص العرض'), findsOneWidget);
       expect(find.text('الفلاتر'), findsOneWidget);
       expect(find.text('الواردة اليوم'), findsOneWidget);
@@ -1005,9 +1005,9 @@ void main() {
         findsOneWidget,
       );
 
-      await _scrollIntoView(tester, find.text('برقية رقم: 72'));
-      expect(find.text('برقية رقم: 72'), findsOneWidget);
-      expect(find.text('برقية رقم: POL-2026-09-30-00690'), findsNothing);
+      await _scrollIntoView(tester, find.text('وثيقة رقم: 72'));
+      expect(find.text('وثيقة رقم: 72'), findsOneWidget);
+      expect(find.text('وثيقة رقم: POL-2026-09-30-00690'), findsNothing);
 
       final incomingStat = find.text('الواردة اليوم');
       await tester.ensureVisible(incomingStat);
@@ -1054,7 +1054,7 @@ void main() {
 
     expect(
       find.text(
-        'تنبيه أمني: توجد 1 برقية عاجلة موجّهة إلى الجهة الحالية بانتظار الاستلام.',
+        'تنبيه أمني: توجد 1 وثيقة عاجلة موجّهة إلى الجهة الحالية بانتظار الاستلام.',
       ),
       findsOneWidget,
     );
@@ -1146,11 +1146,11 @@ void main() {
     expect(welcomePanel, findsOneWidget);
     final welcomePanelHeight = tester.getSize(welcomePanel).height;
     expect(find.text('حالة صندوق الخروج'), findsNothing);
-    expect(find.text('لا توجد برقيات معلقة محليًا.'), findsNothing);
+    expect(find.text('لا توجد وثائق معلقة محليًا.'), findsNothing);
     await tester.drag(find.text('الجهة الحالية'), const Offset(300, 0));
     await _pumpDashboardFrames(tester, frameCount: 8);
 
-    final status = find.text('لا توجد برقيات معلقة محليًا.');
+    final status = find.text('لا توجد وثائق معلقة محليًا.');
     expect(status, findsOneWidget);
     expect(find.text('حالة صندوق الخروج'), findsOneWidget);
     expect(find.textContaining('الخادم متصل • آخر تحقق'), findsOneWidget);
@@ -1171,7 +1171,7 @@ void main() {
 
     expect(status, findsOneWidget);
     expect(
-      find.text('جارٍ فحص صندوق الخروج وإرسال البرقيات بالترتيب...'),
+      find.text('جارٍ فحص صندوق الخروج وإرسال الوثائق بالترتيب...'),
       findsNothing,
     );
   });
@@ -1193,13 +1193,13 @@ void main() {
 
     // Connection and outbox status belong to the swipeable outbox card.
     expect(find.text('الجهة الحالية'), findsOneWidget);
-    expect(find.text('لا توجد برقيات معلقة محليًا.'), findsNothing);
+    expect(find.text('لا توجد وثائق معلقة محليًا.'), findsNothing);
     expect(find.textContaining('الخادم غير متصل'), findsNothing);
 
     await tester.drag(find.text('الجهة الحالية'), const Offset(300, 0));
     await _pumpDashboardFrames(tester, frameCount: 8);
 
-    expect(find.text('لا توجد برقيات معلقة محليًا.'), findsOneWidget);
+    expect(find.text('لا توجد وثائق معلقة محليًا.'), findsOneWidget);
     expect(find.textContaining('الخادم غير متصل'), findsOneWidget);
   });
 
@@ -1218,7 +1218,7 @@ void main() {
     await _pumpDashboardFrames(tester);
     await _unlockAppIfLocked(tester);
 
-    final serial = find.text('برقية رقم: 72');
+    final serial = find.text('وثيقة رقم: 72');
     await _scrollIntoView(tester, serial);
     await tester.tap(serial);
     await _pumpDashboardFrames(tester, frameCount: 12);
@@ -1227,7 +1227,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byTooltip('إغلاق تفاصيل البرقية'), findsOneWidget);
+    expect(find.byTooltip('إغلاق تفاصيل الوثيقة'), findsOneWidget);
     expect(find.text('72'), findsOneWidget);
     expect(find.text(_telegramSubject), findsOneWidget);
     expect(find.text('طباعة'), findsOneWidget);
@@ -1252,7 +1252,7 @@ void main() {
     expect(find.text('مشاركة صور الصفحات'), findsOneWidget);
     await tester.tapAt(const Offset(8, 8));
     await tester.pumpAndSettle();
-    expect(find.text('تعديل البرقية'), findsOneWidget);
+    expect(find.text('تعديل الوثيقة'), findsOneWidget);
     expect(find.text('الموقع'), findsOneWidget);
     expect(find.text('حذف نهائي'), findsOneWidget);
     expect(find.text('إرسال للمراجعة'), findsOneWidget);
@@ -1274,14 +1274,14 @@ void main() {
 
     // Closing and reopening the same telegram must create a fresh document
     // session without leaving the preview behind a permanent loader.
-    await tester.tap(find.byTooltip('إغلاق تفاصيل البرقية'));
+    await tester.tap(find.byTooltip('إغلاق تفاصيل الوثيقة'));
     await _pumpDashboardFrames(tester, frameCount: 8);
-    expect(find.byTooltip('إغلاق تفاصيل البرقية'), findsNothing);
+    expect(find.byTooltip('إغلاق تفاصيل الوثيقة'), findsNothing);
 
     await _scrollIntoView(tester, serial);
     await tester.tap(serial);
     await _pumpDashboardFrames(tester, frameCount: 12);
-    expect(find.byTooltip('إغلاق تفاصيل البرقية'), findsOneWidget);
+    expect(find.byTooltip('إغلاق تفاصيل الوثيقة'), findsOneWidget);
     expect(find.text(_telegramSubject), findsOneWidget);
     expect(
       find.byWidgetPredicate(
