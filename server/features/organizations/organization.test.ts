@@ -172,7 +172,9 @@ describe("organization repository", () => {
     });
   });
 
-  it("excludes active memberships whose Appwrite organization is disabled", async () => {
+  it(
+    "excludes active memberships whose Appwrite organization is disabled",
+    async () => {
     mocks.appwriteListRows.mockImplementation(
       ({ tableId }: { tableId: string }) =>
         Promise.resolve({
@@ -199,7 +201,9 @@ describe("organization repository", () => {
     await expect(getUserOrganizationMembership(7)).resolves.toBeNull();
   });
 
-  it("supports the ministry, governorate, rural or city branch, station, and unit hierarchy", () => {
+  it(
+    "supports the ministry, governorate, rural or city branch, station, and unit hierarchy",
+    () => {
     expect(canOrganizationHaveParent("governorate", "central")).toBe(true);
     expect(canOrganizationHaveParent("police_department", "governorate")).toBe(
       true
@@ -264,7 +268,9 @@ describe("organization repository", () => {
     );
   });
 
-  it("rotates the application session version when resetting the organization account password", async () => {
+  it(
+    "rotates the application session version when resetting the organization account password",
+    async () => {
     mocks.maybeSingle
       .mockResolvedValueOnce({ data: null, error: null })
       .mockResolvedValueOnce({ data: { id: 17 }, error: null });
@@ -291,7 +297,9 @@ describe("organization repository", () => {
     expect(updatedValues).not.toHaveProperty("authUserId");
   });
 
-  it("routes through the atomic database function using the member organization as source", async () => {
+  it(
+    "routes through the atomic database function using the member organization as source",
+    async () => {
     mocks.rpc.mockResolvedValueOnce({
       data: {
         id: 9,
@@ -409,7 +417,9 @@ describe("organization repository", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  it("updates the root central organization in Appwrite without a parent", async () => {
+  it(
+    "updates the root central organization in Appwrite without a parent",
+    async () => {
     const organizationId = "00000000-0000-4000-8000-000000000010";
     const existing = {
       id: organizationId,
@@ -427,7 +437,9 @@ describe("organization repository", () => {
       name: "القيادة المركزية المحدثة",
       updatedAt: "2026-10-09T00:00:00.000Z",
     };
-    mocks.appwriteListRows.mockResolvedValue({ rows: [{ $id: organizationId, data: existing }] });
+    mocks.appwriteListRows.mockResolvedValue({
+      rows: [{ $id: organizationId, data: existing }],
+    });
     mocks.appwriteUpdateRow.mockResolvedValueOnce({
       $id: organizationId,
       data: updated,
@@ -464,7 +476,9 @@ describe("organization repository", () => {
     expect(mocks.update).not.toHaveBeenCalled();
   });
 
-  it("rejects workplace selection for a non-owner before touching the database", async () => {
+  it(
+    "rejects workplace selection for a non-owner before touching the database",
+    async () => {
     await expect(
       selectPlatformOwnerWorkplace({
         user: { id: 8, username: "department-admin", role: "admin" },
@@ -487,7 +501,9 @@ describe("organization repository", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  it("archives an organization through the atomic audited database procedure", async () => {
+  it(
+    "archives an organization through the atomic audited database procedure",
+    async () => {
     const organizationId = "00000000-0000-4000-8000-000000000009";
     mocks.rpc.mockResolvedValueOnce({
       data: {
