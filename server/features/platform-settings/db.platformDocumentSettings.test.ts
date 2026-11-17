@@ -95,10 +95,7 @@ describe("platform document settings Appwrite persistence", () => {
 
   it("creates the singleton on the first owner save", async () => {
     mocks.listRows.mockResolvedValue({ rows: [] });
-    await updatePlatformDocumentSettings(
-      DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-      1
-    );
+    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 1);
     expect(mocks.createRow).toHaveBeenCalledWith(
       expect.objectContaining({
         databaseId: "wathaeqi-db",
