@@ -91,12 +91,12 @@ String telegramPushNotificationTitle(Map<String, dynamic> data) {
   final incoming = data['type'] == 'telegram.incoming';
 
   if (category == 'emergency') {
-    return priorityIsUrgent ? 'برقية طارئة عاجلة' : 'برقية طارئة';
+    return priorityIsUrgent ? 'وثيقة طارئة عاجلة' : 'وثيقة طارئة';
   }
   if (priorityIsUrgent) {
-    return incoming ? 'برقية واردة عاجلة' : 'برقية صادرة عاجلة';
+    return incoming ? 'وثيقة واردة عاجلة' : 'وثيقة صادرة عاجلة';
   }
-  return incoming ? 'برقية واردة جديدة' : 'برقية صادرة جديدة';
+  return incoming ? 'وثيقة واردة جديدة' : 'وثيقة صادرة جديدة';
 }
 
 String telegramPushNotificationBody(Map<String, dynamic> data) {
@@ -111,8 +111,8 @@ String telegramPushNotificationBody(Map<String, dynamic> data) {
   final direction = data['type'] == 'telegram.incoming' ? 'واردة' : 'صادرة';
 
   return shortSerial.isEmpty
-      ? 'هناك برقية $direction جديدة.'
-      : 'هناك برقية $direction برقم: $shortSerial.';
+      ? 'هناك وثيقة $direction جديدة.'
+      : 'هناك وثيقة $direction برقم: $shortSerial.';
 }
 
 class PushNotificationService {
