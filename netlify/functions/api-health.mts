@@ -34,6 +34,7 @@ export default async function apiHealth(request: Request): Promise<Response> {
     env?.get("APPWRITE_BUCKET_ID") ??
     env?.get("VITE_APPWRITE_ATTACHMENTS_BUCKET_ID") ??
     "";
+  const sessionSecret = env?.get("AUTH_SESSION_SECRET") ?? "";
 
   let validEndpoint = false;
   try {
@@ -67,7 +68,10 @@ export default async function apiHealth(request: Request): Promise<Response> {
         appwrite: appwriteConfigured ? "configured" : "configuration-required",
       },
       capabilities: {
-        authentication: "appwrite-auth",
+        authentication:
+          appwriteConfigured && sessionSecret.length >= 32
+            ? "appwrite-auth-configured"
+            : "configuration-required",
         records: "migration-pending",
         storage: "migration-pending",
       },
