@@ -400,7 +400,9 @@ export async function changeAppwritePassword(
   const profile = await getAppwriteProfileById(claims.userId);
   if (
     !profile ||
-    profile.user.authUserId === "" ||
+    profile.user.id !== claims.userId ||
+    profile.user.sessionVersion !== claims.sessionVersion ||
+    !profile.user.authUserId ||
     !profile.user.email ||
     profile.user.isActive !== true
   ) {
