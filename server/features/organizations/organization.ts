@@ -9,8 +9,14 @@ import {
   wouldCreateOrganizationCycle,
 } from "../../../shared/features/organizations/organizationHierarchy";
 import { randomBytes, randomUUID } from "node:crypto";
+import { Query } from "node-appwrite";
 import { hashPassword } from "../../_core/auth";
+import {
+  getAppwriteDatabaseId,
+  getAppwriteTablesDB,
+} from "../../_core/appwrite";
 import { getSupabaseAdmin } from "../../_core/supabase";
+import { getAppwriteProfileById } from "../../_core/appwriteAuth";
 import { writeAuditLog } from "../../db";
 import { isPlatformOwner } from "../../ownerAccess";
 
@@ -50,73 +56,88 @@ function mapMembership(row: Record<string, unknown>): OrganizationMembership {
   };
 }
 
+type AppwriteOrganizationRow = {
+  $id: string;
+  data?: Record<string, unknown>;
+} & Record<string, unknown>;
+
+function appwriteRowData(
+  row: AppwriteOrganizationRow
+): Record<string, unknown> {
+  return row.data ?? row;
+}
+
+async function listOrganizationRows(
+  tableId: string,
+  queries: string[]
+): Promise<AppwriteOrganizationRow[]> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: getAppwriteDatabaseId(),
+    tableId,
+    queries: [...queries, Query.limit(100)],
+    total: false,
+  });
+  return result.rows as AppwriteOrganizationRow[];
+}
+
 export async function getPrimaryOrganization(): Promise<Organization> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("*")
-    .eq("code", "LEGACY-PRIMARY")
-    .eq("isActive", true)
-    .maybeSingle();
+  const primary = await listOrganizationRows("organizations", [
+    Query.equal("code", "LEGACY-PRIMARY"),
+    Query.equal("isActive", true),
+  ]);
+  if (primary[0]) return mapOrganization(appwriteRowData(primary[0]));
 
-  throwIfError(error, "Failed to load primary organization");
-
-  if (!data) {
+  const central = await listOrganizationRows("organizations", [
+    Query.equal("type", "central"),
+    Query.equal("isActive", true),
+    Query.orderAsc("createdAt"),
+  ]);
+  if (!central[0]) {
     throw new Error("No active primary organization is configured");
   }
-
-  return mapOrganization(data as Record<string, unknown>);
+  return mapOrganization(appwriteRowData(central[0]));
 }
 
 export async function getUserOrganizationMembership(
   userId: number
 ): Promise<OrganizationMembership | null> {
-  const client = getSupabaseAdmin();
-  const { data: user, error: userError } = await client
-    .from("users")
-    .select("organizationId")
-    .eq("id", userId)
-    .maybeSingle();
-  throwIfError(userError, "Failed to load user's organization");
-  if (!user) return null;
+  const profile = await getAppwriteProfileById(userId);
+  if (!profile) return null;
 
-  const homeOrganizationId =
-    typeof user.organizationId === "string" ? user.organizationId : null;
-  let membershipQuery = client
-    .from("organization_memberships")
-    .select("*, organizations!inner(isActive)")
-    .eq("userId", userId)
-    .eq("isActive", true)
-    .eq("organizations.isActive", true);
-  if (homeOrganizationId) {
-    membershipQuery = membershipQuery.eq("organizationId", homeOrganizationId);
+  const rows = await listOrganizationRows("organization_memberships", [
+    Query.equal("userId", userId),
+    Query.equal("isActive", true),
+    Query.orderAsc("createdAt"),
+  ]);
+  const memberships = rows.map(appwriteRowData);
+  const homeOrganizationId = profile.user.organizationId;
+  const membership = homeOrganizationId
+    ? memberships.find(row => row.organizationId === homeOrganizationId)
+    : memberships[0];
+
+  if (!membership || typeof membership.organizationId !== "string") {
+    return null;
   }
 
-  const { data, error } = await membershipQuery
-    .order("createdAt", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const organization = await getOrganizationById(membership.organizationId);
+  if (!organization) return null;
 
-  throwIfError(error, "Failed to load organization membership");
-  if (!data) return null;
-  const { organizations: _organization, ...membershipData } = data as Record<
-    string,
-    unknown
-  >;
+  const {
+    organization: _organization,
+    user: _user,
+    ...membershipData
+  } = membership;
   return mapMembership(membershipData);
 }
 
 export async function getOrganizationById(
   organizationId: string
 ): Promise<Organization | null> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("*")
-    .eq("id", organizationId)
-    .eq("isActive", true)
-    .maybeSingle();
-
-  throwIfError(error, "Failed to load organization");
-  return data ? mapOrganization(data as Record<string, unknown>) : null;
+  const rows = await listOrganizationRows("organizations", [
+    Query.equal("id", organizationId),
+    Query.equal("isActive", true),
+  ]);
+  return rows[0] ? mapOrganization(appwriteRowData(rows[0])) : null;
 }
 
 export async function selectPlatformOwnerWorkplace(input: {
@@ -132,36 +153,119 @@ export async function selectPlatformOwnerWorkplace(input: {
     throw new Error("الجهة غير موجودة أو غير مفعّلة");
   }
 
-  const { error } = await getSupabaseAdmin().rpc("set_owner_workplace", {
-    p_user_id: input.user.id,
-    p_organization_id: organization.id,
-  });
-  throwIfError(error, "Failed to select owner workplace");
+  const profile = await getAppwriteProfileById(input.user.id);
+  if (!profile) {
+    throw new Error("ملف مالك النظام غير موجود");
+  }
+
+  const memberships = await listOrganizationRows("organization_memberships", [
+    Query.equal("userId", input.user.id),
+    Query.equal("isActive", true),
+    Query.orderAsc("createdAt"),
+  ]);
+  const existingMembership = memberships[0];
+  const now = new Date().toISOString();
+  let membershipUpdated = false;
+  let createdMembershipRowId: string | null = null;
+
+  if (existingMembership) {
+    await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "organization_memberships",
+      rowId: existingMembership.$id,
+      data: {
+        organizationId: organization.id,
+        organization: organization.id,
+        role: "system_admin",
+        isActive: true,
+        updatedAt: now,
+      },
+    });
+    membershipUpdated = true;
+  } else {
+    const membershipId = Date.now();
+    createdMembershipRowId = String(membershipId);
+    await getAppwriteTablesDB().createRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "organization_memberships",
+      rowId: createdMembershipRowId,
+      data: {
+        id: membershipId,
+        organizationId: organization.id,
+        organization: organization.id,
+        userId: input.user.id,
+        user: profile.rowId,
+        role: "system_admin",
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+  }
+
+  try {
+    await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "users",
+      rowId: profile.rowId,
+      data: {
+        organizationId: organization.id,
+        organization: organization.id,
+        updatedAt: now,
+      },
+    });
+  } catch (error) {
+    if (createdMembershipRowId) {
+      await getAppwriteTablesDB()
+        .deleteRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "organization_memberships",
+          rowId: createdMembershipRowId,
+        })
+        .catch(() => undefined);
+    } else if (membershipUpdated && existingMembership) {
+      const previous = appwriteRowData(existingMembership);
+      await getAppwriteTablesDB()
+        .updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "organization_memberships",
+          rowId: existingMembership.$id,
+          data: {
+            organizationId: previous.organizationId,
+            organization: previous.organization,
+            role: previous.role,
+            updatedAt: now,
+          },
+        })
+        .catch(() => undefined);
+    }
+    throw error;
+  }
+
   return organization;
 }
 
 export async function listOrganizationsForUser(
   userId: number
 ): Promise<Organization[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organization_memberships")
-    .select("organizations(*)")
-    .eq("userId", userId)
-    .eq("isActive", true)
-    .order("createdAt", { ascending: true });
+  const rows = await listOrganizationRows("organization_memberships", [
+    Query.equal("userId", userId),
+    Query.equal("isActive", true),
+    Query.orderAsc("createdAt"),
+  ]);
 
-  throwIfError(error, "Failed to list organizations");
-
-  return (data ?? [])
-    .map(row => {
-      const organization = row.organizations;
-      return organization && typeof organization === "object"
-        ? mapOrganization(organization as unknown as Record<string, unknown>)
+  const organizations = await Promise.all(
+    rows.map(row => {
+      const data = appwriteRowData(row);
+      return typeof data.organizationId === "string"
+        ? getOrganizationById(data.organizationId)
         : null;
     })
-    .filter((organization): organization is Organization =>
-      Boolean(organization?.isActive)
-    );
+  );
+
+  return organizations.filter((organization): organization is Organization =>
+    Boolean(organization?.isActive)
+  );
 }
 
 const ACCOUNT_ORGANIZATION_TYPES = new Set<Organization["type"]>([

@@ -1,13 +1,15 @@
 import { createHash, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
+import { publicUser } from "./_core/auth";
 import {
-  authenticateLocalUser,
-  clearAuthenticatedSession,
-  hashPassword,
-  publicUser,
-  setAuthenticatedSession,
-  verifyPassword,
-} from "./_core/auth";
+  AppwritePasswordResetRequiredError,
+  authenticateAppwriteUser,
+  clearAppwriteSessionCookie,
+  deleteCurrentAppwriteSession,
+  getAppwriteProfileById,
+  setAppwriteSessionCookie,
+  verifyAppwriteUserPassword,
+} from "./_core/appwriteAuth";
 import {
   clearSuccessfulLoginRateLimit,
   enforceLoginRateLimit,
@@ -71,9 +73,6 @@ import {
   updateRouteIncomingSerial,
   updateRouteOutgoingSerial,
   writeAuditLog,
-  createLocalOwnerUser,
-  getUserById,
-  getUserByUsername,
   deletePushSubscription,
   deleteMobilePushToken,
   listUserNotifications,
@@ -662,6 +661,21 @@ async function buildTelegramVersionSnapshot(telegram: {
   };
 }
 
+// Keep Appwrite's forced password-reset response consistent with the web login API.
+async function authenticateForLogin(username: string, password: string) {
+  try {
+    return await authenticateAppwriteUser(username, password);
+  } catch (error) {
+    if (error instanceof AppwritePasswordResetRequiredError) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "يجب إعادة تعيين كلمة المرور قبل تسجيل الدخول",
+      });
+    }
+    throw error;
+  }
+}
+
 export const appRouter = router({
   system: systemRouter,
   profile: profileRouter,
@@ -703,86 +717,40 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const normalizedUsername = input.username.trim();
-        const loginRateLimitKey = await enforceLoginRateLimit(
+        const rateLimitKey = await enforceLoginRateLimit(
           ctx.req,
           ctx.res,
-          normalizedUsername
+          input.username
         );
-
-        let user = await authenticateLocalUser(
-          normalizedUsername,
+        const authenticated = await authenticateForLogin(
+          input.username.trim(),
           input.password
         );
 
-        if (
-          !user &&
-          normalizedUsername.toLowerCase() ===
-            ENV.ownerUsername.trim().toLowerCase() &&
-          (ENV.ownerPasswordHash || ENV.ownerInitialPassword)
-        ) {
-          // The initial secret is only used to bootstrap a missing owner account.
-          // Existing accounts and their credentials are never overwritten.
-          const bootstrapHash =
-            ENV.ownerPasswordHash ||
-            (await hashPassword(ENV.ownerInitialPassword));
-          const ownerPasswordMatches = await verifyPassword(
-            input.password,
-            bootstrapHash
-          );
-
-          if (ownerPasswordMatches) {
-            try {
-              const owner = await createLocalOwnerUser({
-                username: ENV.ownerUsername.trim(),
-                passwordHash: bootstrapHash,
-              });
-              user = publicUser(owner);
-            } catch {
-              // A concurrent login may have created the owner first. Re-read and
-              // authenticate against the persisted credential rather than replacing it.
-              const existing = await getUserByUsername(
-                ENV.ownerUsername.trim()
-              );
-              if (existing?.passwordHash) {
-                user = await authenticateLocalUser(
-                  normalizedUsername,
-                  input.password
-                );
-              } else if (!existing) {
-                throw new TRPCError({
-                  code: "INTERNAL_SERVER_ERROR",
-                  message: "تعذر إنشاء حساب المالك",
-                });
-              }
-            }
-          }
-        }
-
-        if (!user) {
+        if (!authenticated) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "اسم المستخدم أو كلمة المرور غير صحيحة",
           });
         }
 
-        try {
-          await clearSuccessfulLoginRateLimit(loginRateLimitKey);
-        } catch (error) {
-          console.warn(
-            "[Auth] Failed to clear successful login rate limit",
-            error
-          );
-        }
-
-        await setAuthenticatedSession(ctx.res, user);
-        return user;
+        await setAppwriteSessionCookie(
+          ctx.res,
+          authenticated.session,
+          authenticated.user
+        );
+        await clearSuccessfulLoginRateLimit(rateLimitKey);
+        return publicUser(authenticated.user);
       }),
 
-    logout: publicProcedure.mutation(({ ctx }) => {
-      // Logout is scoped to this browser/device. Password changes and explicit
-      // administrative resets rotate sessionVersion to revoke every device.
-      clearAuthenticatedSession(ctx.res);
+    logout: publicProcedure.mutation(async ({ ctx }) => {
+      try {
+        await deleteCurrentAppwriteSession(ctx.req);
+      } catch {
+        // A revoked or expired Appwrite session must not prevent local logout.
+      } finally {
+        clearAppwriteSessionCookie(ctx.res);
+      }
       return { success: true } as const;
     }),
   }),
@@ -1378,14 +1346,15 @@ export const appRouter = router({
             message: "الحذف النهائي متاح لمالك النظام فقط",
           });
         }
-        const owner = await getUserById(ctx.user.id);
+        const ownerProfile = await getAppwriteProfileById(ctx.user.id);
+        const owner = ownerProfile?.user;
         if (
           !owner ||
           owner.isActive === false ||
           owner.role !== "admin" ||
           owner.isPlatformOwner !== true ||
-          !owner.passwordHash ||
-          !(await verifyPassword(input.password, owner.passwordHash))
+          !ctx.user.username ||
+          !(await verifyAppwriteUserPassword(ctx.user.username, input.password))
         ) {
           throw new TRPCError({
             code: "UNAUTHORIZED",

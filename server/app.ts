@@ -9,7 +9,7 @@ import { serveStatic } from "./_core/static";
 import { getSupabaseAdmin } from "./_core/supabase";
 import { registerTelegramExportRoutes } from "./telegramExport";
 import { getTelegramSerialCode } from "@shared/telegramSerial";
-import { getAuthenticatedUserFromRequest } from "./_core/auth";
+import { getAppwriteAuthenticatedUserFromRequest } from "./_core/appwriteAuth";
 import { assertProductionEnvironment, ENV } from "./_core/env";
 import { getContentSecurityPolicy } from "./_core/csp";
 import { notifyMobileRelease } from "./features/notifications/notification";
@@ -132,7 +132,7 @@ export function createApp(
       if (!requiresAuthenticatedLargeBody(path)) return next();
 
       void (async () => {
-        const user = await getAuthenticatedUserFromRequest(req);
+        const user = await getAppwriteAuthenticatedUserFromRequest(req);
         if (!user) {
           res.status(401).json({ error: "يجب تسجيل الدخول أولًا" });
           return;
@@ -158,6 +158,17 @@ export function createApp(
     express.json({ limit: getJsonBodyLimit(req.path) })(req, res, next)
   );
   app.use(express.urlencoded({ limit: "64kb", extended: false }));
+
+  // Appwrite enforces authentication endpoint limits; this bounded local
+  // limiter adds per-instance protection without depending on the old database.
+  app.use(
+    "/api/trpc/auth.login",
+    createRateLimit({
+      windowMs: 15 * 60_000,
+      maxRequests: 10,
+      message: "تم تجاوز عدد محاولات تسجيل الدخول. حاول لاحقًا.",
+    })
+  );
 
   registerStorageRoutes(app);
   registerTelegramExportRoutes(app);
@@ -222,8 +233,8 @@ export function createApp(
     res.status(200).json({
       ok: true,
       service: "police-telegrams-platform",
-      auth: "local-password",
-      database: "supabase-postgres",
+      auth: "appwrite-auth",
+      database: "supabase-legacy-migration-pending",
       timestamp: new Date().toISOString(),
     });
   });

@@ -1,5 +1,5 @@
 import { ENV } from "./_core/env";
-import { getSupabaseAdmin } from "./_core/supabase";
+import { getAppwriteProfileById } from "./_core/appwriteAuth";
 
 export interface OwnerIdentity {
   role?: string | null;
@@ -7,11 +7,12 @@ export interface OwnerIdentity {
   isPlatformOwner?: boolean | null;
 }
 
-/** Owner-only operations must match the configured owner account, not every admin. */
+/** Prefer the persisted Appwrite owner flag, retaining the configured bootstrap identity. */
 export function isPlatformOwner(
   user: OwnerIdentity | null | undefined
 ): boolean {
   if (user?.isPlatformOwner === true && user.role === "admin") return true;
+
   const configuredOwner = ENV.ownerUsername.trim().toLowerCase();
   return (
     user?.role === "admin" &&
@@ -21,13 +22,6 @@ export function isPlatformOwner(
 }
 
 export async function isPlatformOwnerUserId(userId: number): Promise<boolean> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("users")
-    .select("id, username, role, isPlatformOwner")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error)
-    throw new Error(`Failed to inspect membership target: ${error.message}`);
-  return isPlatformOwner(data as OwnerIdentity | null);
+  const profile = await getAppwriteProfileById(userId);
+  return isPlatformOwner(profile?.user ?? null);
 }

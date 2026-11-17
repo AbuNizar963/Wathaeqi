@@ -15,6 +15,11 @@ const mocks = vi.hoisted(() => {
   const single = vi.fn();
   const rpc = vi.fn();
   const hashPassword = vi.fn();
+  const appwriteListRows = vi.fn();
+  const appwriteUpdateRow = vi.fn();
+  const appwriteCreateRow = vi.fn();
+  const appwriteDeleteRow = vi.fn();
+  const getAppwriteProfileById = vi.fn();
 
   from.mockReturnValue({ select, insert, upsert, update });
   select.mockReturnValue({ eq, single, order, ilike });
@@ -42,6 +47,11 @@ const mocks = vi.hoisted(() => {
     single,
     rpc,
     hashPassword,
+    appwriteListRows,
+    appwriteUpdateRow,
+    appwriteCreateRow,
+    appwriteDeleteRow,
+    getAppwriteProfileById,
   };
 });
 
@@ -54,6 +64,20 @@ vi.mock("../../_core/supabase", () => ({
     from: mocks.from,
     rpc: mocks.rpc,
   })),
+}));
+
+vi.mock("../../_core/appwrite", () => ({
+  getAppwriteDatabaseId: () => "wathaeqi-db",
+  getAppwriteTablesDB: () => ({
+    listRows: mocks.appwriteListRows,
+    updateRow: mocks.appwriteUpdateRow,
+    createRow: mocks.appwriteCreateRow,
+    deleteRow: mocks.appwriteDeleteRow,
+  }),
+}));
+
+vi.mock("../../_core/appwriteAuth", () => ({
+  getAppwriteProfileById: mocks.getAppwriteProfileById,
 }));
 
 import {
@@ -75,6 +99,57 @@ describe("organization repository", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hashPassword.mockResolvedValue("hashed-organization-password");
+    mocks.appwriteUpdateRow.mockResolvedValue({});
+    mocks.appwriteCreateRow.mockResolvedValue({});
+    mocks.appwriteDeleteRow.mockResolvedValue({});
+    mocks.getAppwriteProfileById.mockResolvedValue({
+      rowId: "user-row-7",
+      user: {
+        id: 7,
+        authUserId: "appwrite-user-7",
+        organizationId: "00000000-0000-0000-0000-000000000001",
+        isActive: true,
+        sessionVersion: "session-7",
+      },
+    });
+    mocks.appwriteListRows.mockImplementation(
+      ({ tableId }: { tableId: string }) => {
+        if (tableId === "organization_memberships") {
+          return Promise.resolve({
+            rows: [
+              {
+                $id: "membership-7",
+                data: {
+                  id: 1,
+                  organizationId: "00000000-0000-0000-0000-000000000001",
+                  userId: 7,
+                  role: "dispatcher",
+                  isActive: true,
+                  createdAt: "2026-10-01T00:00:00.000Z",
+                  updatedAt: "2026-10-01T00:00:00.000Z",
+                },
+              },
+            ],
+          });
+        }
+        return Promise.resolve({
+          rows: [
+            {
+              $id: "00000000-0000-0000-0000-000000000001",
+              data: {
+                id: "00000000-0000-0000-0000-000000000001",
+                code: "TEST-ORG",
+                name: "جهة اختبار",
+                type: "central",
+                isActive: true,
+                createdAt: "2026-10-01T00:00:00.000Z",
+                updatedAt: "2026-10-01T00:00:00.000Z",
+              },
+            },
+          ],
+        });
+      }
+    );
     mocks.maybeSingle.mockResolvedValue({
       data: {
         id: 1,
@@ -97,17 +172,31 @@ describe("organization repository", () => {
     });
   });
 
-  it("excludes active membership rows whose organization has been disabled", async () => {
-    const organizationId = "00000000-0000-0000-0000-000000000001";
-    mocks.maybeSingle
-      .mockResolvedValueOnce({
-        data: { organizationId },
-        error: null,
-      })
-      .mockResolvedValueOnce({ data: null, error: null });
+  it("excludes active memberships whose Appwrite organization is disabled", async () => {
+    mocks.appwriteListRows.mockImplementation(
+      ({ tableId }: { tableId: string }) =>
+        Promise.resolve({
+          rows:
+            tableId === "organization_memberships"
+              ? [
+                  {
+                    $id: "membership-7",
+                    data: {
+                      id: 1,
+                      organizationId: "00000000-0000-0000-0000-000000000001",
+                      userId: 7,
+                      role: "dispatcher",
+                      isActive: true,
+                      createdAt: "2026-10-01T00:00:00.000Z",
+                      updatedAt: "2026-10-01T00:00:00.000Z",
+                    },
+                  },
+                ]
+              : [],
+        })
+    );
 
     await expect(getUserOrganizationMembership(7)).resolves.toBeNull();
-    expect(mocks.eq).toHaveBeenCalledWith("organizations.isActive", true);
   });
 
   it("supports the ministry, governorate, rural or city branch, station, and unit hierarchy", () => {
@@ -242,21 +331,53 @@ describe("organization repository", () => {
     });
   });
 
-  it("changes the owner's active organization through the atomic RPC", async () => {
+  it("changes the owner's active organization through Appwrite", async () => {
     const organizationId = "00000000-0000-0000-0000-000000000009";
-    mocks.maybeSingle.mockResolvedValueOnce({
-      data: {
-        id: organizationId,
-        code: "GOV-ALEPPO",
-        name: "قيادة الأمن الداخلي في حلب",
-        type: "governorate",
+    mocks.getAppwriteProfileById.mockResolvedValueOnce({
+      rowId: "owner-row",
+      user: {
+        id: 1,
+        authUserId: "owner-auth-id",
+        organizationId: "00000000-0000-0000-0000-000000000001",
         isActive: true,
-        createdAt: "2026-10-01T00:00:00.000Z",
-        updatedAt: "2026-10-01T00:00:00.000Z",
+        sessionVersion: "owner-session",
       },
-      error: null,
     });
-    mocks.rpc.mockResolvedValueOnce({ data: null, error: null });
+    mocks.appwriteListRows.mockImplementation(
+      ({ tableId }: { tableId: string }) =>
+        Promise.resolve({
+          rows:
+            tableId === "organizations"
+              ? [
+                  {
+                    $id: organizationId,
+                    data: {
+                      id: organizationId,
+                      code: "GOV-ALEPPO",
+                      name: "قيادة الأمن الداخلي في حلب",
+                      type: "governorate",
+                      isActive: true,
+                      createdAt: "2026-10-01T00:00:00.000Z",
+                      updatedAt: "2026-10-01T00:00:00.000Z",
+                    },
+                  },
+                ]
+              : [
+                  {
+                    $id: "owner-membership",
+                    data: {
+                      id: 1,
+                      organizationId: "00000000-0000-0000-0000-000000000001",
+                      userId: 1,
+                      role: "system_admin",
+                      isActive: true,
+                      createdAt: "2026-10-01T00:00:00.000Z",
+                      updatedAt: "2026-10-01T00:00:00.000Z",
+                    },
+                  },
+                ],
+        })
+    );
 
     await expect(
       selectPlatformOwnerWorkplace({
@@ -268,10 +389,24 @@ describe("organization repository", () => {
       name: "قيادة الأمن الداخلي في حلب",
     });
 
-    expect(mocks.rpc).toHaveBeenCalledWith("set_owner_workplace", {
-      p_user_id: 1,
-      p_organization_id: organizationId,
-    });
+    expect(mocks.appwriteUpdateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tableId: "organization_memberships",
+        rowId: "owner-membership",
+        data: expect.objectContaining({
+          organizationId,
+          role: "system_admin",
+        }),
+      })
+    );
+    expect(mocks.appwriteUpdateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tableId: "users",
+        rowId: "owner-row",
+        data: expect.objectContaining({ organizationId }),
+      })
+    );
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("allows updating the root central organization without a parent", async () => {
@@ -325,7 +460,7 @@ describe("organization repository", () => {
   });
 
   it("does not select a missing or inactive organization", async () => {
-    mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    mocks.appwriteListRows.mockResolvedValueOnce({ rows: [] });
 
     await expect(
       selectPlatformOwnerWorkplace({
