@@ -103,7 +103,7 @@ afterEach(() => {
 
 describe("Appwrite authentication adapter", () => {
   it(
-    "authenticates by username email mapping and preserves platform-owner profile",
+    "authenticates by username and preserves platform-owner profile",
     async () => {
       const result = await authenticateAppwriteUser(
         "AbuNizar",
