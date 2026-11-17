@@ -148,7 +148,7 @@ export default function Profile() {
             <div>
               <CardTitle>المعلومات الشخصية</CardTitle>
               <CardDescription>
-                تُحفظ التعديلات على حسابك فقط ولا تغيّر سجلات البرقيات السابقة.
+                تُحفظ التعديلات على حسابك فقط ولا تغيّر سجلات الوثائق السابقة.
               </CardDescription>
             </div>
           </div>
