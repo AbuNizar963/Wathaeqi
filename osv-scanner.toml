@@ -15,3 +15,18 @@ ecosystem = "npm"
 vulnerability.ignore = true
 effectiveUntil = 2026-12-16
 reason = "Official SheetJS CDN xlsx 0.20.2 includes the fixes described by GHSA-4r6h-8v6p-xvw6 (0.19.3+) and GHSA-5pgg-2g8v-p4x9 (0.20.2+); OSV currently mis-matches the CDN-pinned release against npm advisory ranges. Exact-version, time-limited exception; revalidate before expiry."
+
+# Temporary, exact-version backport for CVE-2026-112366.
+# The lockfile's picomatch 4.0.7 is used only by Vite's build-time glob chain.
+# No fixed upstream release was available at the time of this change. The
+# pnpm patch backports the mitigation from micromatch/picomatch#238, and a
+# local regression test verifies the risky repeated-extglob patterns are
+# literalized while known-safe patterns keep their behavior. Revalidate and
+# remove this exception when an official fixed release is available.
+[[PackageOverrides]]
+name = "picomatch"
+version = "4.0.7"
+ecosystem = "npm"
+vulnerability.ignore = true
+effectiveUntil = 2026-12-17
+reason = "Exact-version local pnpm patch backports the CVE-2026-112366 mitigation from https://github.com/micromatch/picomatch/pull/238; server/_core/picomatchSecurity.test.ts verifies the regression. Temporary exception only until an official fixed release is available."
