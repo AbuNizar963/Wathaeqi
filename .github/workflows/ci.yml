@@ -38,11 +38,6 @@ jobs:
             exit 1
           fi
 
-      - name: Preview formatting diff for Appwrite migration
-        run: |
-          pnpm exec prettier --write server/features/organizations/organization.ts
-          git diff -- server/features/organizations/organization.ts
-
       - name: Check formatting
         run: pnpm lint
 
