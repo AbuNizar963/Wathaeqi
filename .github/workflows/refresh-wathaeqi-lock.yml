@@ -1,4 +1,4 @@
-name: Refresh Wathaeqi web dependency lockfile
+name: Refresh Wathaeqi lockfile and format Appwrite foundation tests
 
 on:
   push:
@@ -9,6 +9,8 @@ on:
       - package.json
       - pnpm-workspace.yaml
       - patches/**
+      - server/_core/appwrite.test.ts
+      - .github/workflows/refresh-wathaeqi-lock.yml
 
 permissions:
   contents: write
@@ -32,15 +34,17 @@ jobs:
           node-version: 24
       - name: Regenerate pnpm lockfile
         run: pnpm install --no-frozen-lockfile
-      - name: Commit lockfile if changed
+      - name: Format Appwrite foundation tests
+        run: pnpm exec prettier --write server/_core/appwrite.test.ts
+      - name: Commit generated maintenance changes if needed
         run: |
           set -euo pipefail
-          if git diff --quiet -- pnpm-lock.yaml; then
-            echo "Lockfile is already current."
+          if git diff --quiet -- pnpm-lock.yaml server/_core/appwrite.test.ts; then
+            echo "Lockfile and Appwrite tests are already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml
-          git commit -m "chore: refresh Wathaeqi dependency lock"
+          git add pnpm-lock.yaml server/_core/appwrite.test.ts
+          git commit -m "chore: refresh dependencies and format Appwrite tests"
           git push
