@@ -44,6 +44,7 @@ class TelegramCsvCodec {
         'text',
         'content',
         'المتن',
+        'نص الوثيقة',
         'نص البرقية',
         'النص',
       ]);
@@ -56,6 +57,7 @@ class TelegramCsvCodec {
         'sheetname',
         'direction',
         'الاتجاه',
+        'نوع الوثيقة',
         'نوع البرقية',
       ]).toLowerCase();
       final isIncoming =
@@ -68,6 +70,7 @@ class TelegramCsvCodec {
           'serialnumber',
           'الرقم',
           'الرقم الأصلي',
+          'رقم الوثيقة',
           'رقم البرقية',
         ]),
         'time': getCell(cells, const ['time', 'الوقت']),
