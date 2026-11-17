@@ -496,3 +496,15 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Hide the optional Netlify footer/attribution badge without changing hosting settings. */
+#netlify-badge,
+#netlify-badge-container,
+.netlify-badge,
+[data-netlify-badge],
+iframe[src*="netlify.com"],
+a[href*="netlify.com"].netlify-badge {
+  display: none !important;
+  visibility: hidden !important;
+}
