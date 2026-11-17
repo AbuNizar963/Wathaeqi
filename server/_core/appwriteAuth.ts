@@ -1,4 +1,5 @@
 import { Account, Query } from "node-appwrite";
+import { SignJWT, jwtVerify } from "jose";
 import { parse } from "cookie";
 import type { Request, Response } from "express";
 import type { User } from "../../drizzle/schema";
@@ -203,21 +204,64 @@ export async function authenticateAppwriteUser(
   }
 }
 
+function getSessionSigningKey(): Uint8Array {
+  if (ENV.authSessionSecret.length < 32) {
+    throw new Error("AUTH_SESSION_SECRET must contain at least 32 characters");
+  }
+  return new TextEncoder().encode(ENV.authSessionSecret);
+}
+
+type SessionClaims = {
+  appwriteSessionSecret: string;
+  sessionVersion: string;
+  userId: number;
+};
+
+async function readSessionClaims(req: Request): Promise<SessionClaims | null> {
+  const token = parse(req.headers.cookie ?? "")[APPWRITE_SESSION_COOKIE];
+  if (!token) return null;
+
+  try {
+    const { payload } = await jwtVerify(token, getSessionSigningKey(), {
+      algorithms: ["HS256"],
+    });
+    const appwriteSessionSecret = payload.appwriteSessionSecret;
+    const sessionVersion = payload.sessionVersion;
+    const userId = Number(payload.sub);
+
+    if (
+      typeof appwriteSessionSecret !== "string" ||
+      !appwriteSessionSecret ||
+      typeof sessionVersion !== "string" ||
+      !Number.isSafeInteger(userId) ||
+      userId < 1
+    ) {
+      return null;
+    }
+
+    return { appwriteSessionSecret, sessionVersion, userId };
+  } catch {
+    return null;
+  }
+}
+
 export async function getAppwriteAuthenticatedUserFromRequest(
   req: Request
 ): Promise<User | null> {
-  const sessionSecret = parse(req.headers.cookie ?? "")[
-    APPWRITE_SESSION_COOKIE
-  ];
-  if (!sessionSecret) return null;
+  const claims = await readSessionClaims(req);
+  if (!claims) return null;
 
   try {
-    const account = new Account(getAppwriteSessionClient(sessionSecret));
+    const account = new Account(
+      getAppwriteSessionClient(claims.appwriteSessionSecret)
+    );
     const authUser = await account.get();
     const profile = await getAppwriteProfileByAuthUserId(authUser.$id);
 
     if (
       !profile ||
+      profile.user.id !== claims.userId ||
+      profile.user.sessionVersion !== claims.sessionVersion ||
       !profile.user.isActive ||
       profile.user.loginMethod === "disabled"
     ) {
@@ -233,12 +277,12 @@ export async function getAppwriteAuthenticatedUserFromRequest(
 export async function deleteCurrentAppwriteSession(
   req: Request
 ): Promise<void> {
-  const sessionSecret = parse(req.headers.cookie ?? "")[
-    APPWRITE_SESSION_COOKIE
-  ];
-  if (!sessionSecret) return;
+  const claims = await readSessionClaims(req);
+  if (!claims) return;
 
-  const account = new Account(getAppwriteSessionClient(sessionSecret));
+  const account = new Account(
+    getAppwriteSessionClient(claims.appwriteSessionSecret)
+  );
   await account.deleteSession({ sessionId: "current" });
 }
 
@@ -254,22 +298,28 @@ function serializeCookie(value: string, maxAge: number): string {
   return parts.join("; ");
 }
 
-export function setAppwriteSessionCookie(
+export async function setAppwriteSessionCookie(
   res: Response,
-  session: AppwriteSession
-): void {
+  session: AppwriteSession,
+  user: Pick<User, "id" | "authUserId" | "sessionVersion">
+): Promise<void> {
   const expiresAt = new Date(session.expire).getTime();
-  const maxAge = Math.max(
-    0,
-    Math.floor((expiresAt - Date.now()) / 1000)
-  );
+  const maxAge = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
   if (!session.secret || !Number.isFinite(expiresAt) || maxAge === 0) {
     throw new Error("Appwrite returned an invalid authentication session");
   }
-  res.setHeader(
-    "Set-Cookie",
-    serializeCookie(session.secret, maxAge)
-  );
+
+  const token = await new SignJWT({
+    appwriteSessionSecret: session.secret,
+    sessionVersion: user.sessionVersion ?? user.authUserId,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(String(user.id))
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(expiresAt / 1000))
+    .sign(getSessionSigningKey());
+
+  res.setHeader("Set-Cookie", serializeCookie(token, maxAge));
 }
 
 export function clearAppwriteSessionCookie(res: Response): void {
