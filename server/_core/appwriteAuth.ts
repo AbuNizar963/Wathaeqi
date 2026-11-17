@@ -73,8 +73,7 @@ function mapProfileRow(row: AppwriteRow): ProfileLookup | null {
   const user: User = {
     id,
     authUserId,
-    sessionVersion:
-      asNullableString(data.sessionVersion) ?? authUserId,
+    sessionVersion: asNullableString(data.sessionVersion) ?? authUserId,
     organizationId,
     name: asNullableString(data.name),
     username,
