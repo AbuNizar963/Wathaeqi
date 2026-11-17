@@ -194,7 +194,13 @@ export async function authenticateAppwriteUser(
       return null;
     }
 
-    const user = await updateLastSignedIn(profile);
+    let user = profile.user;
+    try {
+      user = await updateLastSignedIn(profile);
+    } catch {
+      // Sign-in must not fail only because a non-critical activity timestamp
+      // could not be updated; authorization still comes from Appwrite Auth.
+    }
     return { user, session };
   } catch (error) {
     await new Account(getAppwriteSessionClient(session.secret))
