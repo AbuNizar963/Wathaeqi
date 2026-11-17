@@ -162,7 +162,7 @@ export default function PlatformDocumentSettings() {
               />
               <span className="mt-1 block text-xs text-muted-foreground">
                 تطبّق النسبة نفسها على عبارة الوزارة وشعار الجهة؛ الحد الأعلى
-                {` ${MAX_WATERMARK_OPACITY_PERCENT}% `}لضمان بقاء نص البرقية
+                {` ${MAX_WATERMARK_OPACITY_PERCENT}% `}لضمان بقاء نص الوثيقة
                 واضحًا.
               </span>
             </label>
@@ -170,7 +170,7 @@ export default function PlatformDocumentSettings() {
             <label className="flex items-center justify-between gap-4 rounded-xl border p-4">
               <span>
                 <span className="block text-sm font-bold">
-                  لون الخط الفاصل في ترويسة البرقية
+                  لون الخط الفاصل في ترويسة الوثيقة
                 </span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   اختر لونًا متناسقًا مع الهوية البصرية للوثائق.
@@ -203,7 +203,7 @@ export default function PlatformDocumentSettings() {
                 </span>
                 <span className="mt-1 block text-xs leading-5 text-muted-foreground">
                   إخفاء الرمز المطبوع لا يعطّل رابط التحقق أو صلاحية التحقق من
-                  البرقية.
+                  الوثيقة.
                 </span>
               </span>
             </label>
