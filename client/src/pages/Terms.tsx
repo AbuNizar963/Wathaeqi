@@ -135,7 +135,9 @@ export default function Terms() {
       <Card className="overflow-hidden border-border/70 shadow-sm">
         <CardHeader className="bg-muted/30">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+            >
               <ShieldCheck className="h-6 w-6" />
             </div>
             <div>
