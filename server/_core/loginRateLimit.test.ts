@@ -50,9 +50,9 @@ describe("Appwrite login rate limiter", () => {
     }
     await clearSuccessfulLoginRateLimit(key);
 
-    await expect(
-      enforceLoginRateLimit(req, res, "AbuNizar")
-    ).resolves.toBe(key);
+    await expect(enforceLoginRateLimit(req, res, "AbuNizar")).resolves.toBe(
+      key
+    );
   });
 
   it("enforces the per-IP ceiling across different account names", async () => {
