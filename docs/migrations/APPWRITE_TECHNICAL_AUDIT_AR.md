@@ -224,7 +224,7 @@
 - `glob@10.5.0` و`minimatch@9.0.9` عبر `rimraf@5.0.10` الاختياري في سلسلة Google Cloud الاختيارية.
 - `postcss-selector-parser@6.0.10` عبر إضافة Tailwind التطويرية.
 
-أُضيفت overrides محددة للإصدارات المتأثرة فقط: esbuild إلى 0.25.12، وrimraf إلى 6.1.4 (ليستخدم glob 14.0.3 وminimatch 11.0.2)، وpostcss-selector-parser إلى 6.1.6. لا تُستخدم استثناءات OSV لهذه الحزم؛ يجب أن يثبت lockfile وSupply Chain زوال التنبيهات وأن تجتاز اختبارات المشروع قبل اعتماد التحديث. أعاد workflow توليد `pnpm-lock.yaml`، وأصبحت هذه الإصدارات مثبتة فعلياً في شجرة الاعتماديات؛ نتيجة Supply Chain بعد هذا التحديث ما زالت بانتظار Actions.
+أُضيفت overrides محددة للإصدارات المتأثرة فقط: esbuild إلى 0.25.12، وrimraf إلى 6.1.4 (ليستخدم glob 14.0.3 وminimatch 11.0.2)، وpostcss-selector-parser إلى 6.1.6. لا تُستخدم استثناءات OSV لهذه الحزم؛ يجب أن يثبت lockfile وSupply Chain زوال التنبيهات وأن تجتاز اختبارات المشروع قبل اعتماد التحديث. أعاد workflow توليد `pnpm-lock.yaml`، وأصبحت هذه الإصدارات مثبتة فعلياً في شجرة الاعتماديات؛ نتيجة Supply Chain بعد هذا التحديث ما زالت بانتظار Actions. احتُفظ أيضاً بإعدادات workspace الأصلية كاملة: قائمة الحزم، patch الخاص بـ `wouter@3.7.1`، وكل overrides وallowBuilds السابقة؛ أضيفت إعدادات Appwrite وpicomatch فوقها دون حذفها. يؤكد lockfile وجود patch لكل من wouter وpicomatch.
 
 ## 7. معاملات Appwrite والعمليات الذرية
 
