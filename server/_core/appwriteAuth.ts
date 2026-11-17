@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Account, Query } from "node-appwrite";
 import { SignJWT, jwtVerify } from "jose";
 import { parse } from "cookie";
@@ -376,4 +377,114 @@ export async function verifyAppwriteUserPassword(
   }
 
   return true;
+}
+
+export class AppwriteInvalidCurrentPasswordError extends Error {
+  constructor() {
+    super("The current Appwrite password is invalid");
+    this.name = "AppwriteInvalidCurrentPasswordError";
+  }
+}
+
+export async function changeAppwritePassword(
+  req: Request,
+  res: Response,
+  currentPassword: string,
+  newPassword: string
+): Promise<User> {
+  const claims = await readSessionClaims(req);
+  if (!claims) {
+    throw new Error("An active Appwrite session is required");
+  }
+
+  const profile = await getAppwriteProfileById(claims.userId);
+  if (
+    !profile ||
+    profile.user.authUserId === "" ||
+    !profile.user.email ||
+    profile.user.isActive !== true
+  ) {
+    throw new Error("The Appwrite user profile is unavailable");
+  }
+
+  const currentAccount = new Account(
+    getAppwriteSessionClient(claims.appwriteSessionSecret)
+  );
+  try {
+    await currentAccount.updatePassword({
+      password: newPassword,
+      oldPassword: currentPassword,
+    });
+  } catch (error) {
+    const appwriteError = asRecord(error);
+    if (
+      appwriteError?.code === 401 ||
+      appwriteError?.type === "user_invalid_credentials"
+    ) {
+      throw new AppwriteInvalidCurrentPasswordError();
+    }
+    throw error;
+  }
+
+  const newSession = await new Account(getAppwriteSessionClient())
+    .createEmailPasswordSession({
+      email: profile.user.email,
+      password: newPassword,
+    });
+
+  const now = new Date();
+  const sessionVersion = randomUUID();
+  const updatedUser: User = {
+    ...profile.user,
+    sessionVersion,
+    mustChangePassword: false,
+    lastSignedIn: now,
+    updatedAt: now,
+  };
+
+  try {
+    await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: USERS_TABLE_ID,
+      rowId: profile.rowId,
+      data: {
+        sessionVersion,
+        mustChangePassword: false,
+        lastSignedIn: now.toISOString(),
+        updatedAt: now.toISOString(),
+      },
+    });
+    await setAppwriteSessionCookie(res, newSession, updatedUser);
+  } catch (error) {
+    await new Account(getAppwriteSessionClient(newSession.secret))
+      .deleteSession({ sessionId: "current" })
+      .catch(() => undefined);
+    throw error;
+  }
+
+  await currentAccount
+    .deleteSession({ sessionId: "current" })
+    .catch(() => undefined);
+
+  return updatedUser;
+}
+
+export async function dismissAppwritePasswordChange(
+  userId: number
+): Promise<void> {
+  const profile = await getAppwriteProfileById(userId);
+  if (!profile) {
+    throw new Error("The Appwrite user profile is unavailable");
+  }
+
+  const now = new Date().toISOString();
+  await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: USERS_TABLE_ID,
+    rowId: profile.rowId,
+    data: {
+      mustChangePassword: false,
+      updatedAt: now,
+    },
+  });
 }
