@@ -283,7 +283,7 @@ export default function OwnerUserManagement() {
   });
   const disableUser = trpc.userManagement.disable.useMutation({
     onSuccess: async () => {
-      toast.success("تم تعطيل الحساب مع الحفاظ على سجلاته وبرقياته");
+      toast.success("تم تعطيل الحساب مع الحفاظ على سجلاته ووثائقه");
       await utils.userManagement.list.invalidate();
     },
     onError: error => toast.error(error.message || "تعذر تعطيل الحساب"),
@@ -429,7 +429,7 @@ export default function OwnerUserManagement() {
                   إنشاء حساب ضمن جهة محددة
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  سيشاهد الحساب جميع البرقيات والسجلات الخاصة بالجهة المختارة،
+                  سيشاهد الحساب جميع الوثائق والسجلات الخاصة بالجهة المختارة،
                   وليس سجلات جهات أخرى.
                 </p>
               </div>
@@ -474,12 +474,12 @@ export default function OwnerUserManagement() {
                 }
               >
                 <option value="dispatcher">
-                  موظف تشغيل — إنشاء ومتابعة البرقيات
+                  موظف تشغيل — إنشاء ومتابعة الوثائق
                 </option>
                 <option value="reviewer">
                   مراجع — مراجعة واعتماد الإحالات
                 </option>
-                <option value="reader">قارئ — عرض البرقيات والسجل فقط</option>
+                <option value="reader">قارئ — عرض الوثائق والسجل فقط</option>
                 <option value="auditor">مدقق — عرض السجل والتدقيق</option>
                 <option value="organization_supervisor">
                   مشرف الجهة — إدارة حسابات الجهة
@@ -591,7 +591,7 @@ export default function OwnerUserManagement() {
             <div className="flex items-start gap-2 rounded-xl bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-900 dark:text-emerald-200">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
               يُنشأ الحساب بصلاحيات تشغيلية داخل جهة واحدة؛ تُسجّل جميع عملياته
-              بهويته الرقمية وتبقى البرقيات مشتركة بين أفراد الجهة.
+              بهويته الرقمية وتبقى الوثائق مشتركة بين أفراد الجهة.
             </div>
             <div className="flex justify-end">
               <Button
@@ -953,7 +953,7 @@ export default function OwnerUserManagement() {
                                             "هذا الحساب";
                                           if (
                                             window.confirm(
-                                              `هل تريد تعطيل حساب ${label}؟ لن تُحذف البرقيات أو السجلات المرتبطة به، ويمكن إعادة تفعيله لاحقًا.`
+                                              `هل تريد تعطيل حساب ${label}؟ لن تُحذف الوثائق أو السجلات المرتبطة به، ويمكن إعادة تفعيله لاحقًا.`
                                             )
                                           ) {
                                             const confirmPassword =
@@ -990,7 +990,7 @@ export default function OwnerUserManagement() {
                                           "هذا الحساب";
                                         if (
                                           window.confirm(
-                                            `سيتم حذف حساب ${label} نهائيًا. إذا كان مرتبطًا ببرقيات أو سجل تدقيق سيُرفض الحذف حفاظًا على السجلات. هل تريد المتابعة؟`
+                                            `سيتم حذف حساب ${label} نهائيًا. إذا كان مرتبطًا بوثائق أو سجل تدقيق سيُرفض الحذف حفاظًا على السجلات. هل تريد المتابعة؟`
                                           )
                                         ) {
                                           const confirmPassword = window.prompt(
@@ -1111,7 +1111,7 @@ export default function OwnerUserManagement() {
                     تعديل بيانات الحساب
                   </h3>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    التعديل لا يغيّر جهة الحساب أو سجلات البرقيات المرتبطة بها.
+                    التعديل لا يغيّر جهة الحساب أو سجلات الوثائق المرتبطة بها.
                   </p>
                 </div>
                 <Button
