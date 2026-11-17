@@ -48,24 +48,39 @@ export function assertProductionEnvironment(env: typeof ENV = ENV): void {
   if (!env.isProduction) return;
 
   const missing: string[] = [];
-  let parsedSupabaseUrl: URL | undefined;
 
-  if (!env.supabaseUrl.trim()) {
-    missing.push("SUPABASE_URL");
+  if (!env.appwriteEndpoint.trim()) {
+    missing.push("APPWRITE_ENDPOINT");
   } else {
+    let parsedEndpoint: URL;
     try {
-      parsedSupabaseUrl = new URL(env.supabaseUrl);
+      parsedEndpoint = new URL(env.appwriteEndpoint);
     } catch {
       throw new Error(
-        "SUPABASE_URL must be a valid absolute URL in production"
+        "APPWRITE_ENDPOINT must be a valid absolute HTTPS URL ending in /v1"
       );
     }
-    if (parsedSupabaseUrl.protocol !== "https:") {
-      throw new Error("SUPABASE_URL must use HTTPS in production");
+
+    const endpointPath = parsedEndpoint.pathname.replace(/\\/+$/, "");
+    if (
+      parsedEndpoint.protocol !== "https:" ||
+      !parsedEndpoint.hostname ||
+      !endpointPath.endsWith("/v1") ||
+      parsedEndpoint.username ||
+      parsedEndpoint.password ||
+      parsedEndpoint.search ||
+      parsedEndpoint.hash
+    ) {
+      throw new Error(
+        "APPWRITE_ENDPOINT must be a valid absolute HTTPS URL ending in /v1"
+      );
     }
   }
 
-  if (!env.supabaseSecretKey.trim()) missing.push("SUPABASE_SECRET_KEY");
+  if (!env.appwriteProjectId.trim()) missing.push("APPWRITE_PROJECT_ID");
+  if (!env.appwriteApiKey.trim()) missing.push("APPWRITE_API_KEY");
+  if (!env.appwriteDatabaseId.trim()) missing.push("APPWRITE_DATABASE_ID");
+  if (!env.appwriteBucketId.trim()) missing.push("APPWRITE_BUCKET_ID");
   if (env.authSessionSecret.length < 32) {
     missing.push("AUTH_SESSION_SECRET (at least 32 characters)");
   }
