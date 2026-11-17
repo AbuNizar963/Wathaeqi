@@ -84,6 +84,8 @@ describe("incrementAppwriteCounter", () => {
         rowId: "department-1",
         column: "nextSerial",
       })
-    ).rejects.toThrow('did not return a valid integer for counter "nextSerial"');
+    ).rejects.toThrow(
+      'did not return a valid integer for counter "nextSerial"'
+    );
   });
 });
