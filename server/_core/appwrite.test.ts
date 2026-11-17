@@ -39,9 +39,14 @@ afterEach(() => {
 });
 
 describe("server-side Appwrite configuration", () => {
-  it("ignores VITE-prefixed server credentials", async () => {
+  it("accepts public VITE identifiers but never a VITE API key", async () => {
     vi.stubEnv("VITE_APPWRITE_ENDPOINT", "https://fra.cloud.appwrite.io/v1");
     vi.stubEnv("VITE_APPWRITE_PROJECT_ID", "wathaeqi");
+    vi.stubEnv("VITE_APPWRITE_DATABASE_ID", "wathaeqi-db");
+    vi.stubEnv(
+      "VITE_APPWRITE_ATTACHMENTS_BUCKET_ID",
+      "document-attachments"
+    );
     vi.stubEnv("VITE_APPWRITE_API_KEY", "not-a-server-secret");
 
     const appwrite = await loadAppwriteModule();
@@ -49,7 +54,12 @@ describe("server-side Appwrite configuration", () => {
     expect(appwrite.isAppwriteConfigured()).toBe(false);
     expect(
       captureErrorMessage(() => appwrite.getAppwriteAdminClient())
-    ).toContain("APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID, APPWRITE_API_KEY");
+    ).toContain("APPWRITE_API_KEY");
+    expect(
+      captureErrorMessage(() => appwrite.getAppwriteAdminClient())
+    ).not.toContain("not-a-server-secret");
+    expect(appwrite.getAppwriteDatabaseId()).toBe("wathaeqi-db");
+    expect(appwrite.getAppwriteBucketId()).toBe("document-attachments");
   });
 
   it("requires server credentials without exposing values", async () => {
