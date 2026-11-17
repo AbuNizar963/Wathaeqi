@@ -43,7 +43,7 @@ void main() {
       idempotencyKey: 'mobile-offline-1234567890',
       payload: const {
         'subject': 'بلاغ',
-        'body': 'نص البرقية',
+        'body': 'نص الوثيقة',
         'requestedOrganizationSerialNumber': 18,
       },
       createdAt: created,
@@ -54,7 +54,7 @@ void main() {
     final restored = TelegramOutboxEntry.fromJson(entry.toJson());
     expect(restored.id, entry.id);
     expect(restored.idempotencyKey, entry.idempotencyKey);
-    expect(restored.payload['body'], 'نص البرقية');
+    expect(restored.payload['body'], 'نص الوثيقة');
     expect(restored.createdAt, created);
     expect(restored.attempts, 2);
     expect(restored.lastError, 'تعذر الاتصال بالخادم');
