@@ -3,5 +3,10 @@ allowBuilds:
   esbuild: true
   protobufjs: true
 
+overrides:
+  esbuild@0.18.20: 0.25.12
+  rimraf@5.0.10: 6.1.4
+  postcss-selector-parser@6.0.10: 6.1.6
+
 patchedDependencies:
   picomatch@4.0.7: patches/picomatch@4.0.7.patch
