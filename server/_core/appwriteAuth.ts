@@ -18,6 +18,7 @@ type AppwriteSession = Awaited<
   ReturnType<Account["createEmailPasswordSession"]>
 >;
 
+// This is surfaced as a safe, actionable login error without exposing Appwrite internals.
 export class AppwritePasswordResetRequiredError extends Error {
   constructor() {
     super("Appwrite requires the user to reset their password");
