@@ -102,9 +102,7 @@ afterEach(() => {
 });
 
 describe("Appwrite authentication adapter", () => {
-  it(
-    "authenticates by username and preserves platform-owner profile",
-    async () => {
+  it("authenticates an Appwrite user", async () => {
       const result = await authenticateAppwriteUser(
         "AbuNizar",
         "strong-test-secret"
@@ -127,9 +125,7 @@ describe("Appwrite authentication adapter", () => {
     }
   );
 
-  it(
-    "rejects an Appwrite session whose user ID does not match the profile",
-    async () => {
+  it("rejects a mismatched Appwrite identity", async () => {
       mocks.get.mockResolvedValueOnce({ $id: "different-user-id" });
 
       const result = await authenticateAppwriteUser(
@@ -145,9 +141,7 @@ describe("Appwrite authentication adapter", () => {
     }
   );
 
-  it(
-    "resolves the profile only after validating the signed Appwrite session",
-    async () => {
+  it("validates the signed Appwrite session", async () => {
       const request = {
         headers: {
           cookie: await createSessionCookie("session-version-1"),
@@ -163,9 +157,7 @@ describe("Appwrite authentication adapter", () => {
     }
   );
 
-  it(
-    "rejects an Appwrite session after the profile session version changes",
-    async () => {
+  it("rejects stale session versions", async () => {
       const request = {
         headers: {
           cookie: await createSessionCookie("stale-session-version"),
@@ -178,9 +170,7 @@ describe("Appwrite authentication adapter", () => {
     }
   );
 
-  it(
-    "sets an HttpOnly secure cookie using the signed Appwrite session expiry",
-    async () => {
+  it("sets secure session cookies", async () => {
       const response = { setHeader: vi.fn() } as never;
 
       await setAppwriteSessionCookie(response, session as never, {
@@ -200,7 +190,7 @@ describe("Appwrite authentication adapter", () => {
     }
   );
 
-  it("clears the current Appwrite session cookie", () => {
+  it("clears the session cookie", () => {
     const response = { setHeader: vi.fn() } as never;
 
     clearAppwriteSessionCookie(response);
