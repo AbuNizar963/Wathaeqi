@@ -1009,9 +1009,7 @@ export async function addOrganizationMembership(input: {
           updatedAt: now,
         },
       });
-      return mapMembership(
-        appwriteRowData(created as AppwriteOrganizationRow)
-      );
+      return mapMembership(appwriteRowData(created as AppwriteOrganizationRow));
     } catch (error) {
       const code =
         error && typeof error === "object" && "code" in error
@@ -1019,13 +1017,10 @@ export async function addOrganizationMembership(input: {
           : 0;
       if (code !== 409 || attempt === 2) throw error;
 
-      const racedRows = await listOrganizationRows(
-        "organization_memberships",
-        [
-          Query.equal("organizationId", input.organizationId),
-          Query.equal("userId", input.userId),
-        ]
-      );
+      const racedRows = await listOrganizationRows("organization_memberships", [
+        Query.equal("organizationId", input.organizationId),
+        Query.equal("userId", input.userId),
+      ]);
       if (racedRows[0]) {
         const updated = await tables.updateRow({
           databaseId: getAppwriteDatabaseId(),
