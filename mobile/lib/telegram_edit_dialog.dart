@@ -131,7 +131,7 @@ class _TelegramEditDialogState extends State<TelegramEditDialog> {
         recipient.length < 2 ||
         body.length < 3) {
       setState(
-        () => _error = 'أكمل رقم البرقية والموضوع والجهة والنص بشكل صحيح.',
+        () => _error = 'أكمل رقم الوثيقة والموضوع والجهة والنص بشكل صحيح.',
       );
       return;
     }
@@ -186,7 +186,7 @@ class _TelegramEditDialogState extends State<TelegramEditDialog> {
     textDirection: TextDirection.rtl,
     child: AlertDialog(
       title: Text(
-        'تعديل بيانات البرقية',
+        'تعديل بيانات الوثيقة',
         style: TextStyle(
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.w900,
@@ -207,7 +207,7 @@ class _TelegramEditDialogState extends State<TelegramEditDialog> {
                 autocorrect: false,
                 enableSuggestions: false,
                 decoration: const InputDecoration(
-                  labelText: 'رقم البرقية الظاهر',
+                  labelText: 'رقم الوثيقة الظاهر',
                   helperText: 'الرقم الداخلي الرسمي لا يتغير.',
                 ),
               ),
@@ -220,7 +220,7 @@ class _TelegramEditDialogState extends State<TelegramEditDialog> {
                     const SpellCheckConfiguration.disabled(),
                 autocorrect: false,
                 enableSuggestions: false,
-                decoration: const InputDecoration(labelText: 'موضوع البرقية'),
+                decoration: const InputDecoration(labelText: 'موضوع الوثيقة'),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -326,7 +326,7 @@ class _TelegramEditDialogState extends State<TelegramEditDialog> {
                 autocorrect: false,
                 enableSuggestions: false,
                 decoration: const InputDecoration(
-                  labelText: 'نص البرقية',
+                  labelText: 'نص الوثيقة',
                   alignLabelWithHint: true,
                 ),
               ),
