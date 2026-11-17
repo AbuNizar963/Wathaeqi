@@ -5,7 +5,7 @@ const telegramExcelHeaders = [
   'ساعة الأرسال أو الوصول',
   'التاريخ',
   'الجهة المرسلة واسم المرسل',
-  'نـــــــــــص البرقيــــــــــــــــــــــــة',
+  'نـــــــــــص الوثيقــــــــــــــــــــــــة',
   'الجهة المرسلة واسم المستلم',
   'توقيع المرسل أو المستلم',
   'ملاحظات',
@@ -214,11 +214,11 @@ Map<String, int> _headerIndexes(List<dynamic> header) {
   }
 
   return {
-    'serial': find(['الرقم المتسلسل', 'رقم البرقية', 'الرقم']),
+    'serial': find(['الرقم المتسلسل', 'رقم الوثيقة', 'رقم البرقية', 'الرقم']),
     'time': find(['ساعة الأرسال أو الوصول', 'ساعة الإرسال أو الوصول', 'الوقت']),
     'sender': find(['الجهة المرسلة واسم المرسل', 'الجهة والمرسل', 'المرسل']),
-    'date': find(['تاريخ البرقية', 'تاريخ']),
-    'body': find(['نص البرقية', 'نص البرقية الرسمي', 'نص']),
+    'date': find(['تاريخ الوثيقة', 'تاريخ البرقية', 'تاريخ']),
+    'body': find(['نص الوثيقة', 'نص البرقية', 'نص البرقية الرسمي', 'نص']),
     'recipient': find([
       'الجهة المرسلة واسم المستلم',
       'الجهة والمستلم',
@@ -240,7 +240,7 @@ List<CellValue> _excelRow(List<String> values) =>
 
 List<int> buildTelegramWorkbook(
   List<Map<String, String>> rows, {
-  String fileName = 'سجل-البرقيات.xlsx',
+  String fileName = 'سجل-الوثائق.xlsx',
 }) {
   final workbook = Excel.createExcel();
   if (workbook.tables.containsKey('Sheet1')) workbook.delete('Sheet1');
@@ -428,7 +428,7 @@ TelegramExcelParseResult parseTelegramWorkbook(List<int> bytes) {
           TelegramExcelIssue(
             rowNumber: rowNumber,
             sheetName: sheetName,
-            reason: 'نص البرقية فارغ أو أقصر من الحد الأدنى.',
+            reason: 'نص الوثيقة فارغ أو أقصر من الحد الأدنى.',
             value: body,
           ),
         );
@@ -479,12 +479,12 @@ TelegramExcelParseResult parseTelegramWorkbook(List<int> bytes) {
 
   if (rows.isEmpty) {
     throw const FormatException(
-      'لم يعثر النظام على صفوف برقيات صالحة. تأكد من وجود عمود نص البرقية وعدم رفع قالب فارغ.',
+      'لم يعثر النظام على صفوف وثائق صالحة. تأكد من وجود عمود نص الوثيقة وعدم رفع قالب فارغ.',
     );
   }
   if (rows.length > 1000) {
     throw const FormatException(
-      'الحد الأقصى للاستيراد في العملية الواحدة هو 1000 برقية.',
+      'الحد الأقصى للاستيراد في العملية الواحدة هو 1000 وثيقة.',
     );
   }
   return TelegramExcelParseResult(
