@@ -25,17 +25,38 @@ export default async function apiHealth(request: Request): Promise<Response> {
     env?.get("APPWRITE_PROJECT_ID") ??
     env?.get("VITE_APPWRITE_PROJECT_ID") ??
     "";
+  const apiKey = env?.get("APPWRITE_API_KEY") ?? "";
+  const databaseId =
+    env?.get("APPWRITE_DATABASE_ID") ??
+    env?.get("VITE_APPWRITE_DATABASE_ID") ??
+    "";
+  const bucketId =
+    env?.get("APPWRITE_BUCKET_ID") ??
+    env?.get("VITE_APPWRITE_ATTACHMENTS_BUCKET_ID") ??
+    "";
 
   let validEndpoint = false;
   try {
     const parsed = new URL(endpoint);
     validEndpoint =
-      parsed.protocol === "https:" && parsed.pathname.startsWith("/v1");
+      parsed.protocol === "https:" &&
+      Boolean(parsed.hostname) &&
+      parsed.pathname.replace(/\/+$/, "") === "/v1" &&
+      !parsed.username &&
+      !parsed.password &&
+      !parsed.search &&
+      !parsed.hash;
   } catch {
     validEndpoint = false;
   }
 
-  const appwriteConfigured = validEndpoint && projectId.trim().length > 0;
+  // This checks configuration presence, not key scopes or API reachability.
+  const appwriteConfigured =
+    validEndpoint &&
+    projectId.trim().length > 0 &&
+    apiKey.trim().length > 0 &&
+    databaseId.trim().length > 0 &&
+    bucketId.trim().length > 0;
 
   return Response.json(
     {

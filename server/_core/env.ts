@@ -9,6 +9,22 @@ export const ENV = {
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
   supabaseStorageBucket:
     process.env.SUPABASE_STORAGE_BUCKET ?? "telegram-files",
+  // Server-only Appwrite credentials. Never add VITE_ fallbacks for secrets.
+  appwriteEndpoint:
+    process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || "",
+  appwriteProjectId:
+    process.env.APPWRITE_PROJECT_ID ||
+    process.env.VITE_APPWRITE_PROJECT_ID ||
+    "",
+  appwriteApiKey: process.env.APPWRITE_API_KEY ?? "",
+  appwriteDatabaseId:
+    process.env.APPWRITE_DATABASE_ID ||
+    process.env.VITE_APPWRITE_DATABASE_ID ||
+    "",
+  appwriteBucketId:
+    process.env.APPWRITE_BUCKET_ID ||
+    process.env.VITE_APPWRITE_ATTACHMENTS_BUCKET_ID ||
+    "",
   adminEmails: splitCsv(process.env.ADMIN_EMAILS),
   authSessionSecret: process.env.AUTH_SESSION_SECRET ?? "",
   ownerUsername: process.env.OWNER_USERNAME ?? "AbuNizar",
