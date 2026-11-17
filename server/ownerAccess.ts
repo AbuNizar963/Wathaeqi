@@ -1,4 +1,3 @@
-import { ENV } from "./_core/env";
 import { getAppwriteProfileById } from "./_core/appwriteAuth";
 
 export interface OwnerIdentity {
