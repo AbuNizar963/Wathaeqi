@@ -174,7 +174,7 @@ void main() {
       expect(html, contains('<path d="M'));
       expect(html, contains('اسم المسؤول'));
       expect(html, contains('<h2 class="body-heading">نص الوثيقة</h2>'));
-      expect(html, isNot(contains('نص الوثيقة')));
+      expect(html, isNot(contains('نص البرقية')));
     },
   );
 
