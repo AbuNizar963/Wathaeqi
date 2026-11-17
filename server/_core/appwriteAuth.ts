@@ -10,6 +10,7 @@ import {
 } from "./appwrite";
 import { ENV } from "./env";
 
+// Keep the browser cookie name stable while changing its contents to an Appwrite-backed signed session.
 export const APPWRITE_SESSION_COOKIE = "police_telegrams_session";
 const USERS_TABLE_ID = "users";
 
