@@ -38,6 +38,9 @@ jobs:
             exit 1
           fi
 
+      - name: Show organization formatter diff
+        run: pnpm exec prettier server/features/organizations/organization.ts | diff -u server/features/organizations/organization.ts - || true
+
       - name: Check formatting
         run: pnpm lint
 
