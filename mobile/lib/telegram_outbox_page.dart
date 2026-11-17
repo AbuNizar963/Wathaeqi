@@ -75,9 +75,9 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('حذف البرقية المحلية؟'),
+        title: const Text('حذف الوثيقة المحلية؟'),
         content: const Text(
-          'لن تُرسل هذه البرقية إلى الخادم بعد حذفها من صندوق المزامنة. هذا الإجراء لا يمكن التراجع عنه.',
+          'لن تُرسل هذه الوثيقة إلى الخادم بعد حذفها من صندوق المزامنة. هذا الإجراء لا يمكن التراجع عنه.',
         ),
         actions: [
           TextButton(
@@ -146,7 +146,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              '${entries.length} برقية محفوظة على الجهاز بانتظار الإرسال. ستبقى آمنة حتى عودة الاتصال.',
+                              '${entries.length} وثيقة محفوظة على الجهاز بانتظار الإرسال. ستبقى آمنة حتى عودة الاتصال.',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -186,8 +186,8 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
               Expanded(
                 child: Text(
                   entry.isUpdate
-                      ? 'تعديل: ${entry.payload['subject'] ?? 'برقية'}'
-                      : '${entry.payload['subject'] ?? 'برقية محفوظة محليًا'}',
+                      ? 'تعديل: ${entry.payload['subject'] ?? 'وثيقة'}'
+                      : '${entry.payload['subject'] ?? 'وثيقة محفوظة محليًا'}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w900),
@@ -245,7 +245,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
           ),
           const SizedBox(height: 6),
           const Text(
-            'كل البرقيات محفوظة على الخادم، ولا توجد عمليات محلية بانتظار الإرسال.',
+            'كل الوثائق محفوظة على الخادم، ولا توجد عمليات محلية بانتظار الإرسال.',
             textAlign: TextAlign.center,
           ),
           if (error != null) ...[
