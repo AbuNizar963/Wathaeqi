@@ -12,12 +12,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
-import 'package:wathaeqi/api.dart';
-import 'package:wathaeqi/features/organizations/organization_logo_resolution.dart';
-import 'package:wathaeqi/telegram_display.dart';
-import 'package:wathaeqi/features/reports/telegram_report_labels.dart';
-import 'package:wathaeqi/features/notifications/toast.dart';
-import 'package:wathaeqi/telegram_actions.dart';
+import 'package:police_telegrams/api.dart';
+import 'package:police_telegrams/features/organizations/organization_logo_resolution.dart';
+import 'package:police_telegrams/telegram_display.dart';
+import 'package:police_telegrams/features/reports/telegram_report_labels.dart';
+import 'package:police_telegrams/features/notifications/toast.dart';
+import 'package:police_telegrams/telegram_actions.dart';
 
 const _documentPageWidth = 794;
 const _documentPageHeight = 1123;
