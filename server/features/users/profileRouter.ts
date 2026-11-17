@@ -1,22 +1,17 @@
-import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { publicUser } from "../../_core/auth";
 import {
-  hashPassword,
-  publicUser,
-  setAuthenticatedSession,
-  verifyPassword,
-} from "../../_core/auth";
+  AppwriteInvalidCurrentPasswordError,
+  changeAppwritePassword,
+  dismissAppwritePasswordChange,
+} from "../../_core/appwriteAuth";
 import {
   authenticatedProcedure,
   protectedProcedure,
   router,
 } from "../../_core/trpc";
-import {
-  dismissTemporaryPasswordChange,
-  getUserById,
-  updateUserPassword,
-  updateUserProfile,
-} from "../../db";
+import { updateUserProfile } from "../../db";
 
 export const profileRouter = router({
   get: authenticatedProcedure.query(({ ctx }) => ctx.user),
@@ -59,49 +54,36 @@ export const profileRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const user = await getUserById(ctx.user.id);
-      if (!user?.passwordHash) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message:
-            "هذا الحساب لا يستخدم كلمة مرور محلية؛ غيّر كلمة المرور من مزود تسجيل الدخول.",
-        });
-      }
-      const valid = await verifyPassword(
-        input.currentPassword,
-        user.passwordHash
-      );
-      if (!valid) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "كلمة المرور الحالية غير صحيحة",
-        });
-      }
       if (input.currentPassword === input.newPassword) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "اختر كلمة مرور مختلفة عن الحالية",
         });
       }
-      const sessionVersion = await updateUserPassword(
-        ctx.user.id,
-        await hashPassword(input.newPassword)
-      );
 
-      // The database rotation invalidates every old JWT. Re-issue a session
-      // only for the device that completed this password change.
-      await setAuthenticatedSession(ctx.res, {
-        id: user.id,
-        role: user.role,
-        authUserId: user.authUserId,
-        sessionVersion,
-      });
+      try {
+        await changeAppwritePassword(
+          ctx.req,
+          ctx.res,
+          input.currentPassword,
+          input.newPassword
+        );
+      } catch (error) {
+        if (error instanceof AppwriteInvalidCurrentPasswordError) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "كلمة المرور الحالية غير صحيحة",
+          });
+        }
+        throw error;
+      }
+
       return { success: true };
     }),
 
   dismissTemporaryPasswordChange: authenticatedProcedure.mutation(
     async ({ ctx }) => {
-      await dismissTemporaryPasswordChange(ctx.user.id);
+      await dismissAppwritePasswordChange(ctx.user.id);
       return { success: true };
     }
   ),
