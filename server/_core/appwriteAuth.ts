@@ -164,10 +164,22 @@ export async function authenticateAppwriteUser(
   }
 
   const account = new Account(getAppwriteSessionClient());
-  const session = await account.createEmailPasswordSession({
-    email: profile.user.email,
-    password,
-  });
+  let session: AppwriteSession;
+  try {
+    session = await account.createEmailPasswordSession({
+      email: profile.user.email,
+      password,
+    });
+  } catch (error) {
+    const appwriteError = asRecord(error);
+    if (
+      appwriteError?.code === 401 ||
+      appwriteError?.type === "user_invalid_credentials"
+    ) {
+      return null;
+    }
+    throw error;
+  }
 
   try {
     const authenticatedAccount = await new Account(
@@ -265,4 +277,22 @@ export function clearAppwriteSessionCookie(res: Response): void {
     "Set-Cookie",
     `${serializeCookie("", 0)}; Expires=${new Date(0).toUTCString()}`
   );
+}
+
+export async function verifyAppwriteUserPassword(
+  username: string,
+  password: string
+): Promise<boolean> {
+  const authenticated = await authenticateAppwriteUser(username, password);
+  if (!authenticated) return false;
+
+  try {
+    await new Account(
+      getAppwriteSessionClient(authenticated.session.secret)
+    ).deleteSession({ sessionId: "current" });
+  } catch {
+    return false;
+  }
+
+  return true;
 }
