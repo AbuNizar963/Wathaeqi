@@ -456,6 +456,9 @@ importers:
       esbuild:
         specifier: '>=0.25.0'
         version: 0.28.2
+      picomatch:
+        specifier: 4.0.7
+        version: 4.0.7(patch_hash=7b567fd2e7549ba34ac3c8b67c2357560c88fa80671ad3e3e50f1d7f02e51a09)
       playwright-core:
         specifier: 1.64.1
         version: 1.64.1
