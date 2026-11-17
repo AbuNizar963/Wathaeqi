@@ -658,7 +658,7 @@ class _OrganizationFormDialogState extends State<_OrganizationFormDialog> {
                   DropdownButtonFormField<String>(
                     initialValue: _destinationId,
                     decoration: const InputDecoration(
-                      labelText: 'جهة استلام البرقيات (اختياري)',
+                      labelText: 'جهة استلام الوثائق (اختياري)',
                     ),
                     items: [
                       const DropdownMenuItem(
