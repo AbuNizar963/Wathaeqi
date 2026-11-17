@@ -73,7 +73,9 @@ describe("platform document settings Appwrite persistence", () => {
       headerDividerColor: "#ABCDEF",
       showVerificationQr: false,
     };
-    await expect(updatePlatformDocumentSettings(values, 7)).resolves.toMatchObject({
+    await expect(
+      updatePlatformDocumentSettings(values, 7)
+    ).resolves.toMatchObject({
       ...values,
       updatedAt: expect.any(String),
     });
@@ -90,7 +92,10 @@ describe("platform document settings Appwrite persistence", () => {
 
   it("creates the singleton on the first owner save", async () => {
     mocks.listRows.mockResolvedValue({ rows: [] });
-    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 1);
+    await updatePlatformDocumentSettings(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      1
+    );
     expect(mocks.createRow).toHaveBeenCalledWith(
       expect.objectContaining({
         databaseId: "wathaeqi-db",
@@ -105,7 +110,9 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("surfaces Appwrite read errors rather than pretending defaults were loaded", async () => {
+  it(
+    "surfaces Appwrite read errors rather than pretending defaults were loaded",
+    async () => {
     mocks.listRows.mockRejectedValue(new Error("permission denied"));
     await expect(getPlatformDocumentSettings()).rejects.toThrow(
       "permission denied"
@@ -118,7 +125,10 @@ describe("platform document settings Appwrite persistence", () => {
       .mockResolvedValueOnce({ rows: [existingRow] });
     mocks.createRow.mockRejectedValueOnce({ code: 409, message: "Conflict" });
 
-    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 3);
+    await updatePlatformDocumentSettings(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      3
+    );
 
     expect(mocks.createRow).toHaveBeenCalledOnce();
     expect(mocks.updateRow).toHaveBeenCalledWith(
