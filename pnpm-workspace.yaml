@@ -3,6 +3,7 @@ packages:
 
 patchedDependencies:
   wouter@3.7.1: patches/wouter@3.7.1.patch
+  picomatch@4.0.7: patches/picomatch@4.0.7.patch
 
 overrides:
   tailwindcss>nanoid: 3.3.7
