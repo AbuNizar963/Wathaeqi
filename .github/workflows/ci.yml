@@ -31,6 +31,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inspect Document Studio formatting
+        run: |
+          pnpm exec prettier --write \
+            server/features/document-studio/documentStudioRepository.ts \
+            server/features/document-studio/documentStudioRouter.ts \
+            server/features/document-studio/documentStudioRouter.test.ts \
+            shared/documentStudio.ts \
+            shared/documentStudio.test.ts
+          git --no-pager diff -- \
+            server/features/document-studio/documentStudioRepository.ts \
+            server/features/document-studio/documentStudioRouter.ts \
+            server/features/document-studio/documentStudioRouter.test.ts \
+            shared/documentStudio.ts \
+            shared/documentStudio.test.ts
+
+
       - name: Reject legacy platform dependencies
         run: |
           if git grep -niE 'vite-plugin-manus-runtime|BUILT_IN_FORGE|VITE_FRONTEND_FORGE|OAUTH_SERVER_URL|VITE_OAUTH_PORTAL_URL|OWNER_OPEN_ID|MANUS_|__MANUS__|manus' -- ':!pnpm-lock.yaml' ':!.github/workflows/ci.yml'; then
