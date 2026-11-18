@@ -2060,62 +2060,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Widget _urgentAlert() {
-    final count = stats['urgentAwaitingReceipt'] ?? 0;
-    final numericCount = count is num
-        ? count.toInt()
-        : int.tryParse('$count') ?? 0;
-    if (numericCount <= 0) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-      decoration: BoxDecoration(
-        color: context.appDangerContainer,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.appBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: context.appDanger,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              LucideIcons.siren,
-              color: Theme.of(context).colorScheme.onError,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'تنبيه أمني: توجد $numericCount برقية عاجلة موجّهة إلى الجهة الحالية بانتظار الاستلام.',
-              style: TextStyle(
-                color: context.appDangerText,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                section = 0;
-                priorityFilter = 'urgent';
-                telegramPage = 1;
-              });
-              refresh(showLoading: false);
-            },
-            child: const Text('عرض'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _outboxAlert() {
     final colors = Theme.of(context).colorScheme;
     final Color accent = switch (_syncPhase) {
@@ -3172,7 +3116,6 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         _swipeableWelcomeOutboxPanel(),
         _dashboardActions(),
-        _urgentAlert(),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {
