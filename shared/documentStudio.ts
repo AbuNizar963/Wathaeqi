@@ -47,6 +47,7 @@ export interface OfficialDocument {
   templateId: string | null;
   templateRevision: number | null;
   title: string;
+  category: string;
   subject: string;
   /** Canonical editor document snapshot. */
   content: Record<string, unknown>;
