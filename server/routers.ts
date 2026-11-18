@@ -762,7 +762,8 @@ export const appRouter = router({
         if (!authenticated) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "تم إنشاء الحساب، لكن تعذر بدء الجلسة. سجّل الدخول من الصفحة الرئيسية",
+            message:
+              "تم إنشاء الحساب، لكن تعذر بدء الجلسة. سجّل الدخول من الصفحة الرئيسية",
           });
         }
 
