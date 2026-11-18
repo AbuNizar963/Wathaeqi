@@ -4,6 +4,7 @@ import type { User } from "../../../drizzle/schema";
 import {
   getAppwriteAdminClient,
   getAppwriteDatabaseId,
+  getAppwriteSessionClient,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
@@ -92,7 +93,7 @@ export async function createInitialOwnerProfile(input: {
     password: input.password,
   });
 
-  const sessionAccount = new Account(getAppwriteAdminClient());
+  const sessionAccount = new Account(getAppwriteSessionClient());
   const session = await sessionAccount.createEmailPasswordSession({
     email: owner.email,
     password: input.password,
