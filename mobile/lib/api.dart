@@ -382,7 +382,8 @@ class PoliceApi {
       throw const FormatException('بيانات الاتصال بمخزن Appwrite غير صالحة');
     }
 
-    const chunkSize = 4 * 1024 * 1024;
+    const chunkSize = 5 * 1024 * 1024;
+    final chunkedUpload = bytes.length > chunkSize;
     for (var offset = 0; offset < bytes.length; offset += chunkSize) {
       final endExclusive =
           (offset + chunkSize < bytes.length) ? offset + chunkSize : bytes.length;
@@ -391,8 +392,9 @@ class PoliceApi {
       storageRequest.headers.addAll({
         'X-Appwrite-Project': projectId,
         'X-Appwrite-JWT': uploadJwt,
-        'Content-Range':
-            'bytes $offset-${endExclusive - 1}/${bytes.length}',
+        if (chunkedUpload)
+          'Content-Range':
+              'bytes $offset-${endExclusive - 1}/${bytes.length}',
         if (offset > 0) 'X-Appwrite-ID': fileId,
       });
       storageRequest.fields['permissions'] = '[]';
