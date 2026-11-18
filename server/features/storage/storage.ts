@@ -15,6 +15,30 @@ export function validateStorageProviderUrl(
   value: string,
   isProduction = ENV.isProduction
 ): string {
+  if (value.startsWith("/api/telegrams/")) {
+    let internalUrl: URL;
+    try {
+      internalUrl = new URL(value, "https://same-origin.invalid");
+    } catch {
+      throw new Error("Storage provider returned an invalid internal URL");
+    }
+
+    if (
+      internalUrl.origin !== "https://same-origin.invalid" ||
+      !/^\/api\/telegrams\/[1-9]\d*\/attachments\/upload$/.test(
+        internalUrl.pathname
+      ) ||
+      !internalUrl.searchParams.get("key") ||
+      !internalUrl.searchParams.get("fileName") ||
+      !internalUrl.searchParams.get("contentType") ||
+      !internalUrl.searchParams.get("sizeBytes")
+    ) {
+      throw new Error("Storage provider returned an unsafe internal URL");
+    }
+
+    return `${internalUrl.pathname}${internalUrl.search}`;
+  }
+
   let url: URL;
   try {
     url = new URL(value);
@@ -218,7 +242,8 @@ export function organizationAttachmentKeyMatches(
 export async function storageCreateOrganizationAttachmentUploadUrl(
   organizationId: string,
   telegramId: number,
-  fileName: string
+  fileName: string,
+  metadata: { contentType: AllowedAttachmentType; sizeBytes: number }
 ): Promise<{ key: string; uploadUrl: string }> {
   const safeOrganizationId = organizationId.trim();
   if (
@@ -232,7 +257,11 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
   const safeFileName = sanitizeFileName(fileName);
   const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
   const uploadUrl = validateStorageProviderUrl(
-    await getStorageProvider().createSignedUploadUrl(key)
+    await getStorageProvider().createSignedUploadUrl(key, {
+      fileName: safeFileName,
+      contentType: metadata.contentType,
+      sizeBytes: metadata.sizeBytes,
+    })
   );
   return { key, uploadUrl };
 }
@@ -250,6 +279,38 @@ export async function storageGetObjectInfo(
     throw new StorageAccessDeniedError();
   }
   return getStorageProvider().getObjectInfo(key);
+}
+
+export async function storagePutOrganizationAttachmentAtKey(
+  organizationId: string,
+  telegramId: number,
+  key: string,
+  fileName: string,
+  data: Buffer | Uint8Array | string,
+  contentType: AllowedAttachmentType
+): Promise<{ key: string; url: string }> {
+  const safeOrganizationId = organizationId.trim();
+  const safeFileName = sanitizeFileName(fileName);
+  const keyParts = parseOrganizationAttachmentKey(key);
+  if (
+    !UUID_PATTERN.test(safeOrganizationId) ||
+    !Number.isSafeInteger(telegramId) ||
+    telegramId <= 0 ||
+    !keyParts ||
+    keyParts.organizationId !== safeOrganizationId ||
+    keyParts.telegramId !== telegramId ||
+    key.split("/").pop()?.slice(37) !== safeFileName
+  ) {
+    throw new StorageAccessDeniedError();
+  }
+
+  const body = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
+  await getStorageProvider().upload(key, body, {
+    contentType,
+    cacheControl: "3600",
+  });
+
+  return { key, url: storageStableUrl(key) };
 }
 
 export async function storagePutOrganizationAttachment(
@@ -270,14 +331,14 @@ export async function storagePutOrganizationAttachment(
 
   const safeFileName = sanitizeFileName(fileName);
   const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  const body = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
-
-  await getStorageProvider().upload(key, body, {
-    contentType,
-    cacheControl: "3600",
-  });
-
-  return { key, url: storageStableUrl(key) };
+  return storagePutOrganizationAttachmentAtKey(
+    safeOrganizationId,
+    telegramId,
+    key,
+    safeFileName,
+    data,
+    contentType
+  );
 }
 
 export async function storageDelete(key: string): Promise<void> {
