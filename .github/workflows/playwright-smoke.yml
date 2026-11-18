@@ -70,8 +70,6 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
 
-      - name: Verify Netlify Deploy Preview API routes
-        if: github.event_name == 'pull_request'
-        run: node scripts/netlify-preview-smoke.mjs
-        env:
-          NETLIFY_PREVIEW_URL: https://deploy-preview-${{ github.event.pull_request.number }}--wathaeqi.netlify.app
+      # API integration smoke tests will target the Appwrite Functions API
+      # once the owner-authentication endpoint is deployed. Do not probe the
+      # retired Netlify Deploy Preview URL from this workflow.
