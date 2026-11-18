@@ -122,3 +122,99 @@ describe("Document Studio Appwrite content codecs", () => {
     expect(restored).toEqual(document);
   });
 });
+
+
+describe("Document Studio Appwrite content codecs", () => {
+  it("round-trips template editor content and versioned metadata", async () => {
+    const {
+      decodeTemplateStorageContent,
+      encodeTemplateStorageContent,
+    } = await import("./documentStudio");
+    const content = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "نموذج" }] }],
+    };
+    const stored = encodeTemplateStorageContent({
+      content,
+      description: "نموذج إداري",
+      fields,
+      revision: 4,
+      isActive: true,
+    });
+    expect(decodeTemplateStorageContent(stored)).toMatchObject({
+      content,
+      description: "نموذج إداري",
+      fields,
+      revision: 4,
+      isActive: true,
+    });
+  });
+
+  it("preserves legacy template HTML without rewriting it", async () => {
+    const { decodeTemplateStorageContent } = await import("./documentStudio");
+    const legacyHtml = "<p>وثيقة قديمة</p>";
+    expect(decodeTemplateStorageContent(legacyHtml).content).toEqual({
+      type: "legacy-html",
+      html: legacyHtml,
+    });
+  });
+
+  it("round-trips document snapshots and issue metadata", async () => {
+    const {
+      decodeOfficialDocumentStorageContent,
+      encodeOfficialDocumentStorageContent,
+    } = await import("./documentStudio");
+    const content = {
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: "قرار" }] }],
+    };
+    const stored = encodeOfficialDocumentStorageContent({
+      content,
+      organizationId: "org-1",
+      templateFieldsSnapshot: fields,
+      subject: "موضوع الوثيقة",
+      fieldValues: { employee_name: "أحمد" },
+      serialNumber: 17,
+      serialCode: "DOC-00017",
+      documentDate: "2026-11-18T00:00:00.000Z",
+      status: "issued",
+      templateId: "template-1",
+      templateRevision: 4,
+      issuedAt: "2026-11-18T10:00:00.000Z",
+      archivedAt: null,
+    });
+    expect(
+      decodeOfficialDocumentStorageContent(
+        stored,
+        "2026-11-18T00:00:00.000Z"
+      )
+    ).toMatchObject({
+      content,
+      organizationId: "org-1",
+      templateFieldsSnapshot: fields,
+      subject: "موضوع الوثيقة",
+      fieldValues: { employee_name: "أحمد" },
+      serialNumber: 17,
+      serialCode: "DOC-00017",
+      status: "issued",
+      templateId: "template-1",
+      templateRevision: 4,
+      issuedAt: "2026-11-18T10:00:00.000Z",
+      archivedAt: null,
+    });
+  });
+
+  it("preserves legacy document HTML without rewriting it", async () => {
+    const { decodeOfficialDocumentStorageContent } = await import("./documentStudio");
+    const legacyHtml = "<div>وثيقة محفوظة</div>";
+    expect(
+      decodeOfficialDocumentStorageContent(
+        legacyHtml,
+        "2026-11-18T00:00:00.000Z"
+      ).content
+    ).toEqual({
+      type: "legacy-html",
+      html: legacyHtml,
+    });
+  });
+});
