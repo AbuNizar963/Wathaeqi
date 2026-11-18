@@ -660,7 +660,6 @@ export default function Home() {
       getQueryKey(trpc.telegrams.list),
       getQueryKey(trpc.telegrams.get),
       getQueryKey(trpc.telegrams.attachments),
-      getQueryKey(trpc.telegrams.incomingRoutes),
       getQueryKey(trpc.reports.telegrams),
       getQueryKey(trpc.dashboard.stats),
       getQueryKey(trpc.organizations.pendingApprovals),
@@ -3040,69 +3039,6 @@ function TelegramDetail({
     },
     onError: error => toast.error(error.message || "تعذر تغيير حالة البرقية"),
   });
-  const [routeTarget, setRouteTarget] = useState("");
-  const [routeNote, setRouteNote] = useState("");
-  const routeableTargets = routingDirectory.filter(
-    target => target.isSelectable
-  );
-  const routeTelegram = trpc.telegrams.route.useMutation({
-    onSuccess: async route => {
-      toast.success(
-        route.approvalStatus === "pending"
-          ? "تم إرسال طلب الإحالة إلى قيادة المحافظة للموافقة"
-          : "تمت إحالة البرقية إلى الوحدة الشرطية"
-      );
-      await Promise.all([
-        utils.telegrams.get.invalidate({ id: telegram.id }),
-        utils.telegrams.list.invalidate(),
-      ]);
-      setRouteTarget("");
-      setRouteNote("");
-    },
-    onError: error => toast.error(error.message || "تعذر إحالة البرقية"),
-  });
-  const incomingRoutes = trpc.telegrams.incomingRoutes.useQuery({
-    telegramId: telegram.id,
-  });
-  const receiveRoute = trpc.telegrams.receiveRoute.useMutation({
-    onSuccess: async () => {
-      toast.success("تم تسجيل استلام الإحالة في السجل المعتمد");
-      await Promise.all([
-        utils.telegrams.incomingRoutes.invalidate({ telegramId: telegram.id }),
-        utils.telegrams.get.invalidate({ id: telegram.id }),
-        utils.telegrams.list.invalidate(),
-        utils.dashboard.stats.invalidate(),
-      ]);
-    },
-    onError: error => toast.error(error.message || "تعذر تسجيل استلام الإحالة"),
-  });
-  const decideRouteAsReceiver =
-    trpc.telegrams.decideRouteAsReceiver.useMutation({
-      onSuccess: async route => {
-        toast.success(
-          route.receiverDecisionStatus === "accepted"
-            ? "تم تأكيد استلام البرقية"
-            : "تم رفض استلام البرقية وتسجيل السبب"
-        );
-        await Promise.all([
-          utils.telegrams.incomingRoutes.invalidate({
-            telegramId: telegram.id,
-          }),
-          utils.telegrams.get.invalidate({ id: telegram.id }),
-          utils.telegrams.list.invalidate(),
-          utils.dashboard.stats.invalidate(),
-        ]);
-      },
-      onError: error =>
-        toast.error(error.message || "تعذر تسجيل قرار الاستلام"),
-    });
-  const uploadAttachment = trpc.telegrams.uploadAttachment.useMutation({
-    onSuccess: async () => {
-      toast.success("تم رفع المرفق وتسجيل بصمته في الخادم");
-      await utils.telegrams.attachments.invalidate({ telegramId: telegram.id });
-    },
-    onError: error => toast.error(error.message || "تعذر رفع المرفق"),
-  });
   const attachments = trpc.telegrams.attachments.useQuery({
     telegramId: telegram.id,
   });
@@ -4229,96 +4165,6 @@ function TelegramDetail({
           )}
         </div>
       )}
-      {incomingRoutes.data && incomingRoutes.data.length > 0 && (
-        <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3 print:hidden">
-          <p className="text-xs font-bold">سجل استلام الإحالات</p>
-          <div className="mt-2 grid gap-2">
-            {incomingRoutes.data.map(route => (
-              <div
-                key={route.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background px-3 py-2 text-xs"
-              >
-                <div>
-                  <p className="font-semibold">
-                    {route.status === "received"
-                      ? "تم تأكيد استلام الإحالة"
-                      : route.status === "rejected"
-                        ? "تم رفض استلام الإحالة"
-                        : "إحالة بانتظار تأكيد الجهة المستقبلة"}
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-muted-foreground">
-                    {route.status === "received" && route.receivedAt
-                      ? `وقت الاستلام: ${new Date(route.receivedAt).toLocaleString("ar-SY")}`
-                      : route.status === "rejected"
-                        ? `سبب الرفض: ${route.receiverDecisionReason ?? "غير محدد"}`
-                        : "يجب على الجهة المستقبلة تأكيد الاستلام أو رفضه بسبب موثق"}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2 text-[10px]">
-                    {route.routeSerialCode ? (
-                      <span className="rounded-md bg-primary/10 px-2 py-1 font-semibold text-primary">
-                        صادر الجهة المحيلة: {route.routeSerialCode}
-                      </span>
-                    ) : null}
-                    {route.incomingSerialCode ? (
-                      <span className="rounded-md bg-emerald-500/10 px-2 py-1 font-semibold text-emerald-700 dark:text-emerald-300">
-                        وارد الجهة المستقبلة: {route.incomingSerialCode}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                {route.status === "sent" && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={
-                        decideRouteAsReceiver.isPending ||
-                        receiveRoute.isPending
-                      }
-                      onClick={() => {
-                        if (window.confirm("تأكيد استلام هذه الإحالة؟")) {
-                          decideRouteAsReceiver.mutate({
-                            routeId: route.id,
-                            accepted: true,
-                            reason: null,
-                          });
-                        }
-                      }}
-                    >
-                      تأكيد الاستلام
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      disabled={
-                        decideRouteAsReceiver.isPending ||
-                        receiveRoute.isPending
-                      }
-                      onClick={() => {
-                        const reason = window
-                          .prompt("أدخل سبب رفض الاستلام (إلزامي):")
-                          ?.trim();
-                        if (!reason) {
-                          toast.error("سبب رفض الاستلام مطلوب");
-                          return;
-                        }
-                        decideRouteAsReceiver.mutate({
-                          routeId: route.id,
-                          accepted: false,
-                          reason,
-                        });
-                      }}
-                    >
-                      رفض الاستلام
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       {attachments.data && attachments.data.length > 0 && (
         <div className="mt-4 rounded-xl border bg-muted/20 p-3 print:hidden">
           <div className="flex items-center justify-between">
@@ -4755,53 +4601,7 @@ function TelegramDetail({
           )}
         </div>
       </div>
-      {routeableTargets.length > 0 &&
-        ["approved", "in_progress", "forwarded"].includes(telegram.status) && (
-          <div className="mt-4 rounded-xl border border-[#b49a55]/40 bg-[#fffaf0] p-3 dark:bg-[#2d281b] print:hidden">
-            <p className="text-xs font-bold text-[#7a5c1e]">
-              طلب إحالة عبر السلطة الأعلى
-            </p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-              <OrganizationTreePicker
-                options={routingDirectory}
-                value={routeTarget}
-                onValueChange={setRouteTarget}
-                placeholder="اختر الجهة المستلمة"
-                ariaLabel="اختيار الجهة المستلمة للإحالة"
-                className="h-10 text-xs"
-              />
-              <Input
-                value={routeNote}
-                onChange={event => setRouteNote(event.target.value)}
-                placeholder="ملاحظة الإحالة (اختياري)"
-                className="h-10 rounded-lg text-xs"
-              />
-              <Button
-                type="button"
-                disabled={!routeTarget || routeTelegram.isPending}
-                onClick={() =>
-                  routeTelegram.mutate({
-                    id: telegram.id,
-                    toOrganizationId: routeTarget,
-                    note: routeNote.trim() || null,
-                  })
-                }
-                className="h-10 rounded-lg bg-[#10233f] text-white hover:bg-[#18375f]"
-              >
-                {routeTelegram.isPending
-                  ? "جارٍ إرسال طلب الموافقة..."
-                  : "إرسال طلب الموافقة"}
-              </Button>
-            </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              تُعرض الجهات ضمن تسلسلها التنظيمي، ولا يمكن اختيار إلا الجهات
-              المرتبطة والمسموح بالإحالة إليها. يُحفظ المسار كاملًا في سجل
-              التدقيق.
-            </p>
-          </div>
-        )}
-      {isAdmin && editOpen && (
-        <TelegramEditModal
+      <TelegramEditModal
           telegram={telegram}
           pending={updateTelegram.isPending}
           close={() => setEditOpen(false)}
