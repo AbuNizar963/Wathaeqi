@@ -7,7 +7,9 @@ export default function HeaderActions() {
   const { preference, setThemePreference } = useTheme();
   const { user, logout } = useAuth();
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
     <div
