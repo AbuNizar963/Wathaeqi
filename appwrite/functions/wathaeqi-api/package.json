@@ -14,5 +14,11 @@
     "node-appwrite": "31.2.0",
     "superjson": "1.13.3",
     "zod": "4.6.7"
+  },
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --format=esm --outfile=build/main.js --tsconfig=../../../tsconfig.json"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }
