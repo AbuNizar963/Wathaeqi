@@ -93,7 +93,8 @@ export async function createInitialOwnerProfile(input: {
     password: input.password,
   });
 
-  const sessionAccount = new Account(getAppwriteSessionClient());
+  // Use the server API-key client so Appwrite includes the session secret for the secure cookie.
+  const sessionAccount = new Account(getAppwriteAdminClient());
   const session = await sessionAccount.createEmailPasswordSession({
     email: owner.email,
     password: input.password,
