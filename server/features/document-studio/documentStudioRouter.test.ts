@@ -15,10 +15,29 @@ const mocks = vi.hoisted(() => {
     createOfficialDocument: vi.fn(),
     updateOfficialDocument: vi.fn(),
     archiveOfficialDocument: vi.fn(),
+    issueOfficialDocument: vi.fn(),
   };
 });
 
 vi.mock("./documentStudioRepository", () => mocks);
+
+const dbMocks = vi.hoisted(() => ({
+  getUserOrganizationMembership: vi.fn(),
+  getOrganizationSettings: vi.fn(),
+  allocateOrganizationSerialNumber: vi.fn(),
+  writeAuditLog: vi.fn(),
+}));
+
+vi.mock("../../db", async importOriginal => {
+  const actual = await importOriginal<typeof import("../../db")>();
+  return {
+    ...actual,
+    getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
+    getOrganizationSettings: dbMocks.getOrganizationSettings,
+    allocateOrganizationSerialNumber: dbMocks.allocateOrganizationSerialNumber,
+    writeAuditLog: dbMocks.writeAuditLog,
+  };
+});
 
 import { appRouter } from "../../routers";
 
@@ -50,6 +69,8 @@ function context(authenticated = true): TrpcContext {
 const template = {
   id: "template-1",
   ownerId,
+  organizationId: "org-1",
+  templateFieldsSnapshot: [],
   title: "كتاب تكليف",
   description: null,
   category: "personnel",
@@ -103,6 +124,17 @@ const documentInput = {
 describe("document studio authorization and API", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    dbMocks.getUserOrganizationMembership.mockResolvedValue({
+      isActive: true,
+      organizationId: "org-1",
+    });
+    dbMocks.getOrganizationSettings.mockResolvedValue({
+      timezone: "UTC",
+      serialPrefix: "DOC",
+      numberSystem: "latin",
+    });
+    dbMocks.allocateOrganizationSerialNumber.mockResolvedValue(12);
+    dbMocks.writeAuditLog.mockResolvedValue(undefined);
     mocks.listDocumentTemplates.mockResolvedValue([template]);
     mocks.getDocumentTemplate.mockResolvedValue(template);
     mocks.createDocumentTemplate.mockResolvedValue(template);
@@ -121,6 +153,24 @@ describe("document studio authorization and API", () => {
       status: "archived",
       archivedAt: timestamp,
     });
+    mocks.issueOfficialDocument.mockResolvedValue({
+      ...document,
+      status: "issued",
+      serialNumber: 12,
+      serialCode: "DOC-2026-11-18-00012",
+      issuedAt: timestamp,
+    });
+    dbMocks.getUserOrganizationMembership.mockResolvedValue({
+      isActive: true,
+      organizationId: "org-1",
+    });
+    dbMocks.getOrganizationSettings.mockResolvedValue({
+      timezone: "UTC",
+      serialPrefix: "DOC",
+      numberSystem: "latin",
+    });
+    dbMocks.allocateOrganizationSerialNumber.mockResolvedValue(12);
+    dbMocks.writeAuditLog.mockResolvedValue(undefined);
   });
 
   it("scopes template and document lists to the authenticated Appwrite owner", async () => {
@@ -159,8 +209,10 @@ describe("document studio authorization and API", () => {
     );
     expect(mocks.createOfficialDocument).toHaveBeenCalledWith(ownerId, {
       ...documentInput,
+      organizationId: "org-1",
       templateId: template.id,
       templateRevision: template.revision,
+      templateFieldsSnapshot: template.fields,
     });
   });
 
@@ -215,6 +267,55 @@ describe("document studio authorization and API", () => {
         expectedUpdatedAt: timestamp,
       })
     ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("allocates an outgoing serial only when issuing an owned draft", async () => {
+    const caller = appRouter.createCaller(context());
+
+    const saved = await caller.documentStudio.issueDocument({
+      id: document.id,
+      expectedUpdatedAt: timestamp,
+    });
+
+    expect(dbMocks.allocateOrganizationSerialNumber).toHaveBeenCalledWith(
+      "org-1",
+      "outgoing"
+    );
+    expect(mocks.issueOfficialDocument).toHaveBeenCalledWith(
+      ownerId,
+      document.id,
+      timestamp,
+      expect.objectContaining({
+        organizationId: "org-1",
+        serialNumber: 12,
+        serialCode: expect.stringMatching(/^DOC-\d{4}-\d{2}-\d{2}-00012$/),
+      })
+    );
+    expect(dbMocks.writeAuditLog).toHaveBeenCalled();
+    expect(saved.status).toBe("issued");
+  });
+
+  it("validates required template values before creating a document", async () => {
+    mocks.getDocumentTemplate.mockResolvedValueOnce({
+      ...template,
+      fields: [
+        {
+          key: "employee_name",
+          label: "اسم الموظف",
+          type: "text",
+          required: true,
+        },
+      ],
+    });
+    const caller = appRouter.createCaller(context());
+
+    await expect(
+      caller.documentStudio.createDocument({
+        ...documentInput,
+        templateId: template.id,
+      })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
   it("archives without physically deleting the owned document", async () => {
