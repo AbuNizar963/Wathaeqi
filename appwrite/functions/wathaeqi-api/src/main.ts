@@ -41,7 +41,7 @@ function createCorsHeaders(origin: string | undefined): Headers {
     "Vary": "Origin",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-TRPC-Source",
+    "Access-Control-Allow-Headers": "Content-Type, X-TRPC-Source, trpc-accept, Authorization",
     "Access-Control-Max-Age": "600",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
