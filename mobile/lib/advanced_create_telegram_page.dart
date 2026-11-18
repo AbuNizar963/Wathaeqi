@@ -383,16 +383,16 @@ class _AdvancedCreateTelegramSheetState
       );
       final id = result is Map ? int.tryParse('${result['id']}') : null;
       final attachment = _attachment;
-      if (id != null && attachment != null) {
-        final attachmentName = attachment.name?.trim();
+      if (id != null && attachment != null && attachment.bytes != null) {
+        final attachmentName = attachment.name.trim();
         final extension = attachment.extension ?? 'bin';
         await widget.api.uploadTelegramAttachment(
           telegramId: id,
-          fileName: attachmentName == null || attachmentName.isEmpty
+          fileName: attachmentName.isEmpty
               ? 'attachment.$extension'
               : attachmentName,
           contentType: _contentType(extension),
-          bytes: attachment.bytes,
+          bytes: attachment.bytes!,
         );
       }
       if (mounted) Navigator.pop(context, true);
