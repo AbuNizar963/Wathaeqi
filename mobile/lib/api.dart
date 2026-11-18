@@ -345,8 +345,7 @@ class PoliceApi {
         }),
       ),
     );
-    if (prepareResponse.statusCode < 200 ||
-        prepareResponse.statusCode >= 300) {
+    if (prepareResponse.statusCode < 200 || prepareResponse.statusCode >= 300) {
       throw ApiException(
         prepareResponse.statusCode,
         _message(prepareResponse.body),
