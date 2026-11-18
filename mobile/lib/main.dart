@@ -1061,7 +1061,7 @@ class _DashboardPageState extends State<DashboardPage>
           _outboxSyncing = true;
           _syncPhase = 'syncing';
           _lastSyncMessage =
-              'جارٍ فحص صندوق الخروج وإرسال البرقيات بالترتيب...';
+              'جارٍ فحص التغييرات المحلية ومزامنتها بالترتيب...';
         }
       });
     }
@@ -1081,13 +1081,13 @@ class _DashboardPageState extends State<DashboardPage>
         } else if (result.synced > 0) {
           _syncPhase = pending == 0 ? 'success' : 'partial';
           _lastSyncMessage =
-              'تمت مزامنة ${result.synced} برقية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
+              'تمت مزامنة ${result.synced} عملية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
         } else if (pending == 0) {
           _syncPhase = 'idle';
           _lastSyncMessage = _idleOutboxMessage;
         } else {
           _syncPhase = 'waiting';
-          _lastSyncMessage = 'تنتظر $pending برقية عودة الاتصال للمزامنة.';
+          _lastSyncMessage = 'تنتظر $pending عملية عودة الاتصال للمزامنة.';
         }
       });
       if (_syncPhase == 'success') {
@@ -1097,7 +1097,7 @@ class _DashboardPageState extends State<DashboardPage>
             _syncPhase = 'idle';
             _lastSyncMessage = _pendingOutbox == 0
                 ? _idleOutboxMessage
-                : 'تنتظر $_pendingOutbox برقية عودة الاتصال للمزامنة.';
+                : 'تنتظر $_pendingOutbox عملية عودة الاتصال للمزامنة.';
           });
         });
       }
@@ -1439,7 +1439,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   ),
                                   SizedBox(height: 4),
                                   Text(
-                                    'ستظهر هنا طلبات الإحالة وقرارات السلطة الأعلى.',
+                                    'ستظهر هنا إشعارات النظام والوثائق.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Color(0xFF7A8493),
@@ -1467,9 +1467,6 @@ class _DashboardPageState extends State<DashboardPage>
                               '${notification['id'] ?? ''}',
                             );
                             final read = notification['readAt'] != null;
-                            final requiresAction =
-                                notification['type'] == 'route.approved' ||
-                                notification['type'] == 'route.requested';
                             return ListTile(
                               dense: true,
                               leading: const CircleAvatar(
@@ -1495,21 +1492,11 @@ class _DashboardPageState extends State<DashboardPage>
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              trailing: !read && requiresAction
-                                  ? const Chip(
-                                      label: Text(
-                                        'إجراء مطلوب',
-                                        style: TextStyle(fontSize: 9),
-                                      ),
-                                      visualDensity: VisualDensity.compact,
-                                    )
-                                  : null,
+                              trailing: null,
                               onTap: telegramId == null
                                   ? null
                                   : () async {
-                                      if (!read &&
-                                          !requiresAction &&
-                                          notificationId != null) {
+                                      if (!read && notificationId != null) {
                                         try {
                                           await widget.api.call(
                                             'notifications.markRead',
@@ -2153,7 +2140,7 @@ class _DashboardPageState extends State<DashboardPage>
     final detailMessage =
         _lastSyncMessage ??
         (_pendingOutbox > 0
-            ? 'لديك $_pendingOutbox برقية بانتظار المزامنة.'
+            ? 'لديك $_pendingOutbox عملية محلية بانتظار المزامنة.'
             : _idleOutboxMessage);
 
     return Container(
@@ -2207,7 +2194,7 @@ class _DashboardPageState extends State<DashboardPage>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'حالة صندوق الخروج',
+                      'حالة المزامنة المحلية',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -2288,7 +2275,7 @@ class _DashboardPageState extends State<DashboardPage>
                     children: [
                       Text(
                         _lastSyncAt == null
-                            ? 'مزامنة البرقيات'
+                            ? 'مزامنة التغييرات المحلية'
                             : 'آخر فحص ${_syncTime(_lastSyncAt!)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
