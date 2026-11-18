@@ -69,7 +69,7 @@ class AppwriteStorageProvider implements StorageProvider {
   async upload(
     key: string,
     body: Buffer,
-    options: { contentType: string; cacheControl: string }
+    _options: { contentType: string; cacheControl: string }
   ): Promise<void> {
     const { fileId, fileName, folder } = parseStorageKey(key);
     await getAppwriteStorage().createFile({
