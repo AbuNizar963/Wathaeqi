@@ -61,6 +61,14 @@ describe("Appwrite organization notifications", () => {
             ],
           };
         }
+        if (tableId === "users") {
+          return {
+            rows: [
+              row("user-7", { id: 7, isActive: true }),
+              row("user-12", { id: 12, isActive: true }),
+            ],
+          };
+        }
         return { rows: [] };
       }
     );
