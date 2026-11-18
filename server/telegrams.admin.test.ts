@@ -402,7 +402,9 @@ describe("telegram administration permissions", () => {
     );
   });
 
-  it("does not sign an attachment whose metadata owner differs from the telegram origin", async () => {
+  it(
+    "does not sign an attachment whose metadata owner differs from the telegram origin",
+    async () => {
     attachmentRepositoryMocks.getTelegramAttachmentById.mockResolvedValueOnce({
       id: 13,
       telegramId: telegram.id,
@@ -439,7 +441,9 @@ describe("telegram administration permissions", () => {
     expect(mocked.purgeTelegramPermanently).toHaveBeenCalledWith(7);
   });
 
-  it("allows administrators to update a telegram without changing its creator or serial", async () => {
+  it(
+    "allows administrators to update a telegram without changing its creator or serial",
+    async () => {
     const caller = appRouter.createCaller(contextFor("admin"));
     const result = await caller.telegrams.update(updateInput);
 
@@ -461,7 +465,9 @@ describe("telegram administration permissions", () => {
     );
   });
 
-  it("scopes the owner telegram list to the active workplace, even when children are requested", async () => {
+  it(
+    "scopes the owner telegram list to the active workplace, even when children are requested",
+    async () => {
     const activeOrganizationId = "00000000-0000-4000-8000-000000000099";
     mocked.getUserOrganizationId.mockResolvedValue(activeOrganizationId);
     mocked.listTelegrams.mockResolvedValue([]);
@@ -577,7 +583,9 @@ describe("telegram administration permissions", () => {
     expect(mocked.listUserNotifications).not.toHaveBeenCalled();
   });
 
-  it("limits owner pending approvals to the active workplace instead of global admin scope", async () => {
+  it(
+    "limits owner pending approvals to the active workplace instead of global admin scope",
+    async () => {
     organizationMocks.listPendingRouteApprovals.mockResolvedValue([]);
     const caller = appRouter.createCaller(ownerContextForTest());
 
@@ -589,7 +597,9 @@ describe("telegram administration permissions", () => {
     );
   });
 
-  it("blocks owner route approvals and receiver decisions outside the active workplace", async () => {
+  it(
+    "blocks owner route approvals and receiver decisions outside the active workplace",
+    async () => {
     const activeOrganizationId = "00000000-0000-4000-8000-000000000099";
     const otherOrganizationId = "00000000-0000-4000-8000-000000000098";
     const sourceOrganizationId = "00000000-0000-4000-8000-000000000097";
@@ -629,7 +639,9 @@ describe("telegram administration permissions", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it("blocks the owner from reading, editing, or deleting another workplace's telegram", async () => {
+  it(
+    "blocks the owner from reading, editing, or deleting another workplace's telegram",
+    async () => {
     mocked.getUserOrganizationId.mockResolvedValue(
       "00000000-0000-4000-8000-000000000099"
     );
@@ -652,7 +664,9 @@ describe("telegram administration permissions", () => {
     expect(storageMocks.storageDelete).not.toHaveBeenCalled();
   });
 
-  it("returns the telegram's actual source organization when viewed from its receiving workplace", async () => {
+  it(
+    "returns the telegram's actual source organization when viewed from its receiving workplace",
+    async () => {
     const senderOrganizationId = "00000000-0000-4000-8000-000000000008";
     const receivingOrganizationId = "00000000-0000-4000-8000-000000000099";
     mocked.getTelegramById.mockResolvedValue({
@@ -701,7 +715,9 @@ describe("telegram administration permissions", () => {
     expect(mocked.getOrganizationSettings).toHaveBeenCalledWith(organizationId);
   });
 
-  it("permanently removes a telegram for administrators and records its original identity", async () => {
+  it(
+    "permanently removes a telegram for administrators and records its original identity",
+    async () => {
     const caller = appRouter.createCaller(contextFor("admin"));
     const result = await caller.telegrams.delete({
       id: 7,
