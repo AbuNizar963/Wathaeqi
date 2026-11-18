@@ -86,7 +86,7 @@ class DocumentTemplateField {
 class DocumentTemplate {
   const DocumentTemplate({
     required this.id,
-    required this.organizationId,
+    required this.ownerId,
     required this.title,
     required this.category,
     required this.content,
@@ -99,7 +99,7 @@ class DocumentTemplate {
   });
 
   final String id;
-  final String organizationId;
+  final String ownerId;
   final String title;
   final String? description;
   final String category;
@@ -115,7 +115,7 @@ class DocumentTemplate {
   factory DocumentTemplate.fromJson(Map<String, dynamic> json) =>
       DocumentTemplate(
         id: json['id'] as String? ?? '',
-        organizationId: json['organizationId'] as String? ?? '',
+        ownerId: json['ownerId'] as String? ?? '',
         title: json['title'] as String? ?? '',
         description: json['description'] as String?,
         category: json['category'] as String? ?? 'general',
@@ -140,7 +140,7 @@ class DocumentTemplate {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'organizationId': organizationId,
+    'ownerId': ownerId,
     'title': title,
     if (description != null) 'description': description,
     'category': category,
@@ -156,7 +156,7 @@ class DocumentTemplate {
 class OfficialDocument {
   const OfficialDocument({
     required this.id,
-    required this.organizationId,
+    required this.ownerId,
     required this.title,
     required this.subject,
     required this.content,
@@ -165,7 +165,6 @@ class OfficialDocument {
     required this.serialCode,
     required this.documentDate,
     required this.status,
-    required this.createdByUserId,
     required this.createdAt,
     required this.updatedAt,
     this.templateId,
@@ -175,7 +174,7 @@ class OfficialDocument {
   });
 
   final String id;
-  final String organizationId;
+  final String ownerId;
   final String? templateId;
   final int? templateRevision;
   final String title;
@@ -186,7 +185,6 @@ class OfficialDocument {
   final String serialCode;
   final DateTime documentDate;
   final String status;
-  final int createdByUserId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? issuedAt;
@@ -195,7 +193,7 @@ class OfficialDocument {
   factory OfficialDocument.fromJson(Map<String, dynamic> json) =>
       OfficialDocument(
         id: json['id'] as String? ?? '',
-        organizationId: json['organizationId'] as String? ?? '',
+        ownerId: json['ownerId'] as String? ?? '',
         templateId: json['templateId'] as String?,
         templateRevision: (json['templateRevision'] as num?)?.toInt(),
         title: json['title'] as String? ?? '',
@@ -210,7 +208,6 @@ class OfficialDocument {
             DateTime.tryParse(json['documentDate'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         status: json['status'] as String? ?? 'draft',
-        createdByUserId: (json['createdByUserId'] as num?)?.toInt() ?? 0,
         createdAt:
             DateTime.tryParse(json['createdAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
@@ -223,7 +220,7 @@ class OfficialDocument {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'organizationId': organizationId,
+    'ownerId': ownerId,
     if (templateId != null) 'templateId': templateId,
     if (templateRevision != null) 'templateRevision': templateRevision,
     'title': title,
@@ -234,7 +231,6 @@ class OfficialDocument {
     'serialCode': serialCode,
     'documentDate': documentDate.toUtc().toIso8601String(),
     'status': status,
-    'createdByUserId': createdByUserId,
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
     if (issuedAt != null) 'issuedAt': issuedAt!.toUtc().toIso8601String(),

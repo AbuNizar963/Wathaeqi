@@ -26,7 +26,7 @@ void main() {
     test('template JSON preserves structured editor content', () {
       final template = DocumentTemplate(
         id: 'template-1',
-        organizationId: 'org-1',
+        ownerId: '550e8400-e29b-41d4-a716-446655440000',
         title: 'كتاب تكليف',
         category: 'personnel',
         content: {
@@ -55,7 +55,7 @@ void main() {
       () {
         final document = OfficialDocument(
           id: 'document-1',
-          organizationId: 'org-1',
+          ownerId: '550e8400-e29b-41d4-a716-446655440000',
           templateId: 'template-1',
           templateRevision: 3,
           title: 'كتاب تكليف',
@@ -71,8 +71,7 @@ void main() {
           serialCode: 'DOC-0012',
           documentDate: DateTime.utc(2026, 11, 18),
           status: 'draft',
-          createdByUserId: 7,
-          createdAt: DateTime.utc(2026, 11, 18, 10),
+                    createdAt: DateTime.utc(2026, 11, 18, 10),
           updatedAt: DateTime.utc(2026, 11, 18, 11),
         );
 
