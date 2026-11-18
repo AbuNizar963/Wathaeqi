@@ -3,7 +3,8 @@
  *
  * Templates are reusable definitions; issued documents are immutable snapshots
  * of a template revision plus the values supplied when the document was made.
- * Organization scope is always resolved and enforced by the server.
+ * Ownership is resolved from the authenticated Appwrite session and enforced
+ * by the server; clients never choose another owner's identity.
  */
 
 export type DocumentTemplateFieldType =
@@ -27,7 +28,7 @@ export interface DocumentTemplateField {
 
 export interface DocumentTemplate {
   id: string;
-  organizationId: string;
+  ownerId: string;
   title: string;
   description: string | null;
   category: string;
@@ -42,7 +43,7 @@ export interface DocumentTemplate {
 
 export interface OfficialDocument {
   id: string;
-  organizationId: string;
+  ownerId: string;
   templateId: string | null;
   templateRevision: number | null;
   title: string;
@@ -54,7 +55,6 @@ export interface OfficialDocument {
   serialCode: string;
   documentDate: string;
   status: "draft" | "issued" | "archived";
-  createdByUserId: number;
   createdAt: string;
   updatedAt: string;
   issuedAt: string | null;
@@ -68,7 +68,7 @@ export interface DocumentTemplateValidationIssue {
 
 /**
  * Client-side convenience validation only. The server must repeat all checks
- * and enforce organization access before persisting template/document data.
+ * and enforce owner access before persisting template/document data.
  */
 export function validateTemplateFieldValues(
   fields: readonly DocumentTemplateField[],
