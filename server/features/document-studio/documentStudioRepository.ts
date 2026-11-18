@@ -48,8 +48,10 @@ export type DocumentWriteInput = {
   content: Record<string, unknown>;
   fieldValues: Record<string, string>;
   documentDate: string;
+  organizationId: string | null;
   templateId: string | null;
   templateRevision: number | null;
+  templateFieldsSnapshot: DocumentTemplateField[];
 };
 
 function rowData(row: AppwriteRow): Record<string, unknown> {
@@ -95,6 +97,10 @@ function mapDocumentRow(row: AppwriteRow): OfficialDocument {
   return {
     id: row.$id,
     ownerId: String(data.ownerId ?? ""),
+    organizationId: decoded.organizationId,
+    templateId: decoded.templateId,
+    templateRevision: decoded.templateRevision,
+    templateFieldsSnapshot: decoded.templateFieldsSnapshot,
     title: String(data.title ?? ""),
     category: String(data.category ?? "general"),
     subject: decoded.subject,
@@ -104,8 +110,6 @@ function mapDocumentRow(row: AppwriteRow): OfficialDocument {
     serialCode: decoded.serialCode,
     documentDate: decoded.documentDate,
     status: decoded.status,
-    templateId: decoded.templateId,
-    templateRevision: decoded.templateRevision,
     createdAt,
     updatedAt: rowUpdatedAt(row, data),
     issuedAt: decoded.issuedAt,
@@ -343,6 +347,8 @@ export async function createOfficialDocument(
         content: input.content,
         subject: input.subject,
         fieldValues: input.fieldValues,
+        organizationId: input.organizationId,
+        templateFieldsSnapshot: input.templateFieldsSnapshot,
         serialNumber: 0,
         serialCode: "",
         documentDate: input.documentDate,
@@ -395,6 +401,8 @@ export async function updateOfficialDocument(
         updatedAt: now,
         content: encodeOfficialDocumentStorageContent({
           content: input.content,
+          organizationId: input.organizationId,
+          templateFieldsSnapshot: input.templateFieldsSnapshot,
           subject: input.subject,
           fieldValues: input.fieldValues,
           serialNumber: existing.serialNumber,
@@ -405,6 +413,66 @@ export async function updateOfficialDocument(
           templateRevision: input.templateRevision,
           issuedAt: existing.issuedAt,
           archivedAt: existing.archivedAt,
+        }),
+      },
+    });
+    return mapDocumentRow(updated as AppwriteRow);
+  });
+}
+
+export async function issueOfficialDocument(
+  ownerId: string,
+  documentId: string,
+  expectedUpdatedAt: string,
+  input: {
+    organizationId: string;
+    serialNumber: number;
+    serialCode: string;
+    issuedAt: string;
+  }
+): Promise<OfficialDocument | null> {
+  return withTableTransaction(async transactionId => {
+    const row = await getRowOrNull(
+      DOCUMENTS_TABLE_ID,
+      documentId,
+      transactionId
+    );
+    if (!row || rowData(row).ownerId !== ownerId) return null;
+
+    const existing = mapDocumentRow(row);
+    if (existing.status === "issued") return existing;
+    if (existing.status !== "draft") {
+      throw new DocumentStudioConflictError(
+        "لا يمكن إصدار وثيقة مؤرشفة."
+      );
+    }
+    if (existing.updatedAt !== expectedUpdatedAt) {
+      throw new DocumentStudioConflictError(
+        "تم تعديل الوثيقة قبل إصدارها. حدّث الصفحة ثم أعد المحاولة."
+      );
+    }
+
+    const updated = await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: DOCUMENTS_TABLE_ID,
+      rowId: documentId,
+      transactionId,
+      data: {
+        updatedAt: input.issuedAt,
+        content: encodeOfficialDocumentStorageContent({
+          content: existing.content,
+          organizationId: input.organizationId,
+          templateFieldsSnapshot: existing.templateFieldsSnapshot,
+          subject: existing.subject,
+          fieldValues: existing.fieldValues,
+          serialNumber: input.serialNumber,
+          serialCode: input.serialCode,
+          documentDate: existing.documentDate,
+          status: "issued",
+          templateId: existing.templateId,
+          templateRevision: existing.templateRevision,
+          issuedAt: input.issuedAt,
+          archivedAt: null,
         }),
       },
     });
@@ -448,6 +516,8 @@ export async function archiveOfficialDocument(
         updatedAt: now,
         content: encodeOfficialDocumentStorageContent({
           content: existing.content,
+          organizationId: existing.organizationId,
+          templateFieldsSnapshot: existing.templateFieldsSnapshot,
           subject: existing.subject,
           fieldValues: existing.fieldValues,
           serialNumber: existing.serialNumber,
