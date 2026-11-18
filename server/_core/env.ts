@@ -11,9 +11,13 @@ export const ENV = {
     process.env.SUPABASE_STORAGE_BUCKET ?? "telegram-files",
   // Server-only Appwrite credentials. Never add VITE_ fallbacks for secrets.
   appwriteEndpoint:
-    process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || "",
+    process.env.APPWRITE_ENDPOINT ||
+    process.env.APPWRITE_FUNCTION_API_ENDPOINT ||
+    process.env.VITE_APPWRITE_ENDPOINT ||
+    "",
   appwriteProjectId:
     process.env.APPWRITE_PROJECT_ID ||
+    process.env.APPWRITE_FUNCTION_PROJECT_ID ||
     process.env.VITE_APPWRITE_PROJECT_ID ||
     "",
   appwriteApiKey: process.env.APPWRITE_API_KEY ?? "",
