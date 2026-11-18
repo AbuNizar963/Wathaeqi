@@ -5,11 +5,12 @@ import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'offline_vault.dart';
 
-/// Keep client-side waits below Vercel's 60-second function execution limit.
+/// Keep client-side waits below the Netlify Functions request timeout.
 const telegramDocumentRenderTimeout = Duration(seconds: 50);
 
 class NetworkException implements Exception {
@@ -305,6 +306,158 @@ class PoliceApi {
     required String fileName,
     required String contentType,
     required Uint8List bytes,
+  }) async {
+    if (telegramId < 1 || bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
+      throw const FormatException('بيانات المرفق أو حجمه غير صالح');
+    }
+
+    final cookie = await _storage.read(key: 'session_cookie');
+    final requestHeaders = <String, String>{
+      'content-type': 'application/json',
+      'accept': 'application/json',
+    };
+    if (cookie != null) requestHeaders['cookie'] = cookie;
+
+    Future<http.Response> send(
+      Future<http.Response> Function() request, {
+      Duration timeout = const Duration(seconds: 20),
+    }) async {
+      try {
+        return await request().timeout(timeout);
+      } on TimeoutException {
+        throw const NetworkException();
+      } on IOException {
+        throw const NetworkException();
+      } on http.ClientException {
+        throw const NetworkException();
+      }
+    }
+
+    final prepareUri = Uri.parse(
+      '$baseUrl/api/telegrams/$telegramId/attachments/upload-url',
+    );
+    final prepareResponse = await send(
+      () => _httpClient.post(
+        prepareUri,
+        headers: requestHeaders,
+        body: jsonEncode({
+          'fileName': fileName,
+          'contentType': contentType,
+          'sizeBytes': bytes.length,
+        }),
+      ),
+    );
+    if (prepareResponse.statusCode < 200 || prepareResponse.statusCode >= 300) {
+      throw ApiException(
+        prepareResponse.statusCode,
+        _message(prepareResponse.body),
+      );
+    }
+
+    final preparedValue = jsonDecode(prepareResponse.body);
+    if (preparedValue is! Map ||
+        preparedValue['key'] is! String ||
+        preparedValue['uploadUrl'] is! String ||
+        preparedValue['uploadJwt'] is! String ||
+        preparedValue['fileId'] is! String ||
+        preparedValue['folder'] is! String) {
+      throw const FormatException('لم يُرجع الخادم بيانات رفع Appwrite صالحة');
+    }
+
+    final key = preparedValue['key'] as String;
+    final uploadUri = Uri.tryParse(preparedValue['uploadUrl'] as String);
+    final uploadJwt = preparedValue['uploadJwt'] as String;
+    final fileId = preparedValue['fileId'] as String;
+    final folder = preparedValue['folder'] as String;
+    final projectId = uploadUri?.queryParameters['project'];
+    if (uploadUri == null ||
+        uploadUri.scheme != 'https' ||
+        uploadUri.host.isEmpty ||
+        projectId == null ||
+        projectId.isEmpty ||
+        uploadJwt.isEmpty ||
+        !RegExp(r'^[a-f0-9]{32}$').hasMatch(fileId) ||
+        !folder.startsWith('organizations/') ||
+        !folder.endsWith('/attachments')) {
+      throw const FormatException('بيانات الاتصال بمخزن Appwrite غير صالحة');
+    }
+
+    const chunkSize = 4 * 1024 * 1024;
+    for (var offset = 0; offset < bytes.length; offset += chunkSize) {
+      final endExclusive =
+          (offset + chunkSize < bytes.length) ? offset + chunkSize : bytes.length;
+      final chunk = Uint8List.fromList(bytes.sublist(offset, endExclusive));
+      final storageRequest = http.MultipartRequest('POST', uploadUri);
+      storageRequest.headers.addAll({
+        'X-Appwrite-Project': projectId,
+        'X-Appwrite-JWT': uploadJwt,
+        'Content-Range':
+            'bytes $offset-${endExclusive - 1}/${bytes.length}',
+        if (offset > 0) 'X-Appwrite-ID': fileId,
+      });
+      storageRequest.fields['permissions'] = '[]';
+      if (offset == 0) {
+        storageRequest.fields['fileId'] = fileId;
+        storageRequest.fields['folder'] = folder;
+      }
+      storageRequest.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          chunk,
+          filename: fileName,
+          contentType: MediaType.parse(contentType),
+        ),
+      );
+
+      final storageResponse = await send(() async {
+        final streamedResponse = await _httpClient.send(storageRequest);
+        return http.Response.fromStream(streamedResponse);
+      }, timeout: const Duration(seconds: 60));
+      if (storageResponse.statusCode < 200 ||
+          storageResponse.statusCode >= 300) {
+        throw ApiException(
+          storageResponse.statusCode,
+          _message(storageResponse.body),
+        );
+      }
+    }
+
+    final finalizeUri = Uri.parse(
+      '$baseUrl/api/telegrams/$telegramId/attachments/finalize',
+    );
+    final finalizeResponse = await send(
+      () => _httpClient.post(
+        finalizeUri,
+        headers: requestHeaders,
+        body: jsonEncode({
+          'key': key,
+          'fileName': fileName,
+          'contentType': contentType,
+          'sizeBytes': bytes.length,
+        }),
+      ),
+    );
+    if (finalizeResponse.statusCode < 200 ||
+        finalizeResponse.statusCode >= 300) {
+      throw ApiException(
+        finalizeResponse.statusCode,
+        _message(finalizeResponse.body),
+      );
+    }
+
+    final finalizedValue = jsonDecode(finalizeResponse.body);
+    if (finalizedValue is! Map) {
+      throw const FormatException('استجابة اعتماد المرفق غير صالحة');
+    }
+    final result = Map<String, dynamic>.from(finalizedValue);
+    _mutationEvents.add(
+      ApiMutationEvent(
+        procedure: 'telegrams.uploadAttachment',
+        input: {'telegramId': telegramId},
+        result: result,
+      ),
+    );
+    return result;
   }) async {
     if (telegramId < 1 || bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
       throw const FormatException('بيانات المرفق أو حجمه غير صالح');
