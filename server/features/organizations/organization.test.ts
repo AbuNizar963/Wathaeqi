@@ -231,18 +231,18 @@ describe("organization repository", () => {
     expect(getAllowedOrganizationChildTypes("region")).toEqual([]);
   });
 
-  it("writes a membership with an active role", async () => {
-    mocks.single.mockResolvedValueOnce({
+  it("updates an existing Appwrite membership with the requested role", async () => {
+    mocks.appwriteUpdateRow.mockResolvedValueOnce({
+      $id: "membership-7",
       data: {
-        id: 2,
+        id: 1,
         organizationId: "00000000-0000-0000-0000-000000000001",
         userId: 7,
         role: "reviewer",
         isActive: true,
         createdAt: "2026-10-01T00:00:00.000Z",
-        updatedAt: "2026-10-01T00:00:00.000Z",
+        updatedAt: "2026-10-02T00:00:00.000Z",
       },
-      error: null,
     });
 
     await expect(
@@ -253,15 +253,18 @@ describe("organization repository", () => {
       })
     ).resolves.toMatchObject({ role: "reviewer", userId: 7 });
 
-    expect(mocks.upsert).toHaveBeenCalledWith(
-      {
-        organizationId: "00000000-0000-0000-0000-000000000001",
-        userId: 7,
-        role: "reviewer",
-        isActive: true,
-      },
-      { onConflict: "organizationId,userId" }
+    expect(mocks.appwriteUpdateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "wathaeqi-db",
+        tableId: "organization_memberships",
+        rowId: "membership-7",
+        data: expect.objectContaining({
+          role: "reviewer",
+          isActive: true,
+        }),
+      })
     );
+    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
   it("rotates the application session version when resetting the organization account password", async () => {
@@ -409,21 +412,30 @@ describe("organization repository", () => {
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
-  it("allows updating the root central organization without a parent", async () => {
+  it("updates the root central organization in Appwrite without a parent", async () => {
     const organizationId = "00000000-0000-4000-8000-000000000010";
-    mocks.single.mockResolvedValueOnce({
-      data: {
-        id: organizationId,
-        code: "CENTRAL",
-        name: "القيادة المركزية المحدثة",
-        type: "central",
-        parentOrganizationId: null,
-        telegramDestinationOrganizationId: null,
-        isActive: true,
-        createdAt: "2026-10-01T00:00:00.000Z",
-        updatedAt: "2026-10-09T00:00:00.000Z",
-      },
-      error: null,
+    const existing = {
+      id: organizationId,
+      code: "CENTRAL",
+      name: "القيادة المركزية",
+      type: "central",
+      parentOrganizationId: null,
+      telegramDestinationOrganizationId: null,
+      isActive: true,
+      createdAt: "2026-10-01T00:00:00.000Z",
+      updatedAt: "2026-10-01T00:00:00.000Z",
+    };
+    const updated = {
+      ...existing,
+      name: "القيادة المركزية المحدثة",
+      updatedAt: "2026-10-09T00:00:00.000Z",
+    };
+    mocks.appwriteListRows.mockResolvedValue({
+      rows: [{ $id: organizationId, data: existing }],
+    });
+    mocks.appwriteUpdateRow.mockResolvedValueOnce({
+      $id: organizationId,
+      data: updated,
     });
 
     await expect(
@@ -443,9 +455,18 @@ describe("organization repository", () => {
       parentOrganizationId: null,
     });
 
-    expect(mocks.update).toHaveBeenCalledWith(
-      expect.objectContaining({ parentOrganizationId: null })
+    expect(mocks.appwriteUpdateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "wathaeqi-db",
+        tableId: "organizations",
+        rowId: organizationId,
+        data: expect.objectContaining({
+          parentOrganizationId: null,
+          name: "القيادة المركزية المحدثة",
+        }),
+      })
     );
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 
   it("rejects workplace selection for a non-owner before touching the database", async () => {

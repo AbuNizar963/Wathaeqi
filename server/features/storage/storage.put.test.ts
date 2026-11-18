@@ -44,9 +44,12 @@ describe("stable storage URLs", () => {
     vi.clearAllMocks();
     upload.mockResolvedValue(undefined);
     createSignedUrl.mockResolvedValue("https://storage.example/signed");
-    createSignedUploadUrl.mockResolvedValue(
-      "https://storage.example/signed-upload?token=opaque"
-    );
+    createSignedUploadUrl.mockResolvedValue({
+      uploadUrl: "https://storage.example/signed-upload?token=opaque",
+      uploadJwt: "short-lived-upload-jwt",
+      fileId: "appwrite-file-id",
+      folder: "organizations/org/telegrams/7/attachments",
+    });
     getObjectInfo.mockResolvedValue({
       size: 12,
       contentType: "application/pdf",
@@ -84,10 +87,16 @@ describe("stable storage URLs", () => {
 
   it("creates a signed upload URL scoped to one organization and telegram", async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
+    const metadata = {
+      contentType: "application/pdf" as const,
+      sizeBytes: 12,
+    };
     const result = await storageCreateOrganizationAttachmentUploadUrl(
       organizationId,
       7,
-      "report.pdf"
+      "report.pdf",
+      metadata,
+      "appwrite-user-7"
     );
 
     expect(result.key).toMatch(
@@ -101,7 +110,17 @@ describe("stable storage URLs", () => {
     expect(result.uploadUrl).toBe(
       "https://storage.example/signed-upload?token=opaque"
     );
-    expect(createSignedUploadUrl).toHaveBeenCalledWith(result.key);
+    expect(result.uploadJwt).toBe("short-lived-upload-jwt");
+    expect(result.fileId).toBe("appwrite-file-id");
+    expect(result.folder).toBe("organizations/org/telegrams/7/attachments");
+    expect(createSignedUploadUrl).toHaveBeenCalledWith(
+      result.key,
+      {
+        fileName: "report.pdf",
+        ...metadata,
+      },
+      "appwrite-user-7"
+    );
     expect(upload).not.toHaveBeenCalled();
   });
 

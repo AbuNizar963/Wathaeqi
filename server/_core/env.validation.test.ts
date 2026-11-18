@@ -5,12 +5,17 @@ describe("assertProductionEnvironment", () => {
   const validEnvironment = {
     ...ENV,
     isProduction: true,
-    supabaseUrl: "https://example.supabase.co",
-    supabaseSecretKey: "sb_secret_test_key",
+    appwriteEndpoint: "https://cloud.appwrite.io/v1",
+    appwriteProjectId: "wathaeqi",
+    appwriteApiKey: "appwrite_server_key_for_tests",
+    appwriteDatabaseId: "wathaeqi-db",
+    appwriteBucketId: "telegram-attachments",
     authSessionSecret: "a".repeat(32),
+    supabaseUrl: "",
+    supabaseSecretKey: "",
   };
 
-  it("accepts a valid production environment", () => {
+  it("accepts a valid Appwrite production environment without Supabase", () => {
     expect(() => assertProductionEnvironment(validEnvironment)).not.toThrow();
   });
 
@@ -19,23 +24,42 @@ describe("assertProductionEnvironment", () => {
       assertProductionEnvironment({
         ...validEnvironment,
         isProduction: false,
-        supabaseUrl: "",
-        supabaseSecretKey: "",
+        appwriteEndpoint: "",
+        appwriteProjectId: "",
+        appwriteApiKey: "",
+        appwriteDatabaseId: "",
+        appwriteBucketId: "",
         authSessionSecret: "",
       })
     ).not.toThrow();
   });
 
-  it("rejects a missing Supabase secret key", () => {
+  it("rejects missing Appwrite production configuration", () => {
     expect(() =>
       assertProductionEnvironment({
         ...validEnvironment,
-        supabaseSecretKey: "",
+        appwriteApiKey: "",
       })
-    ).toThrow("SUPABASE_SECRET_KEY");
+    ).toThrow("APPWRITE_API_KEY");
+
+    expect(() =>
+      assertProductionEnvironment({
+        ...validEnvironment,
+        appwriteDatabaseId: "",
+      })
+    ).toThrow("APPWRITE_DATABASE_ID");
   });
 
-  it("rejects a missing or weak session secret", () => {
+  it("allows the API to start without a session secret while auth remains gated", () => {
+    expect(() =>
+      assertProductionEnvironment({
+        ...validEnvironment,
+        authSessionSecret: "",
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects a configured but weak session secret", () => {
     expect(() =>
       assertProductionEnvironment({
         ...validEnvironment,
@@ -44,19 +68,26 @@ describe("assertProductionEnvironment", () => {
     ).toThrow("AUTH_SESSION_SECRET");
   });
 
-  it("rejects malformed or non-HTTPS Supabase URLs", () => {
+  it("rejects malformed or non-HTTPS Appwrite endpoints", () => {
     expect(() =>
       assertProductionEnvironment({
         ...validEnvironment,
-        supabaseUrl: "not-a-url",
+        appwriteEndpoint: "not-a-url",
       })
-    ).toThrow("valid absolute URL");
+    ).toThrow("valid absolute HTTPS URL");
 
     expect(() =>
       assertProductionEnvironment({
         ...validEnvironment,
-        supabaseUrl: "http://localhost:54321",
+        appwriteEndpoint: "http://localhost/v1",
       })
-    ).toThrow("must use HTTPS");
+    ).toThrow("valid absolute HTTPS URL");
+
+    expect(() =>
+      assertProductionEnvironment({
+        ...validEnvironment,
+        appwriteEndpoint: "https://cloud.appwrite.io",
+      })
+    ).toThrow("valid absolute HTTPS URL");
   });
 });

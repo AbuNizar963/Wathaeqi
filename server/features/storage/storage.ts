@@ -9,7 +9,7 @@ function normalizeKey(relKey: string): string {
 
 /**
  * Validates URLs returned by the storage provider before exposing them to a client.
- * Local development may use HTTP for a local Supabase instance; production must use HTTPS.
+ * Local development may use HTTP for a local Appwrite instance; production must use HTTPS.
  */
 export function validateStorageProviderUrl(
   value: string,
@@ -218,8 +218,16 @@ export function organizationAttachmentKeyMatches(
 export async function storageCreateOrganizationAttachmentUploadUrl(
   organizationId: string,
   telegramId: number,
-  fileName: string
-): Promise<{ key: string; uploadUrl: string }> {
+  fileName: string,
+  metadata: { contentType: AllowedAttachmentType; sizeBytes: number },
+  authUserId: string
+): Promise<{
+  key: string;
+  uploadUrl: string;
+  uploadJwt: string;
+  fileId: string;
+  folder: string;
+}> {
   const safeOrganizationId = organizationId.trim();
   if (
     !UUID_PATTERN.test(safeOrganizationId) ||
@@ -230,11 +238,32 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
   }
 
   const safeFileName = sanitizeFileName(fileName);
-  const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  const uploadUrl = validateStorageProviderUrl(
-    await getStorageProvider().createSignedUploadUrl(key)
+  const key = [
+    "organizations",
+    safeOrganizationId,
+    "telegrams",
+    String(telegramId),
+    "attachments",
+    `${crypto.randomUUID()}-${safeFileName}`,
+  ].join("/");
+  const uploadAuthorization = await getStorageProvider().createSignedUploadUrl(
+    key,
+    {
+      fileName: safeFileName,
+      contentType: metadata.contentType,
+      sizeBytes: metadata.sizeBytes,
+    },
+    authUserId
   );
-  return { key, uploadUrl };
+  const uploadUrl = validateStorageProviderUrl(uploadAuthorization.uploadUrl);
+
+  return {
+    key,
+    uploadUrl,
+    uploadJwt: uploadAuthorization.uploadJwt,
+    fileId: uploadAuthorization.fileId,
+    folder: uploadAuthorization.folder,
+  };
 }
 
 export async function storageGetObjectInfo(
@@ -269,9 +298,15 @@ export async function storagePutOrganizationAttachment(
   }
 
   const safeFileName = sanitizeFileName(fileName);
-  const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  const body = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
-
+  const key = [
+    "organizations",
+    safeOrganizationId,
+    "telegrams",
+    String(telegramId),
+    "attachments",
+    `${crypto.randomUUID()}-${safeFileName}`,
+  ].join("/");
+  const body = Buffer.from(data);
   await getStorageProvider().upload(key, body, {
     contentType,
     cacheControl: "3600",
@@ -360,7 +395,12 @@ export async function storagePutDepartmentLogo(
   const safeFileName = sanitizeFileName(fileName);
   const extension = contentType === "image/jpeg" ? ".jpg" : ".png";
   const baseName = safeFileName.replace(/\.[^.]*$/, "");
-  const key = `department/logos/${safeOrganizationId}/${crypto.randomUUID()}-${baseName}${extension}`;
+  const key = [
+    "department",
+    "logos",
+    safeOrganizationId,
+    `${crypto.randomUUID()}-${baseName}${extension}`,
+  ].join("/");
   const body = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
 
   await getStorageProvider().upload(key, body, {

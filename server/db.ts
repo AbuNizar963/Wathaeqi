@@ -1,4 +1,5 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
+import { Query } from "node-appwrite";
 import type {
   AuditLog,
   DepartmentSettings,
@@ -12,6 +13,7 @@ import {
   storageKeyFromStoredUrl,
   storageStableUrl,
 } from "./features/storage/storage";
+import { getAppwriteDatabaseId, getAppwriteTablesDB } from "./_core/appwrite";
 import { getSupabaseAdmin } from "./_core/supabase";
 import {
   addOrganizationMembership,
@@ -1599,31 +1601,213 @@ type WriteAuditLogInput = Omit<
     >
   >;
 
+type AppwriteAuditHeadRow = {
+  $id: string;
+  payload: string;
+};
+
+const AUDIT_HEAD_TABLE = "app_records";
+const AUDIT_LOG_TABLE = "audit_logs";
+const AUDIT_HEAD_RECORD_TYPE = "audit_chain_head";
+const AUDIT_HEAD_RECORD_KEY = "head";
+const AUDIT_GENESIS_HASH = "0".repeat(64);
+
+function getAuditHeadHash(row: AppwriteAuditHeadRow): string {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(row.payload);
+  } catch {
+    throw new Error("Appwrite audit chain head contains invalid JSON");
+  }
+
+  if (
+    !payload ||
+    typeof payload !== "object" ||
+    !("entryHash" in payload) ||
+    typeof payload.entryHash !== "string" ||
+    !/^[a-f0-9]{64}$/.test(payload.entryHash)
+  ) {
+    throw new Error("Appwrite audit chain head contains an invalid hash");
+  }
+
+  return payload.entryHash;
+}
+
+async function ensureAuditHead(): Promise<AppwriteAuditHeadRow> {
+  const tables = getAppwriteTablesDB();
+  const databaseId = getAppwriteDatabaseId();
+  const findHead = async () => {
+    const result = await tables.listRows({
+      databaseId,
+      tableId: AUDIT_HEAD_TABLE,
+      queries: [
+        Query.equal("recordType", AUDIT_HEAD_RECORD_TYPE),
+        Query.equal("recordKey", AUDIT_HEAD_RECORD_KEY),
+        Query.limit(2),
+      ],
+      total: false,
+    });
+    const rows = result.rows as unknown as AppwriteAuditHeadRow[];
+    if (rows.length > 1) {
+      throw new Error("Appwrite audit chain has duplicate head rows");
+    }
+    return rows[0] ?? null;
+  };
+
+  const existing = await findHead();
+  if (existing) {
+    getAuditHeadHash(existing);
+    return existing;
+  }
+
+  const now = new Date().toISOString();
+  try {
+    const created = await tables.createRow({
+      databaseId,
+      tableId: AUDIT_HEAD_TABLE,
+      rowId: "audit-chain-head",
+      data: {
+        recordType: AUDIT_HEAD_RECORD_TYPE,
+        recordKey: AUDIT_HEAD_RECORD_KEY,
+        ownerId: null,
+        organizationId: null,
+        createdAt: now,
+        updatedAt: now,
+        payload: JSON.stringify({ entryHash: AUDIT_GENESIS_HASH }),
+      },
+    });
+    return created as unknown as AppwriteAuditHeadRow;
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? Number((error as { code?: unknown }).code)
+        : 0;
+    if (code !== 409) throw error;
+
+    const raced = await findHead();
+    if (!raced) throw error;
+    getAuditHeadHash(raced);
+    return raced;
+  }
+}
+
+function auditJson(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  return JSON.stringify(value);
+}
+
 export async function writeAuditLog(input: WriteAuditLogInput): Promise<void> {
-  const client = getSupabaseAdmin();
-  const { data: actor, error: actorError } = await client
-    .from("users")
-    .select("rank, role, organizationId")
-    .eq("id", input.actorUserId)
-    .maybeSingle();
-  throwIfError(actorError, "Failed to snapshot audit actor");
+  const tables = getAppwriteTablesDB();
+  const databaseId = getAppwriteDatabaseId();
+  const actorResult = await tables.listRows({
+    databaseId,
+    tableId: "users",
+    queries: [Query.equal("id", input.actorUserId), Query.limit(2)],
+    total: false,
+  });
+  const actorRows = actorResult.rows as Array<Record<string, unknown>>;
+  if (actorRows.length !== 1) {
+    throw new Error(
+      actorRows.length > 1
+        ? "Appwrite returned duplicate audit actor profiles"
+        : "Failed to snapshot audit actor: user not found"
+    );
+  }
+  const actor = actorRows[0];
 
   // A membership role is more precise than the broad account role. If the
   // membership is unavailable, retain the account role rather than inventing
   // a permission snapshot.
   const membership = await getUserOrganizationMembership(input.actorUserId);
-  const { error } = await client.from("audit_logs").insert({
-    ...input,
-    actorRank: input.actorRank ?? actor?.rank ?? null,
-    actorRole: input.actorRole ?? membership?.role ?? actor?.role ?? null,
+  const createdAt = new Date().toISOString();
+  const auditFields = {
+    actorUserId: input.actorUserId,
+    actorName: input.actorName,
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId ?? null,
+    metadata: auditJson(input.metadata),
+    ipAddress: input.ipAddress ?? null,
+    userAgent: input.userAgent ?? null,
+    deviceType: input.deviceType ?? "unknown",
+    actorRank: input.actorRank ?? actor.rank ?? null,
+    actorRole: input.actorRole ?? membership?.role ?? actor.role ?? null,
     organizationId:
       input.organizationId ??
       membership?.organizationId ??
-      actor?.organizationId ??
-      null,
-    deviceType: input.deviceType ?? "unknown",
-  });
-  throwIfError(error, "Failed to write audit log");
+      (typeof actor.organizationId === "string" ? actor.organizationId : null),
+    reason: input.reason ?? null,
+    beforeState: auditJson(input.beforeState),
+    afterState: auditJson(input.afterState),
+    createdAt,
+  };
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const head = await ensureAuditHead();
+    const previousHash = getAuditHeadHash(head);
+    const hashPayload = {
+      previousHash,
+      ...auditFields,
+    };
+    const entryHash = createHash("sha256")
+      .update(JSON.stringify(hashPayload))
+      .digest("hex");
+    const transaction = await tables.createTransaction();
+
+    try {
+      await tables.createRow({
+        databaseId,
+        tableId: AUDIT_LOG_TABLE,
+        rowId: randomUUID(),
+        data: {
+          id: randomInt(1, 2_147_483_647),
+          ...auditFields,
+          previousHash,
+          entryHash,
+        },
+        transactionId: transaction.$id,
+      });
+      await tables.updateRow({
+        databaseId,
+        tableId: AUDIT_HEAD_TABLE,
+        rowId: head.$id,
+        data: {
+          payload: JSON.stringify({ entryHash }),
+          updatedAt: createdAt,
+        },
+        transactionId: transaction.$id,
+      });
+      await tables.updateTransaction({
+        transactionId: transaction.$id,
+        commit: true,
+      });
+      return;
+    } catch (error) {
+      try {
+        await tables.updateTransaction({
+          transactionId: transaction.$id,
+          rollback: true,
+        });
+      } catch {
+        // A failed or expired transaction may already be rolled back.
+      }
+
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code === 409 && attempt < 2) continue;
+      throw new Error(
+        `Failed to write Appwrite audit log: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  throw new Error(
+    "Failed to write Appwrite audit log after concurrent retries"
+  );
 }
 export type NotificationRecord = {
   id: number;
@@ -1637,6 +1821,17 @@ export type NotificationRecord = {
   readAt: Date | null;
   createdAt: Date;
 };
+type AppwriteNotificationRow = Record<string, unknown> & {
+  $id: string;
+  data?: Record<string, unknown>;
+};
+
+function notificationRowData(
+  row: AppwriteNotificationRow
+): Record<string, unknown> {
+  return row.data ?? row;
+}
+
 const mapNotification = (row: Record<string, unknown>): NotificationRecord => ({
   id: Number(row.id),
   userId: Number(row.userId),
@@ -1650,24 +1845,116 @@ const mapNotification = (row: Record<string, unknown>): NotificationRecord => ({
   createdAt: asDate(row.createdAt),
 });
 
+async function listAllAppwriteRows(
+  tableId: string,
+  queries: string[]
+): Promise<AppwriteNotificationRow[]> {
+  const rows: AppwriteNotificationRow[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const result = await getAppwriteTablesDB().listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId,
+      queries: [
+        ...queries,
+        Query.limit(100),
+        ...(cursor ? [Query.cursorAfter(cursor)] : []),
+      ],
+      total: false,
+    });
+    const page = result.rows as AppwriteNotificationRow[];
+    rows.push(...page);
+    if (page.length < 100) return rows;
+
+    const nextCursor = page[page.length - 1]?.$id;
+    if (!nextCursor || nextCursor === cursor) {
+      throw new Error(`Appwrite pagination did not advance for ${tableId}`);
+    }
+    cursor = nextCursor;
+  }
+}
+
+async function createAppwriteNotification(input: {
+  userId: number;
+  organizationId: string;
+  type: string;
+  title: string;
+  body: string;
+  telegramId?: number | null;
+  routeId?: number | null;
+}): Promise<void> {
+  const data = {
+    userId: input.userId,
+    organizationId: input.organizationId,
+    type: input.type,
+    title: input.title,
+    body: input.body,
+    telegramId: input.telegramId ?? null,
+    routeId: input.routeId ?? null,
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  };
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await getAppwriteTablesDB().createRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "notifications",
+        rowId: randomUUID(),
+        data: {
+          id: randomInt(1, 2_147_483_647),
+          ...data,
+        },
+      });
+      return;
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code !== 409 || attempt === 4) throw error;
+    }
+  }
+}
+
 export async function listActiveOrganizationMemberIds(
   organizationId: string
 ): Promise<number[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organization_memberships")
-    .select("userId, organizations!inner(isActive)")
-    .eq("organizationId", organizationId)
-    .eq("isActive", true)
-    .eq("organizations.isActive", true);
-  throwIfError(error, "Failed to load active notification recipients");
+  const [memberships, activeOrganizations] = await Promise.all([
+    listAllAppwriteRows("organization_memberships", [
+      Query.equal("organizationId", organizationId),
+      Query.equal("isActive", true),
+    ]),
+    listAllAppwriteRows("organizations", [
+      Query.equal("id", organizationId),
+      Query.equal("isActive", true),
+    ]),
+  ]);
 
-  return Array.from(
+  if (activeOrganizations.length === 0) return [];
+
+  const candidateUserIds = Array.from(
     new Set(
-      (data ?? [])
-        .map(row => Number(row.userId))
+      memberships
+        .map(row => Number(notificationRowData(row).userId))
         .filter(userId => Number.isSafeInteger(userId) && userId > 0)
     )
   );
+  const activeProfiles: AppwriteNotificationRow[] = [];
+  for (let offset = 0; offset < candidateUserIds.length; offset += 100) {
+    activeProfiles.push(
+      ...(await listAllAppwriteRows("users", [
+        Query.equal("id", candidateUserIds.slice(offset, offset + 100)),
+        Query.equal("isActive", true),
+      ]))
+    );
+  }
+
+  const activeUserIds = new Set(
+    activeProfiles.map(row => Number(notificationRowData(row).id))
+  );
+  return candidateUserIds.filter(userId => activeUserIds.has(userId));
 }
 
 export async function notifyOrganizationUsers(input: {
@@ -1678,22 +1965,17 @@ export async function notifyOrganizationUsers(input: {
   telegramId?: number | null;
   routeId?: number | null;
 }): Promise<void> {
-  const supabase = getSupabaseAdmin();
   const userIds = await listActiveOrganizationMemberIds(input.organizationId);
-  if (userIds.length === 0) return;
-  const { error } = await supabase.from("notifications").insert(
-    userIds.map(userId => ({
-      userId,
-      organizationId: input.organizationId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      telegramId: input.telegramId ?? null,
-      routeId: input.routeId ?? null,
-    }))
+  await Promise.all(
+    userIds.map(userId =>
+      createAppwriteNotification({
+        ...input,
+        userId,
+      })
+    )
   );
-  throwIfError(error, "Failed to create organization notifications");
 }
+
 export async function notifyUser(input: {
   userId: number;
   organizationId: string;
@@ -1703,78 +1985,76 @@ export async function notifyUser(input: {
   telegramId?: number | null;
   routeId?: number | null;
 }): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .insert({
-      userId: input.userId,
-      organizationId: input.organizationId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      telegramId: input.telegramId ?? null,
-      routeId: input.routeId ?? null,
-    });
-  throwIfError(error, "Failed to create user notification");
+  await createAppwriteNotification(input);
 }
+
 export async function listUserNotifications(
   userId: number,
   organizationId?: string,
   limit = 30
 ): Promise<{ items: NotificationRecord[]; unreadCount: number }> {
-  const supabase = getSupabaseAdmin();
-  let notificationsQuery = supabase
-    .from("notifications")
-    .select("*")
-    .eq("userId", userId);
+  const queries = [Query.equal("userId", userId)];
   if (organizationId) {
-    notificationsQuery = notificationsQuery.eq(
-      "organizationId",
-      organizationId
-    );
+    queries.push(Query.equal("organizationId", organizationId));
   }
-  const { data, error } = await notificationsQuery
-    .is("readAt", null)
-    .order("createdAt", { ascending: false })
-    .limit(limit);
-  throwIfError(error, "Failed to list notifications");
-  let unreadQuery = supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("userId", userId);
-  if (organizationId) {
-    unreadQuery = unreadQuery.eq("organizationId", organizationId);
-  }
-  const { count, error: countError } = await unreadQuery.is("readAt", null);
-  throwIfError(countError, "Failed to count unread notifications");
-  const items = (data ?? []).map(row =>
-    mapNotification(row as Record<string, unknown>)
+  const rows = await listAllAppwriteRows("notifications", queries);
+  const notifications = rows.map(row =>
+    mapNotification(notificationRowData(row))
   );
-  return { items, unreadCount: count ?? 0 };
+  const unread = notifications
+    .filter(item => item.readAt === null)
+    .sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    );
+
+  return {
+    items: unread.slice(0, Math.max(0, limit)),
+    unreadCount: unread.length,
+  };
 }
+
 export async function markNotificationRead(
   userId: number,
   id: number
 ): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .update({ readAt: new Date().toISOString() })
-    .eq("id", id)
-    .eq("userId", userId)
-    .is("readAt", null);
-  throwIfError(error, "Failed to mark notification as read");
+  const rows = await listAllAppwriteRows("notifications", [
+    Query.equal("id", id),
+    Query.equal("userId", userId),
+  ]);
+  const row = rows.find(item => notificationRowData(item).readAt == null);
+  if (!row) return;
+
+  await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: "notifications",
+    rowId: row.$id,
+    data: { readAt: new Date().toISOString() },
+  });
 }
 
 /** Resolve pending route work for every account in the receiving organization. */
 export async function resolveRouteNotifications(
   routeId: number
 ): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .update({ readAt: new Date().toISOString() })
-    .eq("routeId", routeId)
-    .in("type", ["route.approved", "route.requested"])
-    .is("readAt", null);
-  throwIfError(error, "Failed to resolve route notifications");
+  const rows = await listAllAppwriteRows("notifications", [
+    Query.equal("routeId", routeId),
+    Query.equal("type", ["route.approved", "route.requested"]),
+  ]);
+  const unreadRows = rows.filter(
+    row => notificationRowData(row).readAt == null
+  );
+  const readAt = new Date().toISOString();
+
+  await Promise.all(
+    unreadRows.map(row =>
+      getAppwriteTablesDB().updateRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "notifications",
+        rowId: row.$id,
+        data: { readAt },
+      })
+    )
+  );
 }
 
 async function countTelegrams(

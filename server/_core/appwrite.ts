@@ -1,4 +1,4 @@
-import { Client, Storage, TablesDB } from "node-appwrite";
+import { Client, Storage, TablesDB, Tokens, Users } from "node-appwrite";
 import { ENV } from "./env";
 
 export class AppwriteConfigurationError extends Error {
@@ -17,6 +17,8 @@ type AppwriteAdminConfig = {
 let adminClient: Client | null = null;
 let tablesDb: TablesDB | null = null;
 let storage: Storage | null = null;
+let tokens: Tokens | null = null;
+let users: Users | null = null;
 
 function normalizeEndpointPath(pathname: string): string {
   let normalizedPath = pathname;
@@ -161,6 +163,22 @@ export function getAppwriteStorage(): Storage {
   }
 
   return storage;
+}
+
+export function getAppwriteTokens(): Tokens {
+  if (!tokens) {
+    tokens = new Tokens(getAppwriteAdminClient());
+  }
+
+  return tokens;
+}
+
+export function getAppwriteUsers(): Users {
+  if (!users) {
+    users = new Users(getAppwriteAdminClient());
+  }
+
+  return users;
 }
 
 export function getAppwriteDatabaseId(): string {

@@ -72,13 +72,15 @@ vi.mock("../../db", async importOriginal => {
     ...actual,
     getOrganizationSettings,
     isDepartmentLogoExclusiveToOrganization,
-    getTelegramAttachmentByStorageKey,
     getTelegramById,
     getTelegramVersion,
-    createTelegramAttachment,
     writeAuditLog,
   };
 });
+vi.mock("./telegramAttachmentRepository", () => ({
+  getTelegramAttachmentByStorageKey,
+  createTelegramAttachment,
+}));
 vi.mock("../../telegramAccess", () => ({ canAccessTelegramScope }));
 
 import { canAccessStorageKey } from "./storage";
@@ -200,7 +202,27 @@ describe("signed telegram attachment uploads", () => {
     name: "Officer",
   };
   const pdfBytes = Buffer.from("%PDF-1.7\\nfixture");
-  const key = `organizations/${testOrganizationId}/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf`;
+  const key = [
+    "organizations",
+    testOrganizationId,
+    "telegrams",
+    "7",
+    "attachments",
+    "550e8400-e29b-41d4-a716-446655440001-report.pdf",
+  ].join("/");
+  const uploadUrl = new URL(
+    "/v1/storage/buckets/document-attachments/files",
+    "https://fra.cloud.appwrite.io"
+  );
+  uploadUrl.searchParams.set("project", "wathaeqi");
+  const appwriteUploadUrl = uploadUrl.toString();
+  const attachmentFolder = [
+    "organizations",
+    testOrganizationId,
+    "telegrams",
+    "7",
+    "attachments",
+  ].join("/");
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -209,7 +231,10 @@ describe("signed telegram attachment uploads", () => {
     canAccessTelegramScope.mockResolvedValue(true);
     storageCreateOrganizationAttachmentUploadUrl.mockResolvedValue({
       key,
-      uploadUrl: "https://storage.example/upload?token=opaque",
+      uploadUrl: appwriteUploadUrl,
+      uploadJwt: "short-lived-upload-jwt",
+      fileId: "a".repeat(32),
+      folder: attachmentFolder,
     });
     getTelegramAttachmentByStorageKey.mockResolvedValue(null);
     storageGetObjectInfo.mockResolvedValue({
@@ -250,13 +275,23 @@ describe("signed telegram attachment uploads", () => {
     expect(storageCreateOrganizationAttachmentUploadUrl).toHaveBeenCalledWith(
       testOrganizationId,
       7,
-      "report.pdf"
+      "report.pdf",
+      {
+        fileName: "report.pdf",
+        contentType: "application/pdf",
+        sizeBytes: pdfBytes.byteLength,
+      },
+      "user-7"
     );
     expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.set).toHaveBeenCalledWith("Cache-Control", "no-store");
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         key,
-        uploadUrl: "https://storage.example/upload?token=opaque",
+        uploadUrl: appwriteUploadUrl,
+        uploadJwt: "short-lived-upload-jwt",
+        fileId: "a".repeat(32),
+        folder: attachmentFolder,
         sizeBytes: pdfBytes.byteLength,
       })
     );
@@ -779,7 +814,7 @@ describe("storage route", () => {
     expect(res.redirect).not.toHaveBeenCalled();
   });
 
-  it("returns a clear payload limit for legacy logos above the Vercel ceiling", async () => {
+  it("returns a clear payload limit for legacy logos above the Netlify ceiling", async () => {
     const key =
       "department/logos/550e8400-e29b-41d4-a716-446655440000/large-badge.png";
     storageDownload.mockResolvedValueOnce({

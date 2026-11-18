@@ -6,13 +6,11 @@ import express, {
 } from "express";
 import { ENV } from "../../_core/env";
 import { getAuthenticatedUserFromRequest } from "../../_core/auth";
+import { getTelegramById, getTelegramVersion, writeAuditLog } from "../../db";
 import {
   createTelegramAttachment,
   getTelegramAttachmentByStorageKey,
-  getTelegramById,
-  getTelegramVersion,
-  writeAuditLog,
-} from "../../db";
+} from "./telegramAttachmentRepository";
 import { getRequestAuditContext } from "../../auditContext";
 import { canAccessTelegramScope } from "../../telegramAccess";
 import {
@@ -147,7 +145,9 @@ async function createTelegramAttachmentUploadUrl(
     const upload = await storageCreateOrganizationAttachmentUploadUrl(
       context.telegram.organizationId,
       context.telegram.id,
-      metadata.fileName
+      metadata.fileName,
+      metadata,
+      context.user.authUserId
     );
     res.set("Cache-Control", "no-store");
     res.status(200).json({
@@ -207,6 +207,7 @@ async function finalizeTelegramAttachmentUpload(
     return;
   }
 
+  let attachmentMetadataCreated = false;
   try {
     const existing = await getTelegramAttachmentByStorageKey(key);
     if (existing) {
@@ -284,6 +285,7 @@ async function finalizeTelegramAttachmentUpload(
         sha256,
         uploadedByUserId: context.user.id,
       });
+      attachmentMetadataCreated = true;
     } catch (error) {
       await removeUncommittedAttachment(key);
       console.error(
@@ -319,13 +321,23 @@ async function finalizeTelegramAttachmentUpload(
       sha256,
     });
   } catch (error) {
+    if (!attachmentMetadataCreated) {
+      await removeUncommittedAttachment(key);
+    }
     console.error("[Storage] Telegram attachment finalization failed", error);
     res.status(502).json({ error: "تعذر التحقق من المرفق وتسجيله" });
   }
 }
 
-const DEPARTMENT_LOGO_KEY_PATTERN =
-  /^department\/logos\/(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/)?[^/]+\.(?:png|jpe?g|webp)$/i;
+const DEPARTMENT_LOGO_KEY_PATTERN = new RegExp(
+  [
+    "^department/logos/",
+    "(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-",
+    "[89ab][0-9a-f]{3}-[0-9a-f]{12}/)?",
+    "[^/]+\\.(?:png|jpe?g|webp)$",
+  ].join(""),
+  "i"
+);
 const MAX_DEPARTMENT_LOGO_RESPONSE_BYTES = 4_000_000;
 
 function getDepartmentLogoContentType(

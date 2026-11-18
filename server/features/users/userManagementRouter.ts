@@ -1,4 +1,5 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
+import { Query } from "node-appwrite";
 import { z } from "zod";
 import { getRequestAuditContext } from "../../auditContext";
 import { TRPCError } from "@trpc/server";
@@ -7,46 +8,185 @@ import {
   organizationManagerProcedure,
   router,
 } from "../../_core/trpc";
-import { hashPassword, verifyPassword } from "../../_core/auth";
+import {
+  getAppwriteDatabaseId,
+  getAppwriteTablesDB,
+  getAppwriteUsers,
+} from "../../_core/appwrite";
+import {
+  getAppwriteProfileById,
+  verifyAppwriteUserPassword,
+} from "../../_core/appwriteAuth";
+import { writeAuditLog } from "../../db";
 import { getSupabaseAdmin } from "../../_core/supabase";
-import { getUserById, writeAuditLog } from "../../db";
-import { addOrganizationMembership } from "../organizations/organization";
+import {
+  addOrganizationMembership,
+  getOrganizationById,
+  listAllOrganizations,
+} from "../organizations/organization";
 import { isPlatformOwner } from "../../ownerAccess";
 import {
   assertCanManageOrganization,
   getManagedOrganizationIds,
 } from "../organizations/organizationScope";
 
-async function getActiveOrganizationForAccount(organizationId: string) {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("id, name, isActive")
-    .eq("id", organizationId)
-    .maybeSingle();
+type AppwriteUserRow = Record<string, unknown> & { $id: string };
 
-  if (error) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "تعذر التحقق من الجهة المختارة للحساب",
+const USERS_TABLE = "users";
+function userRowData(row: AppwriteUserRow): Record<string, unknown> {
+  return row.data && typeof row.data === "object"
+    ? (row.data as Record<string, unknown>)
+    : row;
+}
+
+async function listAllRows(
+  tableId: string,
+  queries: string[]
+): Promise<AppwriteUserRow[]> {
+  const rows: AppwriteUserRow[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const result = await getAppwriteTablesDB().listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId,
+      queries: [
+        ...queries,
+        Query.limit(100),
+        ...(cursor ? [Query.cursorAfter(cursor)] : []),
+      ],
+      total: false,
+    });
+    const page = result.rows as unknown as AppwriteUserRow[];
+    rows.push(...page);
+    if (page.length < 100) return rows;
+
+    const nextCursor = page[page.length - 1]?.$id;
+    if (!nextCursor || nextCursor === cursor) {
+      throw new Error(`Appwrite pagination did not advance for ${tableId}`);
+    }
+    cursor = nextCursor;
+  }
+}
+
+async function getUserRowsByUsername(
+  username: string
+): Promise<AppwriteUserRow[]> {
+  return listAllRows(USERS_TABLE, [Query.equal("username", username)]);
+}
+
+async function createUserProfileRow(
+  values: Record<string, unknown>
+): Promise<AppwriteUserRow> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const row = await getAppwriteTablesDB().createRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: USERS_TABLE,
+        rowId: randomUUID(),
+        data: {
+          id: randomInt(1, 2_147_483_647),
+          ...values,
+        },
+      });
+      return row as unknown as AppwriteUserRow;
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code !== 409 || attempt === 4) throw error;
+    }
+  }
+  throw new Error("Unable to allocate a unique Appwrite user profile ID");
+}
+
+function mapManagedUser(row: AppwriteUserRow) {
+  const data = userRowData(row);
+  return {
+    id: Number(data.id),
+    organizationId:
+      typeof data.organizationId === "string" ? data.organizationId : null,
+    username: String(data.username ?? ""),
+    name: typeof data.name === "string" ? data.name : null,
+    badgeNumber: typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    phone: typeof data.phone === "string" ? data.phone : null,
+    rank: typeof data.rank === "string" ? data.rank : null,
+    unit: typeof data.unit === "string" ? data.unit : null,
+    role: String(data.role ?? "user"),
+    loginMethod:
+      typeof data.loginMethod === "string" ? data.loginMethod : "password",
+    createdAt: data.createdAt ?? null,
+    lastSignedIn: data.lastSignedIn ?? null,
+  };
+}
+
+function syntheticAccountEmail(username: string): string {
+  const localPart = createHash("sha256")
+    .update(username.toLowerCase())
+    .digest("hex")
+    .slice(0, 32);
+  return `${localPart}@accounts.wathaeqi.invalid`;
+}
+
+async function deleteUserMembershipRows(userId: number): Promise<number> {
+  const rows = await listAllRows("organization_memberships", [
+    Query.equal("userId", userId),
+  ]);
+  for (const row of rows) {
+    await getAppwriteTablesDB().deleteRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "organization_memberships",
+      rowId: row.$id,
     });
   }
-  if (!data || data.isActive !== true) {
+  return rows.length;
+}
+
+async function deleteRowsForUser(
+  tableId: string,
+  userId: number
+): Promise<number> {
+  const rows = await listAllRows(tableId, [Query.equal("userId", userId)]);
+  for (const row of rows) {
+    await getAppwriteTablesDB().deleteRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId,
+      rowId: row.$id,
+    });
+  }
+  return rows.length;
+}
+
+async function hasRows(tableId: string, queries: string[]): Promise<boolean> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: getAppwriteDatabaseId(),
+    tableId,
+    queries: [...queries, Query.limit(1)],
+    total: false,
+  });
+  return result.rows.length > 0;
+}
+
+async function getActiveOrganizationForAccount(organizationId: string) {
+  const organization = await getOrganizationById(organizationId);
+  if (!organization) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "الجهة المختارة غير موجودة أو غير مفعّلة",
     });
   }
-  return data as { id: string; name: string; isActive: boolean };
+  return organization;
 }
 
 async function requireCurrentPassword(
   userId: number,
   password: string
 ): Promise<void> {
-  const user = await getUserById(userId);
+  const profile = await getAppwriteProfileById(userId);
   if (
-    !user?.passwordHash ||
-    !(await verifyPassword(password, user.passwordHash))
+    !profile?.user.username ||
+    !(await verifyAppwriteUserPassword(profile.user.username, password))
   ) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -66,7 +206,6 @@ export const userManagementRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const client = getSupabaseAdmin();
       const managedOrganizationIds = await getManagedOrganizationIds(ctx.user);
       if (input.organizationId) {
         await assertCanManageOrganization(ctx.user, input.organizationId);
@@ -74,96 +213,92 @@ export const userManagementRouter = router({
       const scopedOrganizationIds = input.organizationId
         ? [input.organizationId]
         : managedOrganizationIds;
-      let query = client
-        .from("users")
-        .select(
-          "id, organizationId, username, name, badgeNumber, phone, rank, unit, role, loginMethod, createdAt, lastSignedIn",
-          { count: "exact" }
-        )
-        .or("isActive.eq.true,loginMethod.eq.disabled")
-        .in("organizationId", scopedOrganizationIds)
-        .order("createdAt", { ascending: false })
-        .range(
-          (input.page - 1) * input.pageSize,
-          input.page * input.pageSize - 1
-        );
-      const search = input.search.toLowerCase();
-      if (search) {
-        query = query.or(
-          `name.ilike.%${search}%,username.ilike.%${search}%,badgeNumber.ilike.%${search}%,phone.ilike.%${search}%`
-        );
+      if (scopedOrganizationIds.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page: input.page,
+          pageSize: input.pageSize,
+          totalPages: 1,
+        };
       }
-      const { data, error, count } = await query;
-      if (error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل حسابات المستخدمين",
-        });
-      const users = data ?? [];
-      const pageOrganizationIds = Array.from(
-        new Set(
-          users
-            .map(user => user.organizationId)
-            .filter((id): id is string => typeof id === "string")
-        )
+
+      const search = input.search.toLowerCase();
+      const userRows = await listAllRows(USERS_TABLE, [
+        Query.equal("organizationId", scopedOrganizationIds),
+      ]);
+      const filteredRows = userRows.filter(row => {
+        const data = userRowData(row);
+        const visible =
+          data.isActive === true || data.loginMethod === "disabled";
+        if (!visible) return false;
+        if (!search) return true;
+
+        return [data.name, data.username, data.badgeNumber, data.phone].some(
+          value =>
+            typeof value === "string" && value.toLowerCase().includes(search)
+        );
+      });
+      filteredRows.sort((left, right) => {
+        const leftDate = Date.parse(String(userRowData(left).createdAt ?? ""));
+        const rightDate = Date.parse(
+          String(userRowData(right).createdAt ?? "")
+        );
+        return rightDate - leftDate;
+      });
+
+      const total = filteredRows.length;
+      const startIndex = (input.page - 1) * input.pageSize;
+      const pageRows = filteredRows.slice(
+        startIndex,
+        startIndex + input.pageSize
       );
-      const organizationNames = new Map<string, string>();
-      const membershipRoles = new Map<number, string>();
-      if (pageOrganizationIds.length > 0) {
-        const organizations = await client
-          .from("organizations")
-          .select("id, name")
-          .in("id", pageOrganizationIds);
-        if (organizations.error) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "تعذر تحميل جهات حسابات المستخدمين",
-          });
-        }
-        for (const organization of organizations.data ?? []) {
+      const users = pageRows.map(mapManagedUser);
+      const organizationNames = new Map(
+        (await listAllOrganizations()).map(organization => [
+          organization.id,
+          organization.name,
+        ])
+      );
+      const userIds = users.map(user => user.id);
+      const membershipRoles = new Map<string, string>();
+      if (userIds.length > 0) {
+        const memberships = await listAllRows("organization_memberships", [
+          Query.equal("userId", userIds),
+          Query.equal("isActive", true),
+        ]);
+        for (const row of memberships) {
+          const membership = userRowData(row);
           if (
-            typeof organization.id === "string" &&
-            typeof organization.name === "string"
+            typeof membership.userId === "number" &&
+            typeof membership.organizationId === "string" &&
+            typeof membership.role === "string"
           ) {
-            organizationNames.set(organization.id, organization.name);
+            membershipRoles.set(
+              `${membership.userId}:${membership.organizationId}`,
+              membership.role
+            );
           }
         }
       }
-      if (users.length > 0) {
-        const memberships = await client
-          .from("organization_memberships")
-          .select("userId, role")
-          .in(
-            "userId",
-            users.map(user => user.id)
-          )
-          .eq("isActive", true);
-        if (memberships.error) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "تعذر تحميل صلاحيات حسابات المستخدمين",
-          });
-        }
-        for (const membership of memberships.data ?? []) {
-          membershipRoles.set(
-            Number(membership.userId),
-            String(membership.role)
-          );
-        }
-      }
+
       return {
         items: users.map(user => ({
           ...user,
-          membershipRole: membershipRoles.get(Number(user.id)) ?? null,
+          membershipRole:
+            user.organizationId === null
+              ? null
+              : (membershipRoles.get(`${user.id}:${user.organizationId}`) ??
+                null),
           organizationName:
-            typeof user.organizationId === "string"
-              ? (organizationNames.get(user.organizationId) ?? null)
-              : null,
+            user.organizationId === null
+              ? null
+              : (organizationNames.get(user.organizationId) ?? null),
         })),
-        total: count ?? 0,
+        total,
         page: input.page,
         pageSize: input.pageSize,
-        totalPages: Math.max(1, Math.ceil((count ?? 0) / input.pageSize)),
+        totalPages: Math.max(1, Math.ceil(total / input.pageSize)),
       };
     }),
 
@@ -204,22 +339,13 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const username = input.username.toLowerCase();
-      const client = getSupabaseAdmin();
-      const existing = await client
-        .from("users")
-        .select("id")
-        .ilike("username", username)
-        .maybeSingle();
-      if (existing.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر التحقق من اسم المستخدم",
-        });
-      if (existing.data)
+      const existing = await getUserRowsByUsername(username);
+      if (existing.length > 0) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "اسم المستخدم مستخدم بالفعل",
         });
+      }
 
       const organization = await getActiveOrganizationForAccount(
         input.organizationId
@@ -239,73 +365,114 @@ export const userManagementRouter = router({
           message: "تعيين أدوار الإدارة العليا متاح لمالك النظام فقط",
         });
       }
+
+      const authUserId = randomUUID();
+      const email = syntheticAccountEmail(username);
       const now = new Date().toISOString();
-      const { data, error } = await client
-        .from("users")
-        .insert({
-          authUserId: randomUUID(),
+      let authUserCreated = false;
+      let profileRow: AppwriteUserRow | null = null;
+      try {
+        await getAppwriteUsers().create({
+          userId: authUserId,
+          email,
+          password: input.password,
+          name: input.name,
+        });
+        authUserCreated = true;
+
+        profileRow = await createUserProfileRow({
+          authUserId,
+          sessionVersion: randomUUID(),
           organizationId: organization.id,
           username,
-          password_hash: await hashPassword(input.password),
           name: input.name,
           badgeNumber: input.badgeNumber?.trim() || null,
           phone: input.phone?.trim() || null,
           rank: input.rank?.trim() || null,
           unit: input.unit?.trim() || null,
-          email: null,
+          email,
           loginMethod: "password",
           mustChangePassword: true,
           role: "user",
+          isActive: true,
+          isPlatformOwner: false,
+          bio: null,
+          avatarKey: null,
           createdAt: now,
           updatedAt: now,
           lastSignedIn: now,
-        })
-        .select(
-          "id, organizationId, username, name, badgeNumber, phone, rank, unit, role, createdAt, lastSignedIn"
-        )
-        .single();
+        });
 
-      if (error || !data) {
-        console.error("[userManagement.create] Supabase insert failed", error);
+        const userId = Number(userRowData(profileRow).id);
+        await addOrganizationMembership({
+          organizationId: organization.id,
+          userId,
+          role: input.role,
+        });
+
+        await writeAuditLog({
+          ...getRequestAuditContext(ctx.req),
+          actorUserId: ctx.user.id,
+          actorName: ctx.user.name ?? ctx.user.username ?? "مالك النظام",
+          action: "user.create",
+          entityType: "user",
+          entityId: String(userId),
+          metadata: JSON.stringify({
+            username,
+            organizationId: organization.id,
+            organizationName: organization.name,
+            badgeNumber: input.badgeNumber ?? null,
+          }),
+        });
+
+        return {
+          id: userId,
+          organizationId: organization.id,
+          username,
+          name: input.name,
+          badgeNumber: input.badgeNumber?.trim() || null,
+          phone: input.phone?.trim() || null,
+          rank: input.rank?.trim() || null,
+          unit: input.unit?.trim() || null,
+          role: "user",
+          createdAt: now,
+          lastSignedIn: now,
+        };
+      } catch (error) {
+        if (profileRow) {
+          const userId = Number(userRowData(profileRow).id);
+          try {
+            await deleteUserMembershipRows(userId);
+            await getAppwriteTablesDB().deleteRow({
+              databaseId: getAppwriteDatabaseId(),
+              tableId: USERS_TABLE,
+              rowId: profileRow.$id,
+            });
+          } catch (cleanupError) {
+            console.error(
+              "[userManagement.create] Failed to clean up Appwrite profile",
+              cleanupError
+            );
+          }
+        }
+        if (authUserCreated) {
+          try {
+            await getAppwriteUsers().delete({ userId: authUserId });
+          } catch (cleanupError) {
+            console.error(
+              "[userManagement.create] Failed to clean up Appwrite auth user",
+              cleanupError
+            );
+          }
+        }
+        if (error instanceof TRPCError) throw error;
+        console.error("[userManagement.create] Appwrite insert failed", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message:
-            "تعذر إنشاء حساب المستخدم. تحقق من إعدادات قاعدة البيانات وحاول مجددًا.",
+            "تعذر إنشاء حساب المستخدم. تحقق من إعدادات Appwrite وحاول مجددًا.",
         });
       }
-
-      try {
-        await addOrganizationMembership({
-          organizationId: organization.id,
-          userId: data.id,
-          role: input.role,
-        });
-      } catch (membershipError) {
-        const cleanup = await client.from("users").delete().eq("id", data.id);
-        if (cleanup.error) {
-          console.error(
-            "[userManagement.create] Failed to remove account after membership failure",
-            cleanup.error
-          );
-        }
-        throw membershipError;
-      }
-
-      await writeAuditLog({
-        ...getRequestAuditContext(ctx.req),
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? ctx.user.username ?? "مالك النظام",
-        action: "user.create",
-        entityType: "user",
-        entityId: String(data.id),
-        metadata: JSON.stringify({
-          username,
-          organizationId: organization.id,
-          organizationName: organization.name,
-          badgeNumber: input.badgeNumber ?? null,
-        }),
-      });
-      return data;
     }),
 
   update: organizationManagerProcedure
@@ -352,21 +519,14 @@ export const userManagementRouter = router({
       if ((input.password || input.role) && input.confirmPassword) {
         await requireCurrentPassword(ctx.user.id, input.confirmPassword);
       }
-      const client = getSupabaseAdmin();
-      const target = await client
-        .from("users")
-        .select("id, role, username, organizationId")
-        .eq("id", input.id)
-        .maybeSingle();
-      if (target.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل الحساب المطلوب",
-        });
-      if (!target.data)
+
+      const targetProfile = await getAppwriteProfileById(input.id);
+      if (!targetProfile) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
-      if (typeof target.data.organizationId === "string") {
-        await assertCanManageOrganization(ctx.user, target.data.organizationId);
+      }
+      const target = targetProfile.user;
+      if (typeof target.organizationId === "string") {
+        await assertCanManageOrganization(ctx.user, target.organizationId);
       }
       if (
         input.role &&
@@ -383,67 +543,109 @@ export const userManagementRouter = router({
           message: "تعيين أدوار الإدارة العليا متاح لمالك النظام فقط",
         });
       }
-      if (target.data.role === "admin" && input.id !== ctx.user.id) {
+      if (target.role === "admin" && input.id !== ctx.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكن تعديل حساب مالك آخر من هذه الشاشة",
         });
       }
+
       const username = input.username.toLowerCase();
-      const duplicate = await client
-        .from("users")
-        .select("id")
-        .ilike("username", username)
-        .neq("id", input.id)
-        .maybeSingle();
-      if (duplicate.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر التحقق من اسم المستخدم",
-        });
-      if (duplicate.data)
+      const duplicate = (await getUserRowsByUsername(username)).some(
+        row => Number(userRowData(row).id) !== input.id
+      );
+      if (duplicate) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "اسم المستخدم مستخدم بالفعل",
         });
+      }
 
+      const email =
+        username === target.username
+          ? target.email
+          : syntheticAccountEmail(username);
+      const now = new Date().toISOString();
       const values: Record<string, unknown> = {
         name: input.name,
         username,
+        email,
         badgeNumber: input.badgeNumber?.trim() || null,
         phone: input.phone?.trim() || null,
         rank: input.rank?.trim() || null,
         unit: input.unit?.trim() || null,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
       };
       if (input.password) {
-        values.password_hash = await hashPassword(input.password);
         values.mustChangePassword = true;
-        // Revoke existing application sessions without changing the auth identity.
         values.sessionVersion = randomUUID();
       }
-      const { data, error } = await client
-        .from("users")
-        .update(values)
-        .eq("id", input.id)
-        .select(
-          "id, username, name, badgeNumber, phone, rank, unit, role, createdAt, lastSignedIn"
-        )
-        .single();
-      if (error || !data) {
-        console.error("[userManagement.update] Supabase update failed", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر حفظ تعديلات الحساب",
-        });
+
+      const updatedRow = await getAppwriteTablesDB().updateRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: USERS_TABLE,
+        rowId: targetProfile.rowId,
+        data: values,
+      });
+
+      try {
+        if (email && email !== target.email) {
+          await getAppwriteUsers().updateEmail({
+            userId: target.authUserId,
+            email,
+          });
+        }
+        if (input.name !== target.name) {
+          await getAppwriteUsers().updateName({
+            userId: target.authUserId,
+            name: input.name,
+          });
+        }
+        if (input.password) {
+          await getAppwriteUsers().updatePassword({
+            userId: target.authUserId,
+            password: input.password,
+          });
+        }
+        if (input.role && typeof target.organizationId === "string") {
+          await addOrganizationMembership({
+            organizationId: target.organizationId,
+            userId: input.id,
+            role: input.role,
+          });
+        }
+      } catch (error) {
+        try {
+          await getAppwriteTablesDB().updateRow({
+            databaseId: getAppwriteDatabaseId(),
+            tableId: USERS_TABLE,
+            rowId: targetProfile.rowId,
+            data: {
+              name: target.name,
+              username: target.username,
+              email: target.email,
+              badgeNumber: target.badgeNumber,
+              phone: target.phone,
+              rank: target.rank,
+              unit: target.unit,
+              updatedAt: target.updatedAt.toISOString(),
+              ...(input.password
+                ? {
+                    mustChangePassword: target.mustChangePassword,
+                    sessionVersion: target.sessionVersion,
+                  }
+                : {}),
+            },
+          });
+        } catch (rollbackError) {
+          console.error(
+            "[userManagement.update] Failed to roll back Appwrite profile",
+            rollbackError
+          );
+        }
+        throw error;
       }
-      if (input.role && typeof target.data.organizationId === "string") {
-        await addOrganizationMembership({
-          organizationId: target.data.organizationId,
-          userId: input.id,
-          role: input.role,
-        });
-      }
+
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
@@ -456,7 +658,7 @@ export const userManagementRouter = router({
           passwordReset: Boolean(input.password),
         }),
       });
-      return data;
+      return mapManagedUser(updatedRow as unknown as AppwriteUserRow);
     }),
 
   enable: organizationManagerProcedure
@@ -469,50 +671,64 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await requireCurrentPassword(ctx.user.id, input.confirmPassword);
-      const client = getSupabaseAdmin();
-      const target = await client
-        .from("users")
-        .select("id, role, username, loginMethod, organizationId")
-        .eq("id", input.id)
-        .maybeSingle();
-      if (target.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل الحساب المطلوب",
-        });
-      if (!target.data)
+      const targetProfile = await getAppwriteProfileById(input.id);
+      if (!targetProfile) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
-      if (typeof target.data.organizationId === "string") {
-        await assertCanManageOrganization(ctx.user, target.data.organizationId);
       }
-      if (target.data.role === "admin")
+      const target = targetProfile.user;
+      if (typeof target.organizationId === "string") {
+        await assertCanManageOrganization(ctx.user, target.organizationId);
+      }
+      if (target.role === "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكن إعادة تفعيل حساب مالك النظام من هذه الشاشة",
         });
-      if (target.data.loginMethod !== "disabled")
+      }
+      if (target.loginMethod !== "disabled" || target.isActive) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "الحساب مفعّل بالفعل",
         });
-      const { error } = await client
-        .from("users")
-        .update({
-          sessionVersion: randomUUID(),
-          password_hash: await hashPassword(input.password),
-          mustChangePassword: true,
-          loginMethod: "password",
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("id", input.id);
-      if (error) {
-        console.error("[userManagement.enable] Supabase update failed", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر إعادة تفعيل الحساب",
-        });
       }
+
+      await getAppwriteUsers().updatePassword({
+        userId: target.authUserId,
+        password: input.password,
+      });
+      await getAppwriteUsers().updateStatus({
+        userId: target.authUserId,
+        status: true,
+      });
+
+      try {
+        await getAppwriteTablesDB().updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: USERS_TABLE,
+          rowId: targetProfile.rowId,
+          data: {
+            sessionVersion: randomUUID(),
+            mustChangePassword: true,
+            loginMethod: "password",
+            isActive: true,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        try {
+          await getAppwriteUsers().updateStatus({
+            userId: target.authUserId,
+            status: false,
+          });
+        } catch (rollbackError) {
+          console.error(
+            "[userManagement.enable] Failed to re-disable Appwrite auth user",
+            rollbackError
+          );
+        }
+        throw error;
+      }
+
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
@@ -520,7 +736,7 @@ export const userManagementRouter = router({
         action: "user.enable",
         entityType: "user",
         entityId: String(input.id),
-        metadata: JSON.stringify({ username: target.data.username }),
+        metadata: JSON.stringify({ username: target.username }),
       });
       return { success: true };
     }),
@@ -575,49 +791,68 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await requireCurrentPassword(ctx.user.id, input.confirmPassword);
-      if (input.id === ctx.user.id)
+      if (input.id === ctx.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكنك تعطيل حسابك الحالي",
         });
-      const client = getSupabaseAdmin();
-      const target = await client
-        .from("users")
-        .select("id, role, username, organizationId")
-        .eq("id", input.id)
-        .maybeSingle();
-      if (target.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل الحساب المطلوب",
-        });
-      if (!target.data)
-        throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
-      if (typeof target.data.organizationId === "string") {
-        await assertCanManageOrganization(ctx.user, target.data.organizationId);
       }
-      if (target.data.role === "admin")
+
+      const targetProfile = await getAppwriteProfileById(input.id);
+      if (!targetProfile) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الحساب غير موجود",
+        });
+      }
+
+      const target = targetProfile.user;
+      if (typeof target.organizationId === "string") {
+        await assertCanManageOrganization(ctx.user, target.organizationId);
+      }
+      if (target.role === "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكن تعطيل حساب مالك النظام",
         });
-      const { error } = await client
-        .from("users")
-        .update({
-          sessionVersion: randomUUID(),
-          password_hash: null,
-          loginMethod: "disabled",
-          isActive: false,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("id", input.id);
-      if (error) {
-        console.error("[userManagement.disable] Supabase update failed", error);
+      }
+
+      await getAppwriteUsers().updateStatus({
+        userId: target.authUserId,
+        status: false,
+      });
+
+      try {
+        await getAppwriteTablesDB().updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: USERS_TABLE,
+          rowId: targetProfile.rowId,
+          data: {
+            sessionVersion: randomUUID(),
+            loginMethod: "disabled",
+            isActive: false,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        try {
+          await getAppwriteUsers().updateStatus({
+            userId: target.authUserId,
+            status: true,
+          });
+        } catch (rollbackError) {
+          console.error(
+            "[userManagement.disable] Failed to restore Appwrite account status",
+            rollbackError
+          );
+        }
+        console.error("[userManagement.disable] Appwrite update failed", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "تعذر تعطيل الحساب",
         });
       }
+
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
@@ -625,7 +860,7 @@ export const userManagementRouter = router({
         action: "user.disable",
         entityType: "user",
         entityId: String(input.id),
-        metadata: JSON.stringify({ username: target.data.username }),
+        metadata: JSON.stringify({ username: target.username }),
       });
       return { success: true };
     }),

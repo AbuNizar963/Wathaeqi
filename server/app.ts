@@ -38,7 +38,7 @@ function isSameOriginRequest(req: express.Request): boolean {
 }
 
 /**
- * Creates the HTTP application shared by the local server and Vercel.
+ * Creates the HTTP application shared by the local server and Netlify.
  *
  * Vite is deliberately not imported here. Keeping development tooling out of
  * this module prevents serverless bundlers from tracing Vite's native build
@@ -76,7 +76,7 @@ export function createApp(
 ): Express {
   assertProductionEnvironment();
   const app = express();
-  // Vercel supplies the client address through one trusted proxy hop in production.
+  // Netlify supplies the client address through its trusted proxy in production.
   // Do not trust forwarded headers in local development or test environments.
   app.set("trust proxy", ENV.isProduction ? 1 : false);
   app.disable("x-powered-by");
@@ -234,7 +234,7 @@ export function createApp(
       ok: true,
       service: "police-telegrams-platform",
       auth: "appwrite-auth",
-      database: "supabase-legacy-migration-pending",
+      database: "appwrite-primary-legacy-routes-pending",
       timestamp: new Date().toISOString(),
     });
   });

@@ -8,7 +8,7 @@ import {
   canOrganizationHaveParent,
   wouldCreateOrganizationCycle,
 } from "../../../shared/features/organizations/organizationHierarchy";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import { Query } from "node-appwrite";
 import { hashPassword } from "../../_core/auth";
 import {
@@ -78,6 +78,36 @@ async function listOrganizationRows(
     total: false,
   });
   return result.rows as AppwriteOrganizationRow[];
+}
+
+async function listAllOrganizationRows(
+  tableId: string,
+  queries: string[]
+): Promise<AppwriteOrganizationRow[]> {
+  const rows: AppwriteOrganizationRow[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const page = await getAppwriteTablesDB().listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId,
+      queries: [
+        ...queries,
+        Query.limit(100),
+        ...(cursor ? [Query.cursorAfter(cursor)] : []),
+      ],
+      total: false,
+    });
+    const pageRows = page.rows as AppwriteOrganizationRow[];
+    rows.push(...pageRows);
+
+    if (pageRows.length < 100) return rows;
+    const nextCursor = pageRows[pageRows.length - 1]?.$id;
+    if (!nextCursor || nextCursor === cursor) {
+      throw new Error(`Appwrite pagination did not advance for ${tableId}`);
+    }
+    cursor = nextCursor;
+  }
 }
 
 export async function getPrimaryOrganization(): Promise<Organization> {
@@ -645,27 +675,23 @@ async function validateTelegramDestination(
 }
 
 export async function listAllOrganizations(): Promise<Organization[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("*")
-    .order("type", { ascending: true })
-    .order("name", { ascending: true });
-  throwIfError(error, "Failed to list organizations");
-  return (data ?? []).map(row =>
-    mapOrganization(row as Record<string, unknown>)
-  );
+  const rows = await listAllOrganizationRows("organizations", []);
+  return rows
+    .map(row => mapOrganization(appwriteRowData(row)))
+    .sort(
+      (left, right) =>
+        left.type.localeCompare(right.type) ||
+        left.name.localeCompare(right.name, "ar")
+    );
 }
 
 export async function getOrganizationByIdIncludingInactive(
   organizationId: string
 ): Promise<Organization | null> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("*")
-    .eq("id", organizationId)
-    .maybeSingle();
-  throwIfError(error, "Failed to load organization for management");
-  return data ? mapOrganization(data as Record<string, unknown>) : null;
+  const rows = await listOrganizationRows("organizations", [
+    Query.equal("id", organizationId),
+  ]);
+  return rows[0] ? mapOrganization(appwriteRowData(rows[0])) : null;
 }
 
 export async function updateOrganization(input: {
@@ -703,9 +729,19 @@ export async function updateOrganization(input: {
   if (input.id === (await getPrimaryOrganization()).id && !input.isActive) {
     throw new Error("لا يمكن تعطيل المركز الرئيسي");
   }
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .update({
+  const rows = await listOrganizationRows("organizations", [
+    Query.equal("id", input.id),
+  ]);
+  const existingRow = rows[0];
+  if (!existingRow) {
+    throw new Error("الجهة غير موجودة");
+  }
+
+  const updated = await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: "organizations",
+    rowId: existingRow.$id,
+    data: {
       parentOrganizationId: input.parentOrganizationId ?? null,
       telegramDestinationOrganizationId:
         input.telegramDestinationOrganizationId ?? null,
@@ -714,12 +750,9 @@ export async function updateOrganization(input: {
       type: input.type,
       isActive: input.isActive,
       updatedAt: new Date().toISOString(),
-    })
-    .eq("id", input.id)
-    .select("*")
-    .single();
-  throwIfError(error, "Failed to update organization");
-  return mapOrganization(data as Record<string, unknown>);
+    },
+  });
+  return mapOrganization(appwriteRowData(updated as AppwriteOrganizationRow));
 }
 
 export async function archiveOrganizationSafely(input: {
@@ -931,22 +964,82 @@ export async function addOrganizationMembership(input: {
   userId: number;
   role: OrganizationMemberRole;
 }): Promise<OrganizationMembership> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organization_memberships")
-    .upsert(
-      {
-        organizationId: input.organizationId,
-        userId: input.userId,
+  const tables = getAppwriteTablesDB();
+  const existingRows = await listOrganizationRows("organization_memberships", [
+    Query.equal("organizationId", input.organizationId),
+    Query.equal("userId", input.userId),
+  ]);
+  const now = new Date().toISOString();
+
+  if (existingRows[0]) {
+    const updated = await tables.updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "organization_memberships",
+      rowId: existingRows[0].$id,
+      data: {
         role: input.role,
         isActive: true,
+        updatedAt: now,
       },
-      { onConflict: "organizationId,userId" }
-    )
-    .select("*")
-    .single();
+    });
+    return mapMembership(appwriteRowData(updated as AppwriteOrganizationRow));
+  }
 
-  throwIfError(error, "Failed to assign organization membership");
-  return mapMembership(data as Record<string, unknown>);
+  const profile = await getAppwriteProfileById(input.userId);
+  if (!profile) {
+    throw new Error("لا يمكن إسناد العضوية إلى مستخدم غير موجود");
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const id = randomInt(1, 2_147_483_647);
+    try {
+      const created = await tables.createRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "organization_memberships",
+        rowId: randomUUID(),
+        data: {
+          id,
+          organizationId: input.organizationId,
+          organization: input.organizationId,
+          userId: input.userId,
+          user: profile.rowId,
+          role: input.role,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      return mapMembership(appwriteRowData(created as AppwriteOrganizationRow));
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code !== 409 || attempt === 2) throw error;
+
+      const racedRows = await listOrganizationRows("organization_memberships", [
+        Query.equal("organizationId", input.organizationId),
+        Query.equal("userId", input.userId),
+      ]);
+      if (racedRows[0]) {
+        const updated = await tables.updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "organization_memberships",
+          rowId: racedRows[0].$id,
+          data: {
+            role: input.role,
+            isActive: true,
+            updatedAt: now,
+          },
+        });
+        return mapMembership(
+          appwriteRowData(updated as AppwriteOrganizationRow)
+        );
+      }
+    }
+  }
+
+  throw new Error("تعذر حفظ عضوية الجهة");
 }
 
 export async function listRoutingTargets(
@@ -962,16 +1055,11 @@ export async function listRoutingTargets(
     throw new Error("Current organization is unavailable");
   }
 
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("*")
-    .eq("isActive", true)
-    .order("name", { ascending: true });
-  throwIfError(error, "Failed to load routing targets");
-
-  const organizations = (data ?? []).map(row =>
-    mapOrganization(row as Record<string, unknown>)
-  );
+  const organizations = (
+    await listAllOrganizationRows("organizations", [
+      Query.equal("isActive", true),
+    ])
+  ).map(row => mapOrganization(appwriteRowData(row)));
   return organizations
     .filter(
       organization =>
@@ -1037,18 +1125,11 @@ export function buildRoutingDirectory(
 export async function listRoutingDirectory(
   userId: number
 ): Promise<RoutingDirectoryOrganization[]> {
-  const [routingTargets, result] = await Promise.all([
+  const [routingTargets, rows] = await Promise.all([
     listRoutingTargets(userId),
-    getSupabaseAdmin()
-      .from("organizations")
-      .select("*")
-      .eq("isActive", true)
-      .order("name", { ascending: true }),
+    listAllOrganizationRows("organizations", [Query.equal("isActive", true)]),
   ]);
-  throwIfError(result.error, "Failed to load routing directory");
-  const organizations = (result.data ?? []).map(row =>
-    mapOrganization(row as Record<string, unknown>)
-  );
+  const organizations = rows.map(row => mapOrganization(appwriteRowData(row)));
   return buildRoutingDirectory(organizations, routingTargets);
 }
 
@@ -1059,16 +1140,11 @@ export async function listOrganizationDescendants(
   if (!membership) {
     throw new Error("User is not assigned to an active organization");
   }
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("*")
-    .eq("isActive", true)
-    .order("name", { ascending: true });
-  throwIfError(error, "Failed to load child organizations");
-
-  const organizations = (data ?? []).map(row =>
-    mapOrganization(row as Record<string, unknown>)
-  );
+  const organizations = (
+    await listAllOrganizationRows("organizations", [
+      Query.equal("isActive", true),
+    ])
+  ).map(row => mapOrganization(appwriteRowData(row)));
   const descendants = new Set<string>();
   let frontier = [membership.organizationId];
   while (frontier.length > 0) {

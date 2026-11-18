@@ -6,7 +6,6 @@ import { ENV } from "./_core/env";
 const mocked = vi.hoisted(() => ({
   allocateSerialNumber: vi.fn(),
   createTelegram: vi.fn(),
-  createTelegramAttachment: vi.fn(),
   updateTelegram: vi.fn(),
   purgeTelegramPermanently: vi.fn(),
   getDashboardStats: vi.fn(),
@@ -14,7 +13,6 @@ const mocked = vi.hoisted(() => ({
   getOrCreateSettings: vi.fn(),
   getOrganizationSettings: vi.fn(),
   getTelegramById: vi.fn(),
-  getTelegramAttachmentById: vi.fn(),
   listTelegrams: vi.fn(),
   listTelegramVersions: vi.fn(),
   getTelegramReport: vi.fn(),
@@ -26,6 +24,11 @@ const mocked = vi.hoisted(() => ({
   getUserByUsername: vi.fn(),
   recordTelegramAction: vi.fn(),
   recordTelegramVersion: vi.fn(),
+}));
+const attachmentRepositoryMocks = vi.hoisted(() => ({
+  createTelegramAttachment: vi.fn(),
+  getTelegramAttachmentById: vi.fn(),
+  listTelegramAttachments: vi.fn(),
 }));
 const organizationMocks = vi.hoisted(() => ({
   getUserOrganizationMembership: vi.fn(),
@@ -39,6 +42,10 @@ const organizationMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./db", () => mocked);
+vi.mock(
+  "./features/storage/telegramAttachmentRepository",
+  () => attachmentRepositoryMocks
+);
 vi.mock("./features/organizations/organization", async importOriginal => {
   const actual =
     await importOriginal<
@@ -161,7 +168,8 @@ describe("telegram administration permissions", () => {
     vi.clearAllMocks();
     mocked.getTelegramById.mockResolvedValue(telegram);
     mocked.listTelegramVersions.mockResolvedValue([]);
-    mocked.getTelegramAttachmentById.mockResolvedValue(null);
+    attachmentRepositoryMocks.getTelegramAttachmentById.mockResolvedValue(null);
+    attachmentRepositoryMocks.listTelegramAttachments.mockResolvedValue([]);
     mocked.getOrganizationSettings.mockResolvedValue(undefined);
     organizationMocks.getUserOrganizationMembership.mockResolvedValue({
       organizationId: "00000000-0000-4000-8000-000000000099",
@@ -182,7 +190,9 @@ describe("telegram administration permissions", () => {
       telegram,
       attachmentStorageKeys: [],
     });
-    mocked.createTelegramAttachment.mockResolvedValue(undefined);
+    attachmentRepositoryMocks.createTelegramAttachment.mockResolvedValue(
+      undefined
+    );
     storageMocks.storageDelete.mockResolvedValue(undefined);
     storageMocks.storageCreateSignedUrl.mockResolvedValue(
       "https://storage.example/scoped-attachment"
@@ -314,7 +324,9 @@ describe("telegram administration permissions", () => {
       bytes,
       "application/pdf"
     );
-    expect(mocked.createTelegramAttachment).toHaveBeenCalledWith(
+    expect(
+      attachmentRepositoryMocks.createTelegramAttachment
+    ).toHaveBeenCalledWith(
       expect.objectContaining({
         telegramId: 7,
         storageOrganizationId: telegram.organizationId,
@@ -344,7 +356,9 @@ describe("telegram administration permissions", () => {
     expect(
       storageMocks.storagePutOrganizationAttachment
     ).not.toHaveBeenCalled();
-    expect(mocked.createTelegramAttachment).not.toHaveBeenCalled();
+    expect(
+      attachmentRepositoryMocks.createTelegramAttachment
+    ).not.toHaveBeenCalled();
     expect(mocked.writeAuditLog).not.toHaveBeenCalled();
   });
 
@@ -363,13 +377,15 @@ describe("telegram administration permissions", () => {
     expect(
       storageMocks.storagePutOrganizationAttachment
     ).not.toHaveBeenCalled();
-    expect(mocked.createTelegramAttachment).not.toHaveBeenCalled();
+    expect(
+      attachmentRepositoryMocks.createTelegramAttachment
+    ).not.toHaveBeenCalled();
   });
 
   it("creates a temporary URL only for metadata owned by the telegram origin", async () => {
     const storageKey =
       "organizations/00000000-0000-4000-8000-000000000007/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
-    mocked.getTelegramAttachmentById.mockResolvedValueOnce({
+    attachmentRepositoryMocks.getTelegramAttachmentById.mockResolvedValueOnce({
       id: 12,
       telegramId: telegram.id,
       storageOrganizationId: telegram.organizationId,
@@ -395,7 +411,7 @@ describe("telegram administration permissions", () => {
   });
 
   it("does not sign an attachment whose metadata owner differs from the telegram origin", async () => {
-    mocked.getTelegramAttachmentById.mockResolvedValueOnce({
+    attachmentRepositoryMocks.getTelegramAttachmentById.mockResolvedValueOnce({
       id: 13,
       telegramId: telegram.id,
       storageOrganizationId: "00000000-0000-4000-8000-000000000099",

@@ -1,19 +1,41 @@
+import { Query } from "node-appwrite";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
   type PlatformDocumentSettings,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
-import { getSupabaseAdmin } from "../../_core/supabase";
+import {
+  getAppwriteDatabaseId,
+  getAppwriteTablesDB,
+} from "../../_core/appwrite";
 
-const asDate = (value: unknown): Date =>
-  value instanceof Date ? value : new Date(String(value));
+const TABLE_ID = "platform_document_settings";
+const ROW_ID = "1";
 
-function throwIfError(
-  error: { message: string } | null,
-  context: string
-): void {
-  if (error) throw new Error(`${context}: ${error.message}`);
+type AppwriteRow = Record<string, unknown> & {
+  $id: string;
+  data?: Record<string, unknown>;
+};
+
+function rowData(row: AppwriteRow): Record<string, unknown> {
+  return row.data ?? row;
+}
+
+async function findSettingsRow(): Promise<AppwriteRow | null> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: TABLE_ID,
+    queries: [Query.equal("id", 1), Query.limit(2)],
+    total: false,
+  });
+  const rows = result.rows as AppwriteRow[];
+  if (rows.length > 1) {
+    throw new Error(
+      "Platform document settings contains duplicate singleton rows"
+    );
+  }
+  return rows[0] ?? null;
 }
 
 function mapPlatformDocumentSettings(
@@ -40,42 +62,75 @@ function mapPlatformDocumentSettings(
       typeof row.showVerificationQr === "boolean"
         ? row.showVerificationQr
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.showVerificationQr,
-    updatedAt: row.updatedAt ? asDate(row.updatedAt).toISOString() : null,
+    updatedAt: row.updatedAt
+      ? new Date(String(row.updatedAt)).toISOString()
+      : null,
   };
 }
 
 export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSettings> {
-  const client = getSupabaseAdmin();
-  const { data, error } = await client
-    .from("platform_document_settings")
-    .select("*")
-    .eq("id", 1)
-    .maybeSingle();
-  throwIfError(error, "Failed to load platform document settings");
-
-  if (data) return mapPlatformDocumentSettings(data as Record<string, unknown>);
-  // Reads must never overwrite an owner's concurrent save. The migration
-  // seeds the singleton; only the owner-authorized update path may recreate it.
-  return { ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS, updatedAt: null };
+  const row = await findSettingsRow();
+  if (!row) {
+    // A read must not create defaults or overwrite an owner's concurrent save.
+    return { ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS, updatedAt: null };
+  }
+  return mapPlatformDocumentSettings(rowData(row));
 }
 
 export async function updatePlatformDocumentSettings(
   values: Omit<PlatformDocumentSettings, "updatedAt">,
   updatedByUserId: number
 ): Promise<PlatformDocumentSettings> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("platform_document_settings")
-    .upsert(
-      {
-        id: 1,
-        ...values,
-        updatedByUserId,
-        updatedAt: new Date().toISOString(),
-      },
-      { onConflict: "id" }
-    )
-    .select("*")
-    .single();
-  throwIfError(error, "Failed to save platform document settings");
-  return mapPlatformDocumentSettings(data as Record<string, unknown>);
+  const now = new Date().toISOString();
+  const data = {
+    id: 1,
+    ...values,
+    updatedByUserId,
+    updatedAt: now,
+  };
+  const tables = getAppwriteTablesDB();
+  const existing = await findSettingsRow();
+
+  if (existing) {
+    const updated = await tables.updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: TABLE_ID,
+      rowId: existing.$id,
+      data,
+    });
+    return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
+  }
+
+  try {
+    const created = await tables.createRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: TABLE_ID,
+      rowId: ROW_ID,
+      data,
+    });
+    return mapPlatformDocumentSettings(rowData(created as AppwriteRow));
+  } catch (error) {
+    // If two first-time saves race, the unique id index lets one win. Reload
+    // the winning row and apply this owner's requested values to that row.
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? Number((error as { code?: unknown }).code)
+        : 0;
+    if (code !== 409) {
+      throw new Error(
+        `Failed to save platform document settings: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+    const raced = await findSettingsRow();
+    if (!raced) throw error;
+    const updated = await tables.updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: TABLE_ID,
+      rowId: raced.$id,
+      data,
+    });
+    return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
+  }
 }
