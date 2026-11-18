@@ -76,12 +76,10 @@ describe("Flutter mobile API contract", () => {
 
     expect(missing).toEqual([]);
     for (const procedure of documentStudioSharedApiProcedures) {
-      expect(
-        [...calls.keys(), ...readFileSync(join(mobileLib, "document_studio_outbox.dart"), "utf8").matchAll(/'((?:documentStudio)\\.[A-Za-z]+)'/g)].some(
-          value => (typeof value === "string" ? value : value[1]) === procedure
-        ) || listDartFiles(mobileLib).some(file => readFileSync(file, "utf8").includes(procedure)),
-        procedure
-      ).toBe(true);
+      const appearsInDart = listDartFiles(mobileLib).some(file =>
+        readFileSync(file, "utf8").includes(procedure)
+      );
+      expect(appearsInDart, procedure).toBe(true);
     }
   });
 });
