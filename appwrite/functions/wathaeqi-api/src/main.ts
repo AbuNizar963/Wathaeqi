@@ -2,6 +2,7 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { Request as ExpressRequest, Response as ExpressResponse } from "express";
 import { createContext } from "../../../../server/_core/context";
 import { ownerApiRouter } from "../../../../server/ownerApiRouter";
+import { ENV } from "../../../../server/_core/env";
 
 type AppwriteFunctionRequest = {
   method: string;
@@ -119,6 +120,12 @@ export default async function main({
   log,
   error,
 }: AppwriteFunctionContext): Promise<Response | unknown> {
+  // Appwrite injects a short-lived API key scoped to this function execution.
+  // Reuse it instead of storing a permanent project API key in function vars.
+  if (req.headers["x-appwrite-key"]) {
+    ENV.appwriteApiKey = req.headers["x-appwrite-key"];
+  }
+
   const origin = req.headers.origin;
   const allowedOrigins = getAllowedOrigins();
   const corsHeaders = createCorsHeaders(
