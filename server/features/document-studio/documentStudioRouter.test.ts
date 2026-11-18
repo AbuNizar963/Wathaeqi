@@ -78,6 +78,16 @@ function context(authenticated = true): TrpcContext {
   };
 }
 
+function nonOwnerContext(): TrpcContext {
+  const ownerContext = context();
+  return {
+    ...ownerContext,
+    user: ownerContext.user
+      ? { ...ownerContext.user, role: "user", isPlatformOwner: false }
+      : null,
+  };
+}
+
 const template = {
   id: "template-1",
   ownerId,
@@ -157,7 +167,9 @@ describe("document studio authorization and API", () => {
       logoUrl: null,
       dateFormat: "dd/MM/yyyy",
     });
-    documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(12);
+    documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(
+      12
+    );
     dbMocks.writeAuditLog.mockResolvedValue(undefined);
     mocks.listDocumentTemplates.mockResolvedValue([template]);
     mocks.getDocumentTemplate.mockResolvedValue(template);
@@ -212,7 +224,9 @@ describe("document studio authorization and API", () => {
       organizationId: "org-1",
     });
 
-    expect(documentOrganizationMocks.getDocumentOrganizationSettings).toHaveBeenCalledWith("org-1");
+    expect(
+      documentOrganizationMocks.getDocumentOrganizationSettings
+    ).toHaveBeenCalledWith("org-1");
     expect(result).toMatchObject({
       organizationId: "org-1",
       serialPrefix: "DOC",
@@ -228,7 +242,9 @@ describe("document studio authorization and API", () => {
         organizationId: "org-2",
       })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(documentOrganizationMocks.getDocumentOrganizationSettings).not.toHaveBeenCalled();
+    expect(
+      documentOrganizationMocks.getDocumentOrganizationSettings
+    ).not.toHaveBeenCalled();
   });
 
   it("scopes template and document lists to the authenticated Appwrite owner", async () => {
@@ -239,6 +255,15 @@ describe("document studio authorization and API", () => {
 
     expect(mocks.listDocumentTemplates).toHaveBeenCalledWith(ownerId);
     expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(ownerId);
+  });
+
+  it("denies authenticated non-owners access to document services", async () => {
+    const caller = appRouter.createCaller(nonOwnerContext());
+
+    await expect(caller.documentStudio.listDocuments()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
   });
 
   it("derives template ownership from the session, not mutation input", async () => {
