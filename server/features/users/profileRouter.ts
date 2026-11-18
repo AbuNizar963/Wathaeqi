@@ -7,16 +7,12 @@ import {
   dismissAppwritePasswordChange,
   updateAppwriteUserProfile,
 } from "../../_core/appwriteAuth";
-import {
-  authenticatedProcedure,
-  protectedProcedure,
-  router,
-} from "../../_core/trpc";
+import { platformOwnerProcedure, router } from "../../_core/trpc";
 
 export const profileRouter = router({
-  get: authenticatedProcedure.query(({ ctx }) => ctx.user),
+  get: platformOwnerProcedure.query(({ ctx }) => ctx.user),
 
-  update: protectedProcedure
+  update: platformOwnerProcedure
     .input(
       z.object({
         name: z
@@ -43,7 +39,7 @@ export const profileRouter = router({
       return publicUser(updated);
     }),
 
-  changePassword: authenticatedProcedure
+  changePassword: platformOwnerProcedure
     .input(
       z.object({
         currentPassword: z.string().min(1).max(256),
@@ -81,7 +77,7 @@ export const profileRouter = router({
       return { success: true };
     }),
 
-  dismissTemporaryPasswordChange: authenticatedProcedure.mutation(
+  dismissTemporaryPasswordChange: platformOwnerProcedure.mutation(
     async ({ ctx }) => {
       await dismissAppwritePasswordChange(ctx.user.id);
       return { success: true };
