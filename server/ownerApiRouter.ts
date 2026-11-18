@@ -22,13 +22,17 @@ import {
 } from "./features/auth/ownerBootstrap";
 import { platformOwnerProcedure, publicProcedure, router } from "./_core/trpc";
 import { isPlatformOwner } from "./ownerAccess";
-import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
+import {
+  documentStudioRouter,
+} from "./features/document-studio/documentStudioRouter";
 import {
   getOrganizationById,
   getUserOrganizationMembership,
 } from "./features/organizations/organization";
 import { profileRouter } from "./features/users/profileRouter";
-import { platformDocumentSettingsRouter } from "./features/platform-settings/platformDocumentSettingsRouter";
+import {
+  platformDocumentSettingsRouter,
+} from "./features/platform-settings/platformDocumentSettingsRouter";
 
 async function authenticateOwnerForLogin(username: string, password: string) {
   try {
