@@ -437,7 +437,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'منصة رسمية آمنة لإدارة البرقيات والعمليات',
+                      'منصة وثائقي الرسمية لإدارة الوثائق',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 26),
@@ -662,7 +662,7 @@ String _dashboardRefreshError(Object error) {
 
 class _DashboardPageState extends State<DashboardPage>
     with WidgetsBindingObserver {
-  static const _idleOutboxMessage = 'لا توجد برقيات معلقة محليًا.';
+  static const _idleOutboxMessage = 'لا توجد تغييرات محلية معلقة.';
   String get _greetingName =>
       (_account['name'] ?? _account['username'] ?? 'أبو نزار').toString();
 
@@ -752,7 +752,7 @@ class _DashboardPageState extends State<DashboardPage>
     if (_serverReachable == false) {
       return _pendingOutbox > 0
           ? 'الخادم غير متصل؛ ستبقى البرقيات محفوظة محليًا حتى عودة الاتصال.'
-          : 'الخادم غير متصل؛ لا توجد برقيات معلقة محليًا.';
+          : 'الخادم غير متصل؛ لا توجد تغييرات محلية معلقة.';
     }
     return 'لم يُتحقق من اتصال الخادم بعد.';
   }
@@ -2372,7 +2372,7 @@ class _DashboardPageState extends State<DashboardPage>
             const SizedBox(width: 8),
             const Flexible(
               child: Text(
-                'مركز البرقيات',
+                'وثائقي',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
@@ -2917,7 +2917,7 @@ class _DashboardPageState extends State<DashboardPage>
               child: Text(
                 showingOutbox
                     ? 'اسحب للتبديل إلى لوحة الترحيب'
-                    : 'اسحب لعرض بطاقة صندوق الخروج',
+                    : 'اسحب لعرض بطاقة المزامنة المحلية',
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
