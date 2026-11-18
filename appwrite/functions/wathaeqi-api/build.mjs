@@ -5,8 +5,8 @@ await build({
   bundle: true,
   platform: "node",
   target: "node24",
-  format: "esm",
-  outfile: "build/main.js",
+  format: "cjs",
+  outfile: "build/main.cjs",
   tsconfig: "../../../tsconfig.json",
   nodePaths: ["node_modules"],
 });
