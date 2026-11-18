@@ -130,7 +130,13 @@ class AppwriteStorageProvider implements StorageProvider {
 
     const { fileId, folder } = parseStorageKey(key);
     const match = key.match(
-      /^organizations\/[0-9a-f-]{36}\/telegrams\/[1-9]\d*\/attachments\/[0-9a-f-]{36}-(.+)$/i
+      new RegExp(
+        [
+          "^organizations/[0-9a-f-]{36}/telegrams/[1-9]\\d*/attachments/",
+          "[0-9a-f-]{36}-(.+)$",
+        ].join(""),
+        "i"
+      )
     );
     if (!match || match[1] !== metadata.fileName) {
       throw new Error("Invalid organization attachment storage key");
