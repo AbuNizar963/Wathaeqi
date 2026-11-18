@@ -19,11 +19,6 @@ import {
   getUserOrganizationMembership,
 } from "./features/organizations/organization";
 import { resolveOrganizationLetterhead } from "./features/organizations/organizationLetterhead";
-import {
-  countUrgentTelegramsAwaitingReceipt,
-  type DashboardTelegramRoute,
-  type DashboardUrgentTelegram,
-} from "./urgentTelegramAlert";
 
 export {
   getPlatformDocumentSettings,
@@ -604,36 +599,6 @@ export async function upsertOrganizationSettingsForOrganization(
   const saved = await getOrganizationSettings(organizationId);
   if (!saved) throw new Error("Organization settings could not be reloaded");
   return saved;
-}
-
-export async function updateRouteIncomingSerial(input: {
-  routeId: number;
-  serialNumber: number;
-  serialCode: string;
-}): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("telegram_routes")
-    .update({
-      incomingSerialNumber: input.serialNumber,
-      incomingSerialCode: input.serialCode,
-    })
-    .eq("id", input.routeId);
-  throwIfError(error, "Failed to save incoming organization serial");
-}
-
-export async function updateRouteOutgoingSerial(input: {
-  routeId: number;
-  serialNumber: number;
-  serialCode: string;
-}): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("telegram_routes")
-    .update({
-      routeSerialNumber: input.serialNumber,
-      routeSerialCode: input.serialCode,
-    })
-    .eq("id", input.routeId);
-  throwIfError(error, "Failed to save outgoing organization serial");
 }
 
 export type TelegramListItem = Telegram & {
@@ -1764,18 +1729,6 @@ export async function markNotificationRead(
 }
 
 /** Resolve pending route work for every account in the receiving organization. */
-export async function resolveRouteNotifications(
-  routeId: number
-): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .update({ readAt: new Date().toISOString() })
-    .eq("routeId", routeId)
-    .in("type", ["route.approved", "route.requested"])
-    .is("readAt", null);
-  throwIfError(error, "Failed to resolve route notifications");
-}
-
 async function countTelegrams(
   _userId: number,
   canViewAll: boolean,
@@ -1799,60 +1752,6 @@ async function countTelegrams(
   return count ?? 0;
 }
 
-const dashboardUrgentTelegramPageSize = 500;
-const dashboardRouteLookupBatchSize = 200;
-
-async function countUrgentAlertsAwaitingReceipt(
-  receivingOrganizationId: string | null
-): Promise<number> {
-  if (!receivingOrganizationId) return 0;
-
-  const telegrams: DashboardUrgentTelegram[] = [];
-
-  for (let offset = 0; ; offset += dashboardUrgentTelegramPageSize) {
-    const query = getSupabaseAdmin()
-      .from("telegrams")
-      .select("id,currentOrganizationId")
-      .eq("priority", "urgent")
-      .eq("currentOrganizationId", receivingOrganizationId)
-      .order("id", { ascending: true })
-      .range(offset, offset + dashboardUrgentTelegramPageSize - 1);
-
-    const { data, error } = await query;
-    throwIfError(error, "Failed to list urgent telegrams");
-    const page = (data ?? []) as DashboardUrgentTelegram[];
-    telegrams.push(...page);
-    if (page.length < dashboardUrgentTelegramPageSize) break;
-  }
-
-  if (telegrams.length === 0) return 0;
-
-  const routes: DashboardTelegramRoute[] = [];
-  const telegramIds = telegrams.map(telegram => telegram.id);
-  for (
-    let offset = 0;
-    offset < telegramIds.length;
-    offset += dashboardRouteLookupBatchSize
-  ) {
-    const batch = telegramIds.slice(
-      offset,
-      offset + dashboardRouteLookupBatchSize
-    );
-    const { data, error } = await getSupabaseAdmin()
-      .from("telegram_routes")
-      .select("id,telegramId,toOrganizationId,receiverDecisionStatus,createdAt")
-      .in("telegramId", batch);
-    throwIfError(error, "Failed to list urgent telegram routes");
-    routes.push(...((data ?? []) as DashboardTelegramRoute[]));
-  }
-
-  return countUrgentTelegramsAwaitingReceipt(
-    telegrams,
-    routes,
-    receivingOrganizationId
-  );
-}
-
 export async function getDashboardStats(
   userId: number,
   canViewAll: boolean,
@@ -1867,7 +1766,6 @@ export async function getDashboardStats(
   const [
     total,
     urgent,
-    urgentAwaitingReceipt,
     secret,
     normal,
     pending,
@@ -1883,7 +1781,6 @@ export async function getDashboardStats(
     countTelegrams(userId, canViewAll, organizationId, q =>
       q.eq("priority", "urgent")
     ),
-    countUrgentAlertsAwaitingReceipt(organizationId),
     countTelegrams(userId, canViewAll, organizationId, q =>
       q.eq("classification", "secret")
     ),
@@ -1934,7 +1831,6 @@ export async function getDashboardStats(
   return {
     total,
     urgent,
-    urgentAwaitingReceipt,
     secret,
     normal,
     pending,

@@ -42,10 +42,8 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
   bool busy = false;
   bool loadingRecords = true;
   String? error;
-  List<dynamic> routes = const [];
   List<dynamic> attachments = const [];
   List<dynamic> actions = const [];
-  List<Map<String, dynamic>> routingDirectory = const [];
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
 
   @override
@@ -82,25 +80,13 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
       }
 
       final results = await Future.wait<(dynamic, String?)>([
-        read(
-          'telegrams.incomingRoutes',
-          input: {'telegramId': widget.telegramId},
-        ),
         read('telegrams.attachments', input: {'telegramId': widget.telegramId}),
         read('telegrams.actions', input: {'telegramId': widget.telegramId}),
-        read('organizations.routingDirectory'),
       ]);
       if (!mounted) return;
       setState(() {
-        routes = results[0].$1 is List ? results[0].$1 as List : const [];
-        attachments = results[1].$1 is List ? results[1].$1 as List : const [];
-        actions = results[2].$1 is List ? results[2].$1 as List : const [];
-        routingDirectory = results[3].$1 is List
-            ? (results[3].$1 as List)
-                  .whereType<Map>()
-                  .map((item) => Map<String, dynamic>.from(item))
-                  .toList()
-            : const [];
+        attachments = results[0].$1 is List ? results[0].$1 as List : const [];
+        actions = results[1].$1 is List ? results[1].$1 as List : const [];
         final errors = results
             .map((result) => result.$2)
             .whereType<String>()
@@ -196,161 +182,6 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
           'reason': reason.isEmpty ? null : reason,
         },
       );
-      widget.onChanged();
-    });
-  }
-
-  Future<void> routeTelegram() async {
-    final organizationId = await _chooseRouteTarget();
-    if (organizationId == null || organizationId.isEmpty) return;
-    if (!mounted) return;
-    final note = await _textDialog(
-      context,
-      title: 'طلب إحالة عبر السلطة الأعلى',
-      label: 'ملاحظة الإحالة (اختياري)',
-    );
-    if (note == null || !mounted) return;
-    await _run(() async {
-      await widget.api.call(
-        'telegrams.route',
-        mutation: true,
-        input: {
-          'id': widget.telegramId,
-          'toOrganizationId': organizationId,
-          'note': note.trim().isEmpty ? null : note.trim(),
-        },
-      );
-      widget.onChanged();
-    });
-  }
-
-  Future<String?> _chooseRouteTarget() async {
-    final targets = routingDirectory
-        .where((row) => row['isSelectable'] == true)
-        .toList();
-    if (targets.isEmpty) {
-      _show(
-        'لا توجد جهات متاحة للإحالة من جهة العمل الحالية.',
-        kind: ToastKind.warning,
-      );
-      return null;
-    }
-    var query = '';
-    final byId = <String, Map<String, dynamic>>{
-      for (final row in routingDirectory) '${row['id']}': row,
-    };
-    String pathFor(Map<String, dynamic> row) {
-      final parts = <String>['${row['name'] ?? 'جهة بدون اسم'}'];
-      final visited = <String>{'${row['id']}'};
-      var parentId = row['parentOrganizationId']?.toString();
-      while (parentId != null && parentId.isNotEmpty && visited.add(parentId)) {
-        final parent = byId[parentId];
-        if (parent == null) break;
-        parts.insert(0, '${parent['name'] ?? 'جهة بدون اسم'}');
-        parentId = parent['parentOrganizationId']?.toString();
-      }
-      return parts.join(' ← ');
-    }
-
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          final normalized = query.trim().toLowerCase();
-          final options = targets.where((row) {
-            if (normalized.isEmpty) return true;
-            final name = '${row['name'] ?? ''}'.toLowerCase();
-            final code = '${row['code'] ?? ''}'.toLowerCase();
-            return name.contains(normalized) ||
-                code.contains(normalized) ||
-                pathFor(row).toLowerCase().contains(normalized);
-          }).toList()..sort((a, b) => pathFor(a).compareTo(pathFor(b)));
-          return FractionallySizedBox(
-            heightFactor: 0.86,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'اختر الجهة المستلمة',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(sheetContext),
-                        icon: const Icon(Icons.close),
-                        tooltip: 'إغلاق',
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    autofocus: true,
-                    onChanged: (value) => setSheetState(() => query = value),
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.search),
-                      hintText: 'ابحث بالاسم أو الرمز أو المسار',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: options.isEmpty
-                      ? const Center(child: Text('لا توجد جهة مطابقة للبحث.'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-                          itemCount: options.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 4),
-                          itemBuilder: (context, index) {
-                            final row = options[index];
-                            final code = row['code']?.toString();
-                            return ListTile(
-                              leading: const Icon(Icons.account_tree_outlined),
-                              title: Text('${row['name'] ?? 'جهة بدون اسم'}'),
-                              subtitle: Text(
-                                '${pathFor(row)}${code == null || code.isEmpty ? '' : ' · $code'}',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              onTap: () =>
-                                  Navigator.pop(sheetContext, '${row['id']}'),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> decide(int routeId, bool accepted) async {
-    final reason = await _reasonDialog(
-      context,
-      title: accepted ? 'تأكيد استلام البرقية' : 'رفض استلام البرقية',
-      requiredReason: !accepted,
-    );
-    if (reason == null) return;
-    await _run(() async {
-      await widget.api.call(
-        'telegrams.decideRouteAsReceiver',
-        mutation: true,
-        input: {
-          'routeId': routeId,
-          'accepted': accepted,
-          'reason': reason.isEmpty ? null : reason,
-        },
-      );
-      await load();
       widget.onChanged();
     });
   }
@@ -618,15 +449,6 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
         .toList();
   }
 
-  bool get _canRoute =>
-      widget.canOperate &&
-      const {
-        'approved',
-        'in_progress',
-        'forwarded',
-      }.contains(widget.telegramStatus.toLowerCase()) &&
-      routingDirectory.any((row) => row['isSelectable'] == true);
-
   String _attachmentSummary(Map<String, dynamic> attachment) {
     final size =
         int.tryParse('${attachment['sizeBytes'] ?? attachment['size']}') ?? 0;
@@ -718,12 +540,6 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
                 label: const Text('مشاركة البرقية'),
               ),
               ..._transitionButtons(),
-              if (_canRoute)
-                OutlinedButton.icon(
-                  onPressed: busy ? null : routeTelegram,
-                  icon: const Icon(Icons.forward_to_inbox),
-                  label: const Text('إرسال طلب إحالة'),
-                ),
               OutlinedButton.icon(
                 onPressed: busy ? null : pickAttachment,
                 icon: const Icon(Icons.attach_file),
@@ -731,14 +547,6 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
               ),
             ],
           ),
-          if (!loadingRecords && routes.isNotEmpty) ...[
-            const Divider(height: 28),
-            const Text(
-              'مسار الاستلام والإحالات',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            ...routes.map(_routeTile),
-          ],
           if (busy || (!loadingRecords && actions.isNotEmpty)) ...[
             const Divider(height: 28),
             if (busy) ...[
@@ -881,55 +689,6 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
       ),
     ),
   );
-
-  Widget _routeTile(dynamic item) {
-    final route = Map<String, dynamic>.from(item as Map);
-    final routeId = int.tryParse('${route['id']}');
-    final status = '${route['status'] ?? route['approvalStatus'] ?? ''}';
-    final statusText = switch (status) {
-      'received' => 'تم تأكيد استلام الإحالة',
-      'rejected' => 'تم رفض استلام الإحالة',
-      'sent' => 'بانتظار تأكيد الجهة المستقبلة',
-      _ => status,
-    };
-    final details = <String>[statusText];
-    if (status == 'received' && route['receivedAt'] != null) {
-      details.add('وقت الاستلام: ${route['receivedAt']}');
-    } else if (status == 'rejected') {
-      details.add(
-        'سبب الرفض: ${route['receiverDecisionReason'] ?? 'غير محدد'}',
-      );
-    }
-    if (route['routeSerialCode'] != null) {
-      details.add('صادر الجهة المحيلة: ${route['routeSerialCode']}');
-    }
-    if (route['incomingSerialCode'] != null) {
-      details.add('وارد الجهة المستقبلة: ${route['incomingSerialCode']}');
-    }
-    return Card(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(
-          '${route['toOrganizationName'] ?? route['toOrganizationId'] ?? 'جهة مستلمة'}',
-        ),
-        subtitle: Text(details.join('\n')),
-        isThreeLine: details.length > 1,
-        trailing: routeId == null || status != 'sent'
-            ? null
-            : PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'accept') decide(routeId, true);
-                  if (value == 'reject') decide(routeId, false);
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(value: 'accept', child: Text('قبول الإحالة')),
-                  PopupMenuItem(value: 'reject', child: Text('رفض الإحالة')),
-                ],
-              ),
-      ),
-    );
-  }
 
   void _show(String message, {ToastKind kind = ToastKind.info}) {
     if (!mounted) return;

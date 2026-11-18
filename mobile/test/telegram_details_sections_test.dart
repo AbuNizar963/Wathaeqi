@@ -63,16 +63,6 @@ class _DetailsApi extends PoliceApi {
             'sha256': 'abcdef0123456789',
           },
         ];
-      case 'telegrams.incomingRoutes':
-        return [
-          {
-            'id': 9,
-            'status': 'received',
-            'receivedAt': '2026-11-02T12:30:00Z',
-            'routeSerialCode': 'OUT-9',
-            'incomingSerialCode': 'IN-12',
-          },
-        ];
       case 'organizations.routingDirectory':
         return <dynamic>[];
       default:
@@ -89,7 +79,7 @@ class _DetailsApi extends PoliceApi {
 
 void main() {
   testWidgets(
-    'detail shows version history, action log, attachments and receipt routes',
+    'detail shows version history, action log and attachments',
     (tester) async {
       final api = _DetailsApi();
       await tester.pumpWidget(
@@ -123,8 +113,6 @@ void main() {
       expect(find.text('سجل التدقيق والإجراءات (1)'), findsOneWidget);
       expect(find.text('المرفقات'), findsOneWidget);
       expect(find.text('محضر.pdf'), findsOneWidget);
-      expect(find.text('مسار الاستلام والإحالات'), findsOneWidget);
-      expect(find.textContaining('تم تأكيد استلام الإحالة'), findsOneWidget);
       expect(api.calls, contains('telegrams.versions'));
     },
   );

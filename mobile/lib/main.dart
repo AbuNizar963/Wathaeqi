@@ -449,7 +449,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'منصة رسمية آمنة لإدارة البرقيات والعمليات',
+                      'منصة وثائقي الرسمية لإدارة الوثائق',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 26),
@@ -1338,7 +1338,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   ),
                                   SizedBox(height: 4),
                                   Text(
-                                    'ستظهر هنا طلبات الإحالة وقرارات السلطة الأعلى.',
+                                    'ستظهر هنا إشعارات النظام والوثائق.',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Color(0xFF7A8493),
@@ -1366,9 +1366,6 @@ class _DashboardPageState extends State<DashboardPage>
                               '${notification['id'] ?? ''}',
                             );
                             final read = notification['readAt'] != null;
-                            final requiresAction =
-                                notification['type'] == 'route.approved' ||
-                                notification['type'] == 'route.requested';
                             return ListTile(
                               dense: true,
                               leading: const CircleAvatar(
@@ -1394,21 +1391,11 @@ class _DashboardPageState extends State<DashboardPage>
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              trailing: !read && requiresAction
-                                  ? const Chip(
-                                      label: Text(
-                                        'إجراء مطلوب',
-                                        style: TextStyle(fontSize: 9),
-                                      ),
-                                      visualDensity: VisualDensity.compact,
-                                    )
-                                  : null,
+                              trailing: null,
                               onTap: telegramId == null
                                   ? null
                                   : () async {
-                                      if (!read &&
-                                          !requiresAction &&
-                                          notificationId != null) {
+                                      if (!read && notificationId != null) {
                                         try {
                                           await widget.api.call(
                                             'notifications.markRead',
