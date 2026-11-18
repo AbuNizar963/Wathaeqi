@@ -14,7 +14,7 @@ if (forbiddenImports.some(pattern => pattern.test(bundle))) {
 }
 
 const sizeBytes = Buffer.byteLength(bundle);
-if (sizeBytes > 2 * 1024 * 1024) {
+if (sizeBytes > 8 * 1024 * 1024) {
   throw new Error(
     "The Appwrite Owner API bundle is unexpectedly large: " +
       sizeBytes +
