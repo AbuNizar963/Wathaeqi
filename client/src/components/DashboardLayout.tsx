@@ -14,16 +14,12 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Archive,
   Activity,
   Building2,
-  FileSpreadsheet,
+  FileText,
   History,
-  LayoutDashboard,
   LockKeyhole,
-  MapPinned,
   PanelLeft,
-  Plus,
   ShieldCheck,
   Users,
   WifiOff,
@@ -40,9 +36,9 @@ import HeaderActions from "./HeaderActions";
 
 const menuItems = [
   {
-    key: "dashboard",
-    icon: LayoutDashboard,
-    label: "لوحة التحكم",
+    key: "documents",
+    icon: FileText,
+    label: "الوثائق",
     path: "/",
   },
   {
@@ -60,18 +56,6 @@ const menuItems = [
     auditOnly: true,
   },
   {
-    key: "create-telegram",
-    icon: Plus,
-    label: "إنشاء وثيقة",
-    action: "open-telegram-composer",
-  },
-  {
-    key: "telegram-excel-tools",
-    icon: FileSpreadsheet,
-    label: "استيراد وتصدير السجل",
-    action: "open-telegram-excel-tools",
-  },
-  {
     key: "accounts",
     icon: Users,
     label: "إدارة المستخدمين",
@@ -84,25 +68,6 @@ const menuItems = [
     label: "إدارة الجهات",
     action: "open-owner-organization-management",
     adminOnly: true,
-  },
-  {
-    key: "locations",
-    icon: MapPinned,
-    label: "خريطة البلاغات والمواقع الجغرافية",
-    tab: "locations",
-  },
-  { key: "units", icon: Users, label: "الوحدات الميدانية", tab: "units" },
-  {
-    key: "resources",
-    icon: Activity,
-    label: "إدارة الموارد",
-    tab: "resources",
-  },
-  {
-    key: "archive",
-    icon: Archive,
-    label: "الأرشيف والسجلات المغلقة",
-    tab: "archive",
   },
 ];
 

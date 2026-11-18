@@ -30,6 +30,7 @@ type DocumentEditorProps = {
   onChange: (content: EditorContentValue) => void;
   editable?: boolean;
   placeholder?: string;
+  containerClassName?: string;
 };
 
 function normalizeEditorContent(
@@ -59,6 +60,7 @@ export default function DocumentEditor({
   onChange,
   editable = true,
   placeholder = "اكتب نص الوثيقة هنا...",
+  containerClassName = "",
 }: DocumentEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -113,7 +115,9 @@ export default function DocumentEditor({
   const disabled = !editor || !editable;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div
+      className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${containerClassName}`}
+    >
       {editable ? (
         <div
           className="document-editor-toolbar sticky top-0 z-10 flex flex-wrap items-center gap-1 border-b bg-slate-50 p-2"
