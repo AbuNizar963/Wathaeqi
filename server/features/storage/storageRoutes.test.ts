@@ -202,7 +202,27 @@ describe("signed telegram attachment uploads", () => {
     name: "Officer",
   };
   const pdfBytes = Buffer.from("%PDF-1.7\\nfixture");
-  const key = `organizations/${testOrganizationId}/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf`;
+  const key = [
+    "organizations",
+    testOrganizationId,
+    "telegrams",
+    "7",
+    "attachments",
+    "550e8400-e29b-41d4-a716-446655440001-report.pdf",
+  ].join("/");
+  const uploadUrl = new URL(
+    "/v1/storage/buckets/document-attachments/files",
+    "https://fra.cloud.appwrite.io"
+  );
+  uploadUrl.searchParams.set("project", "wathaeqi");
+  const appwriteUploadUrl = uploadUrl.toString();
+  const attachmentFolder = [
+    "organizations",
+    testOrganizationId,
+    "telegrams",
+    "7",
+    "attachments",
+  ].join("/");
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -211,10 +231,10 @@ describe("signed telegram attachment uploads", () => {
     canAccessTelegramScope.mockResolvedValue(true);
     storageCreateOrganizationAttachmentUploadUrl.mockResolvedValue({
       key,
-      uploadUrl: "https://fra.cloud.appwrite.io/v1/storage/buckets/document-attachments/files?project=wathaeqi",
+      uploadUrl: appwriteUploadUrl,
       uploadJwt: "short-lived-upload-jwt",
       fileId: "a".repeat(32),
-      folder: "organizations/" + testOrganizationId + "/telegrams/7/attachments",
+      folder: attachmentFolder,
     });
     getTelegramAttachmentByStorageKey.mockResolvedValue(null);
     storageGetObjectInfo.mockResolvedValue({
@@ -238,7 +258,9 @@ describe("signed telegram attachment uploads", () => {
     };
   }
 
-  it("creates a one-object signed upload URL after checking telegram scope", async () => {
+  it(
+    "creates a one-object signed upload URL after checking telegram scope",
+    async () => {
     const { authorize, createUrl, res } =
       createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -277,7 +299,9 @@ describe("signed telegram attachment uploads", () => {
     );
   });
 
-  it("validates stored object size and file signature before recording metadata", async () => {
+  it(
+    "validates stored object size and file signature before recording metadata",
+    async () => {
     const { authorize, finalize, res } =
       createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -316,7 +340,9 @@ describe("signed telegram attachment uploads", () => {
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
-  it("rejects a signed upload request outside the user's telegram scope", async () => {
+  it(
+    "rejects a signed upload request outside the user's telegram scope",
+    async () => {
     canAccessTelegramScope.mockResolvedValueOnce(false);
     const { authorize, res } = createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -359,7 +385,9 @@ describe("signed telegram attachment uploads", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("removes invalid file content and does not create attachment metadata", async () => {
+  it(
+    "removes invalid file content and does not create attachment metadata",
+    async () => {
     storageDownload.mockResolvedValueOnce({
       body: Buffer.from("not a PDF"),
       contentType: "application/pdf",
@@ -386,7 +414,9 @@ describe("signed telegram attachment uploads", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it("does not create another metadata row when finalization is retried", async () => {
+  it(
+    "does not create another metadata row when finalization is retried",
+    async () => {
     getTelegramAttachmentByStorageKey.mockResolvedValueOnce({
       id: 99,
       telegramId: 7,
@@ -794,7 +824,7 @@ describe("storage route", () => {
     expect(res.redirect).not.toHaveBeenCalled();
   });
 
-  it("returns a clear payload limit for legacy logos above the Vercel ceiling", async () => {
+  it("returns a clear payload limit for legacy logos above the Netlify ceiling", async () => {
     const key =
       "department/logos/550e8400-e29b-41d4-a716-446655440000/large-badge.png";
     storageDownload.mockResolvedValueOnce({
@@ -1000,7 +1030,9 @@ describe("storage route", () => {
     );
   });
 
-  it("resolves a legacy attachment owner from its telegram during rollout", async () => {
+  it(
+    "resolves a legacy attachment owner from its telegram during rollout",
+    async () => {
     const key = "telegrams/42/report.pdf";
     const telegram = {
       id: 7,
@@ -1029,7 +1061,9 @@ describe("storage route", () => {
     );
   });
 
-  it("requires matching metadata and organization scope for a new attachment key", async () => {
+  it(
+    "requires matching metadata and organization scope for a new attachment key",
+    async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
     const currentOrganizationId = "550e8400-e29b-41d4-a716-446655440099";
     const key = `organizations/${organizationId}/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf`;
