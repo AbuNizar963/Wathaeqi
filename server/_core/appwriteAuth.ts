@@ -5,6 +5,7 @@ import { parse } from "cookie";
 import type { Request, Response } from "express";
 import type { User } from "../../drizzle/schema";
 import {
+  getAppwriteAdminClient,
   getAppwriteDatabaseId,
   getAppwriteSessionClient,
   getAppwriteTablesDB,
@@ -172,7 +173,8 @@ export async function authenticateAppwriteUser(
     return null;
   }
 
-  const account = new Account(getAppwriteSessionClient());
+  // Server-side session creation must use the API-key client so Appwrite returns session.secret.
+  const account = new Account(getAppwriteAdminClient());
   let session: AppwriteSession;
   try {
     session = await account.createEmailPasswordSession({
@@ -429,7 +431,7 @@ export async function changeAppwritePassword(
   }
 
   const newSession = await new Account(
-    getAppwriteSessionClient()
+    getAppwriteAdminClient()
   ).createEmailPasswordSession({
     email: profile.user.email,
     password: newPassword,
