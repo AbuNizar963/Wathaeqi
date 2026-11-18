@@ -48,7 +48,7 @@ const templateFieldsSchema = z
         });
       }
       keys.add(field.key);
-      if (field.type === "select" && !(field.options?.length)) {
+      if (field.type === "select" && !field.options?.length) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: [index, "options"],

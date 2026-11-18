@@ -91,10 +91,7 @@ function mapTemplateRow(row: AppwriteRow): DocumentTemplate {
 function mapDocumentRow(row: AppwriteRow): OfficialDocument {
   const data = rowData(row);
   const createdAt = rowCreatedAt(row);
-  const decoded = decodeOfficialDocumentStorageContent(
-    data.content,
-    createdAt
-  );
+  const decoded = decodeOfficialDocumentStorageContent(data.content, createdAt);
   return {
     id: row.$id,
     ownerId: String(data.ownerId ?? ""),
@@ -165,7 +162,6 @@ export async function createDocumentTemplate(
   ownerId: string,
   input: TemplateWriteInput
 ): Promise<DocumentTemplate> {
-  const now = new Date().toISOString();
   const row = await getAppwriteTablesDB().createRow({
     databaseId: getAppwriteDatabaseId(),
     tableId: TEMPLATES_TABLE_ID,

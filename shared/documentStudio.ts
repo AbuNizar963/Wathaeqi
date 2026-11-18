@@ -137,7 +137,8 @@ export function decodeTemplateStorageContent(
         ? (parsed.fields as DocumentTemplateField[])
         : [],
       revision:
-        typeof parsed.revision === "number" && Number.isSafeInteger(parsed.revision)
+        typeof parsed.revision === "number" &&
+        Number.isSafeInteger(parsed.revision)
           ? parsed.revision
           : 1,
       isActive: parsed.isActive !== false,
@@ -254,13 +255,15 @@ export function decodeOfficialDocumentStorageContent(
         Number.isSafeInteger(parsed.serialNumber)
           ? parsed.serialNumber
           : 0,
-      serialCode: typeof parsed.serialCode === "string" ? parsed.serialCode : "",
+      serialCode:
+        typeof parsed.serialCode === "string" ? parsed.serialCode : "",
       documentDate:
         typeof parsed.documentDate === "string"
           ? parsed.documentDate
           : fallbackDocumentDate,
       status,
-      templateId: typeof parsed.templateId === "string" ? parsed.templateId : null,
+      templateId:
+        typeof parsed.templateId === "string" ? parsed.templateId : null,
       templateRevision:
         typeof parsed.templateRevision === "number" &&
         Number.isSafeInteger(parsed.templateRevision)
@@ -273,12 +276,11 @@ export function decodeOfficialDocumentStorageContent(
   }
 
   return {
-    content:
-      isRecord(parsed)
-        ? parsed
-        : typeof parsed === "string" && parsed.length > 0
-          ? preserveLegacyContent(parsed)
-          : emptyEditorDocument(),
+    content: isRecord(parsed)
+      ? parsed
+      : typeof parsed === "string" && parsed.length > 0
+        ? preserveLegacyContent(parsed)
+        : emptyEditorDocument(),
     subject: "",
     fieldValues: {},
     serialNumber: 0,
