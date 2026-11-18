@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
-import { Account, TRPCError } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
+import { Account } from "node-appwrite";
 import { z } from "zod";
 import { publicUser } from "./_core/auth";
 import {
