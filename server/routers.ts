@@ -36,6 +36,10 @@ import {
   organizationManagerProcedure,
 } from "./_core/trpc";
 import { systemRouter } from "./_core/systemRouter";
+import {
+  getTelegramAttachmentById,
+  listTelegramAttachments,
+} from "./features/storage/telegramAttachmentRepository";
 import { profileRouter } from "./features/users/profileRouter";
 import { userManagementRouter } from "./features/users/userManagementRouter";
 import { platformDocumentSettingsRouter } from "./features/platform-settings/platformDocumentSettingsRouter";
@@ -45,7 +49,6 @@ import {
   getSuggestedOrganizationSerialNumber,
   reserveOrganizationSerialNumber,
   createTelegram,
-  createTelegramAttachment,
   updateTelegram,
   getDashboardStats,
   getMaxSerialNumber,
@@ -54,7 +57,6 @@ import {
   isDepartmentLogoExclusiveToOrganization,
   getTelegramById,
   findTelegramByOfficialSerial,
-  getTelegramAttachmentById,
   getTelegramByIdempotencyKey,
   getTelegramReport,
   getOwnerDashboardSummary,
@@ -62,7 +64,6 @@ import {
   searchAuditLogs,
   listTelegramActions,
   listTelegramVersions,
-  listTelegramAttachments,
   listTelegrams,
   purgeTelegramPermanently,
   recordTelegramAction,
