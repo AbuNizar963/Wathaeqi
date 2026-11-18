@@ -2951,6 +2951,13 @@ function TelegramDetail({
     },
     onError: error => toast.error(error.message || "تعذر تغيير حالة البرقية"),
   });
+  const uploadAttachment = trpc.telegrams.uploadAttachment.useMutation({
+    onSuccess: async () => {
+      toast.success("تم إرفاق الملف بالوثيقة");
+      await utils.telegrams.attachments.invalidate({ telegramId: telegram.id });
+    },
+    onError: error => toast.error(error.message || "تعذر إرفاق الملف"),
+  });
   const attachments = trpc.telegrams.attachments.useQuery({
     telegramId: telegram.id,
   });
