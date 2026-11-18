@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { publicUser } from "./_core/auth";
 import {
@@ -15,6 +15,10 @@ import {
   enforceLoginRateLimit,
 } from "./_core/loginRateLimit";
 import { ENV } from "./_core/env";
+import {
+  createInitialOwnerProfile,
+  isInitialOwnerSetupAvailable,
+} from "./features/auth/ownerBootstrap";
 import { isAllowedPushEndpoint } from "./_core/pushEndpoint";
 import { isPlatformOwner, isPlatformOwnerUserId } from "./ownerAccess";
 import {
@@ -710,6 +714,54 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+
+    ownerSetupStatus: publicProcedure.query(async () => ({
+      available: await isInitialOwnerSetupAvailable(),
+    })),
+
+    createInitialOwner: publicProcedure
+      .input(
+        z.object({
+          setupSecret: z.string().min(32).max(256),
+          username: z
+            .string()
+            .trim()
+            .min(3)
+            .max(120)
+            .regex(/^[a-zA-Z0-9._-]+$/),
+          password: z.string().min(12).max(256),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const configuredSecret = ENV.ownerSetupSecret;
+        const suppliedSecret = Buffer.from(input.setupSecret, "utf8");
+        const expectedSecret = Buffer.from(configuredSecret, "utf8");
+        if (
+          expectedSecret.length < 32 ||
+          suppliedSecret.length !== expectedSecret.length ||
+          !timingSafeEqual(suppliedSecret, expectedSecret)
+        ) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "رمز الإعداد غير صحيح",
+          });
+        }
+
+        if (!(await isInitialOwnerSetupAvailable())) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "إعادة تعيين كلمة مرور المالك غير متاحة",
+          });
+        }
+
+        const recovered = await createInitialOwnerProfile(input);
+        await setAppwriteSessionCookie(
+          ctx.res,
+          recovered.session,
+          recovered.user
+        );
+        return publicUser(recovered.user);
+      }),
 
     login: publicProcedure
       .input(

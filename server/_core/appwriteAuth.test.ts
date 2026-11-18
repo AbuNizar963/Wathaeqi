@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   deleteSession: vi.fn(),
   updatePassword: vi.fn(),
   getAppwriteSessionClient: vi.fn((secret?: string) => ({ secret })),
+  getAppwriteAdminClient: vi.fn(() => ({ admin: true })),
 }));
 
 vi.mock("node-appwrite", () => ({
@@ -39,6 +40,7 @@ vi.mock("node-appwrite", () => ({
 
 vi.mock("./appwrite", () => ({
   getAppwriteDatabaseId: () => "wathaeqi-db",
+  getAppwriteAdminClient: mocks.getAppwriteAdminClient,
   getAppwriteSessionClient: mocks.getAppwriteSessionClient,
   getAppwriteTablesDB: () => ({
     listRows: mocks.listRows,
