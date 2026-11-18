@@ -76,14 +76,11 @@ import {
   transitionTelegram,
   updateDepartmentSettings,
   upsertOrganizationSettingsForOrganization,
-  updateRouteIncomingSerial,
-  updateRouteOutgoingSerial,
   writeAuditLog,
   deletePushSubscription,
   deleteMobilePushToken,
   listUserNotifications,
   markNotificationRead,
-  resolveRouteNotifications,
   notifyOrganizationUsers,
   notifyUser,
   upsertPushSubscription,
@@ -92,30 +89,20 @@ import {
 import {
   addOrganizationMembership,
   archiveOrganizationSafely,
-  approveTelegramRoute,
   createOrganization,
-  decideTelegramRouteAsReceiver,
   ensureOrganizationAccounts,
   getConfiguredTelegramDestination,
   getOrganizationById,
   getOrganizationByIdIncludingInactive,
   getUserOrganizationMembership,
-  getTelegramRouteById,
-  hasTelegramRoute,
   listAllOrganizations,
   listOrganizationAccountSummaries,
   listOrganizationDescendants,
   provisionOrganizationAccount,
-  listIncomingTelegramRoutes,
   listOrganizationsForUser,
-  listPendingRouteApprovals,
   listRoutingDirectory,
   listRoutingTargets,
   purgeArchivedOrganizationPermanently,
-  receiveTelegramRoute,
-  routeTelegram,
-  routeTelegramBroadcastAtomic,
-  type AtomicBroadcastCopyInput,
   selectPlatformOwnerWorkplace,
   updateOrganization,
   updateOrganizationAccount,
@@ -144,7 +131,6 @@ import {
 } from "./fileSecurity";
 import {
   getWebPushPublicKey,
-  notifyOrganizationRouteEvent,
   notifyOrganizationTelegramCreated,
 } from "./features/notifications/notification";
 import {
@@ -1177,10 +1163,6 @@ export const appRouter = router({
           return saved;
         }),
     }),
-    pendingApprovals: protectedProcedure.query(({ ctx }) =>
-      listPendingRouteApprovals(ctx.user.id, canViewAllTelegrams(ctx.user))
-    ),
-
     create: adminProcedure
       .input(
         z.object({
@@ -2152,28 +2134,6 @@ export const appRouter = router({
         });
         return { success: true as const, occurredAt };
       }),
-    incomingRoutes: protectedProcedure
-      .input(z.object({ telegramId: z.number().int().positive() }))
-      .query(async ({ ctx, input }) => {
-        const telegram = await getTelegramById(input.telegramId);
-        if (!telegram) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "البرقية غير موجودة",
-          });
-        }
-        await assertTelegramOrganizationScope(
-          ctx.user,
-          telegram,
-          "لا تملك صلاحية عرض سجل استلام هذه البرقية"
-        );
-        return listIncomingTelegramRoutes({
-          telegramId: input.telegramId,
-          userId: ctx.user.id,
-          canViewAll: canViewAllTelegrams(ctx.user),
-        });
-      }),
-
     list: protectedProcedure
       .input(
         z
@@ -2731,398 +2691,6 @@ export const appRouter = router({
           deletedAttachmentCount: purged.attachmentStorageKeys.length,
           pendingStorageCleanup: failedStorageKeys.length,
         };
-      }),
-
-    route: protectedProcedure
-      .input(
-        z.object({
-          id: z.number().int().positive(),
-          toOrganizationId: z.string().uuid(),
-          note: z.string().trim().max(2000).nullable().optional(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const existing = await getTelegramById(input.id);
-        if (!existing) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "البرقية غير موجودة",
-          });
-        }
-        await assertTelegramOrganizationScope(
-          ctx.user,
-          existing,
-          "لا تملك صلاحية إحالة هذه البرقية خارج جهة العمل النشطة"
-        );
-        const route = await routeTelegram({
-          telegramId: input.id,
-          toOrganizationId: input.toOrganizationId,
-          forwardedByUserId: ctx.user.id,
-          note: input.note ?? null,
-        });
-
-        const routedTelegram = await getTelegramById(input.id);
-        const sourceSettings = await getOrganizationSettings(
-          route.fromOrganizationId
-        );
-        if (sourceSettings) {
-          const outgoingSerialNumber =
-            route.fromOrganizationId === routedTelegram?.organizationId &&
-            routedTelegram.organizationSerialNumber
-              ? routedTelegram.organizationSerialNumber
-              : await allocateOrganizationSerialNumber(
-                  route.fromOrganizationId,
-                  "outgoing"
-                );
-          const dateParts = new Intl.DateTimeFormat("en-CA", {
-            timeZone: sourceSettings.timezone,
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          }).formatToParts(new Date());
-          const dateValues = Object.fromEntries(
-            dateParts.map(part => [part.type, part.value])
-          );
-          await updateRouteOutgoingSerial({
-            routeId: route.id,
-            serialNumber: outgoingSerialNumber,
-            serialCode: `${sourceSettings.serialPrefix}-${dateValues.year}-${dateValues.month}-${dateValues.day}-${String(outgoingSerialNumber).padStart(5, "0")}`,
-          });
-        }
-
-        await writeAuditLog({
-          ...getRequestAuditContext(ctx.req),
-          actorUserId: ctx.user.id,
-          actorName: ctx.user.name ?? ctx.user.email ?? "Officer",
-          action: "telegram.route",
-          entityType: "telegram",
-          entityId: String(input.id),
-          metadata: JSON.stringify({
-            routeId: route.id,
-            toOrganizationId: route.toOrganizationId,
-            approvalStatus: route.approvalStatus,
-          }),
-        });
-
-        try {
-          const telegram = await getTelegramById(input.id);
-          const sourceOrganization = await getOrganizationById(
-            route.fromOrganizationId
-          );
-          if (telegram && route.approvalStatus === "not_required") {
-            const incomingSerialCode =
-              route.routeSerialCode ?? telegram.serialCode;
-            await notifyOrganizationUsers({
-              organizationId: route.toOrganizationId,
-              type: "route.approved",
-              title: "برقية واردة",
-              body: `وردت برقية جديدة برقم ${incomingSerialCode}.`,
-              telegramId: telegram.id,
-              routeId: route.id,
-            });
-            await notifyOrganizationTelegramCreated({
-              organizationId: route.toOrganizationId,
-              serialCode: incomingSerialCode,
-              subject: telegram.subject,
-              recipient: telegram.recipient,
-              priority: telegram.priority,
-              category: telegram.category,
-              telegramId: telegram.id,
-              direction: "incoming",
-            });
-          } else if (telegram && sourceOrganization?.parentOrganizationId) {
-            const destination = await getOrganizationById(
-              route.toOrganizationId
-            );
-            await notifyOrganizationUsers({
-              organizationId: sourceOrganization.parentOrganizationId,
-              type: "route.requested",
-              title: "طلب إحالة بانتظار اعتماد السلطة الأعلى",
-              body: `البرقية ${telegram.serialCode} مطلوبة للإحالة إلى ${destination?.name ?? "جهة مستلمة"}.`,
-              telegramId: telegram.id,
-              routeId: route.id,
-            });
-            await notifyOrganizationRouteEvent({
-              organizationId: sourceOrganization.parentOrganizationId,
-              type: "route.requested",
-              title: "طلب إحالة بانتظار الاعتماد",
-              body: `البرقية ${telegram.serialCode} تحتاج قرار السلطة الأعلى.`,
-              telegramId: telegram.id,
-              serialCode: telegram.serialCode,
-              routeId: route.id,
-            });
-          }
-        } catch (error) {
-          console.warn("[Notification] Route request dispatch failed", error);
-        }
-        return route;
-      }),
-    approveRoute: protectedProcedure
-      .input(
-        z.object({
-          routeId: z.number().int().positive(),
-          approved: z.boolean(),
-          reason: z.string().trim().max(2000).nullable().optional(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const membership = await getUserOrganizationMembership(ctx.user.id);
-        if (
-          !membership ||
-          ![
-            "system_admin",
-            "organization_admin",
-            "regional_admin",
-            "organization_supervisor",
-            "reviewer",
-          ].includes(membership.role)
-        ) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "لا تملك صلاحية اعتماد إحالات البرقيات",
-          });
-        }
-        if (isPlatformOwner(ctx.user)) {
-          const routeContext = await getTelegramRouteById(input.routeId);
-          if (!routeContext) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "الإحالة غير موجودة",
-            });
-          }
-          const sourceOrganization = await getOrganizationById(
-            routeContext.fromOrganizationId
-          );
-          await assertOwnerOrganizationScope(
-            ctx.user,
-            sourceOrganization?.parentOrganizationId ?? null,
-            "لا تملك صلاحية اعتماد إحالة خارج جهة العمل النشطة"
-          );
-        }
-        const route = await approveTelegramRoute({
-          routeId: input.routeId,
-          approverUserId: ctx.user.id,
-          approved: input.approved,
-          reason: input.reason,
-        });
-        await resolveRouteNotifications(route.id);
-        await writeAuditLog({
-          ...getRequestAuditContext(ctx.req),
-          actorUserId: ctx.user.id,
-          actorName: ctx.user.name ?? ctx.user.email ?? "Officer",
-          action: input.approved
-            ? "telegram.route.approve"
-            : "telegram.route.reject",
-          entityType: "telegram_route",
-          entityId: String(route.id),
-          metadata: JSON.stringify({
-            telegramId: route.telegramId,
-            toOrganizationId: route.toOrganizationId,
-            reason: input.reason ?? null,
-          }),
-        });
-        const routedTelegram = await getTelegramById(route.telegramId);
-        if (routedTelegram) {
-          if (route.approvalStatus === "approved") {
-            const destinationSettings = await getOrganizationSettings(
-              route.toOrganizationId
-            );
-            if (destinationSettings) {
-              const incomingSerialNumber =
-                await allocateOrganizationSerialNumber(
-                  route.toOrganizationId,
-                  "incoming"
-                );
-              const dateParts = new Intl.DateTimeFormat("en-CA", {
-                timeZone: destinationSettings.timezone,
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-              }).formatToParts(new Date());
-              const dateValues = Object.fromEntries(
-                dateParts.map(part => [part.type, part.value])
-              );
-              await updateRouteIncomingSerial({
-                routeId: route.id,
-                serialNumber: incomingSerialNumber,
-                serialCode: `${destinationSettings.incomingSerialPrefix}-${dateValues.year}-${dateValues.month}-${dateValues.day}-${String(incomingSerialNumber).padStart(5, "0")}`,
-              });
-            }
-            await notifyUser({
-              userId: route.forwardedByUserId,
-              organizationId: route.fromOrganizationId,
-              type: "route.approved",
-              title: "تم اعتماد إحالة البرقية",
-              body: `اعتمدت السلطة الأعلى إحالة ${routedTelegram.serialCode}. رقم الإحالة الجديد: ${route.routeSerialCode ?? "غير متاح"}.`,
-              telegramId: routedTelegram.id,
-              routeId: route.id,
-            });
-            await notifyOrganizationUsers({
-              organizationId: route.toOrganizationId,
-              type: "route.approved",
-              title: "برقية واردة معتمدة",
-              body: `وردت البرقية ${routedTelegram.serialCode} برقم إحالة ${route.routeSerialCode ?? "جديد"} باسم السلطة المعتمدة.`,
-              telegramId: routedTelegram.id,
-              routeId: route.id,
-            });
-            try {
-              await notifyOrganizationRouteEvent({
-                organizationId: route.toOrganizationId,
-                type: "route.approved",
-                title: "برقية واردة معتمدة",
-                body: `وردت البرقية برقم إحالة ${route.routeSerialCode ?? "جديد"}.`,
-                telegramId: routedTelegram.id,
-                serialCode: routedTelegram.serialCode,
-                routeId: route.id,
-                routeSerialCode: route.routeSerialCode,
-              });
-              await notifyOrganizationTelegramCreated({
-                organizationId: route.toOrganizationId,
-                serialCode: route.routeSerialCode ?? routedTelegram.serialCode,
-                subject: routedTelegram.subject,
-                recipient: routedTelegram.recipient,
-                priority: routedTelegram.priority,
-                category: routedTelegram.category,
-                telegramId: routedTelegram.id,
-                direction: "incoming",
-              });
-            } catch (error) {
-              console.warn(
-                "[Notification] Approved route push dispatch failed",
-                error
-              );
-            }
-          } else {
-            await notifyUser({
-              userId: route.forwardedByUserId,
-              organizationId: route.fromOrganizationId,
-              type: "route.rejected",
-              title: "تم رفض إحالة البرقية",
-              body: `رُفضت إحالة ${routedTelegram.serialCode}: ${route.approvalReason ?? input.reason ?? "دون سبب"}`,
-              telegramId: routedTelegram.id,
-              routeId: route.id,
-            });
-            try {
-              await notifyOrganizationRouteEvent({
-                organizationId: route.fromOrganizationId,
-                type: "route.rejected",
-                title: "تم رفض إحالة البرقية",
-                body: `رُفضت إحالة ${routedTelegram.serialCode}.`,
-                telegramId: routedTelegram.id,
-                serialCode: routedTelegram.serialCode,
-                routeId: route.id,
-              });
-            } catch (error) {
-              console.warn(
-                "[Notification] Rejected route push dispatch failed",
-                error
-              );
-            }
-          }
-        }
-        return route;
-      }),
-    receiveRoute: protectedProcedure
-      .input(z.object({ routeId: z.number().int().positive() }))
-      .mutation(async ({ ctx, input }) => {
-        if (isPlatformOwner(ctx.user)) {
-          const routeContext = await getTelegramRouteById(input.routeId);
-          if (!routeContext) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "الإحالة غير موجودة",
-            });
-          }
-          await assertOwnerOrganizationScope(
-            ctx.user,
-            routeContext.toOrganizationId,
-            "لا تملك صلاحية استلام إحالة خارج جهة العمل النشطة"
-          );
-        }
-        const route = await receiveTelegramRoute({
-          routeId: input.routeId,
-          receiverUserId: ctx.user.id,
-        });
-        await writeAuditLog({
-          ...getRequestAuditContext(ctx.req),
-          actorUserId: ctx.user.id,
-          actorName: ctx.user.name ?? ctx.user.email ?? "Officer",
-          action: "telegram.route.receive",
-          entityType: "telegram_route",
-          entityId: String(route.id),
-          metadata: JSON.stringify({ telegramId: route.telegramId }),
-        });
-        return route;
-      }),
-    decideRouteAsReceiver: protectedProcedure
-      .input(
-        z.object({
-          routeId: z.number().int().positive(),
-          accepted: z.boolean(),
-          reason: z.string().trim().max(2000).nullable().optional(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        if (!input.accepted && !input.reason?.trim()) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "سبب رفض الاستلام مطلوب",
-          });
-        }
-        if (isPlatformOwner(ctx.user)) {
-          const routeContext = await getTelegramRouteById(input.routeId);
-          if (!routeContext) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "الإحالة غير موجودة",
-            });
-          }
-          await assertOwnerOrganizationScope(
-            ctx.user,
-            routeContext.toOrganizationId,
-            "لا تملك صلاحية اتخاذ قرار استلام خارج جهة العمل النشطة"
-          );
-        }
-        const route = await decideTelegramRouteAsReceiver({
-          routeId: input.routeId,
-          receiverUserId: ctx.user.id,
-          accepted: input.accepted,
-          reason: input.reason,
-        });
-        await resolveRouteNotifications(route.id);
-        await writeAuditLog({
-          ...getRequestAuditContext(ctx.req),
-          actorUserId: ctx.user.id,
-          actorName: ctx.user.name ?? ctx.user.email ?? "Officer",
-          action: input.accepted
-            ? "telegram.route.receiver_accept"
-            : "telegram.route.receiver_reject",
-          entityType: "telegram_route",
-          entityId: String(route.id),
-          metadata: JSON.stringify({
-            telegramId: route.telegramId,
-            reason: input.reason ?? null,
-          }),
-        });
-        const decidedTelegram = await getTelegramById(route.telegramId);
-        if (decidedTelegram) {
-          await notifyUser({
-            userId: route.forwardedByUserId,
-            organizationId: route.fromOrganizationId,
-            type: input.accepted
-              ? "route.receiver_accepted"
-              : "route.receiver_rejected",
-            title: input.accepted
-              ? "أكدت الجهة المستقبلة استلام البرقية"
-              : "رفضت الجهة المستقبلة استلام البرقية",
-            body: input.accepted
-              ? `أكدت الجهة المستقبلة استلام ${decidedTelegram.serialCode}.`
-              : `رُفض استلام ${decidedTelegram.serialCode}: ${input.reason}`,
-            telegramId: decidedTelegram.id,
-            routeId: route.id,
-          });
-        }
-        return route;
       }),
 
     transition: protectedProcedure
