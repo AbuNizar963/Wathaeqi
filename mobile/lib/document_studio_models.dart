@@ -2,7 +2,7 @@
 ///
 /// Templates are reusable definitions. Official documents retain a snapshot
 /// of the template revision and entered values. Server authorization remains
-/// authoritative for organization scope and every persisted operation.
+/// authoritative for owner scope and every persisted operation.
 library;
 
 enum DocumentTemplateFieldType {

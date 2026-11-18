@@ -71,13 +71,14 @@ void main() {
           serialCode: 'DOC-0012',
           documentDate: DateTime.utc(2026, 11, 18),
           status: 'draft',
-                    createdAt: DateTime.utc(2026, 11, 18, 10),
+          createdAt: DateTime.utc(2026, 11, 18, 10),
           updatedAt: DateTime.utc(2026, 11, 18, 11),
         );
 
         final restored = OfficialDocument.fromJson(document.toJson());
 
         expect(restored.id, document.id);
+        expect(restored.ownerId, document.ownerId);
         expect(restored.templateRevision, 3);
         expect(restored.fieldValues['employee_name'], 'أحمد');
         expect(restored.content['type'], 'doc');
