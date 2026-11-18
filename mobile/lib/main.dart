@@ -3114,6 +3114,17 @@ class _DashboardPageState extends State<DashboardPage>
     ),
   );
 
+
+}
+
+class _AccountMenuItem extends StatelessWidget {
+  const _AccountMenuItem({required this.icon, required this.title, this.color});
+
+  final IconData icon;
+  final String title;
+  final Color? color;
+
+  @override
   Widget build(BuildContext context) => SizedBox(
     width: 216,
     child: Row(
