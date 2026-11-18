@@ -125,9 +125,9 @@ class PoliceApi {
   OfflineVault get offlineVault => _vault;
 
   Future<dynamic> readCachedResponse(
-    String procedure, [
+    String procedure, {
     Map<String, dynamic>? input,
-  ]) => _readOfflineResponse(procedure, input);
+  }) => _readOfflineResponse(procedure, input);
 
   Future<void> writeCachedResponse(
     String procedure,

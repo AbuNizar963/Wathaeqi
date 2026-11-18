@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'dart:ui' show TextDirection;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
@@ -1211,7 +1209,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             TextFormField(
               key: ValueKey('field-key-${field.key}'),
               initialValue: field.key,
-              textDirection: TextDirection.ltr,
+              textAlign: TextAlign.left,
               decoration: const InputDecoration(
                 labelText: 'المفتاح البرمجي',
                 hintText: 'employee_name',
