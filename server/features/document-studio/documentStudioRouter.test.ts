@@ -155,21 +155,21 @@ describe("document studio authorization and API", () => {
     });
     documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue(
       {
-      organizationId: "org-1",
-      timezone: "UTC",
-      serialPrefix: "DOC",
-      numberSystem: "latin",
-      departmentName: "إدارة الوثائق",
-      unitName: "الوحدة",
-      unitChiefRank: "",
-      unitChiefName: "",
-      logoUrl: null,
+        organizationId: "org-1",
+        timezone: "UTC",
+        serialPrefix: "DOC",
+        numberSystem: "latin",
+        departmentName: "إدارة الوثائق",
+        unitName: "الوحدة",
+        unitChiefRank: "",
+        unitChiefName: "",
+        logoUrl: null,
         dateFormat: "dd/MM/yyyy",
       }
     );
-    documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(
-      12
-    );
+    const allocateSerialNumber =
+      documentOrganizationMocks.allocateDocumentOrganizationSerialNumber;
+    allocateSerialNumber.mockResolvedValue(12);
     dbMocks.writeAuditLog.mockResolvedValue(undefined);
     mocks.listDocumentTemplates.mockResolvedValue([template]);
     mocks.getDocumentTemplate.mockResolvedValue(template);
@@ -198,23 +198,22 @@ describe("document studio authorization and API", () => {
     });
   });
 
-  it(
-    "returns letterhead settings only for the active organization",
-    async () => {
-    const caller = appRouter.createCaller(context());
+  it("returns active organization letterhead settings", async () => {
 
-    const result = await caller.documentStudio.getLetterheadSettings({
-      organizationId: "org-1",
-    });
+      const caller = appRouter.createCaller(context());
 
-    expect(
-      documentOrganizationMocks.getDocumentOrganizationSettings
-    ).toHaveBeenCalledWith("org-1");
-    expect(result).toMatchObject({
-      organizationId: "org-1",
-      serialPrefix: "DOC",
-      timezone: "UTC",
-    });
+      const result = await caller.documentStudio.getLetterheadSettings({
+        organizationId: "org-1",
+      });
+
+      expect(
+        documentOrganizationMocks.getDocumentOrganizationSettings
+      ).toHaveBeenCalledWith("org-1");
+      expect(result).toMatchObject({
+        organizationId: "org-1",
+        serialPrefix: "DOC",
+        timezone: "UTC",
+      });
   });
 
   it("does not expose another organization's letterhead", async () => {
@@ -230,79 +229,74 @@ describe("document studio authorization and API", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it(
-    "scopes template and document lists to the authenticated Appwrite owner",
-    async () => {
-    const caller = appRouter.createCaller(context());
+  it("scopes lists to the authenticated owner", async () => {
 
-    await caller.documentStudio.listTemplates();
-    await caller.documentStudio.listDocuments();
+      const caller = appRouter.createCaller(context());
 
-    expect(mocks.listDocumentTemplates).toHaveBeenCalledWith(ownerId);
-    expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(ownerId);
+      await caller.documentStudio.listTemplates();
+      await caller.documentStudio.listDocuments();
+
+      expect(mocks.listDocumentTemplates).toHaveBeenCalledWith(ownerId);
+      expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(ownerId);
   });
 
-  it(
-    "denies authenticated non-owners access to document services",
-    async () => {
-    const caller = appRouter.createCaller(nonOwnerContext());
+  it("denies non-owners document access", async () => {
 
-    await expect(caller.documentStudio.listDocuments()).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
-    expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
+      const caller = appRouter.createCaller(nonOwnerContext());
+
+      await expect(caller.documentStudio.listDocuments()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+      });
+      expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
   });
 
-  it(
-    "derives template ownership from the session, not mutation input",
-    async () => {
-    const caller = appRouter.createCaller(context());
+  it("uses session owner for template writes", async () => {
 
-    await caller.documentStudio.createTemplate(templateInput);
+      const caller = appRouter.createCaller(context());
 
-    expect(mocks.createDocumentTemplate).toHaveBeenCalledWith(ownerId, {
-      ...templateInput,
-      description: null,
-    });
+      await caller.documentStudio.createTemplate(templateInput);
+
+      expect(mocks.createDocumentTemplate).toHaveBeenCalledWith(ownerId, {
+        ...templateInput,
+        description: null,
+      });
   });
 
-  it(
-    "captures the current owned template revision when creating a document",
-    async () => {
-    const caller = appRouter.createCaller(context());
+  it("snapshots template revision on document creation", async () => {
 
-    await caller.documentStudio.createDocument({
-      ...documentInput,
-      templateId: template.id,
-      templateRevision: template.revision,
-    });
+      const caller = appRouter.createCaller(context());
 
-    expect(mocks.getDocumentTemplate).toHaveBeenCalledWith(
-      ownerId,
-      template.id
-    );
-    expect(mocks.createOfficialDocument).toHaveBeenCalledWith(ownerId, {
-      ...documentInput,
-      organizationId: "org-1",
-      templateId: template.id,
-      templateRevision: template.revision,
-      templateFieldsSnapshot: template.fields,
-    });
-  });
-
-  it(
-    "does not create a document from a template owned by another user",
-    async () => {
-    mocks.getDocumentTemplate.mockResolvedValueOnce(null);
-    const caller = appRouter.createCaller(context());
-
-    await expect(
-      caller.documentStudio.createDocument({
+      await caller.documentStudio.createDocument({
         ...documentInput,
         templateId: template.id,
-      })
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
+        templateRevision: template.revision,
+      });
+
+      expect(mocks.getDocumentTemplate).toHaveBeenCalledWith(
+        ownerId,
+        template.id
+      );
+      expect(mocks.createOfficialDocument).toHaveBeenCalledWith(ownerId, {
+        ...documentInput,
+        organizationId: "org-1",
+        templateId: template.id,
+        templateRevision: template.revision,
+        templateFieldsSnapshot: template.fields,
+      });
+  });
+
+  it("rejects templates owned by another user", async () => {
+
+      mocks.getDocumentTemplate.mockResolvedValueOnce(null);
+      const caller = appRouter.createCaller(context());
+
+      await expect(
+        caller.documentStudio.createDocument({
+          ...documentInput,
+          templateId: template.id,
+        })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate template field keys before writing", async () => {
@@ -345,56 +339,54 @@ describe("document studio authorization and API", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  it(
-    "allocates an outgoing serial only when issuing an owned draft",
-    async () => {
-    const caller = appRouter.createCaller(context());
+  it("allocates serial for an owned draft", async () => {
 
-    const saved = await caller.documentStudio.issueDocument({
-      id: document.id,
-      expectedUpdatedAt: timestamp,
-    });
+      const caller = appRouter.createCaller(context());
 
-    expect(
-      documentOrganizationMocks.allocateDocumentOrganizationSerialNumber
-    ).toHaveBeenCalledWith("org-1");
-    expect(mocks.issueOfficialDocument).toHaveBeenCalledWith(
-      ownerId,
-      document.id,
-      timestamp,
-      expect.objectContaining({
-        organizationId: "org-1",
-        serialNumber: 12,
-        serialCode: expect.stringMatching(/^DOC-00012$/),
-      })
-    );
-    expect(dbMocks.writeAuditLog).toHaveBeenCalled();
-    expect(saved.status).toBe("issued");
+      const saved = await caller.documentStudio.issueDocument({
+        id: document.id,
+        expectedUpdatedAt: timestamp,
+      });
+
+      expect(
+        documentOrganizationMocks.allocateDocumentOrganizationSerialNumber
+      ).toHaveBeenCalledWith("org-1");
+      expect(mocks.issueOfficialDocument).toHaveBeenCalledWith(
+        ownerId,
+        document.id,
+        timestamp,
+        expect.objectContaining({
+          organizationId: "org-1",
+          serialNumber: 12,
+          serialCode: expect.stringMatching(/^DOC-00012$/),
+        })
+      );
+      expect(dbMocks.writeAuditLog).toHaveBeenCalled();
+      expect(saved.status).toBe("issued");
   });
 
-  it(
-    "validates required template values before creating a document",
-    async () => {
-    mocks.getDocumentTemplate.mockResolvedValueOnce({
-      ...template,
-      fields: [
-        {
-          key: "employee_name",
-          label: "اسم الموظف",
-          type: "text",
-          required: true,
-        },
-      ],
-    });
-    const caller = appRouter.createCaller(context());
+  it("validates required template values before create", async () => {
 
-    await expect(
-      caller.documentStudio.createDocument({
-        ...documentInput,
-        templateId: template.id,
-      })
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
+      mocks.getDocumentTemplate.mockResolvedValueOnce({
+        ...template,
+        fields: [
+          {
+            key: "employee_name",
+            label: "اسم الموظف",
+            type: "text",
+            required: true,
+          },
+        ],
+      });
+      const caller = appRouter.createCaller(context());
+
+      await expect(
+        caller.documentStudio.createDocument({
+          ...documentInput,
+          templateId: template.id,
+        })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
   it("archives without physically deleting the owned document", async () => {
