@@ -1831,7 +1831,6 @@ export async function getDashboardStats(
   return {
     total,
     urgent,
-    urgentAwaitingReceipt,
     secret,
     normal,
     pending,
