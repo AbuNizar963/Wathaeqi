@@ -108,8 +108,7 @@ function mapManagedUser(row: AppwriteUserRow) {
       typeof data.organizationId === "string" ? data.organizationId : null,
     username: String(data.username ?? ""),
     name: typeof data.name === "string" ? data.name : null,
-    badgeNumber:
-      typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    badgeNumber: typeof data.badgeNumber === "string" ? data.badgeNumber : null,
     phone: typeof data.phone === "string" ? data.phone : null,
     rank: typeof data.rank === "string" ? data.rank : null,
     unit: typeof data.unit === "string" ? data.unit : null,
@@ -158,10 +157,7 @@ async function deleteRowsForUser(
   return rows.length;
 }
 
-async function hasRows(
-  tableId: string,
-  queries: string[]
-): Promise<boolean> {
+async function hasRows(tableId: string, queries: string[]): Promise<boolean> {
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
     tableId,
@@ -237,21 +233,13 @@ export const userManagementRouter = router({
         if (!visible) return false;
         if (!search) return true;
 
-        return [
-          data.name,
-          data.username,
-          data.badgeNumber,
-          data.phone,
-        ].some(
+        return [data.name, data.username, data.badgeNumber, data.phone].some(
           value =>
-            typeof value === "string" &&
-            value.toLowerCase().includes(search)
+            typeof value === "string" && value.toLowerCase().includes(search)
         );
       });
       filteredRows.sort((left, right) => {
-        const leftDate = Date.parse(
-          String(userRowData(left).createdAt ?? "")
-        );
+        const leftDate = Date.parse(String(userRowData(left).createdAt ?? ""));
         const rightDate = Date.parse(
           String(userRowData(right).createdAt ?? "")
         );
@@ -299,9 +287,8 @@ export const userManagementRouter = router({
           membershipRole:
             user.organizationId === null
               ? null
-              : (membershipRoles.get(
-                  `${user.id}:${user.organizationId}`
-                ) ?? null),
+              : (membershipRoles.get(`${user.id}:${user.organizationId}`) ??
+                null),
           organizationName:
             user.organizationId === null
               ? null
