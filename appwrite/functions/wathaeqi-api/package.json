@@ -16,7 +16,7 @@
     "zod": "4.6.7"
   },
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --platform=node --target=node24 --format=esm --outfile=build/main.js --tsconfig=../../../tsconfig.json --node-path=node_modules"
+    "build": "node build.mjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2"
