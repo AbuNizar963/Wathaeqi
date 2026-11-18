@@ -8,12 +8,6 @@
   external_node_modules = ["express"]
 
 [[redirects]]
-  from = "/api/health"
-  to = "/.netlify/functions/api-health"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
