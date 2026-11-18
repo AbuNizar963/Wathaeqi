@@ -7,16 +7,16 @@ import {
   writeAuditLog,
 } from "../../db";
 import { isPlatformOwner } from "../../ownerAccess";
-import { platformOwnerProcedure, router } from "../../_core/trpc";
+import { protectedProcedure, router } from "../../_core/trpc";
 import {
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 export const platformDocumentSettingsRouter = router({
-  get: platformOwnerProcedure.query(() => getPlatformDocumentSettings()),
+  get: protectedProcedure.query(() => getPlatformDocumentSettings()),
 
-  update: platformOwnerProcedure
+  update: protectedProcedure
     .input(
       z.object({
         showMinistryWatermarkText: z.boolean(),
