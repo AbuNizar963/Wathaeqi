@@ -101,7 +101,8 @@
     "wouter": "^3.3.5",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz",
     "xlsx-populate": "^1.21.0",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@tiptap/extension-underline": "3.34.0"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",

@@ -1,4 +1,5 @@
 import Image from "@tiptap/extension-image";
+import UnderlineExtension from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
 import TextAlign from "@tiptap/extension-text-align";
@@ -17,7 +18,7 @@ import {
   ListOrdered,
   Redo2,
   Table2,
-  Underline,
+  Underline as UnderlineIcon,
   Undo2,
 } from "lucide-react";
 import { useEffect } from "react";
@@ -67,6 +68,7 @@ export default function DocumentEditor({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
+      UnderlineExtension,
       Placeholder.configure({ placeholder }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TableKit.configure({
@@ -155,7 +157,7 @@ export default function DocumentEditor({
             disabled={disabled}
             onClick={() => editor?.chain().focus().toggleUnderline().run()}
           >
-            <Underline className="h-4 w-4" />
+            <UnderlineIcon className="h-4 w-4" />
           </Button>
           <span className="mx-1 h-6 w-px bg-slate-200" />
           <Button
