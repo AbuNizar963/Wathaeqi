@@ -906,7 +906,7 @@ void main() {
           ),
         );
         expect(multipartBody, contains('filename="report.pdf"'));
-        expect(multipartBody, contains('Content-Type: application/pdf'));
+        expect(multipartBody, contains('content-type: application/pdf'));
         expect(multipartBody, contains(utf8.decode(bytes)));
         return http.Response('', 200);
       }
