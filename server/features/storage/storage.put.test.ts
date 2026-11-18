@@ -44,9 +44,12 @@ describe("stable storage URLs", () => {
     vi.clearAllMocks();
     upload.mockResolvedValue(undefined);
     createSignedUrl.mockResolvedValue("https://storage.example/signed");
-    createSignedUploadUrl.mockResolvedValue(
-      "https://storage.example/signed-upload?token=opaque"
-    );
+    createSignedUploadUrl.mockResolvedValue({
+      uploadUrl: "https://storage.example/signed-upload?token=opaque",
+      uploadJwt: "short-lived-upload-jwt",
+      fileId: "appwrite-file-id",
+      folder: "organizations/org/telegrams/7/attachments",
+    });
     getObjectInfo.mockResolvedValue({
       size: 12,
       contentType: "application/pdf",
@@ -66,19 +69,6 @@ describe("stable storage URLs", () => {
         true
       );
     }).toThrow("Storage provider returned an unsafe URL");
-  });
-
-  it("allows validated same-origin Appwrite upload routes", () => {
-    const uploadUrl =
-      "/api/telegrams/7/attachments/upload?key=organizations%2Forg%2Ftelegrams%2F7%2Fattachments%2Ffile.pdf&fileName=file.pdf&contentType=application%2Fpdf&sizeBytes=12";
-
-    expect(validateStorageProviderUrl(uploadUrl, true)).toBe(uploadUrl);
-    expect(() =>
-      validateStorageProviderUrl(
-        "//evil.example/api/telegrams/7/attachments/upload?key=x&fileName=x&contentType=x&sizeBytes=1",
-        true
-      )
-    ).toThrow("Storage provider returned an unsafe internal URL");
   });
 
   it("allows local HTTP storage URLs only outside production", () => {
@@ -105,7 +95,8 @@ describe("stable storage URLs", () => {
       organizationId,
       7,
       "report.pdf",
-      metadata
+      metadata,
+      "appwrite-user-7"
     );
 
     expect(result.key).toMatch(
@@ -119,10 +110,17 @@ describe("stable storage URLs", () => {
     expect(result.uploadUrl).toBe(
       "https://storage.example/signed-upload?token=opaque"
     );
-    expect(createSignedUploadUrl).toHaveBeenCalledWith(result.key, {
-      fileName: "report.pdf",
-      ...metadata,
-    });
+    expect(result.uploadJwt).toBe("short-lived-upload-jwt");
+    expect(result.fileId).toBe("appwrite-file-id");
+    expect(result.folder).toBe("organizations/org/telegrams/7/attachments");
+    expect(createSignedUploadUrl).toHaveBeenCalledWith(
+      result.key,
+      {
+        fileName: "report.pdf",
+        ...metadata,
+      },
+      "appwrite-user-7"
+    );
     expect(upload).not.toHaveBeenCalled();
   });
 
