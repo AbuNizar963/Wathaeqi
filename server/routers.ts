@@ -752,25 +752,13 @@ export const appRouter = router({
           });
         }
 
-        await createInitialOwnerProfile(input);
-        const authenticated = await authenticateForLogin(
-          input.username.trim(),
-          input.password
-        );
-        if (!authenticated) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message:
-              "تم تحديث كلمة المرور، لكن تعذر بدء الجلسة. حاول تسجيل الدخول بكلمة المرور الجديدة",
-          });
-        }
-
+        const recovered = await createInitialOwnerProfile(input);
         await setAppwriteSessionCookie(
           ctx.res,
-          authenticated.session,
-          authenticated.user
+          recovered.session,
+          recovered.user
         );
-        return publicUser(authenticated.user);
+        return publicUser(recovered.user);
       }),
 
     login: publicProcedure
