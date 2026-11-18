@@ -44,10 +44,7 @@ async function findSettingsRow(
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
     tableId: TABLE_ID,
-    queries: [
-      Query.equal("organizationId", organizationId),
-      Query.limit(2),
-    ],
+    queries: [Query.equal("organizationId", organizationId), Query.limit(2)],
     total: false,
     ...(transactionId ? { transactionId } : {}),
   });
@@ -75,7 +72,11 @@ export async function getDocumentOrganizationSettings(
   const data = rowData(row);
   return {
     organizationId,
-    departmentName: requiredString(data.departmentName, "إدارة الوثائق", 255),
+    departmentName: requiredString(
+      data.departmentName,
+      "إدارة الوثائق",
+      255
+    ),
     unitName: requiredString(data.unitName, "الوحدة الإدارية", 255),
     unitChiefRank: requiredString(data.unitChiefRank, "", 120),
     unitChiefName: requiredString(data.unitChiefName, "", 255),
