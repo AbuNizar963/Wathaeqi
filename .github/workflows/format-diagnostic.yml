@@ -1,8 +1,8 @@
 name: Temporary Prettier diagnostic
 
 on:
-  push:
-    branches: ["fix/netlify-login-api-routing"]
+  pull_request:
+    branches: ["main"]
 
 permissions:
   contents: read
