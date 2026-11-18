@@ -161,6 +161,43 @@ async function resolveTemplateSnapshot(
 }
 
 export const documentStudioRouter = router({
+  getLetterheadSettings: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string().min(1).max(36).optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const membership = await getUserOrganizationMembership(ctx.user.id);
+      const organizationId =
+        input.organizationId ??
+        (membership?.isActive ? membership.organizationId : undefined);
+      if (!organizationId) return null;
+      if (
+        !isPlatformOwner(ctx.user) &&
+        (!membership?.isActive || membership.organizationId !== organizationId)
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا تملك صلاحية عرض ترويسة هذه الجهة.",
+        });
+      }
+
+      const settings = await getOrganizationSettings(organizationId);
+      if (!settings) return null;
+      return {
+        organizationId,
+        departmentName: settings.departmentName,
+        unitName: settings.unitName,
+        unitChiefRank: settings.unitChiefRank,
+        unitChiefName: settings.unitChiefName,
+        logoUrl: settings.logoUrl,
+        serialPrefix: settings.serialPrefix,
+        numberSystem: settings.numberSystem,
+        dateFormat: settings.dateFormat,
+        timezone: settings.timezone,
+      };
+    }),
   listTemplates: protectedProcedure.query(({ ctx }) =>
     listDocumentTemplates(ctx.user.authUserId)
   ),
