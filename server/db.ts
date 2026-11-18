@@ -1832,9 +1832,7 @@ function notificationRowData(
   return row.data ?? row;
 }
 
-const mapNotification = (
-  row: Record<string, unknown>
-): NotificationRecord => ({
+const mapNotification = (row: Record<string, unknown>): NotificationRecord => ({
   id: Number(row.id),
   userId: Number(row.userId),
   organizationId: String(row.organizationId),
@@ -1991,7 +1989,9 @@ export async function listUserNotifications(
   );
   const unread = notifications
     .filter(item => item.readAt === null)
-    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+    .sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    );
 
   return {
     items: unread.slice(0, Math.max(0, limit)),
@@ -2026,7 +2026,9 @@ export async function resolveRouteNotifications(
     Query.equal("routeId", routeId),
     Query.equal("type", ["route.approved", "route.requested"]),
   ]);
-  const unreadRows = rows.filter(row => notificationRowData(row).readAt == null);
+  const unreadRows = rows.filter(
+    row => notificationRowData(row).readAt == null
+  );
   const readAt = new Date().toISOString();
 
   await Promise.all(
