@@ -3069,14 +3069,6 @@ class _DashboardPageState extends State<DashboardPage>
     return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
-    'total' => 'إجمالي البرقيات',
-    'today' => 'الصادرة اليوم',
-    'urgent' => 'أولوية عاجلة اليوم',
-    'incoming' => 'الواردة اليوم',
-    'in-progress' => 'قيد الإجراء',
-    'resolved' => 'مكتملة نهائيًا',
-    _ => '',
-  };
 
   bool _isIncoming(Map<String, dynamic> row) {
     final direction = '${row['direction'] ?? row['type'] ?? ''}'
