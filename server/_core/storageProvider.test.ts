@@ -1,173 +1,150 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  upload,
-  createSignedUrl,
-  createSignedUploadUrl,
-  info,
-  download,
-  from,
-  getSupabaseAdmin,
-} = vi.hoisted(() => {
-  const upload = vi.fn();
-  const createSignedUrl = vi.fn();
-  const createSignedUploadUrl = vi.fn();
-  const info = vi.fn();
-  const download = vi.fn();
-  const from = vi.fn(() => ({
-    upload,
-    createSignedUrl,
-    createSignedUploadUrl,
-    info,
-    download,
-  }));
-  const getSupabaseAdmin = vi.fn(() => ({ storage: { from } }));
+const mocks = vi.hoisted(() => ({
+  createFile: vi.fn(),
+  createFileToken: vi.fn(),
+  deleteFile: vi.fn(),
+  getFile: vi.fn(),
+  getFileDownload: vi.fn(),
+  fromBuffer: vi.fn(),
+}));
 
-  return {
-    upload,
-    createSignedUrl,
-    createSignedUploadUrl,
-    info,
-    download,
-    from,
-    getSupabaseAdmin,
-  };
-});
+vi.mock("./appwrite", () => ({
+  getAppwriteBucketId: () => "document-attachments",
+  getAppwriteStorage: () => mocks,
+  getAppwriteTokens: () => mocks,
+}));
 
-vi.mock("./supabase", () => ({ getSupabaseAdmin }));
+vi.mock("./env", () => ({
+  ENV: {
+    appwriteEndpoint: "https://fra.cloud.appwrite.io/v1",
+    appwriteProjectId: "wathaeqi",
+  },
+}));
+
+vi.mock("node-appwrite/file", () => ({
+  InputFile: { fromBuffer: mocks.fromBuffer },
+}));
 
 import {
   getStorageProvider,
   resetStorageProviderForTests,
 } from "./storageProvider";
 
-describe("Supabase storage provider", () => {
+describe("Appwrite storage provider", () => {
   beforeEach(() => {
+    vi.resetAllMocks();
     resetStorageProviderForTests();
-    vi.clearAllMocks();
-    upload.mockResolvedValue({ error: null });
-    download.mockResolvedValue({
-      data: new Blob(["logo"], { type: "image/png" }),
-      error: null,
+    mocks.fromBuffer.mockReturnValue({ kind: "input-file" });
+    mocks.createFile.mockResolvedValue({ $id: "file-id" });
+    mocks.createFileToken.mockResolvedValue({ secret: "short-lived-token" });
+    mocks.getFile.mockResolvedValue({
+      sizeOriginal: 12,
+      mimeType: "application/pdf",
     });
-    createSignedUrl.mockResolvedValue({
-      data: { signedUrl: "https://storage.example/signed-object" },
-      error: null,
-    });
-    createSignedUploadUrl.mockResolvedValue({
-      data: { signedUrl: "https://storage.example/signed-upload?token=opaque" },
-      error: null,
-    });
-    info.mockResolvedValue({
-      data: { size: 123, contentType: "application/pdf" },
-      error: null,
-    });
+    mocks.getFileDownload.mockResolvedValue(
+      Uint8Array.from([1, 2, 3]).buffer
+    );
+    mocks.deleteFile.mockResolvedValue({});
   });
 
-  it("reuses a single provider instance", () => {
-    expect(getStorageProvider()).toBe(getStorageProvider());
-  });
-
-  it("uploads private objects with the configured bucket and options", async () => {
-    const body = Buffer.from("attachment");
-
-    await getStorageProvider().upload("telegrams/7/file.pdf", body, {
+  it("uploads files privately using a deterministic Appwrite file ID", async () => {
+    const key =
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
+    const body = Buffer.from("report");
+    await getStorageProvider().upload(key, body, {
       contentType: "application/pdf",
       cacheControl: "3600",
     });
 
-    expect(from).toHaveBeenCalledWith(expect.any(String));
-    expect(upload).toHaveBeenCalledWith("telegrams/7/file.pdf", body, {
-      contentType: "application/pdf",
-      cacheControl: "3600",
-      upsert: false,
+    const { createHash } = await import("node:crypto");
+    const expectedId = createHash("sha256")
+      .update(key)
+      .digest("hex")
+      .slice(0, 32);
+
+    expect(mocks.fromBuffer).toHaveBeenCalledWith(body, "report.pdf");
+    expect(mocks.createFile).toHaveBeenCalledWith({
+      bucketId: "document-attachments",
+      fileId: expectedId,
+      file: { kind: "input-file" },
+      folder:
+        "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments",
+      permissions: [],
     });
   });
 
-  it("surfaces upload failures with provider context", async () => {
-    upload.mockResolvedValueOnce({
-      error: { message: "bucket unavailable" },
-    });
+  it("creates an expiring Appwrite file-token URL", async () => {
+    const key =
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
+    const url = new URL(
+      await getStorageProvider().createSignedUrl(key, 600)
+    );
 
-    await expect(
-      getStorageProvider().upload("telegrams/7/file.pdf", Buffer.from("x"), {
-        contentType: "application/pdf",
-        cacheControl: "3600",
+    expect(mocks.createFileToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bucketId: "document-attachments",
+        fileId: expect.any(String),
+        expire: expect.any(String),
       })
-    ).rejects.toThrow("Storage upload failed: bucket unavailable");
+    );
+    expect(url.origin).toBe("https://fra.cloud.appwrite.io");
+    expect(url.pathname).toMatch(
+      /^\/v1\/storage\/buckets\/document-attachments\/files\/[a-f0-9]{32}\/view$/
+    );
+    expect(url.searchParams.get("project")).toBe("wathaeqi");
+    expect(url.searchParams.get("token")).toBe("short-lived-token");
   });
 
-  it("creates a signed upload URL without allowing object replacement", async () => {
-    await expect(
-      getStorageProvider().createSignedUploadUrl("organizations/org/file.pdf")
-    ).resolves.toBe("https://storage.example/signed-upload?token=opaque");
+  it("creates a same-origin upload route bound to the file metadata", async () => {
+    const key =
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
+    const url = new URL(
+      await getStorageProvider().createSignedUploadUrl(key, {
+        fileName: "report.pdf",
+        contentType: "application/pdf",
+        sizeBytes: 12,
+      }),
+      "https://wathaeqi.example"
+    );
 
-    expect(createSignedUploadUrl).toHaveBeenCalledWith(
-      "organizations/org/file.pdf",
-      { upsert: false }
+    expect(url.pathname).toBe("/api/telegrams/7/attachments/upload");
+    expect(url.searchParams.get("key")).toBe(key);
+    expect(url.searchParams.get("fileName")).toBe("report.pdf");
+    expect(url.searchParams.get("contentType")).toBe("application/pdf");
+    expect(url.searchParams.get("sizeBytes")).toBe("12");
+  });
+
+  it("reads metadata and downloads bytes from Appwrite", async () => {
+    const key =
+      "department/logos/550e8400-e29b-41d4-a716-446655440000/badge.png";
+    await expect(getStorageProvider().getObjectInfo(key)).resolves.toEqual({
+      size: 12,
+      contentType: "application/pdf",
+    });
+    await expect(getStorageProvider().download(key)).resolves.toEqual({
+      body: Buffer.from([1, 2, 3]),
+      contentType: "application/pdf",
+    });
+    expect(mocks.getFile).toHaveBeenCalledTimes(2);
+    expect(mocks.getFileDownload).toHaveBeenCalledOnce();
+  });
+
+  it("deletes an Appwrite file by its deterministic key", async () => {
+    const key =
+      "department/logos/550e8400-e29b-41d4-a716-446655440000/badge.png";
+    await getStorageProvider().remove?.(key);
+    expect(mocks.deleteFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bucketId: "document-attachments",
+        fileId: expect.any(String),
+      })
     );
   });
 
-  it("reads object size and content type before downloading file bytes", async () => {
+  it("rejects unsafe storage paths", async () => {
     await expect(
-      getStorageProvider().getObjectInfo("organizations/org/file.pdf")
-    ).resolves.toEqual({
-      size: 123,
-      contentType: "application/pdf",
-    });
-    expect(info).toHaveBeenCalledWith("organizations/org/file.pdf");
-  });
-
-  it("downloads object bytes and returns the stored content type", async () => {
-    const data = new Blob(["logo-bytes"], { type: "image/png" });
-    download.mockResolvedValueOnce({ data, error: null });
-
-    await expect(
-      getStorageProvider().download("department/logos/org/logo.png")
-    ).resolves.toEqual({
-      body: Buffer.from("logo-bytes"),
-      contentType: "image/png",
-    });
-
-    expect(download).toHaveBeenCalledWith("department/logos/org/logo.png");
-  });
-
-  it("surfaces object download failures with provider context", async () => {
-    download.mockResolvedValueOnce({
-      data: null,
-      error: { message: "object missing" },
-    });
-
-    await expect(
-      getStorageProvider().download("department/logos/org/missing.png")
-    ).rejects.toThrow("Storage download failed: object missing");
-  });
-
-  it("returns the signed URL for the requested key and expiration", async () => {
-    await expect(
-      getStorageProvider().createSignedUrl("telegrams/7/file.pdf", 600)
-    ).resolves.toBe("https://storage.example/signed-object");
-
-    expect(createSignedUrl).toHaveBeenCalledWith("telegrams/7/file.pdf", 600);
-  });
-
-  it("surfaces signed URL errors and empty provider responses", async () => {
-    createSignedUrl.mockResolvedValueOnce({
-      data: null,
-      error: { message: "permission denied" },
-    });
-
-    await expect(
-      getStorageProvider().createSignedUrl("telegrams/7/file.pdf", 600)
-    ).rejects.toThrow("Storage signed URL failed: permission denied");
-
-    createSignedUrl.mockResolvedValueOnce({
-      data: { signedUrl: "" },
-      error: null,
-    });
-
-    await expect(
-      getStorageProvider().createSignedUrl("telegrams/7/file.pdf", 600)
-    ).rejects.toThrow("Storage signed URL failed: empty URL");
+      getStorageProvider().getObjectInfo("department/../secret.txt")
+    ).rejects.toThrow("Invalid Appwrite storage key");
   });
 });
