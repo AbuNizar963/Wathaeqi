@@ -27,7 +27,7 @@ function rowData(row: AppwriteRow): Record<string, unknown> {
   return row.data ?? row;
 }
 
-async function getIncompleteOwner(): Promise<ExistingOwner | null> {
+async function getExistingOwner(): Promise<ExistingOwner | null> {
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
     tableId: USERS_TABLE_ID,
@@ -43,7 +43,6 @@ async function getIncompleteOwner(): Promise<ExistingOwner | null> {
   const email = data.email;
 
   if (
-    data.mustChangePassword !== true ||
     data.isActive !== true ||
     data.role !== "admin" ||
     typeof authUserId !== "string" ||
@@ -61,12 +60,13 @@ async function getIncompleteOwner(): Promise<ExistingOwner | null> {
 
 export async function isInitialOwnerSetupAvailable(): Promise<boolean> {
   if (ENV.ownerSetupSecret.length < 32) return false;
-  return (await getIncompleteOwner()) !== null;
+  return (await getExistingOwner()) !== null;
 }
 
 /**
- * Reset the existing Appwrite platform owner's password.
- * This deliberately creates no Auth user, profile, membership, or email.
+ * Recover the existing Appwrite platform owner's password.
+ * The server-side setup secret protects this flow. It deliberately creates
+ * no Auth user, profile, membership, or email.
  */
 export async function createInitialOwnerProfile(input: {
   username: string;
