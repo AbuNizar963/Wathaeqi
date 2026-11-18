@@ -127,6 +127,7 @@ describe("document studio authorization and API", () => {
     dbMocks.getUserOrganizationMembership.mockResolvedValue({
       isActive: true,
       organizationId: "org-1",
+      role: "organization_admin",
     });
     dbMocks.getOrganizationSettings.mockResolvedValue({
       timezone: "UTC",
@@ -163,6 +164,7 @@ describe("document studio authorization and API", () => {
     dbMocks.getUserOrganizationMembership.mockResolvedValue({
       isActive: true,
       organizationId: "org-1",
+      role: "organization_admin",
     });
     dbMocks.getOrganizationSettings.mockResolvedValue({
       timezone: "UTC",
