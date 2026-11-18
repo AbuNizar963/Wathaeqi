@@ -157,7 +157,7 @@ describe("document studio authorization and API", () => {
       ...document,
       status: "issued",
       serialNumber: 12,
-      serialCode: "DOC-2026-11-18-00012",
+      serialCode: "DOC-00012",
       issuedAt: timestamp,
     });
     dbMocks.getUserOrganizationMembership.mockResolvedValue({
@@ -288,7 +288,7 @@ describe("document studio authorization and API", () => {
       expect.objectContaining({
         organizationId: "org-1",
         serialNumber: 12,
-        serialCode: expect.stringMatching(/^DOC-\d{4}-\d{2}-\d{2}-00012$/),
+        serialCode: expect.stringMatching(/^DOC-00012$/),
       })
     );
     expect(dbMocks.writeAuditLog).toHaveBeenCalled();
