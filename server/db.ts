@@ -1821,7 +1821,20 @@ export type NotificationRecord = {
   readAt: Date | null;
   createdAt: Date;
 };
-const mapNotification = (row: Record<string, unknown>): NotificationRecord => ({
+type AppwriteNotificationRow = Record<string, unknown> & {
+  $id: string;
+  data?: Record<string, unknown>;
+};
+
+function notificationRowData(
+  row: AppwriteNotificationRow
+): Record<string, unknown> {
+  return row.data ?? row;
+}
+
+const mapNotification = (
+  row: Record<string, unknown>
+): NotificationRecord => ({
   id: Number(row.id),
   userId: Number(row.userId),
   organizationId: String(row.organizationId),
@@ -1834,21 +1847,99 @@ const mapNotification = (row: Record<string, unknown>): NotificationRecord => ({
   createdAt: asDate(row.createdAt),
 });
 
+async function listAllAppwriteRows(
+  tableId: string,
+  queries: string[]
+): Promise<AppwriteNotificationRow[]> {
+  const rows: AppwriteNotificationRow[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const result = await getAppwriteTablesDB().listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId,
+      queries: [
+        ...queries,
+        Query.limit(100),
+        ...(cursor ? [Query.cursorAfter(cursor)] : []),
+      ],
+      total: false,
+    });
+    const page = result.rows as AppwriteNotificationRow[];
+    rows.push(...page);
+    if (page.length < 100) return rows;
+
+    const nextCursor = page[page.length - 1]?.$id;
+    if (!nextCursor || nextCursor === cursor) {
+      throw new Error(`Appwrite pagination did not advance for ${tableId}`);
+    }
+    cursor = nextCursor;
+  }
+}
+
+async function createAppwriteNotification(input: {
+  userId: number;
+  organizationId: string;
+  type: string;
+  title: string;
+  body: string;
+  telegramId?: number | null;
+  routeId?: number | null;
+}): Promise<void> {
+  const data = {
+    userId: input.userId,
+    organizationId: input.organizationId,
+    type: input.type,
+    title: input.title,
+    body: input.body,
+    telegramId: input.telegramId ?? null,
+    routeId: input.routeId ?? null,
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  };
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await getAppwriteTablesDB().createRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "notifications",
+        rowId: randomUUID(),
+        data: {
+          id: randomInt(1, 2_147_483_647),
+          ...data,
+        },
+      });
+      return;
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code !== 409 || attempt === 4) throw error;
+    }
+  }
+}
+
 export async function listActiveOrganizationMemberIds(
   organizationId: string
 ): Promise<number[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organization_memberships")
-    .select("userId, organizations!inner(isActive)")
-    .eq("organizationId", organizationId)
-    .eq("isActive", true)
-    .eq("organizations.isActive", true);
-  throwIfError(error, "Failed to load active notification recipients");
+  const [memberships, activeOrganizations] = await Promise.all([
+    listAllAppwriteRows("organization_memberships", [
+      Query.equal("organizationId", organizationId),
+      Query.equal("isActive", true),
+    ]),
+    listAllAppwriteRows("organizations", [
+      Query.equal("id", organizationId),
+      Query.equal("isActive", true),
+    ]),
+  ]);
+
+  if (activeOrganizations.length === 0) return [];
 
   return Array.from(
     new Set(
-      (data ?? [])
-        .map(row => Number(row.userId))
+      memberships
+        .map(row => Number(notificationRowData(row).userId))
         .filter(userId => Number.isSafeInteger(userId) && userId > 0)
     )
   );
@@ -1862,22 +1953,17 @@ export async function notifyOrganizationUsers(input: {
   telegramId?: number | null;
   routeId?: number | null;
 }): Promise<void> {
-  const supabase = getSupabaseAdmin();
   const userIds = await listActiveOrganizationMemberIds(input.organizationId);
-  if (userIds.length === 0) return;
-  const { error } = await supabase.from("notifications").insert(
-    userIds.map(userId => ({
-      userId,
-      organizationId: input.organizationId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      telegramId: input.telegramId ?? null,
-      routeId: input.routeId ?? null,
-    }))
+  await Promise.all(
+    userIds.map(userId =>
+      createAppwriteNotification({
+        ...input,
+        userId,
+      })
+    )
   );
-  throwIfError(error, "Failed to create organization notifications");
 }
+
 export async function notifyUser(input: {
   userId: number;
   organizationId: string;
@@ -1887,78 +1973,72 @@ export async function notifyUser(input: {
   telegramId?: number | null;
   routeId?: number | null;
 }): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .insert({
-      userId: input.userId,
-      organizationId: input.organizationId,
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      telegramId: input.telegramId ?? null,
-      routeId: input.routeId ?? null,
-    });
-  throwIfError(error, "Failed to create user notification");
+  await createAppwriteNotification(input);
 }
+
 export async function listUserNotifications(
   userId: number,
   organizationId?: string,
   limit = 30
 ): Promise<{ items: NotificationRecord[]; unreadCount: number }> {
-  const supabase = getSupabaseAdmin();
-  let notificationsQuery = supabase
-    .from("notifications")
-    .select("*")
-    .eq("userId", userId);
+  const queries = [Query.equal("userId", userId)];
   if (organizationId) {
-    notificationsQuery = notificationsQuery.eq(
-      "organizationId",
-      organizationId
-    );
+    queries.push(Query.equal("organizationId", organizationId));
   }
-  const { data, error } = await notificationsQuery
-    .is("readAt", null)
-    .order("createdAt", { ascending: false })
-    .limit(limit);
-  throwIfError(error, "Failed to list notifications");
-  let unreadQuery = supabase
-    .from("notifications")
-    .select("id", { count: "exact", head: true })
-    .eq("userId", userId);
-  if (organizationId) {
-    unreadQuery = unreadQuery.eq("organizationId", organizationId);
-  }
-  const { count, error: countError } = await unreadQuery.is("readAt", null);
-  throwIfError(countError, "Failed to count unread notifications");
-  const items = (data ?? []).map(row =>
-    mapNotification(row as Record<string, unknown>)
+  const rows = await listAllAppwriteRows("notifications", queries);
+  const notifications = rows.map(row =>
+    mapNotification(notificationRowData(row))
   );
-  return { items, unreadCount: count ?? 0 };
+  const unread = notifications
+    .filter(item => item.readAt === null)
+    .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+
+  return {
+    items: unread.slice(0, Math.max(0, limit)),
+    unreadCount: unread.length,
+  };
 }
+
 export async function markNotificationRead(
   userId: number,
   id: number
 ): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .update({ readAt: new Date().toISOString() })
-    .eq("id", id)
-    .eq("userId", userId)
-    .is("readAt", null);
-  throwIfError(error, "Failed to mark notification as read");
+  const rows = await listAllAppwriteRows("notifications", [
+    Query.equal("id", id),
+    Query.equal("userId", userId),
+  ]);
+  const row = rows.find(item => notificationRowData(item).readAt == null);
+  if (!row) return;
+
+  await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: "notifications",
+    rowId: row.$id,
+    data: { readAt: new Date().toISOString() },
+  });
 }
 
 /** Resolve pending route work for every account in the receiving organization. */
 export async function resolveRouteNotifications(
   routeId: number
 ): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .update({ readAt: new Date().toISOString() })
-    .eq("routeId", routeId)
-    .in("type", ["route.approved", "route.requested"])
-    .is("readAt", null);
-  throwIfError(error, "Failed to resolve route notifications");
+  const rows = await listAllAppwriteRows("notifications", [
+    Query.equal("routeId", routeId),
+    Query.equal("type", ["route.approved", "route.requested"]),
+  ]);
+  const unreadRows = rows.filter(row => notificationRowData(row).readAt == null);
+  const readAt = new Date().toISOString();
+
+  await Promise.all(
+    unreadRows.map(row =>
+      getAppwriteTablesDB().updateRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "notifications",
+        rowId: row.$id,
+        data: { readAt },
+      })
+    )
+  );
 }
 
 async function countTelegrams(
