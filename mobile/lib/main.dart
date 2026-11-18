@@ -675,7 +675,6 @@ String _dashboardRefreshError(Object error) {
 
 class _DashboardPageState extends State<DashboardPage>
     with WidgetsBindingObserver {
-
   late final Map<String, dynamic> _account;
   bool loading = true;
   String? error;
@@ -994,13 +993,19 @@ class _DashboardPageState extends State<DashboardPage>
           'تم رفض ${legacyResult.permanentFailures} عملية قديمة من الخادم: $details',
         );
       } else if (documentResult.lastError != null) {
-        Toast.error(context, 'تعذرت مزامنة الوثائق: ${documentResult.lastError}');
+        Toast.error(
+          context,
+          'تعذرت مزامنة الوثائق: ${documentResult.lastError}',
+        );
       } else if (totalSynced > 0) {
         Toast.success(context, 'تمت مزامنة $totalSynced عملية بنجاح');
       }
     } catch (_) {
       if (mounted && showProgress) {
-        Toast.error(context, 'تعذر تنفيذ المزامنة الآن؛ ستبقى التغييرات محفوظة محلياً');
+        Toast.error(
+          context,
+          'تعذر تنفيذ المزامنة الآن؛ ستبقى التغييرات محفوظة محلياً',
+        );
       }
     } finally {
       if (mounted) {
@@ -2253,8 +2258,6 @@ class _DashboardPageState extends State<DashboardPage>
     final local = value.toLocal();
     return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
-
-
 }
 
 class _AccountMenuItem extends StatelessWidget {
