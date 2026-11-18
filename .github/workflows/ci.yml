@@ -38,12 +38,6 @@ jobs:
             exit 1
           fi
 
-      - name: Temporary exact Prettier diagnostic
-        run: |
-          pnpm exec prettier server/features/auth/ownerBootstrap.ts > /tmp/ownerBootstrap.formatted.ts
-          cat /tmp/ownerBootstrap.formatted.ts
-          diff -u server/features/auth/ownerBootstrap.ts /tmp/ownerBootstrap.formatted.ts || true
-
       - name: Check formatting
         run: pnpm lint
 
