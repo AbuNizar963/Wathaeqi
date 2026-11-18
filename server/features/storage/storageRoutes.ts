@@ -6,11 +6,7 @@ import express, {
 } from "express";
 import { ENV } from "../../_core/env";
 import { getAuthenticatedUserFromRequest } from "../../_core/auth";
-import {
-  getTelegramById,
-  getTelegramVersion,
-  writeAuditLog,
-} from "../../db";
+import { getTelegramById, getTelegramVersion, writeAuditLog } from "../../db";
 import {
   createTelegramAttachment,
   getTelegramAttachmentByStorageKey,

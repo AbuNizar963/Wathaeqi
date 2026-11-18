@@ -93,9 +93,7 @@ class AppwriteStorageProvider implements StorageProvider {
     expiresInSeconds: number
   ): Promise<string> {
     const { fileId } = parseStorageKey(key);
-    const expire = new Date(
-      Date.now() + expiresInSeconds * 1000
-    ).toISOString();
+    const expire = new Date(Date.now() + expiresInSeconds * 1000).toISOString();
     const token = await getAppwriteTokens().createFileToken({
       bucketId: getAppwriteBucketId(),
       fileId,

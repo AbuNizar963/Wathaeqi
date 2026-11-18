@@ -70,9 +70,7 @@ function mapAttachment(row: AttachmentRow): TelegramAttachmentRecord {
   };
 }
 
-async function listAttachmentRows(
-  queries: string[]
-): Promise<AttachmentRow[]> {
+async function listAttachmentRows(queries: string[]): Promise<AttachmentRow[]> {
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
     tableId: TABLE_ID,

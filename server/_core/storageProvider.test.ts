@@ -45,45 +45,40 @@ describe("Appwrite storage provider", () => {
       sizeOriginal: 12,
       mimeType: "application/pdf",
     });
-    mocks.getFileDownload.mockResolvedValue(
-      Uint8Array.from([1, 2, 3]).buffer
-    );
+    mocks.getFileDownload.mockResolvedValue(Uint8Array.from([1, 2, 3]).buffer);
     mocks.deleteFile.mockResolvedValue({});
   });
 
   it("uploads files privately using a deterministic Appwrite file ID", async () => {
-      const key =
-        "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
-      const body = Buffer.from("report");
-      await getStorageProvider().upload(key, body, {
-        contentType: "application/pdf",
-        cacheControl: "3600",
-      });
+    const key =
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
+    const body = Buffer.from("report");
+    await getStorageProvider().upload(key, body, {
+      contentType: "application/pdf",
+      cacheControl: "3600",
+    });
 
-      const { createHash } = await import("node:crypto");
-      const expectedId = createHash("sha256")
-        .update(key)
-        .digest("hex")
-        .slice(0, 32);
+    const { createHash } = await import("node:crypto");
+    const expectedId = createHash("sha256")
+      .update(key)
+      .digest("hex")
+      .slice(0, 32);
 
-      expect(mocks.fromBuffer).toHaveBeenCalledWith(body, "report.pdf");
-      expect(mocks.createFile).toHaveBeenCalledWith({
-        bucketId: "document-attachments",
-        fileId: expectedId,
-        file: { kind: "input-file" },
-        folder:
-          "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments",
-        permissions: [],
-      });
-    }
-  );
+    expect(mocks.fromBuffer).toHaveBeenCalledWith(body, "report.pdf");
+    expect(mocks.createFile).toHaveBeenCalledWith({
+      bucketId: "document-attachments",
+      fileId: expectedId,
+      file: { kind: "input-file" },
+      folder:
+        "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments",
+      permissions: [],
+    });
+  });
 
   it("creates an expiring Appwrite file-token URL", async () => {
     const key =
       "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
-    const url = new URL(
-      await getStorageProvider().createSignedUrl(key, 600)
-    );
+    const url = new URL(await getStorageProvider().createSignedUrl(key, 600));
 
     expect(mocks.createFileToken).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -101,35 +96,32 @@ describe("Appwrite storage provider", () => {
   });
 
   it("creates a short-lived Appwrite user JWT for direct upload", async () => {
-      const key =
-        "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
-      const authorization = await getStorageProvider().createSignedUploadUrl(
-        key,
-        {
-          fileName: "report.pdf",
-          contentType: "application/pdf",
-          sizeBytes: 12,
-        },
-        "appwrite-user-7"
-      );
-      const url = new URL(authorization.uploadUrl);
+    const key =
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
+    const authorization = await getStorageProvider().createSignedUploadUrl(
+      key,
+      {
+        fileName: "report.pdf",
+        contentType: "application/pdf",
+        sizeBytes: 12,
+      },
+      "appwrite-user-7"
+    );
+    const url = new URL(authorization.uploadUrl);
 
-      expect(mocks.createJWT).toHaveBeenCalledWith({
-        userId: "appwrite-user-7",
-        duration: 300,
-      });
-      expect(authorization.uploadJwt).toBe("short-lived-upload-jwt");
-      expect(authorization.fileId).toMatch(/^[a-f0-9]{32}$/);
-      expect(authorization.folder).toBe(
-        "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments"
-      );
-      expect(url.origin).toBe("https://fra.cloud.appwrite.io");
-      expect(url.pathname).toBe(
-        "/v1/storage/buckets/document-attachments/files"
-      );
-      expect(url.searchParams.get("project")).toBe("wathaeqi");
-    }
-  );
+    expect(mocks.createJWT).toHaveBeenCalledWith({
+      userId: "appwrite-user-7",
+      duration: 300,
+    });
+    expect(authorization.uploadJwt).toBe("short-lived-upload-jwt");
+    expect(authorization.fileId).toMatch(/^[a-f0-9]{32}$/);
+    expect(authorization.folder).toBe(
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments"
+    );
+    expect(url.origin).toBe("https://fra.cloud.appwrite.io");
+    expect(url.pathname).toBe("/v1/storage/buckets/document-attachments/files");
+    expect(url.searchParams.get("project")).toBe("wathaeqi");
+  });
 
   it("reads metadata and downloads bytes from Appwrite", async () => {
     const key =

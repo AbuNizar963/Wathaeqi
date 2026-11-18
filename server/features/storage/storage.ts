@@ -246,19 +246,16 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
     "attachments",
     `${crypto.randomUUID()}-${safeFileName}`,
   ].join("/");
-  const uploadAuthorization =
-    await getStorageProvider().createSignedUploadUrl(
-      key,
-      {
-        fileName: safeFileName,
-        contentType: metadata.contentType,
-        sizeBytes: metadata.sizeBytes,
-      },
-      authUserId
-    );
-  const uploadUrl = validateStorageProviderUrl(
-    uploadAuthorization.uploadUrl
+  const uploadAuthorization = await getStorageProvider().createSignedUploadUrl(
+    key,
+    {
+      fileName: safeFileName,
+      contentType: metadata.contentType,
+      sizeBytes: metadata.sizeBytes,
+    },
+    authUserId
   );
+  const uploadUrl = validateStorageProviderUrl(uploadAuthorization.uploadUrl);
 
   return {
     key,
