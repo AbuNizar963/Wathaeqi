@@ -158,6 +158,7 @@ class OfficialDocument {
     required this.id,
     required this.ownerId,
     required this.title,
+    required this.category,
     required this.subject,
     required this.content,
     required this.fieldValues,
