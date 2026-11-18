@@ -170,13 +170,16 @@ export const documentStudioRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const membership = await getUserOrganizationMembership(ctx.user.id);
-      const organizationId =
-        input.organizationId ??
+      const ownerOrganizationId =
+        ctx.user.organizationId ??
         (membership?.isActive ? membership.organizationId : undefined);
+      const organizationId = input.organizationId ?? ownerOrganizationId;
       if (!organizationId) return null;
       if (
-        !isPlatformOwner(ctx.user) &&
-        (!membership?.isActive || membership.organizationId !== organizationId)
+        !ownerOrganizationId ||
+        organizationId !== ownerOrganizationId ||
+        !membership?.isActive ||
+        membership.organizationId !== organizationId
       ) {
         throw new TRPCError({
           code: "FORBIDDEN",
