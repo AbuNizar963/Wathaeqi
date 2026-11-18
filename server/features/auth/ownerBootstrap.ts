@@ -115,8 +115,7 @@ export async function createInitialOwnerProfile(input: {
     name: typeof data.name === "string" ? data.name : null,
     username: owner.username,
     passwordHash: null,
-    badgeNumber:
-      typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    badgeNumber: typeof data.badgeNumber === "string" ? data.badgeNumber : null,
     bio: typeof data.bio === "string" ? data.bio : null,
     phone: typeof data.phone === "string" ? data.phone : null,
     rank: typeof data.rank === "string" ? data.rank : null,
