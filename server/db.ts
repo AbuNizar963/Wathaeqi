@@ -1731,14 +1731,11 @@ export async function writeAuditLog(input: WriteAuditLogInput): Promise<void> {
     userAgent: input.userAgent ?? null,
     deviceType: input.deviceType ?? "unknown",
     actorRank: input.actorRank ?? actor.rank ?? null,
-    actorRole:
-      input.actorRole ?? membership?.role ?? actor.role ?? null,
+    actorRole: input.actorRole ?? membership?.role ?? actor.role ?? null,
     organizationId:
       input.organizationId ??
       membership?.organizationId ??
-      (typeof actor.organizationId === "string"
-        ? actor.organizationId
-        : null),
+      (typeof actor.organizationId === "string" ? actor.organizationId : null),
     reason: input.reason ?? null,
     beforeState: auditJson(input.beforeState),
     afterState: auditJson(input.afterState),
@@ -1808,7 +1805,9 @@ export async function writeAuditLog(input: WriteAuditLogInput): Promise<void> {
     }
   }
 
-  throw new Error("Failed to write Appwrite audit log after concurrent retries");
+  throw new Error(
+    "Failed to write Appwrite audit log after concurrent retries"
+  );
 }
 export type NotificationRecord = {
   id: number;
