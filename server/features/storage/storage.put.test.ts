@@ -68,6 +68,19 @@ describe("stable storage URLs", () => {
     }).toThrow("Storage provider returned an unsafe URL");
   });
 
+  it("allows validated same-origin Appwrite upload routes", () => {
+    const uploadUrl =
+      "/api/telegrams/7/attachments/upload?key=organizations%2Forg%2Ftelegrams%2F7%2Fattachments%2Ffile.pdf&fileName=file.pdf&contentType=application%2Fpdf&sizeBytes=12";
+
+    expect(validateStorageProviderUrl(uploadUrl, true)).toBe(uploadUrl);
+    expect(() =>
+      validateStorageProviderUrl(
+        "//evil.example/api/telegrams/7/attachments/upload?key=x&fileName=x&contentType=x&sizeBytes=1",
+        true
+      )
+    ).toThrow("Storage provider returned an unsafe internal URL");
+  });
+
   it("allows local HTTP storage URLs only outside production", () => {
     const localUrl = validateStorageProviderUrl(
       "http://127.0.0.1:54321/storage/upload",
@@ -84,10 +97,15 @@ describe("stable storage URLs", () => {
 
   it("creates a signed upload URL scoped to one organization and telegram", async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
+    const metadata = {
+      contentType: "application/pdf" as const,
+      sizeBytes: 12,
+    };
     const result = await storageCreateOrganizationAttachmentUploadUrl(
       organizationId,
       7,
-      "report.pdf"
+      "report.pdf",
+      metadata
     );
 
     expect(result.key).toMatch(
@@ -101,7 +119,10 @@ describe("stable storage URLs", () => {
     expect(result.uploadUrl).toBe(
       "https://storage.example/signed-upload?token=opaque"
     );
-    expect(createSignedUploadUrl).toHaveBeenCalledWith(result.key);
+    expect(createSignedUploadUrl).toHaveBeenCalledWith(result.key, {
+      fileName: "report.pdf",
+      ...metadata,
+    });
     expect(upload).not.toHaveBeenCalled();
   });
 
