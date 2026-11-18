@@ -79,9 +79,12 @@ class _TelegramActionsPanelState extends State<TelegramActionsPanel> {
         }
       }
 
+      final results = await Future.wait<(dynamic, String?)>([
+        read('telegrams.attachments', input: {'telegramId': widget.telegramId}),
+        read('telegrams.actions', input: {'telegramId': widget.telegramId}),
+      ]);
       if (!mounted) return;
       setState(() {
-        routes = results[0].$1 is List ? results[0].$1 as List : const [];
         attachments = results[0].$1 is List ? results[0].$1 as List : const [];
         actions = results[1].$1 is List ? results[1].$1 as List : const [];
         final errors = results
