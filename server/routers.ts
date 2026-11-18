@@ -91,7 +91,6 @@ import {
   archiveOrganizationSafely,
   createOrganization,
   ensureOrganizationAccounts,
-  getConfiguredTelegramDestination,
   getOrganizationById,
   getOrganizationByIdIncludingInactive,
   getUserOrganizationMembership,
@@ -101,7 +100,6 @@ import {
   provisionOrganizationAccount,
   listOrganizationsForUser,
   listRoutingDirectory,
-  listRoutingTargets,
   purgeArchivedOrganizationPermanently,
   selectPlatformOwnerWorkplace,
   updateOrganization,
@@ -2767,8 +2765,6 @@ export const appRouter = router({
         z.object({
           subject: z.string().trim().min(2).max(255),
           recipient: z.string().trim().min(2).max(255),
-          recipientOrganizationId: z.string().uuid().optional(),
-          broadcastToDescendants: z.boolean().optional(),
           body: z.string().trim().min(3).max(20000),
           classification: classificationSchema,
           priority: prioritySchema,
@@ -2790,35 +2786,7 @@ export const appRouter = router({
           const existing = await getTelegramByIdempotencyKey(
             input.idempotencyKey
           );
-          if (existing) {
-            if (input.broadcastToDescendants && existing.status === "draft") {
-              let hasExistingRoute: boolean;
-              try {
-                hasExistingRoute = await hasTelegramRoute(existing.id);
-              } catch (error) {
-                throw new TRPCError({
-                  code: "INTERNAL_SERVER_ERROR",
-                  message:
-                    "تعذر التحقق من حالة الإرسال الجماعي السابقة؛ راجع البرقية قبل إعادة المحاولة.",
-                  cause: error,
-                });
-              }
-
-              if (!hasExistingRoute) {
-                throw new TRPCError({
-                  code: "CONFLICT",
-                  message: [
-                    "مفتاح التكرار مرتبط بالبرقية المسودة",
-                    existing.serialCode ?? String(existing.id),
-                    "ولم يُعثر على مسار إرسال. لم تُعتبر المحاولة السابقة ناجحة؛",
-                    "راجع المسودة وأعد المحاولة بمفتاح جديد.",
-                  ].join(" "),
-                });
-              }
-            }
-
-            return existing;
-          }
+          if (existing) return existing;
         }
 
         const organizationId = await getActiveUserOrganizationId(ctx.user);
@@ -2864,41 +2832,13 @@ export const appRouter = router({
         const dateCode = `${dateValues.year}-${dateValues.month}-${dateValues.day}`;
         const serialCode = `${numbering.serialPrefix}-${dateCode}-${String(serialNumber).padStart(5, "0")}`;
         const organizationSerialCode = `${numbering.serialPrefix}-${dateCode}-${String(organizationSerialNumber).padStart(5, "0")}`;
-        const broadcastTargets = input.broadcastToDescendants
-          ? (await listOrganizationDescendants(ctx.user.id)).filter(
-              target => target.parentOrganizationId === organizationId
-            )
-          : [];
-        if (input.broadcastToDescendants && broadcastTargets.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "لا توجد جهات تابعة مباشرة لإرسال البرقية إليها",
-          });
-        }
-        const selectedDestination = input.recipientOrganizationId
-          ? (await listRoutingTargets(ctx.user.id)).find(
-              target => target.id === input.recipientOrganizationId
-            )
-          : null;
-        if (input.recipientOrganizationId && !selectedDestination) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "الجهة المختارة غير متاحة ضمن مسار العمل المسموح",
-          });
-        }
-        const configuredDestination = input.broadcastToDescendants
-          ? (broadcastTargets[0] ?? null)
-          : (selectedDestination ??
-            (await getConfiguredTelegramDestination(ctx.user.id)));
-        const creatorName = ctx.user.name ?? ctx.user.email ?? "شرطي مسجل";
+create destination routing        const creatorName = ctx.user.name ?? ctx.user.email ?? "شرطي مسجل";
         const creatorIpHeader = ctx.req.headers["x-forwarded-for"];
         const creatorIp =
           typeof creatorIpHeader === "string"
             ? creatorIpHeader.split(",")[0].trim()
             : null;
         const {
-          recipientOrganizationId: _recipientOrganizationId,
-          broadcastToDescendants: _broadcastToDescendants,
           requestedOrganizationSerialNumber: _requestedOrganizationSerialNumber,
           ...telegramInput
         } = input;
@@ -2940,212 +2880,6 @@ export const appRouter = router({
             if (existing) return existing;
           }
           throw error;
-        }
-
-        // A telegram has one active destination, so a broadcast is represented
-        // by one independently routed copy for each direct child organization.
-        // Track the primary telegram before routing so failures there are visible too.
-        const broadcastProgress: Array<{
-          telegramId: number;
-          organizationId: string;
-          status: "created" | "routed";
-        }> =
-          configuredDestination && broadcastTargets.length > 0
-            ? [
-                {
-                  telegramId: telegram.id,
-                  organizationId: configuredDestination.id,
-                  status: "created",
-                },
-              ]
-            : [];
-
-        const reportBroadcastFailure = async (
-          error: unknown
-        ): Promise<never> => {
-          const failure =
-            error instanceof Error ? error.message : String(error);
-          let auditRecorded = false;
-
-          try {
-            await recordTelegramAction({
-              telegramId: telegram.id,
-              actorUserId: ctx.user.id,
-              action: "telegram.broadcast.atomic_failure",
-              fromStatus: telegram.status,
-              toStatus: telegram.status,
-              reason:
-                "فشل الإرسال الجماعي؛ تراجعت مسارات الإرسال ونسخه داخل معاملة واحدة، وبقيت البرقية الأساسية كمسودة.",
-              metadata: {
-                failure,
-                rollbackGuaranteed: true,
-                targets: broadcastTargets.map(target => ({
-                  organizationId: target.id,
-                  name: target.name,
-                })),
-                progress: broadcastProgress,
-              },
-            });
-            auditRecorded = true;
-          } catch (auditError) {
-            console.error(
-              "[Telegram broadcast] Failed to persist partial-failure audit",
-              auditError
-            );
-          }
-
-          const auditMessage = auditRecorded
-            ? "تراجعت مسارات الإرسال ونسخه ذريًا، وسُجّل الفشل للمراجعة."
-            : "تراجعت مسارات الإرسال ونسخه ذريًا، لكن تعذّر حفظ سجل التدقيق؛ يلزم مراجعة السجلات يدويًا.";
-
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `تعذر إكمال الإرسال الجماعي للبرقية ${telegram.serialCode}. ${auditMessage} معرّف البرقية الأساسية: ${telegram.id}.`,
-            cause: error,
-          });
-        };
-
-        if (broadcastTargets.length > 0) {
-          try {
-            const copyPayloads: AtomicBroadcastCopyInput[] = [];
-
-            for (const target of broadcastTargets.slice(1)) {
-              const targetOrganizationSerialNumber =
-                await allocateOrganizationSerialNumber(
-                  organizationId,
-                  "outgoing"
-                );
-              const targetSerialNumber = await allocateSerialNumber();
-              const targetSerialCode = `${numbering.serialPrefix}-${dateCode}-${String(targetSerialNumber).padStart(5, "0")}`;
-              const targetOrganizationSerialCode = `${numbering.serialPrefix}-${dateCode}-${String(targetOrganizationSerialNumber).padStart(5, "0")}`;
-
-              copyPayloads.push({
-                targetOrganizationId: target.id,
-                serialNumber: targetSerialNumber,
-                serialCode: targetSerialCode,
-                organizationSerialNumber: targetOrganizationSerialNumber,
-                organizationSerialCode: targetOrganizationSerialCode,
-                verificationToken: randomUUID(),
-                creatorName,
-                creatorEmail: ctx.user.email ?? null,
-                creatorBadgeId: ctx.user.badgeNumber ?? null,
-                creatorIp,
-                creatorFingerprint: ctx.user.authUserId,
-                subject: telegramInput.subject,
-                recipient: telegramInput.recipient,
-                body: telegramInput.body,
-                classification: telegramInput.classification,
-                priority: telegramInput.priority,
-                category: telegramInput.category,
-                attachmentManifest: telegramInput.attachmentManifest ?? null,
-                gpsLatitude: telegramInput.gpsLatitude ?? null,
-                gpsLongitude: telegramInput.gpsLongitude ?? null,
-              });
-            }
-
-            const broadcastResult = await routeTelegramBroadcastAtomic({
-              telegramId: telegram.id,
-              toOrganizationId: broadcastTargets[0].id,
-              forwardedByUserId: ctx.user.id,
-              note: "إرسال جماعي إلى الجهات التابعة مباشرة",
-              copies: copyPayloads,
-            });
-
-            broadcastProgress[0].status = "routed";
-            broadcastProgress.push(
-              ...broadcastResult.copies.map(copy => ({
-                telegramId: copy.telegramId,
-                organizationId: copy.targetOrganizationId,
-                status: "routed" as const,
-              }))
-            );
-
-            try {
-              const sourceOrganization =
-                await getOrganizationById(organizationId);
-              if (sourceOrganization?.parentOrganizationId) {
-                await notifyOrganizationUsers({
-                  organizationId: sourceOrganization.parentOrganizationId,
-                  type: "route.requested",
-                  title: "طلب إحالة بانتظار اعتماد السلطة الأعلى",
-                  body: `البرقية ${telegram.serialCode} تحتاج موافقة قبل انتقالها إلى الجهة المستلمة.`,
-                  telegramId: telegram.id,
-                  routeId: broadcastResult.primaryRoute.id,
-                });
-              }
-            } catch (error) {
-              console.warn(
-                "[Notification] Create route notification failed",
-                error
-              );
-            }
-
-            try {
-              const routedTelegram = await getTelegramById(telegram.id);
-              if (routedTelegram) telegram = routedTelegram;
-            } catch (error) {
-              // Routing and all copies have already committed atomically. A failed
-              // refresh must not misreport a successful broadcast as a partial failure.
-              console.warn(
-                "[Telegram broadcast] Primary telegram refresh failed after commit",
-                error
-              );
-            }
-          } catch (error) {
-            await reportBroadcastFailure(error);
-          }
-        } else if (configuredDestination) {
-          const route = await routeTelegram({
-            telegramId: telegram.id,
-            toOrganizationId: configuredDestination.id,
-            forwardedByUserId: ctx.user.id,
-            allowDraft: true,
-            note: input.recipientOrganizationId
-              ? "إحالة إلى الجهة المختارة عند إنشاء البرقية"
-              : "إحالة تلقائية إلى الجهة المحددة للقسم أو المخفر",
-          });
-          try {
-            const sourceOrganization =
-              await getOrganizationById(organizationId);
-            if (route.approvalStatus === "not_required") {
-              const incomingSerialCode =
-                route.routeSerialCode ?? telegram.serialCode;
-              await notifyOrganizationUsers({
-                organizationId: route.toOrganizationId,
-                type: "route.approved",
-                title: "برقية واردة",
-                body: `وردت برقية جديدة برقم ${incomingSerialCode}.`,
-                telegramId: telegram.id,
-                routeId: route.id,
-              });
-              await notifyOrganizationTelegramCreated({
-                organizationId: route.toOrganizationId,
-                serialCode: incomingSerialCode,
-                subject: telegram.subject,
-                recipient: telegram.recipient,
-                priority: telegram.priority,
-                category: telegram.category,
-                telegramId: telegram.id,
-                direction: "incoming",
-              });
-            } else if (sourceOrganization?.parentOrganizationId) {
-              await notifyOrganizationUsers({
-                organizationId: sourceOrganization.parentOrganizationId,
-                type: "route.requested",
-                title: "طلب إحالة بانتظار اعتماد السلطة الأعلى",
-                body: `البرقية ${telegram.serialCode} تحتاج موافقة قبل انتقالها إلى الجهة المستلمة.`,
-                telegramId: telegram.id,
-                routeId: route.id,
-              });
-            }
-          } catch (error) {
-            console.warn(
-              "[Notification] Create route notification failed",
-              error
-            );
-          }
-          const routedTelegram = await getTelegramById(telegram.id);
-          if (routedTelegram) telegram = routedTelegram;
         }
 
         await writeAuditLog({
