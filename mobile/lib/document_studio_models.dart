@@ -242,8 +242,9 @@ class OfficialDocument {
     if (templateId != null) 'templateId': templateId,
     if (templateRevision != null) 'templateRevision': templateRevision,
     if (templateFieldsSnapshot.isNotEmpty)
-      'templateFieldsSnapshot':
-          templateFieldsSnapshot.map((item) => item.toJson()).toList(),
+      'templateFieldsSnapshot': templateFieldsSnapshot
+          .map((item) => item.toJson())
+          .toList(),
     'title': title,
     'category': category,
     'subject': subject,
