@@ -263,10 +263,15 @@ class TelegramOutbox {
     final telegramId = result is Map ? int.tryParse('${result['id']}') : null;
     final attachment = await _resolveAttachment(entry);
     if (telegramId != null && attachment != null) {
-      await api.call(
-        'telegrams.uploadAttachment',
-        mutation: true,
-        input: {'telegramId': telegramId, ...attachment},
+      final encoded = attachment['base64'];
+      if (encoded is! String || encoded.isEmpty) {
+        throw const FormatException('بيانات المرفق المحفوظ غير صالحة');
+      }
+      await api.uploadTelegramAttachment(
+        telegramId: telegramId,
+        fileName: attachment['fileName'] as String,
+        contentType: attachment['contentType'] as String,
+        bytes: Uint8List.fromList(base64Decode(encoded)),
       );
     }
   }
