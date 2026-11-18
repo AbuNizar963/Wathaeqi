@@ -48,6 +48,7 @@ import {
 import { profileRouter } from "./features/users/profileRouter";
 import { userManagementRouter } from "./features/users/userManagementRouter";
 import { platformDocumentSettingsRouter } from "./features/platform-settings/platformDocumentSettingsRouter";
+import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
 import {
   allocateSerialNumber,
   allocateOrganizationSerialNumber,
@@ -1850,6 +1851,8 @@ export const appRouter = router({
   }),
 
   platformDocumentSettings: platformDocumentSettingsRouter,
+
+  documentStudio: documentStudioRouter,
 
   telegrams: router({
     uploadAttachment: protectedProcedure
