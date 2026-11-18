@@ -50,7 +50,7 @@ describe("Appwrite organization notifications", () => {
               row("membership-3", { userId: "12", isActive: true }),
               row("membership-4", { userId: 0, isActive: true }),
               row("membership-5", { userId: "invalid", isActive: true }),
-            row("membership-6", { userId: 13, isActive: true }),
+              row("membership-6", { userId: 13, isActive: true }),
             ],
           };
         }
