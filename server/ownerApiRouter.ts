@@ -23,7 +23,10 @@ import {
 import { platformOwnerProcedure, publicProcedure, router } from "./_core/trpc";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
-import { getOrganizationById, getUserOrganizationMembership } from "./features/organizations/organization";
+import {
+  getOrganizationById,
+  getUserOrganizationMembership,
+} from "./features/organizations/organization";
 import { profileRouter } from "./features/users/profileRouter";
 import { platformDocumentSettingsRouter } from "./features/platform-settings/platformDocumentSettingsRouter";
 
