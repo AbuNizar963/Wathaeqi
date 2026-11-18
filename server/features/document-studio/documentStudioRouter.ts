@@ -364,8 +364,9 @@ export const documentStudioRouter = router({
               entityType: "document",
               entityId: saved.id,
               organizationId: saved.organizationId ?? undefined,
-              beforeState: { status: existing.status },
-              afterState: { status: saved.status },
+              metadata: JSON.stringify({ status: saved.status }),
+              beforeState: JSON.stringify({ status: existing.status }),
+              afterState: JSON.stringify({ status: saved.status }),
             });
           } catch (error) {
             console.error("Document archive audit log failed", error);
@@ -439,7 +440,7 @@ export const documentStudioRouter = router({
         dateParts.map(part => [part.type, part.value])
       );
       const serialCode = localizeDigits(
-        `${settings.serialPrefix}-${dateValues.year}-${dateValues.month}-${dateValues.day}-${String(serialNumber).padStart(5, "0")}`,
+        `${settings.serialPrefix}-${String(serialNumber).padStart(5, "0")}`,
         normalizeNumberSystem(settings.numberSystem)
       );
       const issuedAt = new Date().toISOString();
@@ -457,24 +458,31 @@ export const documentStudioRouter = router({
           }
         );
         if (!saved) throwIfNotFound("الوثيقة غير موجودة");
-        try {
-          await writeAuditLog({
-            ...getRequestAuditContext(ctx.req),
-            actorUserId: ctx.user.id,
-            actorName: ctx.user.name ?? ctx.user.email ?? "User",
-            action: "document.issue",
-            entityType: "document",
-            entityId: saved.id,
-            organizationId,
-            beforeState: { status: "draft" },
-            afterState: {
-              status: "issued",
-              serialNumber: saved.serialNumber,
-              serialCode: saved.serialCode,
-            },
-          });
-        } catch (error) {
-          console.error("Document issuance audit log failed", error);
+        if (saved.serialNumber === serialNumber) {
+          try {
+            await writeAuditLog({
+              ...getRequestAuditContext(ctx.req),
+              actorUserId: ctx.user.id,
+              actorName: ctx.user.name ?? ctx.user.email ?? "User",
+              action: "document.issue",
+              entityType: "document",
+              entityId: saved.id,
+              organizationId,
+              metadata: JSON.stringify({
+                serialNumber: saved.serialNumber,
+                serialCode: saved.serialCode,
+                issuedAt: saved.issuedAt,
+              }),
+              beforeState: JSON.stringify({ status: "draft" }),
+              afterState: JSON.stringify({
+                status: "issued",
+                serialNumber: saved.serialNumber,
+                serialCode: saved.serialCode,
+              }),
+            });
+          } catch (error) {
+            console.error("Document issuance audit log failed", error);
+          }
         }
         return saved;
       } catch (error) {
