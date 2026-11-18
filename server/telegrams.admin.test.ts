@@ -6,7 +6,6 @@ import { ENV } from "./_core/env";
 const mocked = vi.hoisted(() => ({
   allocateSerialNumber: vi.fn(),
   createTelegram: vi.fn(),
-  createTelegramAttachment: vi.fn(),
   updateTelegram: vi.fn(),
   purgeTelegramPermanently: vi.fn(),
   getDashboardStats: vi.fn(),
@@ -14,7 +13,6 @@ const mocked = vi.hoisted(() => ({
   getOrCreateSettings: vi.fn(),
   getOrganizationSettings: vi.fn(),
   getTelegramById: vi.fn(),
-  getTelegramAttachmentById: vi.fn(),
   listTelegrams: vi.fn(),
   listTelegramVersions: vi.fn(),
   getTelegramReport: vi.fn(),
@@ -171,6 +169,7 @@ describe("telegram administration permissions", () => {
     mocked.getTelegramById.mockResolvedValue(telegram);
     mocked.listTelegramVersions.mockResolvedValue([]);
     attachmentRepositoryMocks.getTelegramAttachmentById.mockResolvedValue(null);
+    attachmentRepositoryMocks.listTelegramAttachments.mockResolvedValue([]);
     mocked.getOrganizationSettings.mockResolvedValue(undefined);
     organizationMocks.getUserOrganizationMembership.mockResolvedValue({
       organizationId: "00000000-0000-4000-8000-000000000099",
@@ -372,7 +371,7 @@ describe("telegram administration permissions", () => {
     expect(
       storageMocks.storagePutOrganizationAttachment
     ).not.toHaveBeenCalled();
-    expect(mocked.createTelegramAttachment).not.toHaveBeenCalled();
+    expect(attachmentRepositoryMocks.createTelegramAttachment).not.toHaveBeenCalled();
   });
 
   it("creates a temporary URL only for metadata owned by the telegram origin", async () => {
@@ -404,7 +403,7 @@ describe("telegram administration permissions", () => {
   });
 
   it("does not sign an attachment whose metadata owner differs from the telegram origin", async () => {
-    mocked.getTelegramAttachmentById.mockResolvedValueOnce({
+    attachmentRepositoryMocks.getTelegramAttachmentById.mockResolvedValueOnce({
       id: 13,
       telegramId: telegram.id,
       storageOrganizationId: "00000000-0000-4000-8000-000000000099",
