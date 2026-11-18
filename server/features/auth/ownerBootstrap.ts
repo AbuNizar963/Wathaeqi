@@ -92,9 +92,8 @@ export async function createInitialOwnerProfile(input: {
     password: input.password,
   });
 
-  const session = await new Account(
-    getAppwriteAdminClient()
-  ).createEmailPasswordSession({
+  const sessionAccount = new Account(getAppwriteAdminClient());
+  const session = await sessionAccount.createEmailPasswordSession({
     email: owner.email,
     password: input.password,
   });
