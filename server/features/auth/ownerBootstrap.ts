@@ -63,11 +63,6 @@ export async function isInitialOwnerSetupAvailable(): Promise<boolean> {
   return (await getExistingOwner()) !== null;
 }
 
-/**
- * Recover the existing Appwrite platform owner's password.
- * The server-side setup secret protects this flow. It deliberately creates
- * no Auth user, profile, membership, or email.
- */
 export async function createInitialOwnerProfile(input: {
   username: string;
   password: string;
@@ -76,7 +71,7 @@ export async function createInitialOwnerProfile(input: {
   session: Awaited<ReturnType<Account["createEmailPasswordSession"]>>;
 }> {
   if (ENV.ownerSetupSecret.length < 32) {
-    throw new Error("إعداد إعادة تعيين كلمة مرور المالك غير مكتمل على الخادم");
+    throw new Error("إعداد إعادة تعيين كلمة مرور المالك غير مكتمل");
   }
 
   const owner = await getExistingOwner();
@@ -97,8 +92,6 @@ export async function createInitialOwnerProfile(input: {
     password: input.password,
   });
 
-  // Use the privileged server client to issue the session. The API key remains
-  // server-side; only the returned session secret is placed in the HTTP-only cookie.
   const session = await new Account(
     getAppwriteAdminClient()
   ).createEmailPasswordSession({
