@@ -311,10 +311,12 @@ function serializeCookie(value: string, maxAge: number): string {
     `${APPWRITE_SESSION_COOKIE}=${encodeURIComponent(value)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${ENV.appwriteSessionCookieSameSite}`,
     `Max-Age=${maxAge}`,
   ];
-  if (ENV.isProduction) parts.push("Secure");
+  if (ENV.isProduction || ENV.appwriteSessionCookieSameSite === "None") {
+    parts.push("Secure");
+  }
   return parts.join("; ");
 }
 
