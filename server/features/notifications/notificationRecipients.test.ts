@@ -40,25 +40,29 @@ function row(id: string, data: Record<string, unknown>) {
 describe("Appwrite organization notifications", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.listRows.mockImplementation(async ({ tableId }: { tableId: string }) => {
-      if (tableId === "organization_memberships") {
-        return {
-          rows: [
-            row("membership-1", { userId: 7, isActive: true }),
-            row("membership-2", { userId: 7, isActive: true }),
-            row("membership-3", { userId: "12", isActive: true }),
-            row("membership-4", { userId: 0, isActive: true }),
-            row("membership-5", { userId: "invalid", isActive: true }),
-          ],
-        };
+    mocks.listRows.mockImplementation(
+      async ({ tableId }: { tableId: string }) => {
+        if (tableId === "organization_memberships") {
+          return {
+            rows: [
+              row("membership-1", { userId: 7, isActive: true }),
+              row("membership-2", { userId: 7, isActive: true }),
+              row("membership-3", { userId: "12", isActive: true }),
+              row("membership-4", { userId: 0, isActive: true }),
+              row("membership-5", { userId: "invalid", isActive: true }),
+            ],
+          };
+        }
+        if (tableId === "organizations") {
+          return {
+            rows: [
+              row("organization-row", { id: organizationId, isActive: true }),
+            ],
+          };
+        }
+        return { rows: [] };
       }
-      if (tableId === "organizations") {
-        return {
-          rows: [row("organization-row", { id: organizationId, isActive: true })],
-        };
-      }
-      return { rows: [] };
-    });
+    );
     mocks.createRow.mockResolvedValue({});
     mocks.updateRow.mockResolvedValue({});
     mocks.deleteRow.mockResolvedValue({});
@@ -84,10 +88,11 @@ describe("Appwrite organization notifications", () => {
   });
 
   it("does not create notifications when the organization is inactive", async () => {
-    mocks.listRows.mockImplementation(async ({ tableId }: { tableId: string }) =>
-      tableId === "organization_memberships"
-        ? { rows: [row("membership-1", { userId: 7, isActive: true })] }
-        : { rows: [] }
+    mocks.listRows.mockImplementation(
+      async ({ tableId }: { tableId: string }) =>
+        tableId === "organization_memberships"
+          ? { rows: [row("membership-1", { userId: 7, isActive: true })] }
+          : { rows: [] }
     );
 
     await notifyOrganizationUsers({
@@ -175,7 +180,9 @@ describe("Appwrite organization notifications", () => {
       ],
     });
 
-    await expect(listUserNotifications(7, organizationId, 1)).resolves.toMatchObject({
+    await expect(
+      listUserNotifications(7, organizationId, 1)
+    ).resolves.toMatchObject({
       unreadCount: 2,
       items: [{ id: 2, title: "إحالة جديدة" }],
     });
