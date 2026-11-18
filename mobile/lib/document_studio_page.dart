@@ -165,7 +165,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 ),
               )
               .toList()
-          : <OfficialDocument>[];
+          : _documents;
       final templates = templatesRaw is List
           ? templatesRaw
               .whereType<Map>()
@@ -175,7 +175,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 ),
               )
               .toList()
-          : <DocumentTemplate>[];
+          : _templates;
 
       final context = contextRaw is Map
           ? Map<String, dynamic>.from(contextRaw)
@@ -208,6 +208,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         _templates = templates;
         if (selectedId != null) {
           _selectedDocument = refreshedSelection;
+        }
+        if (_selectedTemplate?.id.startsWith('local_') == true &&
+            !templates.any((item) => item.id == _selectedTemplate!.id)) {
+          _selectedTemplate = null;
+          _editingTemplateId = null;
+          _creatingTemplate = false;
         }
         _canIssueDocuments = context['isOwner'] == true ||
             const ['system_admin', 'organization_admin']
@@ -730,8 +736,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final matchingTemplates = _templates
         .where((template) => template.id == _selectedTemplateId)
         .toList();
-    final fields = _selectedDocument?.templateFieldsSnapshot ??
-        (matchingTemplates.isNotEmpty
+    final documentFields = _selectedDocument?.templateFieldsSnapshot ??
+        const <DocumentTemplateField>[];
+    final fields = documentFields.isNotEmpty
+        ? documentFields
+        : (matchingTemplates.isNotEmpty
             ? matchingTemplates.first.fields
             : const <DocumentTemplateField>[]);
 
@@ -889,7 +898,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               icon: const Icon(Icons.save_outlined),
               label: const Text('حفظ الوثيقة'),
             ),
-            if (_selectedDocument?.status == 'draft' && _canIssueDocuments)
+            if (_selectedDocument?.status == 'draft' &&
+                _canIssueDocuments &&
+                !_selectedDocument!.id.startsWith('local_'))
               FilledButton.tonalIcon(
                 onPressed: _saving ? null : _issueDocument,
                 icon: const Icon(Icons.verified_outlined),
@@ -1055,7 +1066,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         Row(
           children: [
             IconButton(
-              onPressed: _startNewTemplate,
+              tooltip: 'قائمة النماذج',
+              onPressed: () {
+                setState(() {
+                  _selectedTemplate = null;
+                  _editingTemplateId = null;
+                  _creatingTemplate = false;
+                });
+              },
               icon: const Icon(Icons.arrow_back),
             ),
             const Expanded(
