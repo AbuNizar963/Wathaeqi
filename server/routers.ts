@@ -719,6 +719,15 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
+        // Apply the same account/IP attempt guard used by login before checking
+        // the one-time owner recovery capability. Do not clear this bucket:
+        // successful recovery permanently consumes the setup capability.
+        await enforceLoginRateLimit(
+          ctx.req,
+          ctx.res,
+          `owner-setup:${input.username}`
+        );
+
         const configuredSecret = ENV.ownerSetupSecret;
         const suppliedSecret = Buffer.from(input.setupSecret, "utf8");
         const expectedSecret = Buffer.from(configuredSecret, "utf8");
