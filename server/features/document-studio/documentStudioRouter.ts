@@ -430,15 +430,6 @@ export const documentStudioRouter = router({
         organizationId,
         "outgoing"
       );
-      const dateParts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: settings.timezone,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).formatToParts(new Date());
-      const dateValues = Object.fromEntries(
-        dateParts.map(part => [part.type, part.value])
-      );
       const serialCode = localizeDigits(
         `${settings.serialPrefix}-${String(serialNumber).padStart(5, "0")}`,
         normalizeNumberSystem(settings.numberSystem)
