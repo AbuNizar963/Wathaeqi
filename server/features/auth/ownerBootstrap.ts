@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { ID, Query, Users } from "node-appwrite";
+import { Query, Users } from "node-appwrite";
 import type { User } from "../../../drizzle/schema";
 import {
   getAppwriteAdminClient,
@@ -7,173 +7,128 @@ import {
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
-import { getPrimaryOrganization } from "../organizations/organization";
 
 const USERS_TABLE_ID = "users";
-const MEMBERSHIPS_TABLE_ID = "organization_memberships";
-const OWNER_PROFILE_ROW_ID = "platform-owner";
-const OWNER_MEMBERSHIP_ROW_ID = "platform-owner-membership";
-
-async function getNextNumericId(tableId: string): Promise<number> {
-  const result = await getAppwriteTablesDB().listRows({
-    databaseId: getAppwriteDatabaseId(),
-    tableId,
-    queries: [Query.orderDesc("id"), Query.limit(1)],
-    total: false,
-  });
-  const first = result.rows[0] as AppwriteRow | undefined;
-  const data = first?.data ?? first ?? {};
-  const currentId = Number(data.id ?? 0);
-  if (
-    !Number.isSafeInteger(currentId) ||
-    currentId < 0 ||
-    currentId >= 2_147_483_647
-  ) {
-    throw new Error("تعذر تخصيص رقم مستخدم آمن في قاعدة Appwrite");
-  }
-  return currentId + 1;
-}
 
 type AppwriteRow = {
   $id: string;
   data?: Record<string, unknown>;
 } & Record<string, unknown>;
 
-export async function hasPlatformOwner(): Promise<boolean> {
+type ExistingOwner = {
+  rowId: string;
+  authUserId: string;
+  username: string;
+  email: string;
+  data: Record<string, unknown>;
+};
+
+function rowData(row: AppwriteRow): Record<string, unknown> {
+  return row.data ?? row;
+}
+
+async function getIncompleteOwner(): Promise<ExistingOwner | null> {
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
     tableId: USERS_TABLE_ID,
-    queries: [Query.equal("isPlatformOwner", true), Query.limit(1)],
+    queries: [Query.equal("isPlatformOwner", true), Query.limit(2)],
     total: true,
   });
-  return result.total > 0 || result.rows.length > 0;
+
+  if (result.rows.length !== 1) return null;
+  const row = result.rows[0] as AppwriteRow;
+  const data = rowData(row);
+  const authUserId = data.authUserId;
+  const username = data.username;
+  const email = data.email;
+
+  if (
+    data.mustChangePassword !== true ||
+    data.isActive !== true ||
+    data.role !== "admin" ||
+    typeof authUserId !== "string" ||
+    !authUserId ||
+    typeof username !== "string" ||
+    !username.trim() ||
+    typeof email !== "string" ||
+    !email.trim()
+  ) {
+    return null;
+  }
+
+  return { rowId: row.$id, authUserId, username, email, data };
 }
 
 export async function isInitialOwnerSetupAvailable(): Promise<boolean> {
   if (ENV.ownerSetupSecret.length < 32) return false;
-  return !(await hasPlatformOwner());
+  return (await getIncompleteOwner()) !== null;
 }
 
+/**
+ * Reset the existing Appwrite platform owner's password.
+ * This deliberately creates no Auth user, profile, membership, or email.
+ */
 export async function createInitialOwnerProfile(input: {
-  name: string;
   username: string;
-  email: string;
   password: string;
 }): Promise<User> {
   if (ENV.ownerSetupSecret.length < 32) {
-    throw new Error("إعداد إنشاء المالك الأول غير مكتمل على الخادم");
-  }
-  if (await hasPlatformOwner()) {
-    throw new Error("تم إنشاء مالك النظام مسبقاً");
+    throw new Error("إعداد إعادة تعيين كلمة مرور المالك غير مكتمل على الخادم");
   }
 
-  const organization = await getPrimaryOrganization();
-  const now = new Date().toISOString();
-  const tables = getAppwriteTablesDB();
-  const databaseId = getAppwriteDatabaseId();
-  const userId = await getNextNumericId(USERS_TABLE_ID);
-  const membershipId = await getNextNumericId(MEMBERSHIPS_TABLE_ID);
-  const sessionVersion = randomUUID();
+  const owner = await getIncompleteOwner();
+  if (!owner || owner.username.trim() !== input.username.trim()) {
+    throw new Error("حساب المالك غير متاح لإعادة تعيين كلمة المرور");
+  }
+
   const users = new Users(getAppwriteAdminClient());
-  const authUser = await users.create({
-    userId: ID.unique(),
-    email: input.email.trim().toLowerCase(),
+  await users.get({ userId: owner.authUserId });
+  await users.updatePassword({
+    userId: owner.authUserId,
     password: input.password,
-    name: input.name.trim(),
   });
 
-  let profileCreated = false;
-  let membershipCreated = false;
-  const profileRowId = OWNER_PROFILE_ROW_ID;
+  const now = new Date().toISOString();
+  const sessionVersion = randomUUID();
+  await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: USERS_TABLE_ID,
+    rowId: owner.rowId,
+    data: {
+      mustChangePassword: false,
+      sessionVersion,
+      updatedAt: now,
+    },
+  });
 
-  try {
-    await tables.createRow({
-      databaseId,
-      tableId: USERS_TABLE_ID,
-      rowId: profileRowId,
-      data: {
-        id: userId,
-        authUserId: authUser.$id,
-        sessionVersion,
-        organizationId: organization.id,
-        organization: organization.id,
-        name: input.name.trim(),
-        username: input.username.trim(),
-        email: input.email.trim().toLowerCase(),
-        loginMethod: "appwrite",
-        isActive: true,
-        isPlatformOwner: true,
-        mustChangePassword: false,
-        role: "admin",
-        createdAt: now,
-        updatedAt: now,
-        lastSignedIn: now,
-      },
-    });
-    profileCreated = true;
-
-    await tables.createRow({
-      databaseId,
-      tableId: MEMBERSHIPS_TABLE_ID,
-      rowId: OWNER_MEMBERSHIP_ROW_ID,
-      data: {
-        id: membershipId,
-        organizationId: organization.id,
-        organization: organization.id,
-        userId,
-        user: profileRowId,
-        role: "system_admin",
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-    membershipCreated = true;
-  } catch (error) {
-    if (membershipCreated) {
-      await tables
-        .deleteRow({
-          databaseId,
-          tableId: MEMBERSHIPS_TABLE_ID,
-          rowId: OWNER_MEMBERSHIP_ROW_ID,
-        })
-        .catch(() => undefined);
-    }
-    if (profileCreated) {
-      await tables
-        .deleteRow({
-          databaseId,
-          tableId: USERS_TABLE_ID,
-          rowId: profileRowId,
-        })
-        .catch(() => undefined);
-    }
-    await users.delete({ userId: authUser.$id }).catch(() => undefined);
-    throw error;
-  }
+  const data = owner.data;
+  const asDate = (value: unknown) => {
+    const date = new Date(String(value ?? now));
+    return Number.isFinite(date.getTime()) ? date : new Date(now);
+  };
 
   return {
-    id: userId,
-    authUserId: authUser.$id,
+    id: Number(data.id),
+    authUserId: owner.authUserId,
     sessionVersion,
-    organizationId: organization.id,
-    name: input.name.trim(),
-    username: input.username.trim(),
+    organizationId: String(data.organizationId),
+    name: typeof data.name === "string" ? data.name : null,
+    username: owner.username,
     passwordHash: null,
-    badgeNumber: null,
-    bio: null,
-    phone: null,
-    rank: null,
-    unit: null,
-    avatarKey: null,
-    email: input.email.trim().toLowerCase(),
-    loginMethod: "appwrite",
+    badgeNumber: typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    bio: typeof data.bio === "string" ? data.bio : null,
+    phone: typeof data.phone === "string" ? data.phone : null,
+    rank: typeof data.rank === "string" ? data.rank : null,
+    unit: typeof data.unit === "string" ? data.unit : null,
+    avatarKey: typeof data.avatarKey === "string" ? data.avatarKey : null,
+    email: owner.email,
+    loginMethod: typeof data.loginMethod === "string" ? data.loginMethod : "appwrite",
     isActive: true,
     isPlatformOwner: true,
     mustChangePassword: false,
     role: "admin",
-    createdAt: new Date(now),
+    createdAt: asDate(data.createdAt),
     updatedAt: new Date(now),
-    lastSignedIn: new Date(now),
+    lastSignedIn: asDate(data.lastSignedIn),
   };
 }
