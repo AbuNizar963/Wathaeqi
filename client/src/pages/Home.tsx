@@ -662,7 +662,6 @@ export default function Home() {
       getQueryKey(trpc.telegrams.attachments),
       getQueryKey(trpc.reports.telegrams),
       getQueryKey(trpc.dashboard.stats),
-      getQueryKey(trpc.organizations.pendingApprovals),
       getQueryKey(trpc.notifications.inbox),
     ]) {
       void queryClient.cancelQueries({ queryKey });
