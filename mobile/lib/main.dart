@@ -119,7 +119,7 @@ class PoliceTelegramsApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         ),
       ),
-      title: 'برقيات الشرطة',
+      title: 'وثائقي',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: mode,
@@ -983,10 +983,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  void _startRefreshTimer() {
-    // Periodic document refresh is intentionally driven by the document workspace.
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -1586,7 +1582,6 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _refreshTimer?.cancel();
     _searchDebounce?.cancel();
     _syncMessageTimer?.cancel();
     final mutationSubscription = _mutationSubscription;
@@ -2414,7 +2409,7 @@ class _DashboardPageState extends State<DashboardPage>
             const SizedBox(width: 8),
             const Flexible(
               child: Text(
-                'مركز البرقيات',
+                'وثائقي',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
