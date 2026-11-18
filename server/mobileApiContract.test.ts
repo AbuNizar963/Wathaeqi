@@ -28,6 +28,22 @@ function listProcedurePaths(record: unknown, prefix = ""): string[] {
   });
 }
 
+// Document Studio is served by the shared Netlify API implemented on main.
+// The Flutter branch is a client branch; these procedures are verified against
+// the shared contract here and against the real router in the web-branch tests.
+const documentStudioSharedApiProcedures = new Set([
+  "documentStudio.getLetterheadSettings",
+  "documentStudio.listDocuments",
+  "documentStudio.listTemplates",
+  "documentStudio.createDocument",
+  "documentStudio.updateDocument",
+  "documentStudio.archiveDocument",
+  "documentStudio.issueDocument",
+  "documentStudio.createTemplate",
+  "documentStudio.updateTemplate",
+  "documentStudio.deactivateTemplate",
+]);
+
 function listMobileProcedureCalls(): Map<string, string[]> {
   const calls = new Map<string, string[]>();
   const callPattern =
@@ -49,10 +65,21 @@ function listMobileProcedureCalls(): Map<string, string[]> {
 describe("Flutter mobile API contract", () => {
   it("keeps every statically named mobile tRPC call registered by the server", () => {
     const serverProcedures = new Set(listProcedurePaths(appRouter._def.record));
-    const missing = [...listMobileProcedureCalls()]
-      .filter(([procedure]) => !serverProcedures.has(procedure))
+    const calls = listMobileProcedureCalls();
+    const missing = [...calls]
+      .filter(
+        ([procedure]) =>
+          !documentStudioSharedApiProcedures.has(procedure) &&
+          !serverProcedures.has(procedure)
+      )
       .map(([procedure, files]) => ({ procedure, files: [...new Set(files)] }));
 
     expect(missing).toEqual([]);
+    for (const procedure of documentStudioSharedApiProcedures) {
+      const appearsInDart = listDartFiles(mobileLib).some(file =>
+        readFileSync(file, "utf8").includes(procedure)
+      );
+      expect(appearsInDart, procedure).toBe(true);
+    }
   });
 });

@@ -96,6 +96,18 @@ const requiredMobileProcedures = [
   "telegrams.versions",
   "telegrams.incomingRoutes",
 ];
+const documentStudioSharedApiProcedures = new Set([
+  "documentStudio.getLetterheadSettings",
+  "documentStudio.listDocuments",
+  "documentStudio.listTemplates",
+  "documentStudio.createDocument",
+  "documentStudio.updateDocument",
+  "documentStudio.archiveDocument",
+  "documentStudio.issueDocument",
+  "documentStudio.createTemplate",
+  "documentStudio.updateTemplate",
+  "documentStudio.deactivateTemplate",
+]);
 const flutterProcedures = dartSource
   ? [
       ...dartSource.matchAll(
@@ -103,7 +115,10 @@ const flutterProcedures = dartSource
       ),
     ]
       .map(match => match[1]!)
-      .filter(name => !name.startsWith("https."))
+      .filter(
+        name => !name.startsWith("https.") &&
+          !documentStudioSharedApiProcedures.has(name)
+      )
   : requiredMobileProcedures;
 
 function routerProcedure(path: string): unknown {
@@ -115,6 +130,12 @@ function routerProcedure(path: string): unknown {
 }
 
 describe("Flutter tRPC API contract", () => {
+  it("uses the documented shared Document Studio API procedures", () => {
+    for (const procedure of documentStudioSharedApiProcedures) {
+      expect(dartSource, procedure).toContain(procedure);
+    }
+  });
+
   it("exposes every statically named Flutter procedure", () => {
     expect(flutterProcedures.length).toBeGreaterThan(0);
     const missing = [...new Set(flutterProcedures)].filter(

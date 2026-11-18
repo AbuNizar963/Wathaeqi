@@ -7,6 +7,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   archive: ^3.6.1
   cupertino_icons: ^1.0.8
   lucide_icons_flutter: ^3.1.21
@@ -17,6 +19,7 @@ dependencies:
   path_provider: ^2.1.6
   url_launcher: ^6.3.2
   flutter_secure_storage: ^9.2.4
+  flutter_quill: ^11.6.0
   local_auth: ^2.3.0
   file_picker: ^11.0.3
   uuid: ^4.5.0
@@ -26,6 +29,7 @@ dependencies:
   printing: ^5.14.2
   qr: ^3.0.2
   timezone: ^0.10.1
+  intl: ^0.20.3
   excel: ^4.0.6
   cryptography: ^2.9.0
 dev_dependencies:

@@ -2,7 +2,7 @@ name: Wathaeqi Flutter CI
 
 on:
   push:
-    branches: [feat/wathaeqi-appwrite-mobile, flutter-mobile-app]
+    branches: [feat/wathaeqi-appwrite-mobile, flutter-mobile-app, refactor/document-studio-mobile]
   pull_request:
     branches: [flutter-mobile-app]
 

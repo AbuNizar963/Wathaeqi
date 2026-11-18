@@ -3,12 +3,17 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart'
+    show FlutterQuillLocalizations;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
+import 'document_studio_page.dart';
+import 'document_studio_outbox.dart';
 import 'app_theme.dart';
 import 'advanced_create_telegram_page.dart';
 import 'app_update_page.dart';
@@ -29,7 +34,6 @@ import 'public_pages.dart';
 import 'telegram_display.dart';
 import 'telegram_actions.dart';
 import './features/reports/telegram_report_labels.dart';
-import 'telegram_excel_page.dart';
 import 'telegram_edit_dialog.dart';
 import 'telegram_outbox.dart';
 import 'telegram_outbox_page.dart';
@@ -117,7 +121,15 @@ class PoliceTelegramsApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         ),
       ),
-      title: 'برقيات الشرطة',
+      title: 'وثائقي',
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        FlutterQuillLocalizations.delegate,
+      ],
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: mode,
@@ -662,16 +674,9 @@ String _dashboardRefreshError(Object error) {
 
 class _DashboardPageState extends State<DashboardPage>
     with WidgetsBindingObserver {
-  static const _idleOutboxMessage = 'لا توجد برقيات معلقة محليًا.';
-  String get _greetingName =>
-      (_account['name'] ?? _account['username'] ?? 'أبو نزار').toString();
-
   late final Map<String, dynamic> _account;
   bool loading = true;
   String? error;
-  bool _usingCachedData = false;
-  bool _showOutboxInTopCard = false;
-  double _outboxSwipeDistance = 0;
   Map<String, dynamic> stats = {};
   List<dynamic> telegrams = [];
   String? activeOrganizationId;
@@ -699,11 +704,6 @@ class _DashboardPageState extends State<DashboardPage>
   String searchQuery = '';
   DateTime? _filterFrom;
   DateTime? _filterTo;
-  String? _activeKpi;
-  bool _filtersOpen = false;
-  bool _showPriority = true;
-  bool _showCategory = true;
-  bool _showCreator = true;
   String statusFilter = 'all';
   String priorityFilter = 'all';
   String classificationFilter = 'all';
@@ -711,16 +711,8 @@ class _DashboardPageState extends State<DashboardPage>
   final searchController = TextEditingController();
   final push = PushNotificationService();
   late final TelegramOutbox _outbox;
-  int _pendingOutbox = 0;
-  bool _outboxSyncing = false;
+  late final DocumentStudioOutbox _documentStudioOutbox;
   bool _outboxSyncInProgress = false;
-  String _syncPhase = 'idle';
-  String? _lastSyncMessage;
-  DateTime? _lastSyncAt;
-  bool? _serverReachable;
-  DateTime? _serverCheckedAt;
-  Timer? _syncMessageTimer;
-  Timer? _refreshTimer;
   Timer? _searchDebounce;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
   bool _refreshInProgress = false;
@@ -742,52 +734,26 @@ class _DashboardPageState extends State<DashboardPage>
     return label.isEmpty || label == 'null' ? 'الجهة الحالية غير محددة' : label;
   }
 
-  String get _serverStatusMessage {
-    if (_serverReachable == true) {
-      final checkedAt = _serverCheckedAt;
-      return checkedAt == null
-          ? 'الخادم متصل.'
-          : 'الخادم متصل • آخر تحقق ${_syncTime(checkedAt)}';
-    }
-    if (_serverReachable == false) {
-      return _pendingOutbox > 0
-          ? 'الخادم غير متصل؛ ستبقى البرقيات محفوظة محليًا حتى عودة الاتصال.'
-          : 'الخادم غير متصل؛ لا توجد برقيات معلقة محليًا.';
-    }
-    return 'لم يُتحقق من اتصال الخادم بعد.';
-  }
-
-  Color get _serverStatusColor {
-    if (_serverReachable == true) return context.appSuccess;
-    if (_serverReachable == false) return context.appWarning;
-    return context.appMutedText;
-  }
-
-  void _recordServerCheck(bool reachable) {
-    _serverReachable = reachable;
-    _serverCheckedAt = DateTime.now();
-  }
-
   @override
   void initState() {
     super.initState();
     _account = Map<String, dynamic>.from(widget.account);
     _outbox = widget.outbox ?? TelegramOutbox();
+    _documentStudioOutbox = DocumentStudioOutbox(api: widget.api);
     _mutationSubscription = widget.api.mutationEvents.listen(_handleMutation);
     WidgetsBinding.instance.addObserver(this);
-    refresh();
+    unawaited(_refreshOrganizationContext());
     unawaited(_syncOutbox());
     _loadUnreadNotificationCount();
-    _startRefreshTimer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_checkForAppUpdate());
     });
     push
         .initialize(
           onToken: _handlePushToken,
-          onTelegramOpened: _openIncomingTelegram,
+          onTelegramOpened: (_) => _showNotificationsPreview(),
           onForegroundTelegram: (_) {
-            refresh();
+            _loadUnreadNotificationCount();
           },
           onAppUpdate: _openAppUpdate,
           onOpenNotifications: _showNotificationsPreview,
@@ -808,10 +774,8 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _handleMutation(ApiMutationEvent event) {
     if (!mounted) return;
-    if (event.isTelegramMutation ||
-        event.procedure == 'settings.update' ||
-        event.procedure == 'organizations.selectWorkplace') {
-      unawaited(refresh(showLoading: false));
+    if (event.procedure == 'organizations.selectWorkplace') {
+      unawaited(_refreshOrganizationContext());
     }
     if (event.procedure.startsWith('notifications.')) {
       unawaited(_loadUnreadNotificationCount());
@@ -906,48 +870,6 @@ class _DashboardPageState extends State<DashboardPage>
     });
   }
 
-  Widget _organizationLogoWidget({
-    required double size,
-    required double borderRadius,
-  }) {
-    final bytes = _organizationLogoBytes;
-    final fallback = Image.asset(
-      'assets/police-telegrams-icon.png',
-      fit: BoxFit.contain,
-      semanticLabel: 'الصورة الافتراضية لنظام برقيات الشرطة',
-    );
-
-    return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: const Color(0xFFE1E5EB)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          borderRadius > 3.0 ? borderRadius - 3.0 : 0.0,
-        ),
-        child: Center(
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: bytes == null
-                ? fallback
-                : Image.memory(
-                    bytes,
-                    fit: BoxFit.contain,
-                    semanticLabel: 'شعار الجهة',
-                    errorBuilder: (context, error, stackTrace) => fallback,
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _checkForAppUpdate({bool force = false}) async {
     if (!mounted) return;
     if (_updateCheckInProgress) {
@@ -983,17 +905,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  void _startRefreshTimer() {
-    _refreshTimer?.cancel();
-    // Keep the dashboard live while preserving filters and scroll position.
-    // refresh() coalesces overlapping requests safely.
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      refresh(showLoading: false);
-      unawaited(_syncOutbox(showProgress: false));
-      _loadUnreadNotificationCount();
-    });
-  }
-
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
@@ -1002,8 +913,7 @@ class _DashboardPageState extends State<DashboardPage>
       _lastLogoLoadAttemptAt = null;
       _logoLookupResolved = false;
       _lastLogoLookupSucceeded = false;
-      _startRefreshTimer();
-      refresh(showLoading: false);
+      unawaited(_refreshOrganizationContext());
       unawaited(_syncOutbox(showProgress: false));
       _loadUnreadNotificationCount();
       unawaited(_checkForAppUpdate());
@@ -1011,8 +921,7 @@ class _DashboardPageState extends State<DashboardPage>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.hidden) {
-      _refreshTimer?.cancel();
-      _refreshTimer = null;
+      // Background refresh pauses while the app is not active.
     }
   }
 
@@ -1052,91 +961,60 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _syncOutbox({bool showProgress = true}) async {
     if (_outboxSyncInProgress) return;
-    _outboxSyncInProgress = true;
-    _syncMessageTimer?.cancel();
-    _syncMessageTimer = null;
     if (mounted) {
-      setState(() {
-        if (showProgress) {
-          _outboxSyncing = true;
-          _syncPhase = 'syncing';
-          _lastSyncMessage =
-              'جارٍ فحص صندوق الخروج وإرسال البرقيات بالترتيب...';
-        }
-      });
+      setState(() => _outboxSyncInProgress = true);
+    } else {
+      _outboxSyncInProgress = true;
     }
+
     try {
-      final result = await _outbox.sync(widget.api);
-      final pending = await _outbox.pendingCount();
-      if (!mounted) return;
-      _syncMessageTimer?.cancel();
-      setState(() {
-        _pendingOutbox = pending;
-        _lastSyncAt = DateTime.now();
-        if (result.permanentFailures > 0) {
-          _syncPhase = 'error';
-          _lastSyncMessage = result.permanentErrorMessages.isEmpty
-              ? 'تم رفض عملية من الخادم وتحتاج إلى مراجعة.'
-              : result.permanentErrorMessages.first;
-        } else if (result.synced > 0) {
-          _syncPhase = pending == 0 ? 'success' : 'partial';
-          _lastSyncMessage =
-              'تمت مزامنة ${result.synced} برقية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
-        } else if (pending == 0) {
-          _syncPhase = 'idle';
-          _lastSyncMessage = _idleOutboxMessage;
-        } else {
-          _syncPhase = 'waiting';
-          _lastSyncMessage = 'تنتظر $pending برقية عودة الاتصال للمزامنة.';
-        }
-      });
-      if (_syncPhase == 'success') {
-        _syncMessageTimer = Timer(const Duration(seconds: 8), () {
-          if (!mounted) return;
-          setState(() {
-            _syncPhase = 'idle';
-            _lastSyncMessage = _pendingOutbox == 0
-                ? _idleOutboxMessage
-                : 'تنتظر $_pendingOutbox برقية عودة الاتصال للمزامنة.';
-          });
-        });
-      }
-      if (result.synced > 0) await refresh(showLoading: false);
-      if (mounted && result.permanentFailures > 0) {
-        final details = result.permanentErrorMessages.isEmpty
+      final legacyResult = await _outbox.sync(widget.api);
+      final documentResult = await _documentStudioOutbox.sync();
+      final totalSynced = legacyResult.synced + documentResult.synced;
+
+      if (totalSynced > 0) _loadUnreadNotificationCount();
+      if (!mounted || !showProgress) return;
+
+      if (legacyResult.permanentFailures > 0) {
+        final details = legacyResult.permanentErrorMessages.isEmpty
             ? 'تحقق أو صلاحيات'
-            : result.permanentErrorMessages.join('، ');
+            : legacyResult.permanentErrorMessages.join('، ');
         Toast.error(
           context,
-          'تم رفض ${result.permanentFailures} عملية من الخادم: $details',
+          'تم رفض ${legacyResult.permanentFailures} عملية قديمة من الخادم: $details',
         );
+      } else if (documentResult.lastError != null) {
+        Toast.error(
+          context,
+          'تعذرت مزامنة الوثائق: ${documentResult.lastError}',
+        );
+      } else if (totalSynced > 0) {
+        Toast.success(context, 'تمت مزامنة $totalSynced عملية بنجاح');
       }
     } catch (_) {
-      if (!mounted) return;
-      final pending = await _outbox.pendingCount();
-      setState(() {
-        _pendingOutbox = pending;
-        _syncPhase = pending > 0 ? 'waiting' : 'error';
-        _lastSyncAt = DateTime.now();
-        _lastSyncMessage = pending > 0
-            ? 'تعذر الاتصال؛ ستتم إعادة المحاولة تلقائيًا.'
-            : 'تعذر التحقق من حالة المزامنة.';
-      });
+      if (mounted && showProgress) {
+        Toast.error(
+          context,
+          'تعذر تنفيذ المزامنة الآن؛ ستبقى التغييرات محفوظة محلياً',
+        );
+      }
     } finally {
       if (mounted) {
-        setState(() {
-          _outboxSyncInProgress = false;
-          _outboxSyncing = false;
-        });
+        setState(() => _outboxSyncInProgress = false);
       } else {
         _outboxSyncInProgress = false;
-        _outboxSyncing = false;
       }
     }
   }
 
   void _openOutbox() {
-    _pushPage(TelegramOutboxPage(api: widget.api, outbox: _outbox));
+    _pushPage(
+      TelegramOutboxPage(
+        api: widget.api,
+        outbox: _outbox,
+        documentOutbox: _documentStudioOutbox,
+      ),
+    );
   }
 
   Future<void> _togglePushNotifications() async {
@@ -1196,6 +1074,27 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) setState(() => _pushBusy = false);
     }
   }
+
+  bool get _canViewAuditLogs =>
+      _account['role'] == 'admin' ||
+      _isPlatformOwner ||
+      (activeOrganizationIsActive &&
+          {'system_admin', 'auditor'}.contains(activeOrganizationRole));
+
+  bool get _canManageUsers => hasMobileUserManagementAccess(
+    accountRole: _account['role']?.toString(),
+    organizationRole: activeOrganizationRole,
+    isPlatformOwner: _isPlatformOwner,
+  );
+
+  bool get _canManageOrganizationSettings =>
+      hasMobileOrganizationSettingsAccess(
+        organizationRole: activeOrganizationRole,
+        isPlatformOwner: _isPlatformOwner,
+      );
+
+  bool get _isPlatformOwner =>
+      activeOrganizationIsOwner || _account['isPlatformOwner'] == true;
 
   void _handleAccountAction(String action) {
     switch (action) {
@@ -1581,9 +1480,7 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _refreshTimer?.cancel();
     _searchDebounce?.cancel();
-    _syncMessageTimer?.cancel();
     final mutationSubscription = _mutationSubscription;
     if (mutationSubscription != null) {
       unawaited(mutationSubscription.cancel());
@@ -1591,6 +1488,31 @@ class _DashboardPageState extends State<DashboardPage>
     searchController.dispose();
     push.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshOrganizationContext() async {
+    try {
+      final value = await widget.api.call('organizations.context');
+      if (value is! Map) return;
+      final organizationId = value['organizationId']?.toString();
+      if (!mounted) return;
+      setState(() {
+        activeOrganizationId = organizationId;
+        activeOrganizationName = (value['organizationName'] ?? value['name'])
+            ?.toString();
+        activeOrganizationRole = value['role']?.toString();
+        activeOrganizationIsActive = value['isActive'] == true;
+        activeOrganizationIsOwner = value['isOwner'] == true;
+      });
+      if (organizationId != null && organizationId.isNotEmpty) {
+        unawaited(
+          _syncPushTokenForActiveOrganization(organizationId)
+              .then<void>((_) {}),
+        );
+      }
+    } catch (_) {
+      // Keep the last verified organization context when offline.
+    }
   }
 
   Future<void> refresh({bool showLoading = true}) async {
@@ -1625,7 +1547,6 @@ class _DashboardPageState extends State<DashboardPage>
             telegrams = List<dynamic>.from(cachedTelegrams);
             loading = false;
             error = null;
-            _usingCachedData = true;
           });
         }
       }
@@ -1758,7 +1679,6 @@ class _DashboardPageState extends State<DashboardPage>
       final visibleRows = rows.take(20).toList(growable: false);
       if (mounted) {
         setState(() {
-          _recordServerCheck(true);
           stats = Map<String, dynamic>.from(results[0] as Map);
           activeOrganizationId = organizationId;
           activeOrganizationName = organizationContext is Map
@@ -1786,7 +1706,6 @@ class _DashboardPageState extends State<DashboardPage>
           telegrams = visibleRows;
           hasNextTelegramPage = hasMoreRows;
           error = null;
-          _usingCachedData = false;
         });
       }
       unawaited(_loadOrganizationLogo(organizationId, _organizationLogoUrl));
@@ -1817,23 +1736,17 @@ class _DashboardPageState extends State<DashboardPage>
           final cachedStats = cached['stats'];
           final cachedTelegrams = cached['telegrams'];
           setState(() {
-            if (e is NetworkException) _recordServerCheck(false);
-            if (e is ApiException) _recordServerCheck(true);
             if (cachedStats is Map) {
               stats = Map<String, dynamic>.from(cachedStats);
             }
             if (cachedTelegrams is List) telegrams = cachedTelegrams;
             error = 'وضع عدم الاتصال — تُعرض آخر نسخة محفوظة محليًا';
-            _usingCachedData = true;
           });
         } else {
           setState(() {
-            if (e is NetworkException) _recordServerCheck(false);
-            if (e is ApiException) _recordServerCheck(true);
             error = _dashboardRefreshError(e);
             // No cached dashboard is available, so report the connection
             // failure instead of claiming that cached data is being shown.
-            _usingCachedData = false;
           });
         }
       }
@@ -1868,493 +1781,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  void _applyStatFilter(String filter) {
-    final clearSelection = _activeKpi == filter;
-    setState(() {
-      telegramPage = 1;
-      searchQuery = '';
-      searchController.clear();
-      _filterFrom = null;
-      _filterTo = null;
-      statusFilter = 'all';
-      priorityFilter = 'all';
-      classificationFilter = 'all';
-      categoryFilter = 'all';
-      _activeKpi = clearSelection ? null : filter;
-      if (clearSelection || filter == 'total') {
-        section = 0;
-      } else if (filter == 'today' ||
-          filter == 'urgent' ||
-          filter == 'incoming') {
-        section = filter == 'incoming' ? 2 : 0;
-        final start = DateTime.now();
-        final today = DateTime(start.year, start.month, start.day);
-        _filterFrom = today;
-        _filterTo = today.add(const Duration(days: 1));
-        if (filter == 'urgent') priorityFilter = 'urgent';
-      } else if (filter == 'in-progress') {
-        section = 0;
-        statusFilter = 'in_progress';
-      } else if (filter == 'resolved') {
-        section = 0;
-        statusFilter = 'resolved';
-      }
-    });
-    refresh(showLoading: false);
-  }
-
-  bool get _canViewReports => hasMobileTelegramReportAccess(
-    accountRole: _account['role']?.toString(),
-    organizationRole: activeOrganizationRole,
-    isPlatformOwner: _isPlatformOwner,
-  );
-
-  bool get _canViewAuditLogs =>
-      _account['role'] == 'admin' ||
-      _isPlatformOwner ||
-      (activeOrganizationIsActive &&
-          {'system_admin', 'auditor'}.contains(activeOrganizationRole));
-
-  bool get _canManageUsers => hasMobileUserManagementAccess(
-    accountRole: _account['role']?.toString(),
-    organizationRole: activeOrganizationRole,
-    isPlatformOwner: _isPlatformOwner,
-  );
-
-  bool get _canManageOrganizationSettings =>
-      hasMobileOrganizationSettingsAccess(
-        organizationRole: activeOrganizationRole,
-        isPlatformOwner: _isPlatformOwner,
-      );
-
-  bool get _isPlatformOwner =>
-      activeOrganizationIsOwner || _account['isPlatformOwner'] == true;
-
-  Widget _dashboardActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-    Widget? trailing,
-  }) => OutlinedButton(
-    onPressed: onPressed,
-    style: OutlinedButton.styleFrom(
-      foregroundColor: Theme.of(context).colorScheme.onSurface,
-      minimumSize: const Size(0, 38),
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 15),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
-          ),
-        ),
-        if (trailing != null) ...[const SizedBox(width: 3), trailing],
-      ],
-    ),
-  );
-
-  Widget _dashboardActions() => Row(
-    children: [
-      if (_canViewReports) ...[
-        Expanded(
-          child: _dashboardActionButton(
-            icon: LucideIcons.fileText,
-            label: 'تقرير البرقيات',
-            onPressed: () => _pushPage(ReportsPage(api: widget.api)),
-          ),
-        ),
-        const SizedBox(width: 7),
-      ],
-      Expanded(
-        child: _dashboardActionButton(
-          icon: LucideIcons.slidersHorizontal,
-          label: 'تخصيص العرض',
-          onPressed: _showDisplayCustomization,
-        ),
-      ),
-      const SizedBox(width: 7),
-      Expanded(
-        child: _dashboardActionButton(
-          icon: LucideIcons.listFilter,
-          label: 'الفلاتر',
-          trailing: _activeFilterCount == 0
-              ? null
-              : Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$_activeFilterCount',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-          onPressed: () => setState(() => _filtersOpen = !_filtersOpen),
-        ),
-      ),
-    ],
-  );
-
-  int get _activeFilterCount => [
-    statusFilter != 'all',
-    priorityFilter != 'all',
-    classificationFilter != 'all',
-    categoryFilter != 'all',
-    _filterFrom != null,
-  ].where((active) => active).length;
-
-  Future<void> _showDisplayCustomization() async {
-    var priority = _showPriority;
-    var category = _showCategory;
-    var creator = _showCreator;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('تخصيص عرض سجل البرقيات'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('الأسبقية والسرية'),
-                value: priority,
-                onChanged: (value) => setDialogState(() => priority = value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('تصنيف البرقية'),
-                value: category,
-                onChanged: (value) => setDialogState(() => category = value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('اسم منشئ البرقية'),
-                value: creator,
-                onChanged: (value) => setDialogState(() => creator = value),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () {
-                setState(() {
-                  _showPriority = priority;
-                  _showCategory = category;
-                  _showCreator = creator;
-                });
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('حفظ'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _urgentAlert() {
-    final count = stats['urgentAwaitingReceipt'] ?? 0;
-    final numericCount = count is num
-        ? count.toInt()
-        : int.tryParse('$count') ?? 0;
-    if (numericCount <= 0) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-      decoration: BoxDecoration(
-        color: context.appDangerContainer,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.appBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: context.appDanger,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              LucideIcons.siren,
-              color: Theme.of(context).colorScheme.onError,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'تنبيه أمني: توجد $numericCount برقية عاجلة موجّهة إلى الجهة الحالية بانتظار الاستلام.',
-              style: TextStyle(
-                color: context.appDangerText,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                section = 0;
-                priorityFilter = 'urgent';
-                telegramPage = 1;
-              });
-              refresh(showLoading: false);
-            },
-            child: const Text('عرض'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _outboxAlert() {
-    final colors = Theme.of(context).colorScheme;
-    final Color accent = switch (_syncPhase) {
-      'error' => context.appDanger,
-      'success' => context.appSuccess,
-      'idle' => _serverStatusColor,
-      'syncing' => context.appInfo,
-      _ => context.appWarning,
-    };
-    final IconData icon = switch (_syncPhase) {
-      'error' => Icons.sync_problem_outlined,
-      'success' => Icons.cloud_done_outlined,
-      'idle' =>
-        _serverReachable == true
-            ? Icons.cloud_done_outlined
-            : _serverReachable == false
-            ? Icons.cloud_off_outlined
-            : Icons.cloud_outlined,
-      'syncing' => Icons.sync,
-      _ => Icons.cloud_upload_outlined,
-    };
-    final detailMessage =
-        _lastSyncMessage ??
-        (_pendingOutbox > 0
-            ? 'لديك $_pendingOutbox برقية بانتظار المزامنة.'
-            : _idleOutboxMessage);
-
-    return Container(
-      key: const ValueKey<String>('outbox-status-panel'),
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(minHeight: 150),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: colors.outlineVariant),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C10233F),
-            blurRadius: 16,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: accent.withValues(alpha: 0.16)),
-                ),
-                child: Center(
-                  child: _outboxSyncing
-                      ? SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            valueColor: AlwaysStoppedAnimation<Color>(accent),
-                          ),
-                        )
-                      : Icon(icon, color: accent, size: 32),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'حالة صندوق الخروج',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.onSurface,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: BoxDecoration(
-                            color: _serverStatusColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            _serverStatusMessage,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: _serverStatusColor,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              if (_pendingOutbox > 0) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: accent.withValues(alpha: 0.18)),
-                  ),
-                  child: Text(
-                    '$_pendingOutbox معلقة',
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: colors.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.outbox_outlined, color: colors.primary, size: 18),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _lastSyncAt == null
-                            ? 'مزامنة البرقيات'
-                            : 'آخر فحص ${_syncTime(_lastSyncAt!)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        detailMessage,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.onSurface,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'التفاصيل',
-                  onPressed: _openOutbox,
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 34,
-                    height: 34,
-                  ),
-                  icon: const Icon(Icons.list_alt_outlined, size: 19),
-                  color: colors.primary,
-                ),
-                IconButton(
-                  tooltip: 'مزامنة الآن',
-                  onPressed: _outboxSyncInProgress ? null : () => _syncOutbox(),
-                  padding: EdgeInsets.zero,
-                  visualDensity: VisualDensity.compact,
-                  constraints: const BoxConstraints.tightFor(
-                    width: 34,
-                    height: 34,
-                  ),
-                  icon: const Icon(Icons.sync_rounded, size: 19),
-                  color: colors.primary,
-                ),
-              ],
-            ),
-          ),
-          if (_outboxSyncing) ...[
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: LinearProgressIndicator(
-                minHeight: 3,
-                color: accent,
-                backgroundColor: accent.withValues(alpha: 0.12),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
@@ -2379,13 +1805,13 @@ class _DashboardPageState extends State<DashboardPage>
                 width: 36,
                 height: 36,
                 fit: BoxFit.contain,
-                semanticLabel: 'أيقونة نظام برقيات الشرطة',
+                semanticLabel: 'أيقونة وثائقي',
               ),
             ),
             const SizedBox(width: 8),
             const Flexible(
               child: Text(
-                'مركز البرقيات',
+                'وثائقي',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
@@ -2517,8 +1943,8 @@ class _DashboardPageState extends State<DashboardPage>
                   title: _pushBusy
                       ? 'جارٍ تحديث الإشعارات...'
                       : _pushEnabled
-                      ? 'إيقاف إشعارات البرقيات'
-                      : 'تفعيل إشعارات البرقيات',
+                      ? 'إيقاف الإشعارات'
+                      : 'تفعيل الإشعارات',
                 ),
               ),
               const PopupMenuDivider(),
@@ -2601,7 +2027,7 @@ class _DashboardPageState extends State<DashboardPage>
                 value: 'system_about',
                 child: _AccountMenuItem(
                   icon: Icons.account_tree_outlined,
-                  title: 'حول النظام وميزاته',
+                  title: 'حول وثائقي وميزاته',
                 ),
               ),
               const PopupMenuItem(
@@ -2671,7 +2097,7 @@ class _DashboardPageState extends State<DashboardPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'نظام برقيات الشرطة',
+                              'وثائقي',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
@@ -2716,15 +2142,45 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(LucideIcons.layoutDashboard),
-                  title: const Text('لوحة التحكم'),
+                  leading: const Icon(Icons.description_outlined),
+                  title: const Text('الوثائق'),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.dashboard_customize_outlined),
+                  title: const Text('القوالب'),
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() {
-                      section = 0;
-                      telegramPage = 1;
-                    });
-                    refresh(showLoading: false);
+                    _pushPage(
+                      DocumentStudioPage(
+                        api: widget.api,
+                        outbox: _documentStudioOutbox,
+                        initialTab: DocumentStudioTab.templates,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.archive_outlined),
+                  title: const Text('الأرشيف'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(
+                      DocumentStudioPage(
+                        api: widget.api,
+                        outbox: _documentStudioOutbox,
+                        initialTab: DocumentStudioTab.archive,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.sync_outlined),
+                  title: const Text('المزامنة المحلية'),
+                  subtitle: const Text('حفظ التغييرات وإعادة مزامنتها'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openOutbox();
                   },
                 ),
                 if (_isPlatformOwner)
@@ -2747,27 +2203,6 @@ class _DashboardPageState extends State<DashboardPage>
                       _pushPage(AuditLogPage(api: widget.api));
                     },
                   ),
-                ListTile(
-                  leading: const Icon(LucideIcons.plus),
-                  title: const Text('إنشاء برقية'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    create();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.fileSpreadsheet),
-                  title: const Text('استيراد وتصدير السجل'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TelegramExcelPage(api: widget.api),
-                      ),
-                    );
-                  },
-                ),
                 if (_canManageUsers)
                   ListTile(
                     leading: const Icon(LucideIcons.users),
@@ -2792,1333 +2227,14 @@ class _DashboardPageState extends State<DashboardPage>
                       _handleAccountAction('organizations');
                     },
                   ),
-                ListTile(
-                  leading: const Icon(LucideIcons.mapPinned),
-                  title: const Text('خريطة البلاغات والمواقع الجغرافية'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 0,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.users),
-                  title: const Text('الوحدات الميدانية'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 1,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.activity),
-                  title: const Text('إدارة الموارد'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 2,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.archive),
-                  title: const Text('الأرشيف والسجلات المغلقة'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 3,
-                        ),
-                      ),
-                    );
-                  },
-                ),
               ],
             ),
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'إنشاء برقية',
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        onPressed: create,
-        child: const Icon(LucideIcons.plus),
-      ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(onRefresh: refresh, child: _sectionBody()),
+      body: DocumentStudioPage(api: widget.api, outbox: _documentStudioOutbox),
     ),
   );
-
-  Widget _swipeableWelcomeOutboxPanel() {
-    final showingOutbox = _showOutboxInTopCard;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragStart: (_) {
-            _outboxSwipeDistance = 0;
-          },
-          onHorizontalDragUpdate: (details) {
-            _outboxSwipeDistance += details.delta.dx;
-          },
-          onHorizontalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0;
-            final distance = _outboxSwipeDistance;
-            _outboxSwipeDistance = 0;
-            if (velocity.abs() < 180 && distance.abs() < 40) return;
-            setState(() => _showOutboxInTopCard = !_showOutboxInTopCard);
-          },
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 360),
-            curve: Curves.easeInOutCubic,
-            alignment: Alignment.topCenter,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 420),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) {
-                final slide = Tween<Offset>(
-                  begin: const Offset(0.045, 0),
-                  end: Offset.zero,
-                ).animate(animation);
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(position: slide, child: child),
-                );
-              },
-              child: KeyedSubtree(
-                key: ValueKey<bool>(showingOutbox),
-                child: showingOutbox ? _outboxAlert() : _welcomePanel(),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.swipe_rounded, size: 15, color: const Color(0xFF7A8493)),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                showingOutbox
-                    ? 'اسحب للتبديل إلى لوحة الترحيب'
-                    : 'اسحب لعرض بطاقة صندوق الخروج',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFF7A8493),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(width: 9),
-            _swipePageIndicator(active: !showingOutbox),
-            const SizedBox(width: 4),
-            _swipePageIndicator(active: showingOutbox),
-          ],
-        ),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-
-  Widget _swipePageIndicator({required bool active}) => AnimatedContainer(
-    duration: const Duration(milliseconds: 220),
-    width: active ? 16 : 5,
-    height: 5,
-    decoration: BoxDecoration(
-      color: active ? navy : const Color(0xFFD0D5DD),
-      borderRadius: BorderRadius.circular(8),
-    ),
-  );
-
-  Widget _welcomePanel() {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      key: const ValueKey<String>('welcome-panel'),
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(minHeight: 150),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: colors.outlineVariant),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0C10233F),
-            blurRadius: 16,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              _organizationLogoWidget(size: 52, borderRadius: 16),
-              const SizedBox(width: 10),
-              Expanded(child: _AnimatedWelcomeGreeting(name: _greetingName)),
-              const SizedBox(width: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 112),
-                child: _systemStatusIndicator(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: colors.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.business_outlined, color: colors.primary, size: 18),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'الجهة الحالية',
-                        style: TextStyle(
-                          color: colors.onSurfaceVariant,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _currentOrganizationLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.onSurface,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (activeOrganizationIsOwner)
-                  const Icon(
-                    Icons.workspace_premium_outlined,
-                    color: brandBlue,
-                    size: 17,
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _systemStatusIndicator() {
-    final Color accent;
-    final String title;
-    if (loading) {
-      accent = context.appInfo;
-      title = 'جارٍ التحديث';
-    } else if (_usingCachedData) {
-      accent = context.appWarning;
-      title = 'النظام غير متصل';
-    } else if (error != null) {
-      accent = context.appDanger;
-      // The detailed error card already contains the connection-error text.
-      // Keep this compact indicator distinct to avoid duplicate announcements.
-      title = 'النظام غير متصل';
-    } else {
-      accent = context.appSuccess;
-      title = 'النظام متصل';
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: accent,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Semantics(
-          label: title,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _syncTime(DateTime value) {
-    final local = value.toLocal();
-    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-  }
-
-  Widget _sectionBody() {
-    final values = <(String, String, String, IconData, Color)>[
-      (
-        'إجمالي البرقيات',
-        'total',
-        'الرصيد التشغيلي',
-        LucideIcons.fileText,
-        context.appMutedText,
-      ),
-      (
-        'الصادرة اليوم',
-        'today',
-        'من بداية اليوم',
-        LucideIcons.activity,
-        context.appInfo,
-      ),
-      (
-        'أولوية عاجلة اليوم',
-        'todayUrgent',
-        'من بداية اليوم',
-        LucideIcons.siren,
-        context.appDanger,
-      ),
-      (
-        'الواردة اليوم',
-        'todayIncoming',
-        'إلى جهتك منذ بداية اليوم',
-        LucideIcons.inbox,
-        context.appSuccess,
-      ),
-      (
-        'قيد الإجراء',
-        'inProgress',
-        'قيد المعالجة',
-        LucideIcons.radio,
-        context.appInfo,
-      ),
-      (
-        'مكتملة نهائيًا',
-        'resolved',
-        'تم إغلاقها',
-        LucideIcons.circleCheck,
-        context.appSuccess,
-      ),
-    ];
-    return ListView(
-      padding: const EdgeInsets.all(12),
-      children: [
-        if (error != null)
-          Card(
-            color: context.appWarningContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.cloud_off_outlined, color: context.appWarning),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          error!,
-                          style: TextStyle(color: context.appWarning),
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: TextButton.icon(
-                            onPressed: loading
-                                ? null
-                                : () => refresh(showLoading: false),
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('إعادة المحاولة'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        _swipeableWelcomeOutboxPanel(),
-        _dashboardActions(),
-        _urgentAlert(),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final columns = width >= 1100
-                ? 4
-                : width >= 700
-                ? 3
-                : width < 340
-                ? 1
-                : 2;
-            final aspectRatio = columns == 1
-                ? 3.1
-                : width < 390
-                ? 1.28
-                : 1.48;
-            return GridView.count(
-              crossAxisCount: columns,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: aspectRatio,
-              children: [
-                for (final item in values)
-                  _stat(
-                    item.$1,
-                    stats[item.$2] ?? 0,
-                    item.$4,
-                    detail: item.$3,
-                    accent: item.$5,
-                    active:
-                        _activeKpi ==
-                        switch (item.$2) {
-                          'total' => 'total',
-                          'today' => 'today',
-                          'todayUrgent' => 'urgent',
-                          'todayIncoming' => 'incoming',
-                          'inProgress' => 'in-progress',
-                          'resolved' => 'resolved',
-                          _ => null,
-                        },
-                    onTap: () => _applyStatFilter(switch (item.$2) {
-                      'today' => 'today',
-                      'todayUrgent' => 'urgent',
-                      'todayIncoming' => 'incoming',
-                      'inProgress' => 'in-progress',
-                      'resolved' => 'resolved',
-                      _ => 'total',
-                    }),
-                  ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 14),
-        Card(
-          margin: EdgeInsets.zero,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE1E5EB)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'سجل البرقيات الكامل',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F2F5),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Text(
-                            '${telegrams.length} نتيجة',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF667085),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (_activeKpi != null) ...[
-                      const SizedBox(height: 6),
-                      Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: InputChip(
-                          label: Text(_activeKpiLabel),
-                          onDeleted: () => _applyStatFilter(_activeKpi!),
-                          deleteIcon: const Icon(Icons.close_rounded, size: 15),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 5),
-                    const Text(
-                      'جميع السجلات مرتبة تنازليًا حسب الرقم التسلسلي مع ختم الهوية الرقمية وسجل تدقيق كامل. البحث والتصفية يشملان كامل السجل المتاح لك قبل تقسيم النتائج إلى صفحات.',
-                      style: TextStyle(
-                        fontSize: 10,
-                        height: 1.55,
-                        color: Color(0xFF667085),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _searchField(),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              SizedBox(
-                height: 47,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  children: [
-                    _telegramViewButton(
-                      'كل البرقيات',
-                      stats['total'] ?? 0,
-                      LucideIcons.listFilter,
-                      0,
-                    ),
-                    const SizedBox(width: 7),
-                    _telegramViewButton(
-                      'البرقيات الصادرة',
-                      stats['outgoing'] ?? 0,
-                      LucideIcons.send,
-                      1,
-                    ),
-                    const SizedBox(width: 7),
-                    _telegramViewButton(
-                      'البرقيات الواردة',
-                      stats['incoming'] ?? 0,
-                      LucideIcons.inbox,
-                      2,
-                    ),
-                  ],
-                ),
-              ),
-              if (_filtersOpen) _filterControls(),
-              _telegramCards(telegrams),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-                child: _paginationControls(),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-      ],
-    );
-  }
-
-  String get _activeKpiLabel => switch (_activeKpi) {
-    'total' => 'إجمالي البرقيات',
-    'today' => 'الصادرة اليوم',
-    'urgent' => 'أولوية عاجلة اليوم',
-    'incoming' => 'الواردة اليوم',
-    'in-progress' => 'قيد الإجراء',
-    'resolved' => 'مكتملة نهائيًا',
-    _ => '',
-  };
-
-  Widget _telegramViewButton(
-    String label,
-    dynamic count,
-    IconData icon,
-    int value,
-  ) {
-    final selected = section == value;
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: selected ? colors.primary : colors.surface,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          if (selected) return;
-          setState(() {
-            section = value;
-            telegramPage = 1;
-          });
-          refresh(showLoading: false);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: selected ? colors.primary : colors.outlineVariant,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: selected ? colors.onPrimary : colors.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: selected ? colors.onPrimary : colors.onSurface,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(
-                  color: selected
-                      ? colors.onPrimary.withValues(alpha: 0.72)
-                      : colors.onSurfaceVariant,
-                  fontSize: 9,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  bool _isIncoming(Map<String, dynamic> row) {
-    final direction = '${row['direction'] ?? row['type'] ?? ''}'
-        .trim()
-        .toLowerCase();
-    if (direction == 'incoming' || direction == 'واردة') return true;
-    if (direction == 'outgoing' || direction == 'صادرة') return false;
-
-    final organizationId = activeOrganizationId;
-    if (organizationId == null || organizationId.isEmpty) return false;
-
-    final senderOrganizationId = row['organizationId']?.toString();
-    final receiverOrganizationId = row['currentOrganizationId']?.toString();
-    if (senderOrganizationId == organizationId) return false;
-    if (receiverOrganizationId == organizationId) return true;
-    return false;
-  }
-
-  void _setTelegramFilter({
-    String? status,
-    String? priority,
-    String? classification,
-    String? category,
-  }) {
-    setState(() {
-      if (status != null) statusFilter = status;
-      if (priority != null) priorityFilter = priority;
-      if (classification != null) classificationFilter = classification;
-      if (category != null) categoryFilter = category;
-      _filterFrom = null;
-      _filterTo = null;
-      _activeKpi = null;
-      telegramPage = 1;
-    });
-    refresh(showLoading: false);
-  }
-
-  Widget _filterControls() {
-    final hasFilters =
-        statusFilter != 'all' ||
-        priorityFilter != 'all' ||
-        classificationFilter != 'all' ||
-        categoryFilter != 'all';
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        border: Border(bottom: BorderSide(color: context.appBorder)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                LucideIcons.listFilter,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 6),
-              const Expanded(
-                child: Text(
-                  'تصفية سجل البرقيات',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                ),
-              ),
-              if (hasFilters)
-                TextButton(
-                  onPressed: () => _setTelegramFilter(
-                    status: 'all',
-                    priority: 'all',
-                    classification: 'all',
-                    category: 'all',
-                  ),
-                  child: const Text('مسح الفلاتر'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _filterDropdown('الحالة', statusFilter, const [
-                  ('all', 'كل الحالات'),
-                  ('draft', 'مسودة'),
-                  ('submitted', 'مرسلة للمراجعة'),
-                  ('in_review', 'قيد المراجعة'),
-                  ('approved', 'معتمدة'),
-                  ('returned', 'معادة للتصحيح'),
-                  ('rejected', 'مرفوضة'),
-                  ('forwarded', 'محالة'),
-                  ('pending', 'قيد الانتظار'),
-                  ('in_progress', 'قيد الإجراء'),
-                  ('resolved', 'منجزة'),
-                  ('completed', 'مكتملة'),
-                  ('archived', 'مؤرشفة'),
-                ], (value) => _setTelegramFilter(status: value)),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _filterDropdown('الأسبقية', priorityFilter, const [
-                  ('all', 'كل الأولويات'),
-                  ('urgent', 'عاجلة'),
-                  ('normal', 'عادية'),
-                  ('slow', 'بطيئة'),
-                ], (value) => _setTelegramFilter(priority: value)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _filterDropdown('السرية', classificationFilter, const [
-                  ('all', 'كل المستويات'),
-                  ('normal', 'عادية'),
-                  ('secret', 'سري'),
-                ], (value) => _setTelegramFilter(classification: value)),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _filterDropdown('التصنيف', categoryFilter, const [
-                  ('all', 'كل التصنيفات'),
-                  ('administrative', 'إداري'),
-                  ('criminal', 'جنائي'),
-                  ('traffic', 'مروري'),
-                  ('security', 'أمني'),
-                  ('tactical', 'عملياتي'),
-                  ('intelligence', 'استخباراتي'),
-                  ('emergency', 'طوارئ'),
-                  ('public_order', 'حفظ النظام'),
-                  ('personnel', 'شؤون الأفراد'),
-                  ('logistics', 'إمداد ودعم'),
-                  ('training', 'تدريب وتأهيل'),
-                  ('community', 'مجتمعي وشكاوى'),
-                  ('other', 'أخرى'),
-                ], (value) => _setTelegramFilter(category: value)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterDropdown(
-    String label,
-    String value,
-    List<(String, String)> options,
-    ValueChanged<String> onChanged,
-  ) => DropdownButtonFormField<String>(
-    key: ValueKey<String>(value),
-    initialValue: value,
-    isExpanded: true,
-    decoration: InputDecoration(
-      labelText: label,
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-    ),
-    items: options
-        .map(
-          (option) => DropdownMenuItem<String>(
-            value: option.$1,
-            child: Text(
-              option.$2,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        )
-        .toList(),
-    onChanged: (selected) {
-      if (selected != null) onChanged(selected);
-    },
-  );
-
-  Widget _searchField() => TextField(
-    controller: searchController,
-    textInputAction: TextInputAction.search,
-    onChanged: (value) {
-      setState(() {
-        searchQuery = value.trim().toLowerCase();
-        telegramPage = 1;
-      });
-      _searchDebounce?.cancel();
-      _searchDebounce = Timer(
-        const Duration(milliseconds: 350),
-        () => refresh(showLoading: false),
-      );
-    },
-    decoration: InputDecoration(
-      hintText: 'بحث بالرقم، الموضوع، الاسم...',
-      prefixIcon: const Icon(Icons.search),
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(9)),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(9),
-        borderSide: const BorderSide(color: Color(0xFFE1E5EB)),
-      ),
-      suffixIcon: searchQuery.isEmpty
-          ? null
-          : IconButton(
-              tooltip: 'مسح البحث',
-              onPressed: () {
-                searchController.clear();
-                _searchDebounce?.cancel();
-                setState(() {
-                  searchQuery = '';
-                  telegramPage = 1;
-                });
-                refresh(showLoading: false);
-              },
-              icon: const Icon(Icons.close),
-            ),
-    ),
-  );
-
-  Widget _telegramCards(List<dynamic> rows) {
-    final query = searchQuery.trim().toLowerCase();
-    final filteredRows = query.isEmpty
-        ? rows
-        : rows.where((item) {
-            final row = Map<String, dynamic>.from(item as Map);
-            final searchable = [
-              row['subject'],
-              row['serialCode'],
-              row['serialNumber'],
-              row['status'],
-              row['organizationName'],
-              row['fromOrganizationName'],
-              row['toOrganizationName'],
-              row['senderName'],
-            ].where((value) => value != null).join(' ').toLowerCase();
-            return searchable.contains(query);
-          }).toList();
-
-    if (filteredRows.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 34),
-        child: Column(
-          children: [
-            Icon(
-              Icons.description_outlined,
-              size: 36,
-              color: Color(0xFFB8C0CA),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'لا توجد نتائج',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              query.isNotEmpty
-                  ? 'غيّر عبارة البحث أو الفلاتر.'
-                  : 'غيّر الفلاتر أو أنشئ برقية جديدة.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: context.appMutedText),
-            ),
-          ],
-        ),
-      );
-    }
-
-    String statusLabel(dynamic raw) {
-      final key = '$raw'.toLowerCase();
-      return telegramStatusLabels[key] ?? (key == 'null' ? 'مسودة' : '$raw');
-    }
-
-    String categoryLabel(dynamic raw) {
-      final key = '$raw'.toLowerCase();
-      return telegramCategoryLabels[key] ?? '$raw';
-    }
-
-    String priorityLabel(dynamic raw) {
-      final key = '$raw'.toLowerCase();
-      return telegramPriorityLabels[key] ??
-          switch (key) {
-            'critical' || 'high' => 'عاجلة',
-            'low' => 'منخفض',
-            'standard' => 'عادية',
-            _ => '$raw',
-          };
-    }
-
-    String confidentialityLabel(dynamic raw) {
-      final key = '$raw'.toLowerCase();
-      return telegramClassificationLabels[key] ??
-          switch (key) {
-            'confidential' || 'restricted' => 'سري',
-            'top_secret' || 'top secret' => 'سري للغاية',
-            'public' => 'عادية',
-            _ => '$raw',
-          };
-    }
-
-    return Column(
-      children: [
-        for (var index = 0; index < filteredRows.length; index++) ...[
-          if (index > 0) const Divider(height: 1),
-          _telegramRow(
-            Map<String, dynamic>.from(filteredRows[index] as Map),
-            statusLabel,
-            categoryLabel,
-            priorityLabel,
-            confidentialityLabel,
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _telegramRow(
-    Map<String, dynamic> row,
-    String Function(dynamic) statusLabel,
-    String Function(dynamic) categoryLabel,
-    String Function(dynamic) priorityLabel,
-    String Function(dynamic) confidentialityLabel,
-  ) {
-    final incoming = _isIncoming(row);
-    final telegramId = int.tryParse('${row['id']}');
-    final serial = getTelegramDisplaySerial(row, numberSystem);
-    final sender =
-        row['fromOrganizationName'] ??
-        row['senderOrganizationName'] ??
-        row['senderName'] ??
-        row['organizationName'];
-    final receiver =
-        row['toOrganizationName'] ??
-        row['receiverOrganizationName'] ??
-        row['currentOrganizationName'] ??
-        row['recipient'];
-    final subject = '${row['subject'] ?? 'برقية بدون موضوع'}';
-    final creator =
-        row['creatorName'] ??
-        row['senderName'] ??
-        row['createdByName'] ??
-        _account['name'] ??
-        _account['username'] ??
-        '';
-    final rawPriority = row['priority'] ?? row['urgency'];
-    final rawConfidentiality = row['confidentiality'] ?? row['classification'];
-    final rawCategory = row['category'];
-    final status = statusLabel(row['status'] ?? 'draft');
-    final priority = rawPriority == null ? null : priorityLabel(rawPriority);
-    final confidentiality = rawConfidentiality == null
-        ? null
-        : confidentialityLabel(rawConfidentiality);
-    final category = rawCategory == null ? null : categoryLabel(rawCategory);
-
-    return InkWell(
-      onTap: telegramId == null
-          ? null
-          : () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => TelegramDetailsPage(
-                    api: widget.api,
-                    telegramId: telegramId,
-                    initialTelegram: row,
-                    account: _account,
-                    organizationRole: activeOrganizationRole,
-                    organizationIsOwner: activeOrganizationIsOwner,
-                    officialDocument: true,
-                  ),
-                ),
-              );
-              if (mounted) await refresh();
-            },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 13),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'برقية رقم: $serial',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontFamily: 'Cairo',
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _telegramChip(
-                  incoming ? 'واردة' : 'صادرة',
-                  incoming
-                      ? context.appSuccessContainer
-                      : context.appInfoContainer,
-                  incoming ? context.appSuccess : context.appInfo,
-                  icon: incoming
-                      ? Icons.south_west_rounded
-                      : Icons.north_east_rounded,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (sender != null && '$sender'.trim().isNotEmpty)
-              _telegramDetailLine('من:', '$sender'),
-            if (receiver != null && '$receiver'.trim().isNotEmpty) ...[
-              const SizedBox(height: 3),
-              _telegramDetailLine('إلى:', '$receiver'),
-            ],
-            const SizedBox(height: 5),
-            _telegramDetailLine('الموضوع:', subject, strong: false),
-            const SizedBox(height: 8),
-            Wrap(
-              alignment: WrapAlignment.start,
-              spacing: 5,
-              runSpacing: 5,
-              children: [
-                if (_showPriority && priority != null && priority.isNotEmpty)
-                  _telegramChip(
-                    priority,
-                    priority == 'عاجلة'
-                        ? context.appDangerContainer
-                        : context.appInfoContainer,
-                    priority == 'عاجلة'
-                        ? context.appDangerText
-                        : context.appInfo,
-                    icon: priority == 'عاجلة'
-                        ? Icons.priority_high_rounded
-                        : Icons.shield_outlined,
-                  ),
-                if (_showCategory && category != null && category.isNotEmpty)
-                  _telegramChip(
-                    category,
-                    context.appMutedSurface,
-                    context.appMutedText,
-                    icon: Icons.description_outlined,
-                  ),
-                if (_showPriority &&
-                    confidentiality != null &&
-                    confidentiality.isNotEmpty)
-                  _telegramChip(
-                    confidentiality,
-                    context.appSuccessContainer,
-                    context.appSuccess,
-                    icon: Icons.verified_outlined,
-                  ),
-                _telegramChip(
-                  status,
-                  context.appSuccessContainer,
-                  context.appSuccess,
-                  icon: Icons.check_circle_outline_rounded,
-                ),
-              ],
-            ),
-            if (_showCreator) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.person_outline,
-                    size: 13,
-                    color: context.appMutedText,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      '$creator',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: context.appMutedText,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _telegramDetailLine(String label, String value, {bool strong = true}) {
-    final colors = Theme.of(context).colorScheme;
-    return RichText(
-      textAlign: TextAlign.right,
-      text: TextSpan(
-        style: TextStyle(
-          fontFamily: 'Cairo',
-          color: strong ? colors.onSurfaceVariant : colors.onSurface,
-          fontSize: 14,
-          height: 1.45,
-          fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
-        ),
-        children: [
-          TextSpan(text: '$label '),
-          TextSpan(
-            text: value,
-            style: TextStyle(
-              color: strong ? colors.onSurfaceVariant : colors.onSurface,
-              fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _telegramChip(
-    String label,
-    Color background,
-    Color foreground, {
-    IconData? icon,
-  }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 13, color: foreground),
-          const SizedBox(width: 3),
-        ],
-        Text(
-          label,
-          style: TextStyle(
-            color: foreground,
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _paginationControls() => LayoutBuilder(
-    builder: (context, constraints) {
-      final pageLabel = Text(
-        'صفحة $telegramPage',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontSize: 12,
-        ),
-      );
-      final controls = Wrap(
-        spacing: 8,
-        children: [
-          OutlinedButton(
-            onPressed: telegramPage <= 1 || loading
-                ? null
-                : () {
-                    if (_refreshInProgress) return;
-                    setState(() => telegramPage--);
-                    refresh();
-                  },
-            child: const Text('السابق'),
-          ),
-          OutlinedButton(
-            onPressed: !hasNextTelegramPage || loading
-                ? null
-                : () {
-                    if (_refreshInProgress) return;
-                    setState(() => telegramPage++);
-                    refresh();
-                  },
-            child: const Text('التالي'),
-          ),
-        ],
-      );
-
-      if (constraints.maxWidth < 340) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            pageLabel,
-            const SizedBox(height: 8),
-            Align(alignment: AlignmentDirectional.centerEnd, child: controls),
-          ],
-        );
-      }
-
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [pageLabel, controls],
-      );
-    },
-  );
-
-  Widget _stat(
-    String title,
-    dynamic value,
-    IconData icon, {
-    required String detail,
-    required Color accent,
-    required VoidCallback onTap,
-    bool active = false,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: active
-                ? colors.primary.withValues(alpha: 0.10)
-                : colors.surface,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: active
-                  ? colors.primary.withValues(alpha: 0.65)
-                  : colors.outlineVariant,
-              width: active ? 1.4 : 1,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        height: 1.35,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$value',
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: colors.onSurface,
-                        fontSize: 23,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      detail,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 9,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Icon(icon, color: accent, size: 17),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _AccountMenuItem extends StatelessWidget {

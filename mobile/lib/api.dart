@@ -44,6 +44,7 @@ class ApiMutationEvent {
   final dynamic result;
 
   bool get isTelegramMutation => procedure.startsWith('telegrams.');
+  bool get isDocumentStudioMutation => procedure.startsWith('documentStudio.');
 
   int? get telegramId {
     final values = <dynamic>[
@@ -120,6 +121,19 @@ class PoliceApi {
   int _logoCacheGeneration = 0;
 
   Stream<ApiMutationEvent> get mutationEvents => _mutationEvents.stream;
+
+  OfflineVault get offlineVault => _vault;
+
+  Future<dynamic> readCachedResponse(
+    String procedure, {
+    Map<String, dynamic>? input,
+  }) => _readOfflineResponse(procedure, input);
+
+  Future<void> writeCachedResponse(
+    String procedure,
+    Map<String, dynamic>? input,
+    dynamic value,
+  ) => _writeOfflineResponse(procedure, input, value);
 
   Future<dynamic> call(
     String procedure, {
@@ -594,6 +608,12 @@ class PoliceApi {
         return 'offline_organization_context';
       case 'dashboard.stats':
         return 'offline_dashboard_stats';
+      case 'documentStudio.listDocuments':
+        return 'offline_document_studio_documents';
+      case 'documentStudio.listTemplates':
+        return 'offline_document_studio_templates';
+      case 'documentStudio.getLetterheadSettings':
+        return 'offline_document_studio_letterhead';
       default:
         return null;
     }
@@ -625,14 +645,6 @@ class PoliceApi {
       return null;
     }
   }
-
-  /// Reads a previously successful read-only response without treating it as
-  /// the authoritative result. Callers can render it immediately and then
-  /// invoke [call] to revalidate it with the server.
-  Future<dynamic> readCachedResponse(
-    String procedure, {
-    Map<String, dynamic>? input,
-  }) => _readOfflineResponse(procedure, input);
 
   Future<void> _writeOfflineResponse(
     String procedure,
