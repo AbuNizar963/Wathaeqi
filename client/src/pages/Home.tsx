@@ -4514,7 +4514,8 @@ function TelegramDetail({
           )}
         </div>
       </div>
-      <TelegramEditModal
+      {editOpen && (
+        <TelegramEditModal
           telegram={telegram}
           pending={updateTelegram.isPending}
           close={() => setEditOpen(false)}
