@@ -24,19 +24,19 @@ import {
   createInitialOwnerProfile,
   isInitialOwnerSetupAvailable,
 } from "./features/auth/ownerBootstrap";
-import { platformOwnerProcedure, publicProcedure, router } from "./_core/trpc";
+import { platformOwnerProcedure, publicProcedure, router } from "./_core/ownerTrpc";
 import { getRequestAuditContext } from "./auditContext";
+import { writeAuditLog } from "./features/audit/appwriteAuditRepository";
 import {
   getPlatformDocumentSettings,
   updatePlatformDocumentSettings,
-  writeAuditLog,
-} from "./db";
+} from "./features/platform-settings/platformDocumentSettingsRepository";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
 import {
   getOrganizationById,
   getUserOrganizationMembership,
-} from "./features/organizations/organization";
+} from "./features/organizations/appwriteOwnerOrganizationRepository";
 import {
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
