@@ -333,8 +333,15 @@ async function finalizeTelegramAttachmentUpload(
   }
 }
 
-const DEPARTMENT_LOGO_KEY_PATTERN =
-  /^department\/logos\/(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/)?[^/]+\.(?:png|jpe?g|webp)$/i;
+const DEPARTMENT_LOGO_KEY_PATTERN = new RegExp(
+  [
+    "^department/logos/",
+    "(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-",
+    "[89ab][0-9a-f]{3}-[0-9a-f]{12}/)?",
+    "[^/]+\\.(?:png|jpe?g|webp)$",
+  ].join(""),
+  "i"
+);
 const MAX_DEPARTMENT_LOGO_RESPONSE_BYTES = 4_000_000;
 
 function getDepartmentLogoContentType(
