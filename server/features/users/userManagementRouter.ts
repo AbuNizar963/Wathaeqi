@@ -791,49 +791,68 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await requireCurrentPassword(ctx.user.id, input.confirmPassword);
-      if (input.id === ctx.user.id)
+      if (input.id === ctx.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكنك تعطيل حسابك الحالي",
         });
-      const client = getSupabaseAdmin();
-      const target = await client
-        .from("users")
-        .select("id, role, username, organizationId")
-        .eq("id", input.id)
-        .maybeSingle();
-      if (target.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل الحساب المطلوب",
-        });
-      if (!target.data)
-        throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
-      if (typeof target.data.organizationId === "string") {
-        await assertCanManageOrganization(ctx.user, target.data.organizationId);
       }
-      if (target.data.role === "admin")
+
+      const targetProfile = await getAppwriteProfileById(input.id);
+      if (!targetProfile) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "الحساب غير موجود",
+        });
+      }
+
+      const target = targetProfile.user;
+      if (typeof target.organizationId === "string") {
+        await assertCanManageOrganization(ctx.user, target.organizationId);
+      }
+      if (target.role === "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكن تعطيل حساب مالك النظام",
         });
-      const { error } = await client
-        .from("users")
-        .update({
-          sessionVersion: randomUUID(),
-          password_hash: null,
-          loginMethod: "disabled",
-          isActive: false,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("id", input.id);
-      if (error) {
-        console.error("[userManagement.disable] Supabase update failed", error);
+      }
+
+      await getAppwriteUsers().updateStatus({
+        userId: target.authUserId,
+        status: false,
+      });
+
+      try {
+        await getAppwriteTablesDB().updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: USERS_TABLE,
+          rowId: targetProfile.rowId,
+          data: {
+            sessionVersion: randomUUID(),
+            loginMethod: "disabled",
+            isActive: false,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        try {
+          await getAppwriteUsers().updateStatus({
+            userId: target.authUserId,
+            status: true,
+          });
+        } catch (rollbackError) {
+          console.error(
+            "[userManagement.disable] Failed to restore Appwrite account status",
+            rollbackError
+          );
+        }
+        console.error("[userManagement.disable] Appwrite update failed", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "تعذر تعطيل الحساب",
         });
       }
+
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
@@ -841,7 +860,7 @@ export const userManagementRouter = router({
         action: "user.disable",
         entityType: "user",
         entityId: String(input.id),
-        metadata: JSON.stringify({ username: target.data.username }),
+        metadata: JSON.stringify({ username: target.username }),
       });
       return { success: true };
     }),
