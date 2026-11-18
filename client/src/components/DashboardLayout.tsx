@@ -477,37 +477,24 @@ function DashboardLayoutContent({
               التنقل الرئيسي
             </p>
             <SidebarMenu className="gap-1.5">
-              {menuItems
-                .filter(
-                  item =>
-                    (!item.adminOnly || canManageUsers) &&
-                    (!item.ownerOnly || isPlatformOwnerAccount) &&
-                    (!item.auditOnly || canViewAuditLogs)
-                )
-                .map(item => {
-                  const isActive = location === item.path;
-                  return (
-                    <SidebarMenuItem key={item.key}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => {
-                          if (item.action) {
-                            window.dispatchEvent(new CustomEvent(item.action));
-                          } else if (item.path) {
-                            setLocation(item.path);
-                          }
-                        }}
-                        tooltip={item.label}
-                        className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
-                      >
-                        <item.icon
-                          className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
-                        />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+              {menuItems.map(item => {
+                const isActive = location === item.path;
+                return (
+                  <SidebarMenuItem key={item.key}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => setLocation(item.path)}
+                      tooltip={item.label}
+                      className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
+                    >
+                      <item.icon
+                        className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
+                      />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
