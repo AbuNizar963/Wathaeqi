@@ -1921,7 +1921,7 @@ async function createAppwriteNotification(input: {
 export async function listActiveOrganizationMemberIds(
   organizationId: string
 ): Promise<number[]> {
-  const [memberships, activeOrganizations] = await Promise.all([
+  const [memberships, activeOrganizations, activeProfiles] = await Promise.all([
     listAllAppwriteRows("organization_memberships", [
       Query.equal("organizationId", organizationId),
       Query.equal("isActive", true),
@@ -1930,15 +1930,26 @@ export async function listActiveOrganizationMemberIds(
       Query.equal("id", organizationId),
       Query.equal("isActive", true),
     ]),
+    listAllAppwriteRows("users", [Query.equal("isActive", true)]),
   ]);
 
   if (activeOrganizations.length === 0) return [];
 
+  const activeUserIds = new Set(
+    activeProfiles
+      .map(row => Number(notificationRowData(row).id))
+      .filter(userId => Number.isSafeInteger(userId) && userId > 0)
+  );
   return Array.from(
     new Set(
       memberships
         .map(row => Number(notificationRowData(row).userId))
-        .filter(userId => Number.isSafeInteger(userId) && userId > 0)
+        .filter(
+          userId =>
+            Number.isSafeInteger(userId) &&
+            userId > 0 &&
+            activeUserIds.has(userId)
+        )
     )
   );
 }
