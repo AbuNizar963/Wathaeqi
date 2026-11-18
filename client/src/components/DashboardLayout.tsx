@@ -1,4 +1,5 @@
 import { useAuth } from "@/features/auth-session/useAuth";
+import OwnerSetupForm from "@/features/auth-session/OwnerSetupForm";
 import {
   Sidebar,
   SidebarContent,
