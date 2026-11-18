@@ -1,7 +1,6 @@
 import 'package:uuid/uuid.dart';
 
 import 'api.dart';
-import 'document_studio_models.dart';
 import 'offline_vault.dart';
 
 class DocumentOutboxSyncResult {
@@ -312,9 +311,12 @@ class DocumentStudioOutbox {
         'content': input['content'] ?? current['content'],
         'fieldValues': input['fieldValues'] ?? current['fieldValues'],
         'documentDate': input['documentDate'] ?? current['documentDate'],
-        'templateId': input['templateId'] ?? current['templateId'],
-        'templateRevision':
-            input['templateRevision'] ?? current['templateRevision'],
+        'templateId': input.containsKey('templateId')
+            ? input['templateId']
+            : current['templateId'],
+        'templateRevision': input.containsKey('templateRevision')
+            ? input['templateRevision']
+            : current['templateRevision'],
         'updatedAt': now,
       };
     } else if (procedure == 'documentStudio.archiveDocument') {
@@ -328,7 +330,9 @@ class DocumentStudioOutbox {
       values[index] = {
         ...current,
         'title': input['title'] ?? current['title'],
-        'description': input['description'] ?? current['description'],
+        'description': input.containsKey('description')
+            ? input['description']
+            : current['description'],
         'category': input['category'] ?? current['category'],
         'content': input['content'] ?? current['content'],
         'fields': input['fields'] ?? current['fields'],
@@ -404,25 +408,37 @@ class DocumentStudioOutbox {
           result,
           localId: localId,
         );
-        if (localId != null && localId != result['id']) {
-          for (final pending in queue) {
-            final pendingInput =
-                Map<String, dynamic>.from(pending['input'] as Map);
+        for (final pending in queue) {
+          final pendingInput =
+              Map<String, dynamic>.from(pending['input'] as Map);
+          if (localId != null && localId != result['id']) {
             if (pendingInput['id'] == localId) {
               pendingInput['id'] = result['id'];
-              if (pendingInput.containsKey('expectedUpdatedAt')) {
-                pendingInput['expectedUpdatedAt'] = result['updatedAt'];
-              }
-              if (pendingInput.containsKey('expectedRevision')) {
-                pendingInput['expectedRevision'] = result['revision'];
-              }
             }
             if (pendingInput['templateId'] == localId) {
               pendingInput['templateId'] = result['id'];
               pendingInput['templateRevision'] = result['revision'];
             }
-            pending['input'] = pendingInput;
           }
+          if (pendingInput['id'] == result['id']) {
+            if (procedure == 'documentStudio.updateDocument' &&
+                pendingInput.containsKey('expectedUpdatedAt')) {
+              pendingInput['expectedUpdatedAt'] = result['updatedAt'];
+            }
+            if (procedure == 'documentStudio.updateTemplate' &&
+                pendingInput.containsKey('expectedRevision')) {
+              pendingInput['expectedRevision'] = result['revision'];
+            }
+            if (procedure == 'documentStudio.createDocument' &&
+                pendingInput.containsKey('expectedUpdatedAt')) {
+              pendingInput['expectedUpdatedAt'] = result['updatedAt'];
+            }
+            if (procedure == 'documentStudio.createTemplate' &&
+                pendingInput.containsKey('expectedRevision')) {
+              pendingInput['expectedRevision'] = result['revision'];
+            }
+          }
+          pending['input'] = pendingInput;
         }
         await _writeQueue(queue);
         synced++;
