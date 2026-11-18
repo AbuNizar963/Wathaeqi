@@ -72,5 +72,8 @@ jobs:
           set +a
           node scripts/test-organization-management-concurrency.mjs
 
+      - name: Build Appwrite owner API function
+        run: pnpm build:appwrite-api
+
       - name: Production build
         run: pnpm build
