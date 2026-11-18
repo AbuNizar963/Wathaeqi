@@ -38,9 +38,6 @@ jobs:
             exit 1
           fi
 
-      - name: Print canonical formatting for Appwrite user tests
-        run: pnpm exec prettier server/features/users/userManagementRouter.test.ts
-
       - name: Check formatting
         run: pnpm lint
 
