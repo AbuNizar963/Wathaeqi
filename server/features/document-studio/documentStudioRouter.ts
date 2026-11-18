@@ -11,6 +11,7 @@ import {
 } from "../../db";
 import { localizeDigits, normalizeNumberSystem } from "@shared/numberSystem";
 import { validateTemplateFieldValues } from "../../../shared/documentStudio";
+import type { DocumentTemplateField } from "../../../shared/documentStudio";
 import {
   DocumentStudioConflictError,
   archiveOfficialDocument,
@@ -125,7 +126,7 @@ async function resolveTemplateSnapshot(
 ): Promise<{
   templateId: string | null;
   templateRevision: number | null;
-  templateFieldsSnapshot: import("../../../shared/documentStudio").DocumentTemplateField[];
+  templateFieldsSnapshot: DocumentTemplateField[];
 }> {
   if (!templateId) {
     return {
@@ -316,7 +317,7 @@ export const documentStudioRouter = router({
       let snapshot: {
         templateId: string | null;
         templateRevision: number | null;
-        templateFieldsSnapshot: import("../../../shared/documentStudio").DocumentTemplateField[];
+        templateFieldsSnapshot: DocumentTemplateField[];
       };
       if (input.templateId === existing.templateId) {
         if (
