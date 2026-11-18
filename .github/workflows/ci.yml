@@ -38,11 +38,6 @@ jobs:
             exit 1
           fi
 
-      - name: Format owner bootstrap for diagnosis
-        run: |
-          pnpm exec prettier --write server/features/auth/ownerBootstrap.ts
-          git diff -- server/features/auth/ownerBootstrap.ts
-
       - name: Check formatting
         run: pnpm lint
 
