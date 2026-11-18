@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'api.dart';
 import 'offline_vault.dart';
@@ -264,13 +265,18 @@ class TelegramOutbox {
     final attachment = await _resolveAttachment(entry);
     if (telegramId != null && attachment != null) {
       final encoded = attachment['base64'];
-      if (encoded is! String || encoded.isEmpty) {
+      final fileName = attachment['fileName'];
+      final contentType = attachment['contentType'];
+      if (encoded is! String ||
+          encoded.isEmpty ||
+          fileName is! String ||
+          contentType is! String) {
         throw const FormatException('بيانات المرفق المحفوظ غير صالحة');
       }
       await api.uploadTelegramAttachment(
         telegramId: telegramId,
-        fileName: attachment['fileName'] as String,
-        contentType: attachment['contentType'] as String,
+        fileName: fileName,
+        contentType: contentType,
         bytes: Uint8List.fromList(base64Decode(encoded)),
       );
     }
