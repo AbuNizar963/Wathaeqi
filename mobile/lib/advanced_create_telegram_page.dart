@@ -384,15 +384,11 @@ class _AdvancedCreateTelegramSheetState
       final id = result is Map ? int.tryParse('${result['id']}') : null;
       final attachment = _attachment;
       if (id != null && attachment != null && attachment.bytes != null) {
-        await widget.api.call(
-          'telegrams.uploadAttachment',
-          mutation: true,
-          input: {
-            'telegramId': id,
-            'fileName': attachment.name,
-            'contentType': _contentType(attachment.extension),
-            'base64': base64Encode(attachment.bytes!),
-          },
+        await widget.api.uploadTelegramAttachment(
+          telegramId: id,
+          fileName: attachment.name,
+          contentType: _contentType(attachment.extension),
+          bytes: attachment.bytes!,
         );
       }
       if (mounted) Navigator.pop(context, true);
