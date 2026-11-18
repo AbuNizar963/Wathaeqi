@@ -119,8 +119,13 @@ class AppwriteStorageProvider implements StorageProvider {
     fileId: string;
     folder: string;
   }> {
-    if (!authUserId.trim()) {
-      throw new Error("An authenticated Appwrite user is required for uploads");
+    if (
+      !authUserId.trim() ||
+      !metadata.contentType.trim() ||
+      !Number.isSafeInteger(metadata.sizeBytes) ||
+      metadata.sizeBytes < 1
+    ) {
+      throw new Error("Valid Appwrite upload authorization is required");
     }
 
     const { fileId, folder } = parseStorageKey(key);
