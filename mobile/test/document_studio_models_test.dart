@@ -59,6 +59,7 @@ void main() {
           templateId: 'template-1',
           templateRevision: 3,
           title: 'كتاب تكليف',
+          category: 'personnel',
           subject: 'تكليف موظف',
           content: {
             'type': 'doc',
@@ -79,6 +80,7 @@ void main() {
 
         expect(restored.id, document.id);
         expect(restored.ownerId, document.ownerId);
+        expect(restored.category, 'personnel');
         expect(restored.templateRevision, 3);
         expect(restored.fieldValues['employee_name'], 'أحمد');
         expect(restored.content['type'], 'doc');

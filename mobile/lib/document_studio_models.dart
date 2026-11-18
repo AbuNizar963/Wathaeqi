@@ -178,6 +178,7 @@ class OfficialDocument {
   final String? templateId;
   final int? templateRevision;
   final String title;
+  final String category;
   final String subject;
   final Map<String, dynamic> content;
   final Map<String, String> fieldValues;
@@ -197,6 +198,7 @@ class OfficialDocument {
         templateId: json['templateId'] as String?,
         templateRevision: (json['templateRevision'] as num?)?.toInt(),
         title: json['title'] as String? ?? '',
+        category: json['category'] as String? ?? 'general',
         subject: json['subject'] as String? ?? '',
         content: Map<String, dynamic>.from(json['content'] as Map? ?? const {}),
         fieldValues: (json['fieldValues'] as Map? ?? const {}).map(
@@ -224,6 +226,7 @@ class OfficialDocument {
     if (templateId != null) 'templateId': templateId,
     if (templateRevision != null) 'templateRevision': templateRevision,
     'title': title,
+    'category': category,
     'subject': subject,
     'content': content,
     'fieldValues': fieldValues,
