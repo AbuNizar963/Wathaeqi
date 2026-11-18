@@ -9,7 +9,7 @@ function normalizeKey(relKey: string): string {
 
 /**
  * Validates URLs returned by the storage provider before exposing them to a client.
- * Local development may use HTTP for a local Supabase instance; production must use HTTPS.
+ * Local development may use HTTP for a local Appwrite instance; production must use HTTPS.
  */
 export function validateStorageProviderUrl(
   value: string,
@@ -238,7 +238,14 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
   }
 
   const safeFileName = sanitizeFileName(fileName);
-  const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
+  const key = [
+    "organizations",
+    safeOrganizationId,
+    "telegrams",
+    String(telegramId),
+    "attachments",
+    `${crypto.randomUUID()}-${safeFileName}`,
+  ].join("/");
   const uploadAuthorization =
     await getStorageProvider().createSignedUploadUrl(
       key,
@@ -384,7 +391,12 @@ export async function storagePutDepartmentLogo(
   const safeFileName = sanitizeFileName(fileName);
   const extension = contentType === "image/jpeg" ? ".jpg" : ".png";
   const baseName = safeFileName.replace(/\.[^.]*$/, "");
-  const key = `department/logos/${safeOrganizationId}/${crypto.randomUUID()}-${baseName}${extension}`;
+  const key = [
+    "department",
+    "logos",
+    safeOrganizationId,
+    `${crypto.randomUUID()}-${baseName}${extension}`,
+  ].join("/");
   const body = typeof data === "string" ? Buffer.from(data) : Buffer.from(data);
 
   await getStorageProvider().upload(key, body, {
