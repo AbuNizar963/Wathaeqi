@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:police_telegrams/features/auth_session/app_lock.dart';
 import 'package:police_telegrams/api.dart';
 import 'package:police_telegrams/features/telegrams/documents/official_telegram_document.dart';
@@ -83,18 +82,12 @@ class _TestPoliceApi extends PoliceApi {
     this.organizationLogoUrl,
     this.resolvedOrganizationLogoUrl,
     this.apiLogoFallbackAvailable = false,
-    this.contextUnavailable = false,
-    this.accountOrganizationId = 'org-1',
-    this.urgentAwaitingReceipt = 0,
   });
 
   final bool signedIn;
   final String? organizationLogoUrl;
   final String? resolvedOrganizationLogoUrl;
   final bool apiLogoFallbackAvailable;
-  final bool contextUnavailable;
-  final String? accountOrganizationId;
-  final int? urgentAwaitingReceipt;
   final calls = <String, Map<String, dynamic>?>{};
   bool logoutCalled = false;
 
@@ -109,8 +102,7 @@ class _TestPoliceApi extends PoliceApi {
           'id': 1,
           'name': 'مشغل النظام',
           'role': 'admin',
-          if (accountOrganizationId != null)
-            'organizationId': accountOrganizationId,
+          'organizationId': 'org-1',
         }
       : null;
 
@@ -143,17 +135,13 @@ class _TestPoliceApi extends PoliceApi {
         'todayUrgent': 1,
         'todayIncoming': 2,
         'inProgress': 2,
-        if (urgentAwaitingReceipt != null)
-          'urgentAwaitingReceipt': urgentAwaitingReceipt,
+        'urgentAwaitingReceipt': 0,
       },
-      'organizations.context' =>
-        contextUnavailable
-            ? null
-            : {
-                'organizationId': 'org-1',
-                'organizationName': 'إدارة الاختبار',
-                'role': 'organization_admin',
-              },
+      'organizations.context' => {
+        'organizationId': 'org-1',
+        'organizationName': 'إدارة الاختبار',
+        'role': 'organization_admin',
+      },
       'organizations.logo' => {
         'organizationId': input?['organizationId'],
         'logoUrl': resolvedOrganizationLogoUrl ?? organizationLogoUrl,
@@ -208,20 +196,6 @@ class _TestPoliceApi extends PoliceApi {
               (source.isEmpty && apiLogoFallbackAvailable))
       ? _testPng
       : null;
-}
-
-class _UnavailablePoliceApi extends _TestPoliceApi {
-  _UnavailablePoliceApi() : super(signedIn: true);
-
-  @override
-  Future<dynamic> call(
-    String procedure, {
-    Map<String, dynamic>? input,
-    bool mutation = false,
-    bool allowOfflineCache = true,
-  }) async {
-    throw const NetworkException();
-  }
 }
 
 class _PlatformDocumentSettingsUnavailableApi extends _TestPoliceApi {
