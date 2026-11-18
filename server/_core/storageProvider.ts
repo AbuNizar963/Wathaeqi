@@ -5,6 +5,7 @@ import {
   getAppwriteBucketId,
   getAppwriteStorage,
   getAppwriteTokens,
+  getAppwriteUsers,
 } from "./appwrite";
 
 export interface StorageProvider {
@@ -16,8 +17,14 @@ export interface StorageProvider {
   createSignedUrl(key: string, expiresInSeconds: number): Promise<string>;
   createSignedUploadUrl(
     key: string,
-    metadata: { fileName: string; contentType: string; sizeBytes: number }
-  ): Promise<string>;
+    metadata: { fileName: string; contentType: string; sizeBytes: number },
+    authUserId: string
+  ): Promise<{
+    uploadUrl: string;
+    uploadJwt: string;
+    fileId: string;
+    folder: string;
+  }>;
   getObjectInfo(key: string): Promise<{ size: number; contentType: string }>;
   download(key: string): Promise<{ body: Buffer; contentType: string }>;
   remove?(key: string): Promise<void>;
@@ -104,24 +111,50 @@ class AppwriteStorageProvider implements StorageProvider {
 
   async createSignedUploadUrl(
     key: string,
-    metadata: { fileName: string; contentType: string; sizeBytes: number }
-  ): Promise<string> {
+    metadata: { fileName: string; contentType: string; sizeBytes: number },
+    authUserId: string
+  ): Promise<{
+    uploadUrl: string;
+    uploadJwt: string;
+    fileId: string;
+    folder: string;
+  }> {
+    if (!authUserId.trim()) {
+      throw new Error("An authenticated Appwrite user is required for uploads");
+    }
+
+    const { fileId, fileName, folder } = parseStorageKey(key);
     const match = key.match(
-      /^organizations\/([0-9a-f-]{36})\/telegrams\/([1-9]\d*)\/attachments\/[0-9a-f-]{36}-(.+)$/i
+      /^organizations\/[0-9a-f-]{36}\/telegrams\/[1-9]\d*\/attachments\/[0-9a-f-]{36}-(.+)$/i
     );
-    if (!match) {
+    if (!match || match[1] !== metadata.fileName) {
       throw new Error("Invalid organization attachment storage key");
     }
 
-    const [, , telegramId] = match;
-    const query = new URLSearchParams({
-      key,
-      fileName: metadata.fileName,
-      contentType: metadata.contentType,
-      sizeBytes: String(metadata.sizeBytes),
-    });
+    const endpoint = new URL(ENV.appwriteEndpoint);
+    const basePath = endpoint.pathname.replace(/\/+$/, "");
+    const uploadUrl = new URL(
+      `${basePath}/storage/buckets/${encodeURIComponent(
+        getAppwriteBucketId()
+      )}/files`,
+      endpoint.origin
+    );
+    uploadUrl.searchParams.set("project", ENV.appwriteProjectId);
 
-    return `/api/telegrams/${telegramId}/attachments/upload?${query.toString()}`;
+    const jwt = await getAppwriteUsers().createJWT({
+      userId: authUserId,
+      duration: 300,
+    });
+    if (!jwt.jwt) {
+      throw new Error("Appwrite did not return a user upload JWT");
+    }
+
+    return {
+      uploadUrl: uploadUrl.toString(),
+      uploadJwt: jwt.jwt,
+      fileId,
+      folder,
+    };
   }
 
   async getObjectInfo(
