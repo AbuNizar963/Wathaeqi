@@ -1547,7 +1547,7 @@ class _DashboardPageState extends State<DashboardPage>
             telegrams = List<dynamic>.from(cachedTelegrams);
             loading = false;
             error = null;
-            });
+          });
         }
       }
       final results = await Future.wait([
@@ -2235,8 +2235,6 @@ class _DashboardPageState extends State<DashboardPage>
       body: DocumentStudioPage(api: widget.api, outbox: _documentStudioOutbox),
     ),
   );
-
-
 }
 
 class _AccountMenuItem extends StatelessWidget {
