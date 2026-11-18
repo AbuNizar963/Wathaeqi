@@ -31,6 +31,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inspect Document Studio formatting
+        run: |
+          pnpm exec prettier --write \
+            client/src/features/document-studio/DocumentEditor.tsx \
+            client/src/features/document-studio/DocumentStudioPage.tsx \
+            client/src/index.css \
+            server/features/document-studio/documentStudioRepository.ts
+          git --no-pager diff -- \
+            client/src/features/document-studio/DocumentEditor.tsx \
+            client/src/features/document-studio/DocumentStudioPage.tsx \
+            client/src/index.css \
+            server/features/document-studio/documentStudioRepository.ts
+
+
 
       - name: Reject legacy platform dependencies
         run: |
