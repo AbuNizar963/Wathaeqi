@@ -175,6 +175,32 @@ describe("document studio authorization and API", () => {
     dbMocks.writeAuditLog.mockResolvedValue(undefined);
   });
 
+  it("returns letterhead settings only for the active organization", async () => {
+    const caller = appRouter.createCaller(context());
+
+    const result = await caller.documentStudio.getLetterheadSettings({
+      organizationId: "org-1",
+    });
+
+    expect(dbMocks.getOrganizationSettings).toHaveBeenCalledWith("org-1");
+    expect(result).toMatchObject({
+      organizationId: "org-1",
+      serialPrefix: "DOC",
+      timezone: "UTC",
+    });
+  });
+
+  it("does not expose another organization's letterhead", async () => {
+    const caller = appRouter.createCaller(context());
+
+    await expect(
+      caller.documentStudio.getLetterheadSettings({
+        organizationId: "org-2",
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(dbMocks.getOrganizationSettings).not.toHaveBeenCalled();
+  });
+
   it("scopes template and document lists to the authenticated Appwrite owner", async () => {
     const caller = appRouter.createCaller(context());
 
