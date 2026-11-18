@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "migration/appwrite-functions-transfer"]
   pull_request:
     branches: ["main"]
 
@@ -30,9 +30,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-
-
 
       - name: Reject legacy platform dependencies
         run: |
@@ -77,4 +74,3 @@ jobs:
 
       - name: Production build
         run: pnpm build
-
