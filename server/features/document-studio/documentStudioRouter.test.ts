@@ -23,17 +23,20 @@ vi.mock("./documentStudioRepository", () => mocks);
 
 const dbMocks = vi.hoisted(() => ({
   getUserOrganizationMembership: vi.fn(),
-  getOrganizationSettings: vi.fn(),
-  allocateOrganizationSerialNumber: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
+
+const documentOrganizationMocks = vi.hoisted(() => ({
+  getDocumentOrganizationSettings: vi.fn(),
+  allocateDocumentOrganizationSerialNumber: vi.fn(),
+}));
+
+vi.mock("./documentOrganizationRepository", () => documentOrganizationMocks);
 
 vi.mock("../../db", async importOriginal => {
   const actual = await importOriginal<typeof import("../../db")>();
   return {
     ...actual,
-    getOrganizationSettings: dbMocks.getOrganizationSettings,
-    allocateOrganizationSerialNumber: dbMocks.allocateOrganizationSerialNumber,
     writeAuditLog: dbMocks.writeAuditLog,
   };
 });
@@ -63,7 +66,8 @@ function context(authenticated = true): TrpcContext {
           email: "owner@example.test",
           loginMethod: "appwrite",
           username: "owner",
-          role: "user",
+          role: "admin",
+          isPlatformOwner: true,
           createdAt: new Date(timestamp),
           updatedAt: new Date(timestamp),
           lastSignedIn: new Date(timestamp),
@@ -141,12 +145,19 @@ describe("document studio authorization and API", () => {
       organizationId: "org-1",
       role: "organization_admin",
     });
-    dbMocks.getOrganizationSettings.mockResolvedValue({
+    documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue({
+      organizationId: "org-1",
       timezone: "UTC",
       serialPrefix: "DOC",
       numberSystem: "latin",
+      departmentName: "إدارة الوثائق",
+      unitName: "الوحدة",
+      unitChiefRank: "",
+      unitChiefName: "",
+      logoUrl: null,
+      dateFormat: "dd/MM/yyyy",
     });
-    dbMocks.allocateOrganizationSerialNumber.mockResolvedValue(12);
+    documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(12);
     dbMocks.writeAuditLog.mockResolvedValue(undefined);
     mocks.listDocumentTemplates.mockResolvedValue([template]);
     mocks.getDocumentTemplate.mockResolvedValue(template);
@@ -178,12 +189,19 @@ describe("document studio authorization and API", () => {
       organizationId: "org-1",
       role: "organization_admin",
     });
-    dbMocks.getOrganizationSettings.mockResolvedValue({
+    documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue({
+      organizationId: "org-1",
       timezone: "UTC",
       serialPrefix: "DOC",
       numberSystem: "latin",
+      departmentName: "إدارة الوثائق",
+      unitName: "الوحدة",
+      unitChiefRank: "",
+      unitChiefName: "",
+      logoUrl: null,
+      dateFormat: "dd/MM/yyyy",
     });
-    dbMocks.allocateOrganizationSerialNumber.mockResolvedValue(12);
+    documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(12);
     dbMocks.writeAuditLog.mockResolvedValue(undefined);
   });
 
@@ -194,7 +212,7 @@ describe("document studio authorization and API", () => {
       organizationId: "org-1",
     });
 
-    expect(dbMocks.getOrganizationSettings).toHaveBeenCalledWith("org-1");
+    expect(documentOrganizationMocks.getDocumentOrganizationSettings).toHaveBeenCalledWith("org-1");
     expect(result).toMatchObject({
       organizationId: "org-1",
       serialPrefix: "DOC",
@@ -210,7 +228,7 @@ describe("document studio authorization and API", () => {
         organizationId: "org-2",
       })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(dbMocks.getOrganizationSettings).not.toHaveBeenCalled();
+    expect(documentOrganizationMocks.getDocumentOrganizationSettings).not.toHaveBeenCalled();
   });
 
   it("scopes template and document lists to the authenticated Appwrite owner", async () => {
@@ -317,10 +335,7 @@ describe("document studio authorization and API", () => {
       expectedUpdatedAt: timestamp,
     });
 
-    expect(dbMocks.allocateOrganizationSerialNumber).toHaveBeenCalledWith(
-      "org-1",
-      "outgoing"
-    );
+    expect(documentOrganizationMocks.allocateDocumentOrganizationSerialNumber).toHaveBeenCalledWith("org-1");
     expect(mocks.issueOfficialDocument).toHaveBeenCalledWith(
       ownerId,
       document.id,
