@@ -1,5 +1,4 @@
 import { useAuth } from "@/features/auth-session/useAuth";
-import OwnerSetupForm from "@/features/auth-session/OwnerSetupForm";
 import {
   Sidebar,
   SidebarContent,
@@ -122,7 +121,10 @@ export default function DashboardLayout({
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { loading, user } = useAuth();
+  const ownerRecoveryRequested =
+    new URLSearchParams(window.location.search).get("owner-recovery") === "1";
   const ownerSetupStatusQuery = trpc.auth.ownerSetupStatus.useQuery(undefined, {
+    enabled: ownerRecoveryRequested,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -145,11 +147,13 @@ export default function DashboardLayout({
   }
 
   if (!user) {
-    if (ownerSetupStatusQuery.isLoading) {
-      return <DashboardLayoutSkeleton />;
-    }
-    if (ownerSetupStatusQuery.data?.available) {
-      return <OwnerSetupForm />;
+    if (ownerRecoveryRequested) {
+      if (ownerSetupStatusQuery.isLoading) {
+        return <DashboardLayoutSkeleton />;
+      }
+      if (ownerSetupStatusQuery.data?.available) {
+        return <OwnerSetupForm />;
+      }
     }
     return (
       <div className="flex min-h-dvh items-center justify-center px-4">
@@ -216,6 +220,14 @@ export default function DashboardLayout({
           >
             {loginMutation.isPending ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            <a
+              href="/?owner-recovery=1"
+              className="text-primary underline underline-offset-4"
+            >
+              استعادة كلمة مرور المالك
+            </a>
+          </p>
           <p className="text-center text-sm text-muted-foreground">
             بتسجيل الدخول، فإنك توافق على{" "}
             <a
