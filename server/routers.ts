@@ -721,14 +721,12 @@ export const appRouter = router({
       .input(
         z.object({
           setupSecret: z.string().min(32).max(256),
-          name: z.string().trim().min(2).max(120),
           username: z
             .string()
             .trim()
             .min(3)
             .max(120)
             .regex(/^[a-zA-Z0-9._-]+$/),
-          email: z.string().trim().email().max(320),
           password: z.string().min(12).max(256),
         })
       )
@@ -743,14 +741,14 @@ export const appRouter = router({
         ) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "رمز الإعداد الأولي غير صحيح",
+            message: "رمز الإعداد غير صحيح",
           });
         }
 
         if (!(await isInitialOwnerSetupAvailable())) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: "إعداد المالك الأول غير متاح أو تم إنشاء المالك مسبقاً",
+            message: "إعادة تعيين كلمة مرور المالك غير متاحة",
           });
         }
 
@@ -763,7 +761,7 @@ export const appRouter = router({
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message:
-              "تم إنشاء الحساب، لكن تعذر بدء الجلسة. سجّل الدخول من الصفحة الرئيسية",
+              "تم تحديث كلمة المرور، لكن تعذر بدء الجلسة. حاول تسجيل الدخول بكلمة المرور الجديدة",
           });
         }
 
