@@ -124,7 +124,10 @@ export default function OwnerSetupForm() {
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="owner-password-confirm" className="text-sm font-medium">
+            <label
+              htmlFor="owner-password-confirm"
+              className="text-sm font-medium"
+            >
               تأكيد كلمة المرور
             </label>
             <Input
@@ -170,7 +173,9 @@ export default function OwnerSetupForm() {
             password !== confirmPassword
           }
         >
-          {createOwner.isPending ? "جارٍ إنشاء حساب المالك..." : "إنشاء حساب المالك"}
+          {createOwner.isPending
+            ? "جارٍ إنشاء حساب المالك..."
+            : "إنشاء حساب المالك"}
         </Button>
       </form>
     </div>
