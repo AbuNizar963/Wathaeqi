@@ -96,7 +96,7 @@ class PoliceApi {
            baseUrl ??
            const String.fromEnvironment(
              'API_BASE_URL',
-             defaultValue: 'https://police-telegrams-platform.vercel.app',
+             defaultValue: 'https://wathaeqi.netlify.app',
            ),
        _httpClient = httpClient ?? _sharedHttpClient,
        _vault = vault ?? OfflineVault();
