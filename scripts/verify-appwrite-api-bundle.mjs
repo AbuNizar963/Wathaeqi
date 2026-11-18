@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-const bundlePath = "appwrite/functions/wathaeqi-api/build/main.js";
+const bundlePath = "appwrite/functions/wathaeqi-api/build/main.cjs";
 const bundle = await readFile(bundlePath, "utf8");
 const forbiddenImports = [
   /from\s*["']@supabase\/supabase-js["']/,
