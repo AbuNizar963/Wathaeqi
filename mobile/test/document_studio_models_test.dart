@@ -49,5 +49,39 @@ void main() {
       expect(restored.content['type'], 'doc');
       expect(restored.content['content'], isA<List<dynamic>>());
     });
+
+    test('official documents round-trip editor snapshots and issue metadata', () {
+      final document = OfficialDocument(
+        id: 'document-1',
+        organizationId: 'org-1',
+        templateId: 'template-1',
+        templateRevision: 3,
+        title: 'كتاب تكليف',
+        subject: 'تكليف موظف',
+        content: {
+          'type': 'doc',
+          'content': [
+            {'type': 'paragraph', 'content': []},
+          ],
+        },
+        fieldValues: const {'employee_name': 'أحمد'},
+        serialNumber: 12,
+        serialCode: 'DOC-0012',
+        documentDate: DateTime.utc(2026, 11, 18),
+        status: 'draft',
+        createdByUserId: 7,
+        createdAt: DateTime.utc(2026, 11, 18, 10),
+        updatedAt: DateTime.utc(2026, 11, 18, 11),
+      );
+
+      final restored = OfficialDocument.fromJson(document.toJson());
+
+      expect(restored.id, document.id);
+      expect(restored.templateRevision, 3);
+      expect(restored.fieldValues['employee_name'], 'أحمد');
+      expect(restored.content['type'], 'doc');
+      expect(restored.serialCode, 'DOC-0012');
+      expect(restored.documentDate, document.documentDate);
+    });
   });
 }

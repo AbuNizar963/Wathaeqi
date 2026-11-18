@@ -220,4 +220,25 @@ class OfficialDocument {
         issuedAt: DateTime.tryParse(json['issuedAt'] as String? ?? ''),
         archivedAt: DateTime.tryParse(json['archivedAt'] as String? ?? ''),
       );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'organizationId': organizationId,
+    if (templateId != null) 'templateId': templateId,
+    if (templateRevision != null) 'templateRevision': templateRevision,
+    'title': title,
+    'subject': subject,
+    'content': content,
+    'fieldValues': fieldValues,
+    'serialNumber': serialNumber,
+    'serialCode': serialCode,
+    'documentDate': documentDate.toUtc().toIso8601String(),
+    'status': status,
+    'createdByUserId': createdByUserId,
+    'createdAt': createdAt.toUtc().toIso8601String(),
+    'updatedAt': updatedAt.toUtc().toIso8601String(),
+    if (issuedAt != null) 'issuedAt': issuedAt!.toUtc().toIso8601String(),
+    if (archivedAt != null)
+      'archivedAt': archivedAt!.toUtc().toIso8601String(),
+  };
 }
