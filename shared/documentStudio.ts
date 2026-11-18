@@ -250,7 +250,9 @@ export function decodeOfficialDocumentStorageContent(
     return {
       content: parsed.editor,
       organizationId:
-        typeof parsed.organizationId === "string" ? parsed.organizationId : null,
+        typeof parsed.organizationId === "string"
+          ? parsed.organizationId
+          : null,
       templateFieldsSnapshot: Array.isArray(parsed.templateFieldsSnapshot)
         ? (parsed.templateFieldsSnapshot as DocumentTemplateField[])
         : [],

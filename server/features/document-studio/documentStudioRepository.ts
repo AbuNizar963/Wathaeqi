@@ -442,9 +442,7 @@ export async function issueOfficialDocument(
     const existing = mapDocumentRow(row);
     if (existing.status === "issued") return existing;
     if (existing.status !== "draft") {
-      throw new DocumentStudioConflictError(
-        "لا يمكن إصدار وثيقة مؤرشفة."
-      );
+      throw new DocumentStudioConflictError("لا يمكن إصدار وثيقة مؤرشفة.");
     }
     if (existing.updatedAt !== expectedUpdatedAt) {
       throw new DocumentStudioConflictError(

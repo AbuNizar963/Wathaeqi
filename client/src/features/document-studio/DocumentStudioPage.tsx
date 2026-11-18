@@ -168,14 +168,15 @@ export default function DocumentStudioPage() {
     [selectedTemplateId, templates]
   );
   const documentOrganizationId =
-    selectedDocument?.organizationId ?? organizationContext.data?.organizationId;
+    selectedDocument?.organizationId ??
+    organizationContext.data?.organizationId;
   const letterheadSettings = trpc.documentStudio.getLetterheadSettings.useQuery(
     { organizationId: documentOrganizationId },
     { enabled: Boolean(documentOrganizationId) }
   );
   const documentTemplateFields = selectedDocument
     ? selectedDocument.templateFieldsSnapshot
-    : selectedTemplate?.fields ?? [];
+    : (selectedTemplate?.fields ?? []);
   const editingTemplate = useMemo(
     () => templates.find(item => item.id === editingTemplateId) ?? null,
     [editingTemplateId, templates]
@@ -288,15 +289,16 @@ export default function DocumentStudioPage() {
     onError: error => toast.error(error.message),
   });
 
-  const archiveDocumentMutation = trpc.documentStudio.archiveDocument.useMutation({
-    onSuccess: async saved => {
-      await utils.documentStudio.listDocuments.invalidate();
-      setSelectedDocumentId(saved.id);
-      setActiveTab("archive");
-      toast.success("تم نقل الوثيقة إلى الأرشيف");
-    },
-    onError: error => toast.error(error.message),
-  });
+  const archiveDocumentMutation =
+    trpc.documentStudio.archiveDocument.useMutation({
+      onSuccess: async saved => {
+        await utils.documentStudio.listDocuments.invalidate();
+        setSelectedDocumentId(saved.id);
+        setActiveTab("archive");
+        toast.success("تم نقل الوثيقة إلى الأرشيف");
+      },
+      onError: error => toast.error(error.message),
+    });
 
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
@@ -881,12 +883,15 @@ export default function DocumentStudioPage() {
                       إصدار الوثيقة
                     </Button>
                   ) : null}
-                  {selectedDocument?.status === "issued" && activeTab === "documents" ? (
+                  {selectedDocument?.status === "issued" &&
+                  activeTab === "documents" ? (
                     <Button
                       variant="outline"
                       disabled={archiveDocumentMutation.isPending}
                       onClick={() => {
-                        if (window.confirm("هل تريد نقل الوثيقة إلى الأرشيف؟")) {
+                        if (
+                          window.confirm("هل تريد نقل الوثيقة إلى الأرشيف؟")
+                        ) {
                           archiveDocumentMutation.mutate({
                             id: selectedDocument.id,
                             expectedUpdatedAt: selectedDocument.updatedAt,
@@ -898,7 +903,10 @@ export default function DocumentStudioPage() {
                       أرشفة
                     </Button>
                   ) : null}
-                  <Button onClick={saveDocument} disabled={isSavingDocument || !canEditDocument}>
+                  <Button
+                    onClick={saveDocument}
+                    disabled={isSavingDocument || !canEditDocument}
+                  >
                     <Save className="ml-2 h-4 w-4" />
                     حفظ الوثيقة
                   </Button>
