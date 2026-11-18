@@ -532,21 +532,14 @@ export const userManagementRouter = router({
       if ((input.password || input.role) && input.confirmPassword) {
         await requireCurrentPassword(ctx.user.id, input.confirmPassword);
       }
-      const client = getSupabaseAdmin();
-      const target = await client
-        .from("users")
-        .select("id, role, username, organizationId")
-        .eq("id", input.id)
-        .maybeSingle();
-      if (target.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل الحساب المطلوب",
-        });
-      if (!target.data)
+
+      const targetProfile = await getAppwriteProfileById(input.id);
+      if (!targetProfile) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
-      if (typeof target.data.organizationId === "string") {
-        await assertCanManageOrganization(ctx.user, target.data.organizationId);
+      }
+      const target = targetProfile.user;
+      if (typeof target.organizationId === "string") {
+        await assertCanManageOrganization(ctx.user, target.organizationId);
       }
       if (
         input.role &&
@@ -563,67 +556,109 @@ export const userManagementRouter = router({
           message: "تعيين أدوار الإدارة العليا متاح لمالك النظام فقط",
         });
       }
-      if (target.data.role === "admin" && input.id !== ctx.user.id) {
+      if (target.role === "admin" && input.id !== ctx.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكن تعديل حساب مالك آخر من هذه الشاشة",
         });
       }
+
       const username = input.username.toLowerCase();
-      const duplicate = await client
-        .from("users")
-        .select("id")
-        .ilike("username", username)
-        .neq("id", input.id)
-        .maybeSingle();
-      if (duplicate.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر التحقق من اسم المستخدم",
-        });
-      if (duplicate.data)
+      const duplicate = (await getUserRowsByUsername(username)).some(
+        row => Number(userRowData(row).id) !== input.id
+      );
+      if (duplicate) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "اسم المستخدم مستخدم بالفعل",
         });
+      }
 
+      const email =
+        username === target.username
+          ? target.email
+          : syntheticAccountEmail(username);
+      const now = new Date().toISOString();
       const values: Record<string, unknown> = {
         name: input.name,
         username,
+        email,
         badgeNumber: input.badgeNumber?.trim() || null,
         phone: input.phone?.trim() || null,
         rank: input.rank?.trim() || null,
         unit: input.unit?.trim() || null,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
       };
       if (input.password) {
-        values.password_hash = await hashPassword(input.password);
         values.mustChangePassword = true;
-        // Revoke existing application sessions without changing the auth identity.
         values.sessionVersion = randomUUID();
       }
-      const { data, error } = await client
-        .from("users")
-        .update(values)
-        .eq("id", input.id)
-        .select(
-          "id, username, name, badgeNumber, phone, rank, unit, role, createdAt, lastSignedIn"
-        )
-        .single();
-      if (error || !data) {
-        console.error("[userManagement.update] Supabase update failed", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر حفظ تعديلات الحساب",
-        });
+
+      const updatedRow = await getAppwriteTablesDB().updateRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: USERS_TABLE,
+        rowId: targetProfile.rowId,
+        data: values,
+      });
+
+      try {
+        if (email && email !== target.email) {
+          await getAppwriteUsers().updateEmail({
+            userId: target.authUserId,
+            email,
+          });
+        }
+        if (input.name !== target.name) {
+          await getAppwriteUsers().updateName({
+            userId: target.authUserId,
+            name: input.name,
+          });
+        }
+        if (input.password) {
+          await getAppwriteUsers().updatePassword({
+            userId: target.authUserId,
+            password: input.password,
+          });
+        }
+        if (input.role && typeof target.organizationId === "string") {
+          await addOrganizationMembership({
+            organizationId: target.organizationId,
+            userId: input.id,
+            role: input.role,
+          });
+        }
+      } catch (error) {
+        try {
+          await getAppwriteTablesDB().updateRow({
+            databaseId: getAppwriteDatabaseId(),
+            tableId: USERS_TABLE,
+            rowId: targetProfile.rowId,
+            data: {
+              name: target.name,
+              username: target.username,
+              email: target.email,
+              badgeNumber: target.badgeNumber,
+              phone: target.phone,
+              rank: target.rank,
+              unit: target.unit,
+              updatedAt: target.updatedAt.toISOString(),
+              ...(input.password
+                ? {
+                    mustChangePassword: target.mustChangePassword,
+                    sessionVersion: target.sessionVersion,
+                  }
+                : {}),
+            },
+          });
+        } catch (rollbackError) {
+          console.error(
+            "[userManagement.update] Failed to roll back Appwrite profile",
+            rollbackError
+          );
+        }
+        throw error;
       }
-      if (input.role && typeof target.data.organizationId === "string") {
-        await addOrganizationMembership({
-          organizationId: target.data.organizationId,
-          userId: input.id,
-          role: input.role,
-        });
-      }
+
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
@@ -636,7 +671,7 @@ export const userManagementRouter = router({
           passwordReset: Boolean(input.password),
         }),
       });
-      return data;
+      return mapManagedUser(updatedRow as unknown as AppwriteUserRow);
     }),
 
   enable: organizationManagerProcedure
