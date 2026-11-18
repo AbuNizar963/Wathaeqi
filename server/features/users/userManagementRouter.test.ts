@@ -68,7 +68,8 @@ vi.mock("../organizations/organizationScope", () => ({
   assertCanManageOrganization: mocks.assertCanManageOrganization,
   getManagedOrganizationIds: mocks.getManagedOrganizationIds,
   assertScopedUserManagementAccess: mocks.assertScopedUserManagementAccess,
-  canManageAllOrganizations: (user: { role?: string | null }) => user.role === "admin",
+  canManageAllOrganizations: (user: { role?: string | null }) =>
+    user.role === "admin",
 }));
 
 import { userManagementRouter } from "./userManagementRouter";
