@@ -4,7 +4,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_quill/flutter_quill.dart' show FlutterQuillLocalizations;
+import 'package:flutter_quill/flutter_quill.dart'
+    show FlutterQuillLocalizations;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -1611,15 +1612,16 @@ class _DashboardPageState extends State<DashboardPage>
       if (!mounted) return;
       setState(() {
         activeOrganizationId = organizationId;
-        activeOrganizationName =
-            (value['organizationName'] ?? value['name'])?.toString();
+        activeOrganizationName = (value['organizationName'] ?? value['name'])
+            ?.toString();
         activeOrganizationRole = value['role']?.toString();
         activeOrganizationIsActive = value['isActive'] == true;
         activeOrganizationIsOwner = value['isOwner'] == true;
       });
       if (organizationId != null && organizationId.isNotEmpty) {
         unawaited(
-          _syncPushTokenForActiveOrganization(organizationId).then<void>((_) {}),
+          _syncPushTokenForActiveOrganization(organizationId)
+              .then<void>((_) {}),
         );
       }
     } catch (_) {
@@ -2840,10 +2842,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
       ),
-      body: DocumentStudioPage(
-        api: widget.api,
-        outbox: _documentStudioOutbox,
-      ),
+      body: DocumentStudioPage(api: widget.api, outbox: _documentStudioOutbox),
     ),
   );
 

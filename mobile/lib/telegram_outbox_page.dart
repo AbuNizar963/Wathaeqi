@@ -33,8 +33,8 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
   @override
   void initState() {
     super.initState();
-    _documentOutbox = widget.documentOutbox ??
-        DocumentStudioOutbox(api: widget.api);
+    _documentOutbox =
+        widget.documentOutbox ?? DocumentStudioOutbox(api: widget.api);
     _load();
   }
 
@@ -120,9 +120,8 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _message(Object exception) =>
@@ -209,8 +208,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                       ..._legacyEntries.map(_legacyEntryCard),
                     ],
                     if (_error != null) _errorCard(_error!),
-                    if (totalPending == 0 && _error == null)
-                      _emptyState(),
+                    if (totalPending == 0 && _error == null) _emptyState(),
                   ],
                 ),
               ),

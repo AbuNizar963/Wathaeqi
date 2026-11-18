@@ -44,8 +44,7 @@ class ApiMutationEvent {
   final dynamic result;
 
   bool get isTelegramMutation => procedure.startsWith('telegrams.');
-  bool get isDocumentStudioMutation =>
-      procedure.startsWith('documentStudio.');
+  bool get isDocumentStudioMutation => procedure.startsWith('documentStudio.');
 
   int? get telegramId {
     final values = <dynamic>[
