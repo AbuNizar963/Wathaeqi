@@ -38,6 +38,11 @@ jobs:
             exit 1
           fi
 
+      - name: Print exact owner formatting diff
+        run: |
+          pnpm exec prettier server/features/auth/ownerBootstrap.ts > /tmp/ownerBootstrap.formatted.ts
+          diff -u server/features/auth/ownerBootstrap.ts /tmp/ownerBootstrap.formatted.ts || true
+
       - name: Check formatting
         run: pnpm lint
 
