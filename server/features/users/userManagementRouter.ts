@@ -684,50 +684,64 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       await requireCurrentPassword(ctx.user.id, input.confirmPassword);
-      const client = getSupabaseAdmin();
-      const target = await client
-        .from("users")
-        .select("id, role, username, loginMethod, organizationId")
-        .eq("id", input.id)
-        .maybeSingle();
-      if (target.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل الحساب المطلوب",
-        });
-      if (!target.data)
+      const targetProfile = await getAppwriteProfileById(input.id);
+      if (!targetProfile) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الحساب غير موجود" });
-      if (typeof target.data.organizationId === "string") {
-        await assertCanManageOrganization(ctx.user, target.data.organizationId);
       }
-      if (target.data.role === "admin")
+      const target = targetProfile.user;
+      if (typeof target.organizationId === "string") {
+        await assertCanManageOrganization(ctx.user, target.organizationId);
+      }
+      if (target.role === "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا يمكن إعادة تفعيل حساب مالك النظام من هذه الشاشة",
         });
-      if (target.data.loginMethod !== "disabled")
+      }
+      if (target.loginMethod !== "disabled" || target.isActive) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "الحساب مفعّل بالفعل",
         });
-      const { error } = await client
-        .from("users")
-        .update({
-          sessionVersion: randomUUID(),
-          password_hash: await hashPassword(input.password),
-          mustChangePassword: true,
-          loginMethod: "password",
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq("id", input.id);
-      if (error) {
-        console.error("[userManagement.enable] Supabase update failed", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر إعادة تفعيل الحساب",
-        });
       }
+
+      await getAppwriteUsers().updatePassword({
+        userId: target.authUserId,
+        password: input.password,
+      });
+      await getAppwriteUsers().updateStatus({
+        userId: target.authUserId,
+        status: true,
+      });
+
+      try {
+        await getAppwriteTablesDB().updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: USERS_TABLE,
+          rowId: targetProfile.rowId,
+          data: {
+            sessionVersion: randomUUID(),
+            mustChangePassword: true,
+            loginMethod: "password",
+            isActive: true,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        try {
+          await getAppwriteUsers().updateStatus({
+            userId: target.authUserId,
+            status: false,
+          });
+        } catch (rollbackError) {
+          console.error(
+            "[userManagement.enable] Failed to re-disable Appwrite auth user",
+            rollbackError
+          );
+        }
+        throw error;
+      }
+
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
@@ -735,7 +749,7 @@ export const userManagementRouter = router({
         action: "user.enable",
         entityType: "user",
         entityId: String(input.id),
-        metadata: JSON.stringify({ username: target.data.username }),
+        metadata: JSON.stringify({ username: target.username }),
       });
       return { success: true };
     }),
