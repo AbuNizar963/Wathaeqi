@@ -20,9 +20,6 @@ const _gold = Color(0xFFD8C38E);
 String _errorMessage(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
 
-bool _requiresNotificationAction(dynamic type) =>
-    type == 'route.approved' || type == 'route.requested';
-
 String _stringValue(dynamic value, [String fallback = '—']) {
   final text = '$value'.trim();
   return text.isEmpty || text == 'null' ? fallback : text;
@@ -121,9 +118,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         '${notification['telegramId'] ?? ''}',
                       );
                       final read = notification['readAt'] != null;
-                      final requiresAction = _requiresNotificationAction(
-                        notification['type'],
-                      );
                       return Card(
                         child: ListTile(
                           leading: CircleAvatar(
@@ -148,20 +142,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           ),
                           subtitle: Text(
-                            '${_stringValue(notification['body'] ?? notification['content'])}\n${_stringValue(notification['createdAt'])}${requiresAction && !read ? '\nبانتظار تأكيد الاستلام أو الرفض' : ''}',
+                            '${_stringValue(notification['body'] ?? notification['content'])}\n${_stringValue(notification['createdAt'])}',
                           ),
                           isThreeLine: true,
                           onTap:
                               telegramId != null &&
                                   widget.onOpenTelegram != null
                               ? () {
-                                  if (!read && !requiresAction && id != null) {
+                                  if (!read && id != null) {
                                     markRead(id);
                                   }
                                   widget.onOpenTelegram!(telegramId);
                                 }
                               : null,
-                          trailing: !read && id != null && !requiresAction
+                          trailing: !read && id != null
                               ? IconButton(
                                   tooltip: 'تحديد التنبيه كمقروء',
                                   onPressed: () => markRead(id),

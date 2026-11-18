@@ -135,7 +135,6 @@ class _TestPoliceApi extends PoliceApi {
         'todayUrgent': 1,
         'todayIncoming': 2,
         'inProgress': 2,
-        'urgentAwaitingReceipt': 0,
       },
       'organizations.context' => {
         'organizationId': 'org-1',

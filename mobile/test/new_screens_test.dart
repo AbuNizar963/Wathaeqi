@@ -525,7 +525,7 @@ void main() {
     expect(changedCount, 1);
   });
 
-  testWidgets('approved telegram exposes routing to an authorized operator', (
+  testWidgets('approved telegram has no inter-organization routing action', (
     tester,
   ) async {
     final api = _ScreenTestApi();
@@ -545,7 +545,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('إرسال طلب إحالة'), findsOneWidget);
+    expect(find.text('إرسال طلب إحالة'), findsNothing);
     expect(find.text('إكمال المعالجة'), findsOneWidget);
   });
 
