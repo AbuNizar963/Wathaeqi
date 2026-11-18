@@ -409,7 +409,6 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
@@ -678,7 +677,6 @@ class _DashboardPageState extends State<DashboardPage>
   late final Map<String, dynamic> _account;
   bool loading = true;
   String? error;
-  bool _usingCachedData = false;
   Map<String, dynamic> stats = {};
   List<dynamic> telegrams = [];
   String? activeOrganizationId;
@@ -715,8 +713,6 @@ class _DashboardPageState extends State<DashboardPage>
   late final TelegramOutbox _outbox;
   late final DocumentStudioOutbox _documentStudioOutbox;
   bool _outboxSyncInProgress = false;
-  bool? _serverReachable;
-  DateTime? _serverCheckedAt;
   Timer? _searchDebounce;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
   bool _refreshInProgress = false;
@@ -736,11 +732,6 @@ class _DashboardPageState extends State<DashboardPage>
         _account['departmentName'];
     final label = '$value'.trim();
     return label.isEmpty || label == 'null' ? 'الجهة الحالية غير محددة' : label;
-  }
-
-  void _recordServerCheck(bool reachable) {
-    _serverReachable = reachable;
-    _serverCheckedAt = DateTime.now();
   }
 
   @override
@@ -1556,8 +1547,7 @@ class _DashboardPageState extends State<DashboardPage>
             telegrams = List<dynamic>.from(cachedTelegrams);
             loading = false;
             error = null;
-            _usingCachedData = true;
-          });
+            });
         }
       }
       final results = await Future.wait([
@@ -1689,7 +1679,6 @@ class _DashboardPageState extends State<DashboardPage>
       final visibleRows = rows.take(20).toList(growable: false);
       if (mounted) {
         setState(() {
-          _recordServerCheck(true);
           stats = Map<String, dynamic>.from(results[0] as Map);
           activeOrganizationId = organizationId;
           activeOrganizationName = organizationContext is Map
@@ -1717,7 +1706,6 @@ class _DashboardPageState extends State<DashboardPage>
           telegrams = visibleRows;
           hasNextTelegramPage = hasMoreRows;
           error = null;
-          _usingCachedData = false;
         });
       }
       unawaited(_loadOrganizationLogo(organizationId, _organizationLogoUrl));
@@ -1748,14 +1736,11 @@ class _DashboardPageState extends State<DashboardPage>
           final cachedStats = cached['stats'];
           final cachedTelegrams = cached['telegrams'];
           setState(() {
-            if (e is NetworkException) _recordServerCheck(false);
-            if (e is ApiException) _recordServerCheck(true);
             if (cachedStats is Map) {
               stats = Map<String, dynamic>.from(cachedStats);
             }
             if (cachedTelegrams is List) telegrams = cachedTelegrams;
             error = 'وضع عدم الاتصال — تُعرض آخر نسخة محفوظة محليًا';
-            _usingCachedData = true;
           });
         } else {
           setState(() {
@@ -1764,7 +1749,6 @@ class _DashboardPageState extends State<DashboardPage>
             error = _dashboardRefreshError(e);
             // No cached dashboard is available, so report the connection
             // failure instead of claiming that cached data is being shown.
-            _usingCachedData = false;
           });
         }
       }
@@ -1799,6 +1783,7 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
+  @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
