@@ -1,4 +1,5 @@
 import { useAuth } from "@/features/auth-session/useAuth";
+import OwnerSetupForm from "@/features/auth-session/OwnerSetupForm";
 import {
   Sidebar,
   SidebarContent,
@@ -121,6 +122,10 @@ export default function DashboardLayout({
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { loading, user } = useAuth();
+  const ownerSetupStatusQuery = trpc.auth.ownerSetupStatus.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const loginMutation = trpc.auth.login.useMutation({
@@ -140,6 +145,12 @@ export default function DashboardLayout({
   }
 
   if (!user) {
+    if (ownerSetupStatusQuery.isLoading) {
+      return <DashboardLayoutSkeleton />;
+    }
+    if (ownerSetupStatusQuery.data?.available) {
+      return <OwnerSetupForm />;
+    }
     return (
       <div className="flex min-h-dvh items-center justify-center px-4">
         <form
