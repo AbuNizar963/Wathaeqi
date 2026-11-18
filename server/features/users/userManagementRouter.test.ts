@@ -130,7 +130,7 @@ describe("Appwrite user management", () => {
     mocks.listRows.mockResolvedValue({ rows: [] });
     mocks.createRow.mockImplementation(async ({ data }) => ({
       $id: "profile-row",
-      data: { ...data },
+      data: { ...data, id: 25 },
     }));
     mocks.updateRow.mockImplementation(async ({ data }) => ({
       $id: "profile-row",
