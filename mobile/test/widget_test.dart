@@ -77,37 +77,6 @@ Future<void> _scrollIntoView(WidgetTester tester, Finder target) async {
   await _pumpDashboardFrames(tester, frameCount: 3);
 }
 
-Future<void> _unlockAppIfLocked(WidgetTester tester) async {
-  final setupDialog = find.text('إنشاء رمز PIN إلزامي');
-  if (setupDialog.evaluate().isNotEmpty) {
-    final pinFields = find.descendant(
-      of: find.byType(AlertDialog),
-      matching: find.byType(TextField),
-    );
-    expect(pinFields, findsNWidgets(2));
-
-    await tester.enterText(pinFields.at(0), '1234');
-    await tester.enterText(pinFields.at(1), '1234');
-    await tester.tap(find.text('حفظ ومتابعة'));
-    await _pumpDashboardFrames(tester, frameCount: 4);
-  }
-
-  final lockScreen = find.text('قم بإدخال رمز PIN');
-  if (lockScreen.evaluate().isNotEmpty) {
-    final pinField = _appLockPinField();
-    await tester.enterText(pinField, '1234');
-    await tester.pump();
-    final legacyButton = find.text('التحقق من الرمز السابق');
-    if (legacyButton.evaluate().isNotEmpty) {
-      await tester.tap(legacyButton);
-    }
-    await _pumpDashboardFrames(tester, frameCount: 4);
-  }
-
-  expect(find.text('إنشاء رمز PIN إلزامي'), findsNothing);
-  expect(lockScreen, findsNothing);
-}
-
 class _TestPoliceApi extends PoliceApi {
   _TestPoliceApi({
     this.signedIn = false,
@@ -978,6 +947,4 @@ void main() {
       'Cairo',
     );
   });
-
-
 }
