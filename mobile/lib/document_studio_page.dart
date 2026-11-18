@@ -1191,9 +1191,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Widget _buildTemplateFieldEditor(int index) {
     final field = _templateFields[index];
-    final optionsText = field.options
-        .map((option) => option.label)
-        .join(', ');
+    final optionsText = field.options.map((option) => option.label).join(', ');
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(

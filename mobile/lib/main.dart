@@ -3069,7 +3069,6 @@ class _DashboardPageState extends State<DashboardPage>
     return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
-
   bool _isIncoming(Map<String, dynamic> row) {
     final direction = '${row['direction'] ?? row['type'] ?? ''}'
         .trim()
