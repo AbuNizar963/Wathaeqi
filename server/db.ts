@@ -1647,7 +1647,7 @@ async function ensureAuditHead(): Promise<AppwriteAuditHeadRow> {
       ],
       total: false,
     });
-    const rows = result.rows as AppwriteAuditHeadRow[];
+    const rows = result.rows as unknown as AppwriteAuditHeadRow[];
     if (rows.length > 1) {
       throw new Error("Appwrite audit chain has duplicate head rows");
     }
@@ -1676,7 +1676,7 @@ async function ensureAuditHead(): Promise<AppwriteAuditHeadRow> {
         payload: JSON.stringify({ entryHash: AUDIT_GENESIS_HASH }),
       },
     });
-    return created as AppwriteAuditHeadRow;
+    return created as unknown as AppwriteAuditHeadRow;
   } catch (error) {
     const code =
       error && typeof error === "object" && "code" in error
