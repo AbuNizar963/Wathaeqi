@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
   addOrganizationMembership: vi.fn(),
   assertCanManageOrganization: vi.fn(),
   getManagedOrganizationIds: vi.fn(),
+  assertScopedUserManagementAccess: vi.fn(),
+  getMembership: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
 
@@ -59,11 +61,14 @@ vi.mock("../organizations/organization", () => ({
   addOrganizationMembership: mocks.addOrganizationMembership,
   getOrganizationById: mocks.getOrganizationById,
   listAllOrganizations: mocks.listAllOrganizations,
+  getUserOrganizationMembership: mocks.getMembership,
 }));
 
 vi.mock("../organizations/organizationScope", () => ({
   assertCanManageOrganization: mocks.assertCanManageOrganization,
   getManagedOrganizationIds: mocks.getManagedOrganizationIds,
+  assertScopedUserManagementAccess: mocks.assertScopedUserManagementAccess,
+  canManageAllOrganizations: (user: { role?: string | null }) => user.role === "admin",
 }));
 
 import { userManagementRouter } from "./userManagementRouter";
@@ -168,6 +173,8 @@ describe("Appwrite user management", () => {
     mocks.addOrganizationMembership.mockResolvedValue({});
     mocks.assertCanManageOrganization.mockResolvedValue(undefined);
     mocks.getManagedOrganizationIds.mockResolvedValue([organizationId]);
+    mocks.assertScopedUserManagementAccess.mockResolvedValue(undefined);
+    mocks.getMembership.mockResolvedValue(null);
     mocks.writeAuditLog.mockResolvedValue(undefined);
   });
 
