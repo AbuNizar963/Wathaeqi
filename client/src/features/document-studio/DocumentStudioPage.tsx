@@ -9,12 +9,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -90,7 +85,8 @@ function formatArabicDate(value: string): string {
 
 function dateInputValue(value: string): string {
   const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return new Date().toISOString().slice(0, 10);
+  if (!Number.isFinite(date.getTime()))
+    return new Date().toISOString().slice(0, 10);
   return date.toISOString().slice(0, 10);
 }
 
@@ -151,9 +147,9 @@ export default function DocumentStudioPage() {
   const [templateContent, setTemplateContent] = useState(
     EMPTY_DOCUMENT_CONTENT
   );
-  const [templateFields, setTemplateFields] = useState<
-    DocumentTemplateField[]
-  >([]);
+  const [templateFields, setTemplateFields] = useState<DocumentTemplateField[]>(
+    []
+  );
 
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
@@ -170,8 +166,7 @@ export default function DocumentStudioPage() {
     { organizationId: organizationId ?? "" },
     { enabled: Boolean(organizationId) }
   );
-  const platformDocumentSettings =
-    trpc.platformDocumentSettings.get.useQuery();
+  const platformDocumentSettings = trpc.platformDocumentSettings.get.useQuery();
 
   const documents = documentsQuery.data ?? [];
   const templates = templatesQuery.data ?? [];
@@ -238,8 +233,8 @@ export default function DocumentStudioPage() {
     []
   );
 
-  const createDocumentMutation =
-    trpc.documentStudio.createDocument.useMutation({
+  const createDocumentMutation = trpc.documentStudio.createDocument.useMutation(
+    {
       onSuccess: async saved => {
         await utils.documentStudio.listDocuments.invalidate();
         setSelectedDocumentId(saved.id);
@@ -248,20 +243,22 @@ export default function DocumentStudioPage() {
         toast.success("تم حفظ الوثيقة");
       },
       onError: error => toast.error(error.message),
-    });
+    }
+  );
 
-  const updateDocumentMutation =
-    trpc.documentStudio.updateDocument.useMutation({
+  const updateDocumentMutation = trpc.documentStudio.updateDocument.useMutation(
+    {
       onSuccess: async saved => {
         await utils.documentStudio.listDocuments.invalidate();
         setSelectedDocumentId(saved.id);
         toast.success("تم تحديث الوثيقة");
       },
       onError: error => toast.error(error.message),
-    });
+    }
+  );
 
-  const createTemplateMutation =
-    trpc.documentStudio.createTemplate.useMutation({
+  const createTemplateMutation = trpc.documentStudio.createTemplate.useMutation(
+    {
       onSuccess: async saved => {
         await utils.documentStudio.listTemplates.invalidate();
         setEditingTemplateId(saved.id);
@@ -269,10 +266,11 @@ export default function DocumentStudioPage() {
         toast.success("تم حفظ النموذج");
       },
       onError: error => toast.error(error.message),
-    });
+    }
+  );
 
-  const updateTemplateMutation =
-    trpc.documentStudio.updateTemplate.useMutation({
+  const updateTemplateMutation = trpc.documentStudio.updateTemplate.useMutation(
+    {
       onSuccess: async saved => {
         await utils.documentStudio.listTemplates.invalidate();
         setEditingTemplateId(saved.id);
@@ -280,7 +278,8 @@ export default function DocumentStudioPage() {
         toast.success("تم تحديث النموذج");
       },
       onError: error => toast.error(error.message),
-    });
+    }
+  );
 
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
@@ -422,8 +421,7 @@ export default function DocumentStudioPage() {
     settings?.departmentName ??
     organizationContext.data?.organizationName ??
     "وثائقي";
-  const logoUrl =
-    organizationLogo.data?.logoUrl ?? settings?.logoUrl ?? null;
+  const logoUrl = organizationLogo.data?.logoUrl ?? settings?.logoUrl ?? null;
   const dividerColor =
     platformDocumentSettings.data?.headerDividerColor ?? "#334155";
   const isSavingDocument =
@@ -546,7 +544,9 @@ export default function DocumentStudioPage() {
             <Card className="space-y-2 p-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">
-                  {activeTab === "archive" ? "الوثائق المؤرشفة" : "قائمة الوثائق"}
+                  {activeTab === "archive"
+                    ? "الوثائق المؤرشفة"
+                    : "قائمة الوثائق"}
                 </h2>
                 <Badge variant="secondary">{visibleDocuments.length}</Badge>
               </div>
@@ -659,7 +659,9 @@ export default function DocumentStudioPage() {
                   <label className="text-sm font-medium">وصف النموذج</label>
                   <Textarea
                     value={templateDescription}
-                    onChange={event => setTemplateDescription(event.target.value)}
+                    onChange={event =>
+                      setTemplateDescription(event.target.value)
+                    }
                     rows={2}
                     placeholder="وصف مختصر لاستخدام النموذج"
                   />
@@ -720,7 +722,8 @@ export default function DocumentStudioPage() {
                         <select
                           value={field.type}
                           onChange={event => {
-                            const type = event.target.value as DocumentTemplateFieldType;
+                            const type = event.target
+                              .value as DocumentTemplateFieldType;
                             updateTemplateField(index, {
                               type,
                               options:
@@ -762,7 +765,9 @@ export default function DocumentStudioPage() {
                             aria-label="حذف الحقل"
                             onClick={() =>
                               setTemplateFields(current =>
-                                current.filter((_, fieldIndex) => fieldIndex !== index)
+                                current.filter(
+                                  (_, fieldIndex) => fieldIndex !== index
+                                )
                               )
                             }
                           >
@@ -776,7 +781,10 @@ export default function DocumentStudioPage() {
                               .map(option => option.label)
                               .join(", ")}
                             onChange={event =>
-                              updateTemplateFieldOptions(index, event.target.value)
+                              updateTemplateFieldOptions(
+                                index,
+                                event.target.value
+                              )
                             }
                             placeholder="الخيارات مفصولة بفواصل"
                           />
@@ -913,7 +921,10 @@ export default function DocumentStudioPage() {
                       variant="outline"
                       onClick={() =>
                         setDocumentContent(
-                          applyFieldValues(templateBaseContent, documentFieldValues)
+                          applyFieldValues(
+                            templateBaseContent,
+                            documentFieldValues
+                          )
                         )
                       }
                     >
@@ -996,7 +1007,9 @@ export default function DocumentStudioPage() {
                   <span>
                     الرقم: {selectedDocument?.serialCode || "يخصص عند الإصدار"}
                   </span>
-                  <span>التاريخ: {formatArabicDate(makeDocumentDate(documentDate))}</span>
+                  <span>
+                    التاريخ: {formatArabicDate(makeDocumentDate(documentDate))}
+                  </span>
                 </div>
                 <div className="px-[18mm] pt-6">
                   {documentSubject ? (

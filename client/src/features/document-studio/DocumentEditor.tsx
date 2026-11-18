@@ -161,7 +161,9 @@ export default function DocumentEditor({
           <Button
             type="button"
             size="sm"
-            variant={editor?.isActive("heading", { level: 1 }) ? "secondary" : "ghost"}
+            variant={
+              editor?.isActive("heading", { level: 1 }) ? "secondary" : "ghost"
+            }
             aria-label="عنوان رئيسي"
             title="عنوان رئيسي"
             disabled={disabled}
@@ -174,7 +176,9 @@ export default function DocumentEditor({
           <Button
             type="button"
             size="sm"
-            variant={editor?.isActive("heading", { level: 2 }) ? "secondary" : "ghost"}
+            variant={
+              editor?.isActive("heading", { level: 2 }) ? "secondary" : "ghost"
+            }
             aria-label="عنوان فرعي"
             title="عنوان فرعي"
             disabled={disabled}
@@ -211,7 +215,9 @@ export default function DocumentEditor({
           <Button
             type="button"
             size="sm"
-            variant={editor?.isActive({ textAlign: "right" }) ? "secondary" : "ghost"}
+            variant={
+              editor?.isActive({ textAlign: "right" }) ? "secondary" : "ghost"
+            }
             aria-label="محاذاة لليمين"
             title="محاذاة لليمين"
             disabled={disabled}
@@ -222,7 +228,9 @@ export default function DocumentEditor({
           <Button
             type="button"
             size="sm"
-            variant={editor?.isActive({ textAlign: "center" }) ? "secondary" : "ghost"}
+            variant={
+              editor?.isActive({ textAlign: "center" }) ? "secondary" : "ghost"
+            }
             aria-label="توسيط"
             title="توسيط"
             disabled={disabled}
@@ -233,7 +241,9 @@ export default function DocumentEditor({
           <Button
             type="button"
             size="sm"
-            variant={editor?.isActive({ textAlign: "left" }) ? "secondary" : "ghost"}
+            variant={
+              editor?.isActive({ textAlign: "left" }) ? "secondary" : "ghost"
+            }
             aria-label="محاذاة لليسار"
             title="محاذاة لليسار"
             disabled={disabled}
@@ -244,11 +254,15 @@ export default function DocumentEditor({
           <Button
             type="button"
             size="sm"
-            variant={editor?.isActive({ textAlign: "justify" }) ? "secondary" : "ghost"}
+            variant={
+              editor?.isActive({ textAlign: "justify" }) ? "secondary" : "ghost"
+            }
             aria-label="ضبط النص"
             title="ضبط النص"
             disabled={disabled}
-            onClick={() => editor?.chain().focus().setTextAlign("justify").run()}
+            onClick={() =>
+              editor?.chain().focus().setTextAlign("justify").run()
+            }
           >
             <AlignJustify className="h-4 w-4" />
           </Button>

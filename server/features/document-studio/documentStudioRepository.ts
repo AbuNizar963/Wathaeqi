@@ -135,7 +135,6 @@ async function getRowOrNull(
   }
 }
 
-
 async function withTableTransaction<T>(
   operation: (transactionId: string) => Promise<T>
 ): Promise<T> {

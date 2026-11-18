@@ -508,7 +508,6 @@ a[href*="netlify.com"].netlify-badge {
   visibility: hidden !important;
 }
 
-
 /* Document Studio: A4 preview and print layout. */
 .document-a4-page {
   width: 210mm;

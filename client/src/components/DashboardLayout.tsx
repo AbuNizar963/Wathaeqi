@@ -525,12 +525,6 @@ function DashboardLayoutContent({
                         onClick={() => {
                           if (item.action) {
                             window.dispatchEvent(new CustomEvent(item.action));
-                          } else if (item.tab) {
-                            window.dispatchEvent(
-                              new CustomEvent("open-operations-workspace", {
-                                detail: { tab: item.tab },
-                              })
-                            );
                           } else if (item.path) {
                             setLocation(item.path);
                           }
