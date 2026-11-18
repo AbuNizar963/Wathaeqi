@@ -155,17 +155,6 @@ export default function DocumentStudioPage() {
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const templatesQuery = trpc.documentStudio.listTemplates.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
-  const organizationId = organizationContext.data?.organizationId;
-  const organizationSettings = trpc.organizations.settings.get.useQuery(
-    { organizationId: organizationId ?? "" },
-    {
-      enabled: Boolean(organizationId && organizationContext.data?.isOwner),
-    }
-  );
-  const organizationLogo = trpc.organizations.logoForExport.useQuery(
-    { organizationId: organizationId ?? "" },
-    { enabled: Boolean(organizationId) }
-  );
   const platformDocumentSettings = trpc.platformDocumentSettings.get.useQuery();
 
   const documents = documentsQuery.data ?? [];
@@ -178,6 +167,23 @@ export default function DocumentStudioPage() {
     () => templates.find(item => item.id === selectedTemplateId) ?? null,
     [selectedTemplateId, templates]
   );
+  const documentOrganizationId =
+    selectedDocument?.organizationId ?? organizationContext.data?.organizationId;
+  const organizationSettings = trpc.organizations.settings.get.useQuery(
+    { organizationId: documentOrganizationId ?? "" },
+    {
+      enabled: Boolean(
+        documentOrganizationId && organizationContext.data?.isOwner
+      ),
+    }
+  );
+  const organizationLogo = trpc.organizations.logoForExport.useQuery(
+    { organizationId: documentOrganizationId ?? "" },
+    { enabled: Boolean(documentOrganizationId) }
+  );
+  const documentTemplateFields = selectedDocument
+    ? selectedDocument.templateFieldsSnapshot
+    : selectedTemplate?.fields ?? [];
   const editingTemplate = useMemo(
     () => templates.find(item => item.id === editingTemplateId) ?? null,
     [editingTemplateId, templates]
@@ -281,6 +287,25 @@ export default function DocumentStudioPage() {
     }
   );
 
+  const issueDocumentMutation = trpc.documentStudio.issueDocument.useMutation({
+    onSuccess: async saved => {
+      await utils.documentStudio.listDocuments.invalidate();
+      setSelectedDocumentId(saved.id);
+      toast.success(`تم إصدار الوثيقة بالرقم ${saved.serialCode}`);
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const archiveDocumentMutation = trpc.documentStudio.archiveDocument.useMutation({
+    onSuccess: async saved => {
+      await utils.documentStudio.listDocuments.invalidate();
+      setSelectedDocumentId(saved.id);
+      setActiveTab("archive");
+      toast.success("تم نقل الوثيقة إلى الأرشيف");
+    },
+    onError: error => toast.error(error.message),
+  });
+
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
       onSuccess: async () => {
@@ -329,7 +354,9 @@ export default function DocumentStudioPage() {
       title: documentTitle.trim(),
       category: documentCategory,
       subject: documentSubject.trim(),
-      content: documentContent,
+      content: selectedTemplateId
+        ? applyFieldValues(documentContent, documentFieldValues)
+        : documentContent,
       fieldValues: documentFieldValues,
       documentDate: makeDocumentDate(documentDate),
       templateId: selectedTemplateId,
@@ -419,7 +446,9 @@ export default function DocumentStudioPage() {
   const settings = organizationSettings.data;
   const organizationName =
     settings?.departmentName ??
-    organizationContext.data?.organizationName ??
+    (documentOrganizationId === organizationContext.data?.organizationId
+      ? organizationContext.data?.organizationName
+      : null) ??
     "وثائقي";
   const logoUrl = organizationLogo.data?.logoUrl ?? settings?.logoUrl ?? null;
   const dividerColor =
@@ -428,6 +457,9 @@ export default function DocumentStudioPage() {
     createDocumentMutation.isPending || updateDocumentMutation.isPending;
   const isSavingTemplate =
     createTemplateMutation.isPending || updateTemplateMutation.isPending;
+  const canEditDocument =
+    activeTab !== "archive" &&
+    (!selectedDocument || selectedDocument.status === "draft");
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -829,11 +861,45 @@ export default function DocumentStudioPage() {
                     تحفظ الوثائق كمسودات حتى إصدارها
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={saveDocument}
-                    disabled={isSavingDocument || activeTab === "archive"}
-                  >
+                <div className="flex flex-wrap gap-2">
+                  {selectedDocument?.status === "draft" && activeTab === "documents" ? (
+                    <Button
+                      variant="secondary"
+                      disabled={issueDocumentMutation.isPending}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            "سيتم تخصيص رقم صادر نهائي للوثيقة. هل تريد المتابعة؟"
+                          )
+                        ) {
+                          issueDocumentMutation.mutate({
+                            id: selectedDocument.id,
+                            expectedUpdatedAt: selectedDocument.updatedAt,
+                          });
+                        }
+                      }}
+                    >
+                      إصدار الوثيقة
+                    </Button>
+                  ) : null}
+                  {selectedDocument?.status === "issued" && activeTab === "documents" ? (
+                    <Button
+                      variant="outline"
+                      disabled={archiveDocumentMutation.isPending}
+                      onClick={() => {
+                        if (window.confirm("هل تريد نقل الوثيقة إلى الأرشيف؟")) {
+                          archiveDocumentMutation.mutate({
+                            id: selectedDocument.id,
+                            expectedUpdatedAt: selectedDocument.updatedAt,
+                          });
+                        }
+                      }}
+                    >
+                      <Archive className="ml-2 h-4 w-4" />
+                      أرشفة
+                    </Button>
+                  ) : null}
+                  <Button onClick={saveDocument} disabled={isSavingDocument || !canEditDocument}>
                     <Save className="ml-2 h-4 w-4" />
                     حفظ الوثيقة
                   </Button>
@@ -847,7 +913,7 @@ export default function DocumentStudioPage() {
                     value={documentTitle}
                     onChange={event => setDocumentTitle(event.target.value)}
                     placeholder="عنوان الوثيقة"
-                    disabled={activeTab === "archive"}
+                    disabled={!canEditDocument}
                   />
                 </div>
                 <div className="space-y-1">
@@ -855,7 +921,7 @@ export default function DocumentStudioPage() {
                   <select
                     value={documentCategory}
                     onChange={event => setDocumentCategory(event.target.value)}
-                    disabled={activeTab === "archive"}
+                    disabled={!canEditDocument}
                     className="h-10 w-full rounded-md border bg-background px-3 text-sm disabled:opacity-60"
                   >
                     {CATEGORIES.map(category => (
@@ -871,7 +937,7 @@ export default function DocumentStudioPage() {
                     value={documentSubject}
                     onChange={event => setDocumentSubject(event.target.value)}
                     placeholder="موضوع الوثيقة"
-                    disabled={activeTab === "archive"}
+                    disabled={!canEditDocument}
                   />
                 </div>
                 <div className="space-y-1">
@@ -880,14 +946,14 @@ export default function DocumentStudioPage() {
                     type="date"
                     value={documentDate}
                     onChange={event => setDocumentDate(event.target.value)}
-                    disabled={activeTab === "archive"}
+                    disabled={!canEditDocument}
                   />
                 </div>
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-sm font-medium">النموذج الأساسي</label>
                   <select
                     value={selectedTemplateId ?? ""}
-                    disabled={activeTab === "archive"}
+                    disabled={!canEditDocument}
                     onChange={event => {
                       const template = templates.find(
                         item => item.id === event.target.value
@@ -912,7 +978,7 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
-              {selectedTemplate?.fields.length ? (
+              {documentTemplateFields.length > 0 ? (
                 <section className="space-y-3 rounded-lg border bg-muted/20 p-3 document-studio-no-print">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold">بيانات النموذج</h3>
@@ -932,7 +998,7 @@ export default function DocumentStudioPage() {
                     </Button>
                   </div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {selectedTemplate.fields.map(field => (
+                    {documentTemplateFields.map(field => (
                       <div key={field.key} className="space-y-1">
                         <label className="text-sm font-medium">
                           {field.label}
@@ -948,7 +1014,7 @@ export default function DocumentStudioPage() {
                                 [field.key]: event.target.value,
                               }))
                             }
-                            disabled={activeTab === "archive"}
+                            disabled={!canEditDocument}
                           />
                         ) : field.type === "select" ? (
                           <select
@@ -959,7 +1025,7 @@ export default function DocumentStudioPage() {
                                 [field.key]: event.target.value,
                               }))
                             }
-                            disabled={activeTab === "archive"}
+                            disabled={!canEditDocument}
                             className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                           >
                             <option value="">اختر...</option>
@@ -985,7 +1051,7 @@ export default function DocumentStudioPage() {
                                 [field.key]: event.target.value,
                               }))
                             }
-                            disabled={activeTab === "archive"}
+                            disabled={!canEditDocument}
                           />
                         )}
                       </div>
@@ -1020,7 +1086,7 @@ export default function DocumentStudioPage() {
                   <DocumentEditor
                     content={documentContent}
                     onChange={handleDocumentContentChange}
-                    editable={activeTab !== "archive"}
+                    editable={canEditDocument}
                     containerClassName="rounded-none border-0 shadow-none"
                   />
                 </div>
