@@ -41,14 +41,14 @@ vi.mock("../../db", async importOriginal => {
   };
 });
 
-vi.mock("../organizations/organization", async importOriginal => {
-  const actual =
-    await importOriginal<typeof import("../organizations/organization")>();
-  return {
-    ...actual,
-    getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
-  };
-});
+vi.mock("../organizations/appwriteOwnerOrganizationRepository", () => ({
+  getOrganizationById: vi.fn(),
+  getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
+}));
+
+vi.mock("../audit/appwriteAuditRepository", () => ({
+  writeAuditLog: dbMocks.writeAuditLog,
+}));
 
 import { appRouter } from "../../routers";
 
