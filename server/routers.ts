@@ -37,6 +37,7 @@ import {
 } from "./_core/trpc";
 import { systemRouter } from "./_core/systemRouter";
 import {
+  createTelegramAttachment,
   getTelegramAttachmentById,
   listTelegramAttachments,
 } from "./features/storage/telegramAttachmentRepository";
