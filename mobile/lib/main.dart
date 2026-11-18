@@ -9,6 +9,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
+import 'document_studio_page.dart';
+import 'document_studio_outbox.dart';
 import 'app_theme.dart';
 import 'advanced_create_telegram_page.dart';
 import 'app_update_page.dart';
@@ -711,6 +713,7 @@ class _DashboardPageState extends State<DashboardPage>
   final searchController = TextEditingController();
   final push = PushNotificationService();
   late final TelegramOutbox _outbox;
+  late final DocumentStudioOutbox _documentStudioOutbox;
   int _pendingOutbox = 0;
   bool _outboxSyncing = false;
   bool _outboxSyncInProgress = false;
@@ -720,7 +723,6 @@ class _DashboardPageState extends State<DashboardPage>
   bool? _serverReachable;
   DateTime? _serverCheckedAt;
   Timer? _syncMessageTimer;
-  Timer? _refreshTimer;
   Timer? _searchDebounce;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
   bool _refreshInProgress = false;
@@ -751,8 +753,8 @@ class _DashboardPageState extends State<DashboardPage>
     }
     if (_serverReachable == false) {
       return _pendingOutbox > 0
-          ? 'الخادم غير متصل؛ ستبقى البرقيات محفوظة محليًا حتى عودة الاتصال.'
-          : 'الخادم غير متصل؛ لا توجد برقيات معلقة محليًا.';
+          ? 'الخادم غير متصل؛ ستبقى التغييرات محفوظة محليًا حتى عودة الاتصال.'
+          : 'الخادم غير متصل؛ لا توجد تغييرات معلقة محليًا.';
     }
     return 'لم يُتحقق من اتصال الخادم بعد.';
   }
@@ -773,21 +775,21 @@ class _DashboardPageState extends State<DashboardPage>
     super.initState();
     _account = Map<String, dynamic>.from(widget.account);
     _outbox = widget.outbox ?? TelegramOutbox();
+    _documentStudioOutbox = DocumentStudioOutbox(api: widget.api);
     _mutationSubscription = widget.api.mutationEvents.listen(_handleMutation);
     WidgetsBinding.instance.addObserver(this);
-    refresh();
+    unawaited(_refreshOrganizationContext());
     unawaited(_syncOutbox());
     _loadUnreadNotificationCount();
-    _startRefreshTimer();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_checkForAppUpdate());
     });
     push
         .initialize(
           onToken: _handlePushToken,
-          onTelegramOpened: _openIncomingTelegram,
+          onTelegramOpened: (_) => _showNotificationsPreview(),
           onForegroundTelegram: (_) {
-            refresh();
+            _loadUnreadNotificationCount();
           },
           onAppUpdate: _openAppUpdate,
           onOpenNotifications: _showNotificationsPreview,
@@ -808,10 +810,8 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _handleMutation(ApiMutationEvent event) {
     if (!mounted) return;
-    if (event.isTelegramMutation ||
-        event.procedure == 'settings.update' ||
-        event.procedure == 'organizations.selectWorkplace') {
-      unawaited(refresh(showLoading: false));
+    if (event.procedure == 'organizations.selectWorkplace') {
+      unawaited(_refreshOrganizationContext());
     }
     if (event.procedure.startsWith('notifications.')) {
       unawaited(_loadUnreadNotificationCount());
@@ -984,14 +984,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _startRefreshTimer() {
-    _refreshTimer?.cancel();
-    // Keep the dashboard live while preserving filters and scroll position.
-    // refresh() coalesces overlapping requests safely.
-    _refreshTimer = Timer.periodic(const Duration(seconds: 15), (_) {
-      refresh(showLoading: false);
-      unawaited(_syncOutbox(showProgress: false));
-      _loadUnreadNotificationCount();
-    });
+    // Periodic document refresh is intentionally driven by the document workspace.
   }
 
   @override
@@ -1002,8 +995,7 @@ class _DashboardPageState extends State<DashboardPage>
       _lastLogoLoadAttemptAt = null;
       _logoLookupResolved = false;
       _lastLogoLookupSucceeded = false;
-      _startRefreshTimer();
-      refresh(showLoading: false);
+      unawaited(_refreshOrganizationContext());
       unawaited(_syncOutbox(showProgress: false));
       _loadUnreadNotificationCount();
       unawaited(_checkForAppUpdate());
@@ -1011,8 +1003,7 @@ class _DashboardPageState extends State<DashboardPage>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached ||
         state == AppLifecycleState.hidden) {
-      _refreshTimer?.cancel();
-      _refreshTimer = null;
+      // Background refresh pauses while the app is not active.
     }
   }
 
@@ -1060,34 +1051,40 @@ class _DashboardPageState extends State<DashboardPage>
         if (showProgress) {
           _outboxSyncing = true;
           _syncPhase = 'syncing';
-          _lastSyncMessage =
-              'جارٍ فحص صندوق الخروج وإرسال البرقيات بالترتيب...';
+          _lastSyncMessage = 'جارٍ فحص التغييرات المحلية ومزامنتها...';
         }
       });
     }
     try {
-      final result = await _outbox.sync(widget.api);
-      final pending = await _outbox.pendingCount();
+      final legacyResult = await _outbox.sync(widget.api);
+      final documentResult = await _documentStudioOutbox.sync();
+      final legacyPending = await _outbox.pendingCount();
+      final documentPending = await _documentStudioOutbox.pendingCount();
+      final pending = legacyPending + documentPending;
+      final totalSynced = legacyResult.synced + documentResult.synced;
       if (!mounted) return;
       _syncMessageTimer?.cancel();
       setState(() {
         _pendingOutbox = pending;
         _lastSyncAt = DateTime.now();
-        if (result.permanentFailures > 0) {
+        if (legacyResult.permanentFailures > 0) {
           _syncPhase = 'error';
-          _lastSyncMessage = result.permanentErrorMessages.isEmpty
-              ? 'تم رفض عملية من الخادم وتحتاج إلى مراجعة.'
-              : result.permanentErrorMessages.first;
-        } else if (result.synced > 0) {
+          _lastSyncMessage = legacyResult.permanentErrorMessages.isEmpty
+              ? 'تم رفض عملية قديمة من الخادم وتحتاج إلى مراجعة.'
+              : legacyResult.permanentErrorMessages.first;
+        } else if (documentResult.lastError != null) {
+          _syncPhase = 'error';
+          _lastSyncMessage = documentResult.lastError;
+        } else if (totalSynced > 0) {
           _syncPhase = pending == 0 ? 'success' : 'partial';
           _lastSyncMessage =
-              'تمت مزامنة ${result.synced} برقية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
+              'تمت مزامنة $totalSynced عملية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
         } else if (pending == 0) {
           _syncPhase = 'idle';
           _lastSyncMessage = _idleOutboxMessage;
         } else {
           _syncPhase = 'waiting';
-          _lastSyncMessage = 'تنتظر $pending برقية عودة الاتصال للمزامنة.';
+          _lastSyncMessage = 'تنتظر $pending عملية عودة الاتصال للمزامنة.';
         }
       });
       if (_syncPhase == 'success') {
@@ -1097,29 +1094,31 @@ class _DashboardPageState extends State<DashboardPage>
             _syncPhase = 'idle';
             _lastSyncMessage = _pendingOutbox == 0
                 ? _idleOutboxMessage
-                : 'تنتظر $_pendingOutbox برقية عودة الاتصال للمزامنة.';
+                : 'تنتظر $_pendingOutbox عملية عودة الاتصال للمزامنة.';
           });
         });
       }
-      if (result.synced > 0) await refresh(showLoading: false);
-      if (mounted && result.permanentFailures > 0) {
-        final details = result.permanentErrorMessages.isEmpty
+      if (totalSynced > 0) _loadUnreadNotificationCount();
+      if (mounted && legacyResult.permanentFailures > 0) {
+        final details = legacyResult.permanentErrorMessages.isEmpty
             ? 'تحقق أو صلاحيات'
-            : result.permanentErrorMessages.join('، ');
+            : legacyResult.permanentErrorMessages.join('، ');
         Toast.error(
           context,
-          'تم رفض ${result.permanentFailures} عملية من الخادم: $details',
+          'تم رفض ${legacyResult.permanentFailures} عملية قديمة من الخادم: $details',
         );
       }
     } catch (_) {
       if (!mounted) return;
-      final pending = await _outbox.pendingCount();
+      final legacyPending = await _outbox.pendingCount();
+      final documentPending = await _documentStudioOutbox.pendingCount();
+      final pending = legacyPending + documentPending;
       setState(() {
         _pendingOutbox = pending;
         _syncPhase = pending > 0 ? 'waiting' : 'error';
         _lastSyncAt = DateTime.now();
         _lastSyncMessage = pending > 0
-            ? 'تعذر الاتصال؛ ستتم إعادة المحاولة تلقائيًا.'
+            ? 'تعذر الاتصال؛ ستتم إعادة المحاولة عند عودة الشبكة.'
             : 'تعذر التحقق من حالة المزامنة.';
       });
     } finally {
@@ -1136,7 +1135,13 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _openOutbox() {
-    _pushPage(TelegramOutboxPage(api: widget.api, outbox: _outbox));
+    _pushPage(
+      TelegramOutboxPage(
+        api: widget.api,
+        outbox: _outbox,
+        documentOutbox: _documentStudioOutbox,
+      ),
+    );
   }
 
   Future<void> _togglePushNotifications() async {
@@ -1591,6 +1596,30 @@ class _DashboardPageState extends State<DashboardPage>
     searchController.dispose();
     push.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshOrganizationContext() async {
+    try {
+      final value = await widget.api.call('organizations.context');
+      if (value is! Map) return;
+      final organizationId = value['organizationId']?.toString();
+      if (!mounted) return;
+      setState(() {
+        activeOrganizationId = organizationId;
+        activeOrganizationName =
+            (value['organizationName'] ?? value['name'])?.toString();
+        activeOrganizationRole = value['role']?.toString();
+        activeOrganizationIsActive = value['isActive'] == true;
+        activeOrganizationIsOwner = value['isOwner'] == true;
+      });
+      if (organizationId != null && organizationId.isNotEmpty) {
+        unawaited(
+          _syncPushTokenForActiveOrganization(organizationId).then<void>((_) {}),
+        );
+      }
+    } catch (_) {
+      // Keep the last verified organization context when offline.
+    }
   }
 
   Future<void> refresh({bool showLoading = true}) async {
@@ -2379,7 +2408,7 @@ class _DashboardPageState extends State<DashboardPage>
                 width: 36,
                 height: 36,
                 fit: BoxFit.contain,
-                semanticLabel: 'أيقونة نظام برقيات الشرطة',
+                semanticLabel: 'أيقونة وثائقي',
               ),
             ),
             const SizedBox(width: 8),
@@ -2517,8 +2546,8 @@ class _DashboardPageState extends State<DashboardPage>
                   title: _pushBusy
                       ? 'جارٍ تحديث الإشعارات...'
                       : _pushEnabled
-                      ? 'إيقاف إشعارات البرقيات'
-                      : 'تفعيل إشعارات البرقيات',
+                      ? 'إيقاف الإشعارات'
+                      : 'تفعيل الإشعارات',
                 ),
               ),
               const PopupMenuDivider(),
@@ -2601,7 +2630,7 @@ class _DashboardPageState extends State<DashboardPage>
                 value: 'system_about',
                 child: _AccountMenuItem(
                   icon: Icons.account_tree_outlined,
-                  title: 'حول النظام وميزاته',
+                  title: 'حول وثائقي وميزاته',
                 ),
               ),
               const PopupMenuItem(
@@ -2671,7 +2700,7 @@ class _DashboardPageState extends State<DashboardPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'نظام برقيات الشرطة',
+                              'وثائقي',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
@@ -2716,15 +2745,45 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(LucideIcons.layoutDashboard),
-                  title: const Text('لوحة التحكم'),
+                  leading: const Icon(Icons.description_outlined),
+                  title: const Text('الوثائق'),
+                  onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.dashboard_customize_outlined),
+                  title: const Text('القوالب'),
                   onTap: () {
                     Navigator.pop(context);
-                    setState(() {
-                      section = 0;
-                      telegramPage = 1;
-                    });
-                    refresh(showLoading: false);
+                    _pushPage(
+                      DocumentStudioPage(
+                        api: widget.api,
+                        outbox: _documentStudioOutbox,
+                        initialTab: DocumentStudioTab.templates,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.archive_outlined),
+                  title: const Text('الأرشيف'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(
+                      DocumentStudioPage(
+                        api: widget.api,
+                        outbox: _documentStudioOutbox,
+                        initialTab: DocumentStudioTab.archive,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.sync_outlined),
+                  title: const Text('المزامنة المحلية'),
+                  subtitle: const Text('حفظ التغييرات وإعادة مزامنتها'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openOutbox();
                   },
                 ),
                 if (_isPlatformOwner)
@@ -2747,27 +2806,6 @@ class _DashboardPageState extends State<DashboardPage>
                       _pushPage(AuditLogPage(api: widget.api));
                     },
                   ),
-                ListTile(
-                  leading: const Icon(LucideIcons.plus),
-                  title: const Text('إنشاء برقية'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    create();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.fileSpreadsheet),
-                  title: const Text('استيراد وتصدير السجل'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TelegramExcelPage(api: widget.api),
-                      ),
-                    );
-                  },
-                ),
                 if (_canManageUsers)
                   ListTile(
                     leading: const Icon(LucideIcons.users),
@@ -2792,86 +2830,15 @@ class _DashboardPageState extends State<DashboardPage>
                       _handleAccountAction('organizations');
                     },
                   ),
-                ListTile(
-                  leading: const Icon(LucideIcons.mapPinned),
-                  title: const Text('خريطة البلاغات والمواقع الجغرافية'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 0,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.users),
-                  title: const Text('الوحدات الميدانية'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 1,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.activity),
-                  title: const Text('إدارة الموارد'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 2,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(LucideIcons.archive),
-                  title: const Text('الأرشيف والسجلات المغلقة'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NativeOperationsPage(
-                          api: widget.api,
-                          initialTab: 3,
-                        ),
-                      ),
-                    );
-                  },
-                ),
               ],
             ),
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'إنشاء برقية',
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        onPressed: create,
-        child: const Icon(LucideIcons.plus),
+      body: DocumentStudioPage(
+        api: widget.api,
+        outbox: _documentStudioOutbox,
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(onRefresh: refresh, child: _sectionBody()),
     ),
   );
 
