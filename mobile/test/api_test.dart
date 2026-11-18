@@ -844,7 +844,7 @@ void main() {
   test('telegram attachments upload directly to signed private storage', () async {
     const sessionCookie = 'sid=authenticated-session';
     const storageUrl =
-        'https://storage.example.test/storage/v1/object/upload/sign/telegram-files/attachments/report.pdf?token=opaque';
+        'https://storage.example.test/storage/v1/object/upload/sign/telegram-files/attachments/report.pdf?project=project-test&token=opaque';
     const storageKey =
         'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
     final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\\nfixture'));
@@ -864,6 +864,10 @@ void main() {
           jsonEncode({
             'key': storageKey,
             'uploadUrl': storageUrl,
+            'uploadJwt': 'signed-upload-jwt',
+            'fileId': 'a' * 32,
+            'folder':
+                'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
             'fileName': 'report.pdf',
             'contentType': 'application/pdf',
             'sizeBytes': bytes.length,
