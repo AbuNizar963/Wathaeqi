@@ -115,13 +115,15 @@ function mapDocumentRow(row: AppwriteRow): OfficialDocument {
 
 async function getRowOrNull(
   tableId: string,
-  rowId: string
+  rowId: string,
+  transactionId?: string
 ): Promise<AppwriteRow | null> {
   try {
     return (await getAppwriteTablesDB().getRow({
       databaseId: getAppwriteDatabaseId(),
       tableId,
       rowId,
+      ...(transactionId ? { transactionId } : {}),
     })) as AppwriteRow;
   } catch (error) {
     const code =
@@ -129,6 +131,41 @@ async function getRowOrNull(
         ? Number((error as { code?: unknown }).code)
         : 0;
     if (code === 404) return null;
+    throw error;
+  }
+}
+
+
+async function withTableTransaction<T>(
+  operation: (transactionId: string) => Promise<T>
+): Promise<T> {
+  const tables = getAppwriteTablesDB();
+  const transaction = await tables.createTransaction({ ttl: 60 });
+  try {
+    const result = await operation(transaction.$id);
+    await tables.updateTransaction({
+      transactionId: transaction.$id,
+      commit: true,
+    });
+    return result;
+  } catch (error) {
+    try {
+      await tables.updateTransaction({
+        transactionId: transaction.$id,
+        rollback: true,
+      });
+    } catch {
+      // Preserve the original failure if the transaction already expired.
+    }
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? Number((error as { code?: unknown }).code)
+        : 0;
+    if (code === 409) {
+      throw new DocumentStudioConflictError(
+        "تغيرت البيانات أثناء الحفظ. حدّث الصفحة ثم أعد المحاولة."
+      );
+    }
     throw error;
   }
 }
@@ -188,31 +225,40 @@ export async function updateDocumentTemplate(
   expectedRevision: number,
   input: TemplateWriteInput
 ): Promise<DocumentTemplate | null> {
-  const existing = await getDocumentTemplate(ownerId, templateId);
-  if (!existing) return null;
-  if (existing.revision !== expectedRevision) {
-    throw new DocumentStudioConflictError(
-      "تم تعديل هذا النموذج في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+  return withTableTransaction(async transactionId => {
+    const row = await getRowOrNull(
+      TEMPLATES_TABLE_ID,
+      templateId,
+      transactionId
     );
-  }
+    if (!row || rowData(row).ownerId !== ownerId) return null;
 
-  const row = await getAppwriteTablesDB().updateRow({
-    databaseId: getAppwriteDatabaseId(),
-    tableId: TEMPLATES_TABLE_ID,
-    rowId: templateId,
-    data: {
-      title: input.title,
-      category: input.category,
-      content: encodeTemplateStorageContent({
-        content: input.content,
-        description: input.description,
-        fields: input.fields,
-        revision: existing.revision + 1,
-        isActive: existing.isActive,
-      }),
-    },
+    const existing = mapTemplateRow(row);
+    if (existing.revision !== expectedRevision) {
+      throw new DocumentStudioConflictError(
+        "تم تعديل هذا النموذج في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+      );
+    }
+
+    const updated = await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: TEMPLATES_TABLE_ID,
+      rowId: templateId,
+      transactionId,
+      data: {
+        title: input.title,
+        category: input.category,
+        content: encodeTemplateStorageContent({
+          content: input.content,
+          description: input.description,
+          fields: input.fields,
+          revision: existing.revision + 1,
+          isActive: existing.isActive,
+        }),
+      },
+    });
+    return mapTemplateRow(updated as AppwriteRow);
   });
-  return mapTemplateRow(row as AppwriteRow);
 }
 
 export async function deactivateDocumentTemplate(
@@ -220,30 +266,39 @@ export async function deactivateDocumentTemplate(
   templateId: string,
   expectedRevision: number
 ): Promise<DocumentTemplate | null> {
-  const existing = await getDocumentTemplate(ownerId, templateId);
-  if (!existing) return null;
-  if (existing.revision !== expectedRevision) {
-    throw new DocumentStudioConflictError(
-      "تم تعديل هذا النموذج في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+  return withTableTransaction(async transactionId => {
+    const row = await getRowOrNull(
+      TEMPLATES_TABLE_ID,
+      templateId,
+      transactionId
     );
-  }
-  if (!existing.isActive) return existing;
+    if (!row || rowData(row).ownerId !== ownerId) return null;
 
-  const row = await getAppwriteTablesDB().updateRow({
-    databaseId: getAppwriteDatabaseId(),
-    tableId: TEMPLATES_TABLE_ID,
-    rowId: templateId,
-    data: {
-      content: encodeTemplateStorageContent({
-        content: existing.content,
-        description: existing.description,
-        fields: existing.fields,
-        revision: existing.revision + 1,
-        isActive: false,
-      }),
-    },
+    const existing = mapTemplateRow(row);
+    if (existing.revision !== expectedRevision) {
+      throw new DocumentStudioConflictError(
+        "تم تعديل هذا النموذج في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+      );
+    }
+    if (!existing.isActive) return existing;
+
+    const updated = await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: TEMPLATES_TABLE_ID,
+      rowId: templateId,
+      transactionId,
+      data: {
+        content: encodeTemplateStorageContent({
+          content: existing.content,
+          description: existing.description,
+          fields: existing.fields,
+          revision: existing.revision + 1,
+          isActive: false,
+        }),
+      },
+    });
+    return mapTemplateRow(updated as AppwriteRow);
   });
-  return mapTemplateRow(row as AppwriteRow);
 }
 
 export async function listOfficialDocuments(
@@ -309,44 +364,106 @@ export async function updateOfficialDocument(
   expectedUpdatedAt: string,
   input: DocumentWriteInput
 ): Promise<OfficialDocument | null> {
-  const existing = await getOfficialDocument(ownerId, documentId);
-  if (!existing) return null;
-  if (existing.updatedAt !== expectedUpdatedAt) {
-    throw new DocumentStudioConflictError(
-      "تم تعديل الوثيقة في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+  return withTableTransaction(async transactionId => {
+    const row = await getRowOrNull(
+      DOCUMENTS_TABLE_ID,
+      documentId,
+      transactionId
     );
-  }
-  if (existing.status !== "draft") {
-    throw new DocumentStudioConflictError(
-      "لا يمكن تعديل وثيقة صادرة أو مؤرشفة."
-    );
-  }
+    if (!row || rowData(row).ownerId !== ownerId) return null;
 
-  const now = new Date().toISOString();
-  const row = await getAppwriteTablesDB().updateRow({
-    databaseId: getAppwriteDatabaseId(),
-    tableId: DOCUMENTS_TABLE_ID,
-    rowId: documentId,
-    data: {
-      title: input.title,
-      category: input.category,
-      updatedAt: now,
-      content: encodeOfficialDocumentStorageContent({
-        content: input.content,
-        subject: input.subject,
-        fieldValues: input.fieldValues,
-        serialNumber: existing.serialNumber,
-        serialCode: existing.serialCode,
-        documentDate: input.documentDate,
-        status: existing.status,
-        templateId: input.templateId,
-        templateRevision: input.templateRevision,
-        issuedAt: existing.issuedAt,
-        archivedAt: existing.archivedAt,
-      }),
-    },
+    const existing = mapDocumentRow(row);
+    if (existing.updatedAt !== expectedUpdatedAt) {
+      throw new DocumentStudioConflictError(
+        "تم تعديل الوثيقة في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+      );
+    }
+    if (existing.status !== "draft") {
+      throw new DocumentStudioConflictError(
+        "لا يمكن تعديل وثيقة صادرة أو مؤرشفة."
+      );
+    }
+
+    const now = new Date().toISOString();
+    const updated = await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: DOCUMENTS_TABLE_ID,
+      rowId: documentId,
+      transactionId,
+      data: {
+        title: input.title,
+        category: input.category,
+        updatedAt: now,
+        content: encodeOfficialDocumentStorageContent({
+          content: input.content,
+          subject: input.subject,
+          fieldValues: input.fieldValues,
+          serialNumber: existing.serialNumber,
+          serialCode: existing.serialCode,
+          documentDate: input.documentDate,
+          status: existing.status,
+          templateId: input.templateId,
+          templateRevision: input.templateRevision,
+          issuedAt: existing.issuedAt,
+          archivedAt: existing.archivedAt,
+        }),
+      },
+    });
+    return mapDocumentRow(updated as AppwriteRow);
   });
-  return mapDocumentRow(row as AppwriteRow);
+}
+
+export async function archiveOfficialDocument(
+  ownerId: string,
+  documentId: string,
+  expectedUpdatedAt: string
+): Promise<OfficialDocument | null> {
+  return withTableTransaction(async transactionId => {
+    const row = await getRowOrNull(
+      DOCUMENTS_TABLE_ID,
+      documentId,
+      transactionId
+    );
+    if (!row || rowData(row).ownerId !== ownerId) return null;
+
+    const existing = mapDocumentRow(row);
+    if (existing.updatedAt !== expectedUpdatedAt) {
+      throw new DocumentStudioConflictError(
+        "تم تعديل الوثيقة في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
+      );
+    }
+    if (existing.status === "archived") return existing;
+    if (existing.status !== "issued") {
+      throw new DocumentStudioConflictError(
+        "يجب إصدار الوثيقة قبل نقلها إلى الأرشيف."
+      );
+    }
+
+    const now = new Date().toISOString();
+    const updated = await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: DOCUMENTS_TABLE_ID,
+      rowId: documentId,
+      transactionId,
+      data: {
+        updatedAt: now,
+        content: encodeOfficialDocumentStorageContent({
+          content: existing.content,
+          subject: existing.subject,
+          fieldValues: existing.fieldValues,
+          serialNumber: existing.serialNumber,
+          serialCode: existing.serialCode,
+          documentDate: existing.documentDate,
+          status: "archived",
+          templateId: existing.templateId,
+          templateRevision: existing.templateRevision,
+          issuedAt: existing.issuedAt,
+          archivedAt: now,
+        }),
+      },
+    });
+    return mapDocumentRow(updated as AppwriteRow);
+  });
 }
 
 export async function archiveOfficialDocument(
