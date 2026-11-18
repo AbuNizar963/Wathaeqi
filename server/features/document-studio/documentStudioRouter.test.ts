@@ -93,6 +93,10 @@ const template = {
 const document = {
   id: "document-1",
   ownerId,
+  organizationId: null,
+  templateId: null,
+  templateRevision: null,
+  templateFieldsSnapshot: [],
   title: "كتاب تكليف",
   category: "personnel",
   subject: "تكليف موظف",
