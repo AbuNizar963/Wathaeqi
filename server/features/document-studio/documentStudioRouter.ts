@@ -3,10 +3,10 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../../_core/trpc";
 import { getRequestAuditContext } from "../../auditContext";
 import { isPlatformOwner } from "../../ownerAccess";
+import { getUserOrganizationMembership } from "../organizations/organization";
 import {
   allocateOrganizationSerialNumber,
   getOrganizationSettings,
-  getUserOrganizationMembership,
   writeAuditLog,
 } from "../../db";
 import { localizeDigits, normalizeNumberSystem } from "@shared/numberSystem";

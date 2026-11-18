@@ -32,10 +32,18 @@ vi.mock("../../db", async importOriginal => {
   const actual = await importOriginal<typeof import("../../db")>();
   return {
     ...actual,
-    getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
     getOrganizationSettings: dbMocks.getOrganizationSettings,
     allocateOrganizationSerialNumber: dbMocks.allocateOrganizationSerialNumber,
     writeAuditLog: dbMocks.writeAuditLog,
+  };
+});
+
+vi.mock("../organizations/organization", async importOriginal => {
+  const actual =
+    await importOriginal<typeof import("../organizations/organization")>();
+  return {
+    ...actual,
+    getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
   };
 });
 
