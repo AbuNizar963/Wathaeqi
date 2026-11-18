@@ -211,6 +211,7 @@ async function finalizeTelegramAttachmentUpload(
     return;
   }
 
+  let attachmentMetadataCreated = false;
   try {
     const existing = await getTelegramAttachmentByStorageKey(key);
     if (existing) {
@@ -288,6 +289,7 @@ async function finalizeTelegramAttachmentUpload(
         sha256,
         uploadedByUserId: context.user.id,
       });
+      attachmentMetadataCreated = true;
     } catch (error) {
       await removeUncommittedAttachment(key);
       console.error(
@@ -323,6 +325,9 @@ async function finalizeTelegramAttachmentUpload(
       sha256,
     });
   } catch (error) {
+    if (!attachmentMetadataCreated) {
+      await removeUncommittedAttachment(key);
+    }
     console.error("[Storage] Telegram attachment finalization failed", error);
     res.status(502).json({ error: "تعذر التحقق من المرفق وتسجيله" });
   }
