@@ -264,6 +264,7 @@ describe("signed telegram attachment uploads", () => {
       "user-7"
     );
     expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.set).toHaveBeenCalledWith("Cache-Control", "no-store");
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         key,
