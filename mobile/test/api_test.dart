@@ -841,12 +841,17 @@ void main() {
     expect(bytes, isNull);
   });
 
-  test('telegram attachments upload directly to signed private storage', () async {
+  test('telegram attachments upload through authenticated Appwrite storage', () async {
     const sessionCookie = 'sid=authenticated-session';
+    const projectId = 'project-123';
+    const uploadJwt = 'signed-upload-jwt';
+    const fileId = 'a' * 32;
+    const folder =
+        'organizations/550e8400-e29b-41d4-a716-446655440000/attachments';
     const storageUrl =
-        'https://storage.example.test/storage/v1/object/upload/sign/telegram-files/attachments/report.pdf?token=opaque';
+        'https://storage.example.test/v1/storage/buckets/attachments/files?project=$projectId';
     const storageKey =
-        'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
+        'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf';
     final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\\nfixture'));
     _secureStorageForTest['session_cookie'] = sessionCookie;
     final requests = <String>[];
@@ -864,20 +869,23 @@ void main() {
           jsonEncode({
             'key': storageKey,
             'uploadUrl': storageUrl,
-            'fileName': 'report.pdf',
-            'contentType': 'application/pdf',
-            'sizeBytes': bytes.length,
+            'uploadJwt': uploadJwt,
+            'fileId': fileId,
+            'folder': folder,
           }),
           200,
           headers: {'content-type': 'application/json'},
         );
       }
       if (request.url.toString() == storageUrl) {
-        expect(request.method, 'PUT');
-        expect(request.headers['content-type'], 'application/pdf');
+        expect(request.method, 'POST');
+        expect(request.headers['x-appwrite-project'], projectId);
+        expect(request.headers['x-appwrite-jwt'], uploadJwt);
         expect(request.headers.containsKey('cookie'), isFalse);
-        expect(request.bodyBytes, bytes);
-        return http.Response('', 200);
+        expect(request.body, contains('fileId'));
+        expect(request.body, contains(fileId));
+        expect(request.body, contains('report.pdf'));
+        return http.Response('{}', 201);
       }
       if (request.url.path.endsWith('/attachments/finalize')) {
         expect(request.method, 'POST');
