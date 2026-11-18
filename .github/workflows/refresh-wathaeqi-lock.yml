@@ -5,6 +5,7 @@ on:
     branches:
       - feat/wathaeqi-appwrite-web
       - migration/appwrite-phase-1
+      - refactor/document-studio-web
     paths:
       - package.json
       - pnpm-workspace.yaml
