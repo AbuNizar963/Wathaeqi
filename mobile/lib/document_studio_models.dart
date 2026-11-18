@@ -3,6 +3,7 @@
 /// Templates are reusable definitions. Official documents retain a snapshot
 /// of the template revision and entered values. Server authorization remains
 /// authoritative for organization scope and every persisted operation.
+library;
 
 enum DocumentTemplateFieldType {
   text,
@@ -19,10 +20,7 @@ enum DocumentTemplateFieldType {
 }
 
 class DocumentTemplateFieldOption {
-  const DocumentTemplateFieldOption({
-    required this.value,
-    required this.label,
-  });
+  const DocumentTemplateFieldOption({required this.value, required this.label});
 
   final String value;
   final String label;
@@ -64,23 +62,25 @@ class DocumentTemplateField {
         maxLength: (json['maxLength'] as num?)?.toInt(),
         options: (json['options'] as List<dynamic>? ?? const [])
             .whereType<Map>()
-            .map((item) => DocumentTemplateFieldOption.fromJson(
-                  Map<String, dynamic>.from(item),
-                ))
+            .map(
+              (item) => DocumentTemplateFieldOption.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
             .toList(growable: false),
         defaultValue: json['defaultValue'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
-        'key': key,
-        'label': label,
-        'type': type.name,
-        'required': required,
-        if (maxLength != null) 'maxLength': maxLength,
-        if (options.isNotEmpty)
-          'options': options.map((item) => item.toJson()).toList(),
-        if (defaultValue != null) 'defaultValue': defaultValue,
-      };
+    'key': key,
+    'label': label,
+    'type': type.name,
+    'required': required,
+    if (maxLength != null) 'maxLength': maxLength,
+    if (options.isNotEmpty)
+      'options': options.map((item) => item.toJson()).toList(),
+    if (defaultValue != null) 'defaultValue': defaultValue,
+  };
 }
 
 class DocumentTemplate {
@@ -122,31 +122,35 @@ class DocumentTemplate {
         content: Map<String, dynamic>.from(json['content'] as Map? ?? const {}),
         fields: (json['fields'] as List<dynamic>? ?? const [])
             .whereType<Map>()
-            .map((item) => DocumentTemplateField.fromJson(
-                  Map<String, dynamic>.from(item),
-                ))
+            .map(
+              (item) => DocumentTemplateField.fromJson(
+                Map<String, dynamic>.from(item),
+              ),
+            )
             .toList(growable: false),
         revision: (json['revision'] as num?)?.toInt() ?? 1,
         isActive: json['isActive'] != false,
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(json['createdAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-        updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+        updatedAt:
+            DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'organizationId': organizationId,
-        'title': title,
-        if (description != null) 'description': description,
-        'category': category,
-        'content': content,
-        'fields': fields.map((item) => item.toJson()).toList(),
-        'revision': revision,
-        'isActive': isActive,
-        'createdAt': createdAt.toUtc().toIso8601String(),
-        'updatedAt': updatedAt.toUtc().toIso8601String(),
-      };
+    'id': id,
+    'organizationId': organizationId,
+    'title': title,
+    if (description != null) 'description': description,
+    'category': category,
+    'content': content,
+    'fields': fields.map((item) => item.toJson()).toList(),
+    'revision': revision,
+    'isActive': isActive,
+    'createdAt': createdAt.toUtc().toIso8601String(),
+    'updatedAt': updatedAt.toUtc().toIso8601String(),
+  };
 }
 
 class OfficialDocument {
@@ -202,13 +206,16 @@ class OfficialDocument {
         ),
         serialNumber: (json['serialNumber'] as num?)?.toInt() ?? 0,
         serialCode: json['serialCode'] as String? ?? '',
-        documentDate: DateTime.tryParse(json['documentDate'] as String? ?? '') ??
+        documentDate:
+            DateTime.tryParse(json['documentDate'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         status: json['status'] as String? ?? 'draft',
         createdByUserId: (json['createdByUserId'] as num?)?.toInt() ?? 0,
-        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+        createdAt:
+            DateTime.tryParse(json['createdAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-        updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+        updatedAt:
+            DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
             DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
         issuedAt: DateTime.tryParse(json['issuedAt'] as String? ?? ''),
         archivedAt: DateTime.tryParse(json['archivedAt'] as String? ?? ''),
