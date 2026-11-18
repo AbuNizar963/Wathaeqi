@@ -44,7 +44,6 @@ import {
   storageDelete,
   storageGetObjectInfo,
   storagePutDepartmentLogo,
-  storagePutOrganizationAttachmentAtKey,
 } from "./storage";
 
 const ORGANIZATION_ID_PATTERN =
@@ -151,7 +150,8 @@ async function createTelegramAttachmentUploadUrl(
       context.telegram.organizationId,
       context.telegram.id,
       metadata.fileName,
-      metadata
+      metadata,
+      context.user.authUserId
     );
     res.set("Cache-Control", "no-store");
     res.status(200).json({
@@ -163,91 +163,6 @@ async function createTelegramAttachmentUploadUrl(
   } catch (error) {
     console.error("[Storage] Telegram attachment upload URL failed", error);
     res.status(502).json({ error: "تعذر تجهيز رابط رفع المرفق" });
-  }
-}
-
-async function receiveTelegramAttachmentUpload(
-  req: Request,
-  res: Response
-): Promise<void> {
-  const context = res.locals.telegramAttachmentRequest as
-    TelegramAttachmentRequestContext | undefined;
-  const key =
-    typeof req.query.key === "string" ? req.query.key.trim() : "";
-  const fileName =
-    typeof req.query.fileName === "string" ? req.query.fileName.trim() : "";
-  const contentType =
-    req.get("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
-  const sizeBytes =
-    typeof req.query.sizeBytes === "string"
-      ? Number(req.query.sizeBytes)
-      : Number.NaN;
-  const metadata = parseTelegramAttachmentMetadata({
-    fileName,
-    contentType,
-    sizeBytes,
-  });
-
-  if (
-    !context ||
-    !metadata ||
-    !key ||
-    key.length > 512 ||
-    !Buffer.isBuffer(req.body) ||
-    req.body.byteLength !== metadata.sizeBytes
-  ) {
-    res.status(400).json({ error: "بيانات رفع المرفق غير صالحة" });
-    return;
-  }
-
-  if (
-    !organizationAttachmentKeyMatches(
-      key,
-      context.telegram.organizationId,
-      context.telegram.id
-    )
-  ) {
-    res.status(403).json({ error: "مسار المرفق لا يخص هذه البرقية" });
-    return;
-  }
-
-  const storedFileName = key.split("/").pop()?.slice(37) ?? "";
-  const expectedStorageFileName = metadata.fileName.replace(/\.\.+/g, "_");
-  if (storedFileName !== expectedStorageFileName) {
-    res.status(400).json({ error: "اسم الملف لا يطابق رابط الرفع" });
-    return;
-  }
-
-  try {
-    validateUploadedFile({
-      bytes: req.body,
-      declaredType: metadata.contentType,
-      fileName: metadata.fileName,
-      maxBytes: MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
-    });
-    const uploaded = await storagePutOrganizationAttachmentAtKey(
-      context.telegram.organizationId,
-      context.telegram.id,
-      key,
-      metadata.fileName,
-      req.body,
-      metadata.contentType
-    );
-    res.set("Cache-Control", "no-store");
-    res.status(201).json({
-      success: true,
-      key: uploaded.key,
-      fileName: metadata.fileName,
-      contentType: metadata.contentType,
-      size: req.body.byteLength,
-    });
-  } catch (error) {
-    if (error instanceof StorageAccessDeniedError) {
-      res.status(403).json({ error: "مسار المرفق لا يخص هذه البرقية" });
-      return;
-    }
-    console.error("[Storage] Telegram attachment upload failed", error);
-    res.status(502).json({ error: "تعذر رفع المرفق إلى مساحة التخزين" });
   }
 }
 
@@ -623,16 +538,6 @@ export function registerStorageRoutes(app: Express): void {
     "/api/telegrams/:telegramId/attachments/upload-url",
     authorizeTelegramAttachmentRequest,
     createTelegramAttachmentUploadUrl
-  );
-
-  app.put(
-    "/api/telegrams/:telegramId/attachments/upload",
-    authorizeTelegramAttachmentRequest,
-    express.raw({
-      type: ALLOWED_ATTACHMENT_TYPES,
-      limit: MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
-    }),
-    receiveTelegramAttachmentUpload
   );
 
   app.post(
