@@ -38,9 +38,6 @@ jobs:
             exit 1
           fi
 
-      - name: Prettier owner API diagnostic
-        run: pnpm exec prettier server/ownerApiRouter.ts
-
       - name: Check formatting
         run: pnpm lint
 
