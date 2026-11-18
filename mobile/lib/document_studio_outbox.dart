@@ -16,10 +16,8 @@ class DocumentOutboxSyncResult {
 }
 
 class DocumentStudioOutbox {
-  DocumentStudioOutbox({
-    required this.api,
-    OfflineVault? vault,
-  }) : _vault = vault ?? OfflineVault();
+  DocumentStudioOutbox({required this.api, OfflineVault? vault})
+    : _vault = vault ?? OfflineVault();
 
   static const _storageKey = 'document_studio_outbox_v1';
   static const _uuid = Uuid();
@@ -51,33 +49,25 @@ class DocumentStudioOutbox {
     return false;
   }
 
-  Future<Map<String, dynamic>> createDocument(
-    Map<String, dynamic> input,
-  ) => _mutate('documentStudio.createDocument', input);
+  Future<Map<String, dynamic>> createDocument(Map<String, dynamic> input) =>
+      _mutate('documentStudio.createDocument', input);
 
-  Future<Map<String, dynamic>> updateDocument(
-    Map<String, dynamic> input,
-  ) => _mutate('documentStudio.updateDocument', input);
+  Future<Map<String, dynamic>> updateDocument(Map<String, dynamic> input) =>
+      _mutate('documentStudio.updateDocument', input);
 
-  Future<Map<String, dynamic>> archiveDocument(
-    Map<String, dynamic> input,
-  ) => _mutate('documentStudio.archiveDocument', input);
+  Future<Map<String, dynamic>> archiveDocument(Map<String, dynamic> input) =>
+      _mutate('documentStudio.archiveDocument', input);
 
-  Future<Map<String, dynamic>> createTemplate(
-    Map<String, dynamic> input,
-  ) => _mutate('documentStudio.createTemplate', input);
+  Future<Map<String, dynamic>> createTemplate(Map<String, dynamic> input) =>
+      _mutate('documentStudio.createTemplate', input);
 
-  Future<Map<String, dynamic>> updateTemplate(
-    Map<String, dynamic> input,
-  ) => _mutate('documentStudio.updateTemplate', input);
+  Future<Map<String, dynamic>> updateTemplate(Map<String, dynamic> input) =>
+      _mutate('documentStudio.updateTemplate', input);
 
-  Future<Map<String, dynamic>> deactivateTemplate(
-    Map<String, dynamic> input,
-  ) => _mutate('documentStudio.deactivateTemplate', input);
+  Future<Map<String, dynamic>> deactivateTemplate(Map<String, dynamic> input) =>
+      _mutate('documentStudio.deactivateTemplate', input);
 
-  Future<Map<String, dynamic>> issueDocument(
-    Map<String, dynamic> input,
-  ) async {
+  Future<Map<String, dynamic>> issueDocument(Map<String, dynamic> input) async {
     final value = await api.call(
       'documentStudio.issueDocument',
       input: input,
@@ -100,11 +90,7 @@ class DocumentStudioOutbox {
         (input['templateId']?.toString().startsWith('local_') ?? false);
     if (!shouldQueueFirst) {
       try {
-        final value = await api.call(
-          procedure,
-          input: input,
-          mutation: true,
-        );
+        final value = await api.call(procedure, input: input, mutation: true);
         if (value is! Map) {
           throw const FormatException('استجابة حفظ الوثيقة غير صالحة');
         }
@@ -228,20 +214,21 @@ class DocumentStudioOutbox {
     final cached = await api.readCachedResponse(listProcedure);
     final values = cached is List
         ? cached
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList()
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
         : <Map<String, dynamic>>[];
     final index = values.indexWhere((item) => item['id'] == localId);
 
     if (procedure == 'documentStudio.createDocument') {
-      final templatesRaw =
-          await api.readCachedResponse('documentStudio.listTemplates');
+      final templatesRaw = await api.readCachedResponse(
+        'documentStudio.listTemplates',
+      );
       final templates = templatesRaw is List
           ? templatesRaw
-              .whereType<Map>()
-              .map((item) => Map<String, dynamic>.from(item))
-              .toList()
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList()
           : <Map<String, dynamic>>[];
       Map<String, dynamic>? template;
       for (final item in templates) {
@@ -251,8 +238,9 @@ class DocumentStudioOutbox {
         }
       }
       final context = await api.readCachedResponse('organizations.context');
-      final organizationId =
-          context is Map ? context['organizationId']?.toString() : null;
+      final organizationId = context is Map
+          ? context['organizationId']?.toString()
+          : null;
       final local = <String, dynamic>{
         'id': localId,
         'ownerId': 'offline',
@@ -364,9 +352,9 @@ class DocumentStudioOutbox {
     final cached = await api.readCachedResponse(listProcedure);
     final values = cached is List
         ? cached
-            .whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList()
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList()
         : <Map<String, dynamic>>[];
     values.removeWhere(
       (item) =>
@@ -402,15 +390,11 @@ class DocumentStudioOutbox {
         final result = Map<String, dynamic>.from(value);
         final localId = entry['localId']?.toString();
         queue.removeAt(0);
-        await _applyServerResult(
-          procedure,
-          input,
-          result,
-          localId: localId,
-        );
+        await _applyServerResult(procedure, input, result, localId: localId);
         for (final pending in queue) {
-          final pendingInput =
-              Map<String, dynamic>.from(pending['input'] as Map);
+          final pendingInput = Map<String, dynamic>.from(
+            pending['input'] as Map,
+          );
           if (localId != null && localId != result['id']) {
             if (pendingInput['id'] == localId) {
               pendingInput['id'] = result['id'];

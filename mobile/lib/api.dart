@@ -124,15 +124,13 @@ class PoliceApi {
   Future<dynamic> readCachedResponse(
     String procedure, [
     Map<String, dynamic>? input,
-  ]) =>
-      _readOfflineResponse(procedure, input);
+  ]) => _readOfflineResponse(procedure, input);
 
   Future<void> writeCachedResponse(
     String procedure,
     Map<String, dynamic>? input,
     dynamic value,
-  ) =>
-      _writeOfflineResponse(procedure, input, value);
+  ) => _writeOfflineResponse(procedure, input, value);
 
   Future<dynamic> call(
     String procedure, {

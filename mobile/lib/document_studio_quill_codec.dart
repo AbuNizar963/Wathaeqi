@@ -231,7 +231,10 @@ class DocumentStudioQuillCodec {
 
     if (type == 'image' && node['attrs'] is Map) {
       final src = (node['attrs'] as Map)['src'];
-      if (src is String) operations.add({'insert': {'image': src}});
+      if (src is String)
+        operations.add({
+          'insert': {'image': src},
+        });
       return;
     }
 
@@ -259,11 +262,7 @@ class DocumentStudioQuillCodec {
         'attrs': {'href': attributes['link']},
       });
     }
-    return {
-      'type': 'text',
-      'text': text,
-      if (marks.isNotEmpty) 'marks': marks,
-    };
+    return {'type': 'text', 'text': text, if (marks.isNotEmpty) 'marks': marks};
   }
 
   static List<dynamic> _asList(dynamic value) =>
