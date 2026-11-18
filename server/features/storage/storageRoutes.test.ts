@@ -72,13 +72,15 @@ vi.mock("../../db", async importOriginal => {
     ...actual,
     getOrganizationSettings,
     isDepartmentLogoExclusiveToOrganization,
-    getTelegramAttachmentByStorageKey,
     getTelegramById,
     getTelegramVersion,
-    createTelegramAttachment,
     writeAuditLog,
   };
 });
+vi.mock("./telegramAttachmentRepository", () => ({
+  getTelegramAttachmentByStorageKey,
+  createTelegramAttachment,
+}));
 vi.mock("../../telegramAccess", () => ({ canAccessTelegramScope }));
 
 import { canAccessStorageKey } from "./storage";
@@ -209,7 +211,10 @@ describe("signed telegram attachment uploads", () => {
     canAccessTelegramScope.mockResolvedValue(true);
     storageCreateOrganizationAttachmentUploadUrl.mockResolvedValue({
       key,
-      uploadUrl: "https://storage.example/upload?token=opaque",
+      uploadUrl: "https://fra.cloud.appwrite.io/v1/storage/buckets/document-attachments/files?project=wathaeqi",
+      uploadJwt: "short-lived-upload-jwt",
+      fileId: "a".repeat(32),
+      folder: "organizations/" + testOrganizationId + "/telegrams/7/attachments",
     });
     getTelegramAttachmentByStorageKey.mockResolvedValue(null);
     storageGetObjectInfo.mockResolvedValue({
@@ -250,13 +255,22 @@ describe("signed telegram attachment uploads", () => {
     expect(storageCreateOrganizationAttachmentUploadUrl).toHaveBeenCalledWith(
       testOrganizationId,
       7,
-      "report.pdf"
+      "report.pdf",
+      {
+        fileName: "report.pdf",
+        contentType: "application/pdf",
+        sizeBytes: pdfBytes.byteLength,
+      },
+      "user-7"
     );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         key,
-        uploadUrl: "https://storage.example/upload?token=opaque",
+        uploadUrl: "https://fra.cloud.appwrite.io/v1/storage/buckets/document-attachments/files?project=wathaeqi",
+        uploadJwt: "short-lived-upload-jwt",
+        fileId: "a".repeat(32),
+        folder: "organizations/" + testOrganizationId + "/telegrams/7/attachments",
         sizeBytes: pdfBytes.byteLength,
       })
     );
