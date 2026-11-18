@@ -35,13 +35,27 @@ function getAllowedOrigins(): Set<string> {
   );
 }
 
+function createResponseHeaders(
+  baseHeaders: Headers,
+  contentType?: string
+): Headers {
+  const headers = new Headers(baseHeaders);
+  if (contentType) headers.set("Content-Type", contentType);
+  return headers;
+}
+
 function createCorsHeaders(origin: string | undefined): Headers {
   const headers = new Headers({
     "Cache-Control": "no-store",
     "Vary": "Origin",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-TRPC-Source, trpc-accept, Authorization",
+    "Access-Control-Allow-Headers": [
+      "Content-Type",
+      "X-TRPC-Source",
+      "trpc-accept",
+      "Authorization",
+    ].join(", "),
     "Access-Control-Max-Age": "600",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
@@ -137,10 +151,7 @@ export default async function main({
       }),
       {
         status: 200,
-        headers: new Headers([
-          ...corsHeaders.entries(),
-          ["Content-Type", "application/json"],
-        ]),
+        headers: createResponseHeaders(corsHeaders, "application/json"),
       }
     );
   }
@@ -198,7 +209,7 @@ export default async function main({
       statusText: response.statusText,
       headers: responseHeaders,
     });
-  } catch (cause) {
+  } catch {
     error("Wathaeqi owner API request failed");
     log("Request path:", url.pathname);
     return new Response(
