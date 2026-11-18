@@ -20,9 +20,12 @@ import {
   createInitialOwnerProfile,
   isInitialOwnerSetupAvailable,
 } from "./features/auth/ownerBootstrap";
-import { publicProcedure, router } from "./_core/trpc";
+import { platformOwnerProcedure, publicProcedure, router } from "./_core/trpc";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
+import { getOrganizationById, getUserOrganizationMembership } from "./features/organizations/organization";
+import { profileRouter } from "./features/users/profileRouter";
+import { platformDocumentSettingsRouter } from "./features/platform-settings/platformDocumentSettingsRouter";
 
 async function authenticateOwnerForLogin(username: string, password: string) {
   try {
@@ -154,8 +157,30 @@ const ownerAuthRouter = router({
   }),
 });
 
+const ownerOrganizationsRouter = router({
+  context: platformOwnerProcedure.query(async ({ ctx }) => {
+    const membership = await getUserOrganizationMembership(ctx.user.id);
+    const organizationId =
+      membership?.organizationId ?? ctx.user.organizationId ?? null;
+    const organization = organizationId
+      ? await getOrganizationById(organizationId)
+      : null;
+
+    return {
+      organizationId,
+      organizationName: organization?.name ?? "وثائقي",
+      role: membership?.role ?? "system_admin",
+      isActive: membership?.isActive ?? true,
+      isOwner: true,
+    };
+  }),
+});
+
 export const ownerApiRouter = router({
   auth: ownerAuthRouter,
+  profile: profileRouter,
+  organizations: ownerOrganizationsRouter,
+  platformDocumentSettings: platformDocumentSettingsRouter,
   documentStudio: documentStudioRouter,
 });
 
