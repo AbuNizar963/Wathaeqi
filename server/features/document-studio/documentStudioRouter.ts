@@ -1,10 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { platformOwnerProcedure, router } from "../../_core/trpc";
+import { platformOwnerProcedure, router } from "../../_core/ownerTrpc";
 import { getRequestAuditContext } from "../../auditContext";
 import { isPlatformOwner } from "../../ownerAccess";
-import { getUserOrganizationMembership } from "../organizations/organization";
-import { writeAuditLog } from "../../db";
+import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
+import { writeAuditLog } from "../audit/appwriteAuditRepository";
 import {
   allocateDocumentOrganizationSerialNumber,
   getDocumentOrganizationSettings,
