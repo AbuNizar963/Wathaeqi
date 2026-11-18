@@ -11,7 +11,9 @@ import OperationsWorkspace from "./features/admin/OperationsWorkspace";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
-const Home = lazy(() => import("./pages/Home"));
+const DocumentStudioPage = lazy(
+  () => import("./features/document-studio/DocumentStudioPage")
+);
 const VerifyTelegram = lazy(() => import("./pages/VerifyTelegram"));
 const AuditLogPage = lazy(() => import("./features/reports/AuditLog"));
 const Profile = lazy(() => import("./features/users/Profile"));
@@ -69,7 +71,7 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/">
           <DashboardPage>
-            <Home />
+            <DocumentStudioPage />
           </DashboardPage>
         </Route>
         <Route path="/404">
