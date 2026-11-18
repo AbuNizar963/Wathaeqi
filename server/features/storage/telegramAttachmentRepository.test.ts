@@ -91,10 +91,10 @@ describe("Appwrite telegram attachment repository", () => {
   it(
     "rejects duplicate storage-key rows instead of choosing an arbitrary one",
     async () => {
-    mocks.listRows.mockResolvedValue({ rows: [row, row] });
-    await expect(
-      getTelegramAttachmentByStorageKey(attachment.storageKey)
-    ).rejects.toThrow("Duplicate telegram attachment storage keys");
+      mocks.listRows.mockResolvedValue({ rows: [row, row] });
+      await expect(
+        getTelegramAttachmentByStorageKey(attachment.storageKey)
+      ).rejects.toThrow("Duplicate telegram attachment storage keys");
     }
   );
 
