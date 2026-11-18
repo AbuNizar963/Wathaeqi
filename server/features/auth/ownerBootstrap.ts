@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { Query, Users } from "node-appwrite";
+import { Account, Query, Users } from "node-appwrite";
 import type { User } from "../../../drizzle/schema";
 import {
   getAppwriteAdminClient,
   getAppwriteDatabaseId,
+  getAppwriteSessionClient,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
@@ -71,7 +72,7 @@ export async function isInitialOwnerSetupAvailable(): Promise<boolean> {
 export async function createInitialOwnerProfile(input: {
   username: string;
   password: string;
-}): Promise<User> {
+}): Promise<{ user: User; session: Awaited<ReturnType<Account["createEmailPasswordSession"]>> }> {
   if (ENV.ownerSetupSecret.length < 32) {
     throw new Error("إعداد إعادة تعيين كلمة مرور المالك غير مكتمل على الخادم");
   }
@@ -82,9 +83,20 @@ export async function createInitialOwnerProfile(input: {
   }
 
   const users = new Users(getAppwriteAdminClient());
-  await users.get({ userId: owner.authUserId });
+  const authUser = await users.get({ userId: owner.authUserId });
+  if (authUser.email.trim().toLowerCase() !== owner.email.trim().toLowerCase()) {
+    throw new Error("بيانات حساب المالك لا تتطابق مع حساب المصادقة المرتبط");
+  }
   await users.updatePassword({
     userId: owner.authUserId,
+    password: input.password,
+  });
+
+  // Create the session directly from the verified owner email. The guest-scoped
+  // account.get() verification in the generic login path can fail after the
+  // session is issued even though Appwrite has already authenticated the user.
+  const session = await new Account(getAppwriteSessionClient()).createEmailPasswordSession({
+    email: owner.email,
     password: input.password,
   });
 
@@ -107,7 +119,7 @@ export async function createInitialOwnerProfile(input: {
     return Number.isFinite(date.getTime()) ? date : new Date(now);
   };
 
-  return {
+  const user: User = {
     id: Number(data.id),
     authUserId: owner.authUserId,
     sessionVersion,
@@ -130,6 +142,7 @@ export async function createInitialOwnerProfile(input: {
     role: "admin",
     createdAt: asDate(data.createdAt),
     updatedAt: new Date(now),
-    lastSignedIn: asDate(data.lastSignedIn),
+    lastSignedIn: new Date(now),
   };
+  return { user, session };
 }
