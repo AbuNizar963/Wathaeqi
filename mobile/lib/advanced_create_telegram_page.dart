@@ -391,7 +391,7 @@ class _AdvancedCreateTelegramSheetState
           fileName: attachmentName.isEmpty
               ? 'attachment.$extension'
               : attachmentName,
-          contentType: _contentType(extension),
+          contentType: _contentType(extension) ?? 'application/octet-stream',
           bytes: attachment.bytes!,
         );
       }
