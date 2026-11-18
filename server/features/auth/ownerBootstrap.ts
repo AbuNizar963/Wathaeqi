@@ -115,14 +115,16 @@ export async function createInitialOwnerProfile(input: {
     name: typeof data.name === "string" ? data.name : null,
     username: owner.username,
     passwordHash: null,
-    badgeNumber: typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    badgeNumber:
+      typeof data.badgeNumber === "string" ? data.badgeNumber : null,
     bio: typeof data.bio === "string" ? data.bio : null,
     phone: typeof data.phone === "string" ? data.phone : null,
     rank: typeof data.rank === "string" ? data.rank : null,
     unit: typeof data.unit === "string" ? data.unit : null,
     avatarKey: typeof data.avatarKey === "string" ? data.avatarKey : null,
     email: owner.email,
-    loginMethod: typeof data.loginMethod === "string" ? data.loginMethod : "appwrite",
+    loginMethod:
+      typeof data.loginMethod === "string" ? data.loginMethod : "appwrite",
     isActive: true,
     isPlatformOwner: true,
     mustChangePassword: false,
