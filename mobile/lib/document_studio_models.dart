@@ -238,7 +238,6 @@ class OfficialDocument {
     'createdAt': createdAt.toUtc().toIso8601String(),
     'updatedAt': updatedAt.toUtc().toIso8601String(),
     if (issuedAt != null) 'issuedAt': issuedAt!.toUtc().toIso8601String(),
-    if (archivedAt != null)
-      'archivedAt': archivedAt!.toUtc().toIso8601String(),
+    if (archivedAt != null) 'archivedAt': archivedAt!.toUtc().toIso8601String(),
   };
 }

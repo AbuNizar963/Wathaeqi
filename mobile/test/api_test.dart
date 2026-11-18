@@ -866,8 +866,7 @@ void main() {
             'uploadUrl': storageUrl,
             'uploadJwt': 'signed-upload-jwt',
             'fileId': 'a' * 32,
-            'folder':
-                'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
+            'folder': 'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
             'fileName': 'report.pdf',
             'contentType': 'application/pdf',
             'sizeBytes': bytes.length,
@@ -877,24 +876,33 @@ void main() {
         );
       }
       if (request.url.toString() == storageUrl) {
-        expect(request, isA<http.MultipartRequest>());
-        final uploadRequest = request as http.MultipartRequest;
-        expect(uploadRequest.method, 'POST');
-        expect(uploadRequest.headers['X-Appwrite-Project'], 'project-test');
-        expect(uploadRequest.headers['X-Appwrite-JWT'], 'signed-upload-jwt');
-        expect(uploadRequest.headers.containsKey('cookie'), isFalse);
-        expect(uploadRequest.fields, {
-          'permissions': '[]',
-          'fileId': 'a' * 32,
-          'folder':
-              'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
-        });
-        expect(uploadRequest.files, hasLength(1));
-        final uploadedFile = uploadRequest.files.single;
-        expect(uploadedFile.field, 'file');
-        expect(uploadedFile.filename, 'report.pdf');
-        expect(uploadedFile.contentType.toString(), 'application/pdf');
-        expect(await uploadedFile.finalize().toBytes(), bytes);
+        expect(request, isA<http.Request>());
+        expect(request.method, 'POST');
+        String header(String name) => request.headers.entries
+            .firstWhere((entry) => entry.key.toLowerCase() == name.toLowerCase())
+            .value;
+        expect(header('X-Appwrite-Project'), 'project-test');
+        expect(header('X-Appwrite-JWT'), 'signed-upload-jwt');
+        expect(request.headers.containsKey('cookie'), isFalse);
+        expect(
+          header('content-type'),
+          startsWith('multipart/form-data; boundary='),
+        );
+        final multipartBody = utf8.decode(
+          request.bodyBytes,
+          allowMalformed: true,
+        );
+        expect(multipartBody, contains('name="permissions"\\r\\n\\r\\n[]'));
+        expect(multipartBody, contains('name="fileId"\\r\\n\\r\\n${'a' * 32}'));
+        expect(
+          multipartBody,
+          contains(
+            'name="folder"\\r\\n\\r\\norganizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
+          ),
+        );
+        expect(multipartBody, contains('filename="report.pdf"'));
+        expect(multipartBody, contains('Content-Type: application/pdf'));
+        expect(multipartBody, contains(utf8.decode(bytes)));
         return http.Response('', 200);
       }
       if (request.url.path.endsWith('/attachments/finalize')) {
