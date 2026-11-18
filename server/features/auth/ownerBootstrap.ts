@@ -4,7 +4,6 @@ import type { User } from "../../../drizzle/schema";
 import {
   getAppwriteAdminClient,
   getAppwriteDatabaseId,
-  getAppwriteSessionClient,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
@@ -87,19 +86,21 @@ export async function createInitialOwnerProfile(input: {
 
   const users = new Users(getAppwriteAdminClient());
   const authUser = await users.get({ userId: owner.authUserId });
-  if (authUser.email.trim().toLowerCase() !== owner.email.trim().toLowerCase()) {
+  if (
+    authUser.email.trim().toLowerCase() !== owner.email.trim().toLowerCase()
+  ) {
     throw new Error("بيانات حساب المالك لا تتطابق مع حساب المصادقة المرتبط");
   }
+
   await users.updatePassword({
     userId: owner.authUserId,
     password: input.password,
   });
 
-  // Create the session directly from the verified owner email. The guest-scoped
-  // account.get() verification in the generic login path can fail after the
-  // session is issued even though Appwrite has already authenticated the user.
+  // Use the privileged server client to issue the session. The API key remains
+  // server-side; only the returned session secret is placed in the HTTP-only cookie.
   const session = await new Account(
-    getAppwriteSessionClient()
+    getAppwriteAdminClient()
   ).createEmailPasswordSession({
     email: owner.email,
     password: input.password,
@@ -132,7 +133,8 @@ export async function createInitialOwnerProfile(input: {
     name: typeof data.name === "string" ? data.name : null,
     username: owner.username,
     passwordHash: null,
-    badgeNumber: typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    badgeNumber:
+      typeof data.badgeNumber === "string" ? data.badgeNumber : null,
     bio: typeof data.bio === "string" ? data.bio : null,
     phone: typeof data.phone === "string" ? data.phone : null,
     rank: typeof data.rank === "string" ? data.rank : null,
