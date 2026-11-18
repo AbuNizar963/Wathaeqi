@@ -1515,8 +1515,6 @@ export default function Home() {
       {composerOpen && (
         <TelegramComposer
           pending={create.isPending}
-          routingDirectory={routingDirectory.data ?? []}
-          descendants={organizationDescendants.data ?? []}
           numberSystem={numberSystem}
           close={() => setComposerOpen(false)}
           submit={(values, attachment) => {
@@ -2346,35 +2344,17 @@ function TelegramViewButton({
 
 function TelegramComposer({
   pending,
-  routingDirectory,
-  descendants,
   numberSystem,
   close,
   submit,
 }: {
   pending: boolean;
-  routingDirectory: Array<{
-    id: string;
-    code: string;
-    name: string;
-    type: string;
-    parentOrganizationId: string | null;
-    isSelectable: boolean;
-    isConfiguredDestination?: boolean;
-  }>;
-  descendants: Array<{
-    id: string;
-    name: string;
-    parentOrganizationId: string | null;
-  }>;
   numberSystem: NumberSystem;
   close: () => void;
   submit: (
     values: {
       subject: string;
       recipient: string;
-      recipientOrganizationId?: string;
-      broadcastToDescendants?: boolean;
       body: string;
       classification: Classification;
       priority: Priority;
@@ -2386,8 +2366,6 @@ function TelegramComposer({
 }) {
   const [subject, setSubject] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [recipientOrganizationId, setRecipientOrganizationId] = useState("");
-  const [broadcastToDescendants, setBroadcastToDescendants] = useState(false);
   const [body, setBody] = useState("");
   const [classification, setClassification] =
     useState<Classification>("normal");
@@ -2419,15 +2397,6 @@ function TelegramComposer({
       window.removeEventListener("offline", update);
     };
   }, []);
-
-  useEffect(() => {
-    const configuredTarget = routingDirectory.find(
-      target => target.isConfiguredDestination
-    );
-    if (configuredTarget && !recipientOrganizationId) {
-      setRecipient(configuredTarget.name);
-    }
-  }, [recipientOrganizationId, routingDirectory]);
 
   const selectAttachment = (file?: File) => {
     if (!file) return;
@@ -2476,8 +2445,6 @@ function TelegramComposer({
       {
         subject: subject.trim(),
         recipient: recipient.trim(),
-        ...(recipientOrganizationId ? { recipientOrganizationId } : {}),
-        ...(broadcastToDescendants ? { broadcastToDescendants: true } : {}),
         body: body.trim(),
         classification,
         priority,
@@ -2528,60 +2495,6 @@ function TelegramComposer({
               : "يوضع الرقم التالي تلقائيًا، ويمكن تعديله قبل الحفظ. يمنع النظام تكرار الرقم داخل الجهة."}
           </span>
         </label>
-        <div className="grid gap-1.5 text-xs font-bold">
-          <span>الجهة الموجهة إليها</span>
-          <OrganizationTreePicker
-            options={routingDirectory}
-            value={recipientOrganizationId}
-            onValueChange={targetId => {
-              const target = routingDirectory.find(
-                item => item.id === targetId
-              );
-              setRecipientOrganizationId(targetId);
-              setBroadcastToDescendants(false);
-              setRecipient(
-                target?.name ??
-                  routingDirectory.find(item => item.isConfiguredDestination)
-                    ?.name ??
-                  ""
-              );
-            }}
-            placeholder={
-              routingDirectory.some(target => target.isConfiguredDestination)
-                ? "التوجيه الافتراضي حسب إعداد الجهة"
-                : "اختر القيادة أو المديرية أو الجهة المستقبلة"
-            }
-            ariaLabel="اختيار الجهة الموجهة إليها"
-            allowClear={Boolean(recipientOrganizationId)}
-            clearLabel={
-              routingDirectory.some(target => target.isConfiguredDestination)
-                ? "استخدام التوجيه الافتراضي"
-                : "إلغاء اختيار الوجهة"
-            }
-            emptyMessage="لا توجد جهات مسموحة للإرسال من جهة العمل الحالية."
-          />
-          {descendants.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setBroadcastToDescendants(true);
-                setRecipientOrganizationId("");
-                setRecipient("كافة الوحدات");
-              }}
-              className={`rounded-lg border px-3 py-2 text-right text-xs transition-colors ${
-                broadcastToDescendants
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "bg-muted/30 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              <span className="font-bold">كافة الوحدات</span>
-              <span className="mr-2">
-                إرسال نسخة إلى الجهات التابعة مباشرة ({descendants.length})
-              </span>
-            </button>
-          )}
-        </div>
-
         <div className="grid gap-1.5 text-xs font-bold">
           <span>درجة السرية</span>
           <div className="grid min-w-0 grid-cols-2 gap-2">
