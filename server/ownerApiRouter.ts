@@ -24,7 +24,11 @@ import {
   createInitialOwnerProfile,
   isInitialOwnerSetupAvailable,
 } from "./features/auth/ownerBootstrap";
-import { platformOwnerProcedure, publicProcedure, router } from "./_core/ownerTrpc";
+import {
+  platformOwnerProcedure,
+  publicProcedure,
+  router,
+} from "./_core/ownerTrpc";
 import { getRequestAuditContext } from "./auditContext";
 import { writeAuditLog } from "./features/audit/appwriteAuditRepository";
 import {
