@@ -301,7 +301,14 @@ export async function storagePutOrganizationAttachment(
   }
 
   const safeFileName = sanitizeFileName(fileName);
-  const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
+  const key = [
+    "organizations",
+    safeOrganizationId,
+    "telegrams",
+    String(telegramId),
+    "attachments",
+    `${crypto.randomUUID()}-${safeFileName}`,
+  ].join("/");
   const body = Buffer.from(data);
   await getStorageProvider().upload(key, body, {
     contentType,
