@@ -12,7 +12,6 @@ import {
   Bold,
   Heading1,
   Heading2,
-  ImagePlus,
   Italic,
   List,
   ListOrdered,
@@ -104,7 +103,10 @@ export default function DocumentEditor({
     }
 
     if (JSON.stringify(editor.getJSON()) !== JSON.stringify(nextContent)) {
-      editor.commands.setContent(nextContent as never, { emitUpdate: false });
+      editor.commands.setContent(
+        nextContent as Parameters<typeof editor.commands.setContent>[0],
+        { emitUpdate: false }
+      );
     }
   }, [content, editable, editor, onChange]);
 
@@ -286,9 +288,6 @@ export default function DocumentEditor({
           >
             <Redo2 className="h-4 w-4" />
           </Button>
-          <span className="sr-only">
-            <ImagePlus aria-hidden="true" />
-          </span>
         </div>
       ) : null}
       <EditorContent editor={editor} />
