@@ -378,10 +378,7 @@ export const documentStudioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await getOfficialDocument(
-        ctx.user.authUserId,
-        input.id
-      );
+      const existing = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!existing) throwIfNotFound("الوثيقة غير موجودة");
       try {
         const saved = await archiveOfficialDocument(
@@ -422,10 +419,7 @@ export const documentStudioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const existing = await getOfficialDocument(
-        ctx.user.authUserId,
-        input.id
-      );
+      const existing = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!existing) throwIfNotFound("الوثيقة غير موجودة");
       if (existing.status === "issued") return existing;
       if (existing.status !== "draft") {
