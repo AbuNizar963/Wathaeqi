@@ -14,6 +14,26 @@ const MEMBERSHIPS_TABLE_ID = "organization_memberships";
 const OWNER_PROFILE_ROW_ID = "platform-owner";
 const OWNER_MEMBERSHIP_ROW_ID = "platform-owner-membership";
 
+async function getNextNumericId(tableId: string): Promise<number> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: getAppwriteDatabaseId(),
+    tableId,
+    queries: [Query.orderDesc("id"), Query.limit(1)],
+    total: false,
+  });
+  const first = result.rows[0] as AppwriteRow | undefined;
+  const data = first?.data ?? first ?? {};
+  const currentId = Number(data.id ?? 0);
+  if (
+    !Number.isSafeInteger(currentId) ||
+    currentId < 0 ||
+    currentId >= 2_147_483_647
+  ) {
+    throw new Error("تعذر تخصيص رقم مستخدم آمن في قاعدة Appwrite");
+  }
+  return currentId + 1;
+}
+
 type AppwriteRow = {
   $id: string;
   data?: Record<string, unknown>;
@@ -49,7 +69,10 @@ export async function createInitialOwnerProfile(input: {
 
   const organization = await getPrimaryOrganization();
   const now = new Date().toISOString();
-  const userId = Date.now();
+  const tables = getAppwriteTablesDB();
+  const databaseId = getAppwriteDatabaseId();
+  const userId = await getNextNumericId(USERS_TABLE_ID);
+  const membershipId = await getNextNumericId(MEMBERSHIPS_TABLE_ID);
   const sessionVersion = randomUUID();
   const users = new Users(getAppwriteAdminClient());
   const authUser = await users.create({
@@ -61,8 +84,6 @@ export async function createInitialOwnerProfile(input: {
 
   let profileCreated = false;
   let membershipCreated = false;
-  const tables = getAppwriteTablesDB();
-  const databaseId = getAppwriteDatabaseId();
   const profileRowId = OWNER_PROFILE_ROW_ID;
 
   try {
@@ -96,7 +117,7 @@ export async function createInitialOwnerProfile(input: {
       tableId: MEMBERSHIPS_TABLE_ID,
       rowId: OWNER_MEMBERSHIP_ROW_ID,
       data: {
-        id: userId + 1,
+        id: membershipId,
         organizationId: organization.id,
         organization: organization.id,
         userId,
