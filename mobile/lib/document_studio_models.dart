@@ -168,16 +168,20 @@ class OfficialDocument {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.organizationId,
     this.templateId,
     this.templateRevision,
+    this.templateFieldsSnapshot = const [],
     this.issuedAt,
     this.archivedAt,
   });
 
   final String id;
   final String ownerId;
+  final String? organizationId;
   final String? templateId;
   final int? templateRevision;
+  final List<DocumentTemplateField> templateFieldsSnapshot;
   final String title;
   final String category;
   final String subject;
@@ -196,8 +200,18 @@ class OfficialDocument {
       OfficialDocument(
         id: json['id'] as String? ?? '',
         ownerId: json['ownerId'] as String? ?? '',
+        organizationId: json['organizationId'] as String?,
         templateId: json['templateId'] as String?,
         templateRevision: (json['templateRevision'] as num?)?.toInt(),
+        templateFieldsSnapshot:
+            (json['templateFieldsSnapshot'] as List<dynamic>? ?? const [])
+                .whereType<Map>()
+                .map(
+                  (item) => DocumentTemplateField.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList(growable: false),
         title: json['title'] as String? ?? '',
         category: json['category'] as String? ?? 'general',
         subject: json['subject'] as String? ?? '',
@@ -224,8 +238,12 @@ class OfficialDocument {
   Map<String, dynamic> toJson() => {
     'id': id,
     'ownerId': ownerId,
+    if (organizationId != null) 'organizationId': organizationId,
     if (templateId != null) 'templateId': templateId,
     if (templateRevision != null) 'templateRevision': templateRevision,
+    if (templateFieldsSnapshot.isNotEmpty)
+      'templateFieldsSnapshot':
+          templateFieldsSnapshot.map((item) => item.toJson()).toList(),
     'title': title,
     'category': category,
     'subject': subject,

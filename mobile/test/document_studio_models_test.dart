@@ -56,8 +56,17 @@ void main() {
         final document = OfficialDocument(
           id: 'document-1',
           ownerId: '550e8400-e29b-41d4-a716-446655440000',
+          organizationId: 'org-1',
           templateId: 'template-1',
           templateRevision: 3,
+          templateFieldsSnapshot: const [
+            DocumentTemplateField(
+              key: 'employee_name',
+              label: 'اسم الموظف',
+              type: DocumentTemplateFieldType.text,
+              required: true,
+            ),
+          ],
           title: 'كتاب تكليف',
           category: 'personnel',
           subject: 'تكليف موظف',
@@ -81,7 +90,9 @@ void main() {
         expect(restored.id, document.id);
         expect(restored.ownerId, document.ownerId);
         expect(restored.category, 'personnel');
+        expect(restored.organizationId, 'org-1');
         expect(restored.templateRevision, 3);
+        expect(restored.templateFieldsSnapshot, hasLength(1));
         expect(restored.fieldValues['employee_name'], 'أحمد');
         expect(restored.content['type'], 'doc');
         expect(restored.serialCode, 'DOC-0012');
