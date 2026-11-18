@@ -99,6 +99,7 @@ import {
   listOrganizationDescendants,
   provisionOrganizationAccount,
   listOrganizationsForUser,
+  listRoutingTargets,
   listRoutingDirectory,
   purgeArchivedOrganizationPermanently,
   selectPlatformOwnerWorkplace,
