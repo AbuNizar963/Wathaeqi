@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function OwnerSetupForm() {
   const utils = trpc.useUtils();
-  const createOwner = trpc.auth.createInitialOwner.useMutation({
+  const resetOwnerPassword = trpc.auth.createInitialOwner.useMutation({
     onSuccess: async () => {
       await Promise.all([
         utils.auth.me.invalidate(),
@@ -15,16 +15,14 @@ export default function OwnerSetupForm() {
     },
   });
   const [setupSecret, setSetupSecret] = useState("");
-  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (password.length < 12 || password !== confirmPassword) return;
-    createOwner.mutate({ setupSecret, name, username, email, password });
+    resetOwnerPassword.mutate({ setupSecret, username, password });
   }
 
   return (
@@ -39,19 +37,17 @@ export default function OwnerSetupForm() {
         <div className="flex flex-col items-center gap-3 text-center">
           <BrandMark size="lg" />
           <h1 className="text-2xl font-semibold tracking-tight">
-            إنشاء حساب مالك النظام
+            إعادة تعيين كلمة مرور المالك
           </h1>
           <p className="text-sm text-muted-foreground">
-            {[
-              "هذه خطوة الإعداد الأولى. أنشئ حساب المالك الذي سيملك",
-              "صلاحيات إدارة النظام. بعد نجاح الإنشاء سيُغلق هذا الإعداد تلقائياً.",
-            ].join(" ")}
+            استخدم اسم المستخدم الحالي وحدد كلمة مرور جديدة. لن يتم إنشاء حساب
+            جديد ولن نطلب بريداً إلكترونياً.
           </p>
         </div>
 
         <div className="space-y-2">
           <label htmlFor="owner-setup-secret" className="text-sm font-medium">
-            رمز الإعداد الأولي
+            رمز الإعداد
           </label>
           <Input
             id="owner-setup-secret"
@@ -63,51 +59,22 @@ export default function OwnerSetupForm() {
             required
           />
           <p className="text-xs text-muted-foreground">
-            الرمز الذي أعددته في متغير OWNER_SETUP_SECRET داخل Netlify.
+            الرمز الذي تضيفه في متغير OWNER_SETUP_SECRET داخل Netlify.
           </p>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <label htmlFor="owner-name" className="text-sm font-medium">
-              الاسم الكامل
-            </label>
-            <Input
-              id="owner-name"
-              value={name}
-              onChange={event => setName(event.target.value)}
-              autoComplete="name"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="owner-username" className="text-sm font-medium">
-              اسم المستخدم
-            </label>
-            <Input
-              id="owner-username"
-              value={username}
-              onChange={event => setUsername(event.target.value)}
-              autoComplete="username"
-              dir="ltr"
-              minLength={3}
-              pattern="[A-Za-z0-9._-]+"
-              required
-            />
-          </div>
-        </div>
-
         <div className="space-y-2">
-          <label htmlFor="owner-email" className="text-sm font-medium">
-            البريد الإلكتروني
+          <label htmlFor="owner-username" className="text-sm font-medium">
+            اسم المستخدم الحالي
           </label>
           <Input
-            id="owner-email"
-            type="email"
-            value={email}
-            onChange={event => setEmail(event.target.value)}
-            autoComplete="email"
+            id="owner-username"
+            value={username}
+            onChange={event => setUsername(event.target.value)}
+            autoComplete="username"
             dir="ltr"
+            minLength={3}
+            pattern="[A-Za-z0-9._-]+"
             required
           />
         </div>
@@ -115,7 +82,7 @@ export default function OwnerSetupForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="owner-password" className="text-sm font-medium">
-              كلمة المرور
+              كلمة المرور الجديدة
             </label>
             <Input
               id="owner-password"
@@ -158,9 +125,9 @@ export default function OwnerSetupForm() {
             كلمتا المرور غير متطابقتين.
           </p>
         ) : null}
-        {createOwner.error ? (
+        {resetOwnerPassword.error ? (
           <p className="text-sm text-destructive" role="alert">
-            {createOwner.error.message}
+            {resetOwnerPassword.error.message}
           </p>
         ) : null}
 
@@ -169,18 +136,16 @@ export default function OwnerSetupForm() {
           size="lg"
           className="w-full"
           disabled={
-            createOwner.isPending ||
+            resetOwnerPassword.isPending ||
             setupSecret.length < 32 ||
-            name.trim().length < 2 ||
             username.trim().length < 3 ||
-            !email.trim() ||
             password.length < 12 ||
             password !== confirmPassword
           }
         >
-          {createOwner.isPending
-            ? "جارٍ إنشاء حساب المالك..."
-            : "إنشاء حساب المالك"}
+          {resetOwnerPassword.isPending
+            ? "جارٍ تحديث كلمة المرور..."
+            : "تحديث كلمة المرور وتسجيل الدخول"}
         </Button>
       </form>
     </div>
