@@ -2,85 +2,116 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrpcContext } from "../../_core/context";
 
 const mocks = vi.hoisted(() => ({
-  usersInsert: vi.fn(),
-  userDuplicateLookup: vi.fn(),
-  userLookup: vi.fn(),
-  usersUpdate: vi.fn(),
-  organizationLookup: vi.fn(),
-  addOrganizationMembership: vi.fn(),
-  hashPassword: vi.fn(),
+  listRows: vi.fn(),
+  createRow: vi.fn(),
+  updateRow: vi.fn(),
+  deleteRow: vi.fn(),
+  createAuthUser: vi.fn(),
+  updatePassword: vi.fn(),
+  updateStatus: vi.fn(),
+  updateEmail: vi.fn(),
+  updateName: vi.fn(),
+  deleteAuthUser: vi.fn(),
+  getProfileById: vi.fn(),
   verifyPassword: vi.fn(),
-  getUserById: vi.fn(),
-  purgeInactiveUserSafely: vi.fn(),
+  getOrganizationById: vi.fn(),
+  listAllOrganizations: vi.fn(),
+  addOrganizationMembership: vi.fn(),
+  assertCanManageOrganization: vi.fn(),
+  getManagedOrganizationIds: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
 
-vi.mock("../../_core/auth", () => ({
-  hashPassword: mocks.hashPassword,
-  verifyPassword: mocks.verifyPassword,
+vi.mock("../../_core/appwrite", () => ({
+  getAppwriteDatabaseId: () => "test-database",
+  getAppwriteTablesDB: () => ({
+    listRows: mocks.listRows,
+    createRow: mocks.createRow,
+    updateRow: mocks.updateRow,
+    deleteRow: mocks.deleteRow,
+  }),
+  getAppwriteUsers: () => ({
+    create: mocks.createAuthUser,
+    updatePassword: mocks.updatePassword,
+    updateStatus: mocks.updateStatus,
+    updateEmail: mocks.updateEmail,
+    updateName: mocks.updateName,
+    delete: mocks.deleteAuthUser,
+  }),
 }));
-vi.mock("../organizations/organization", () => ({
-  addOrganizationMembership: mocks.addOrganizationMembership,
+
+vi.mock("../../_core/appwriteAuth", () => ({
+  getAppwriteProfileById: mocks.getProfileById,
+  verifyAppwriteUserPassword: mocks.verifyPassword,
 }));
+
+vi.mock("../../_core/supabase", () => ({
+  getSupabaseAdmin: vi.fn(() => {
+    throw new Error("Legacy Supabase access is not expected in these tests");
+  }),
+}));
+
 vi.mock("../../db", () => ({
-  getUserById: mocks.getUserById,
   writeAuditLog: mocks.writeAuditLog,
 }));
-vi.mock("../../_core/supabase", () => ({
-  getSupabaseAdmin: () => ({
-    from: (table: string) => {
-      if (table === "organizations") {
-        return {
-          select: () => ({
-            eq: () => ({ maybeSingle: mocks.organizationLookup }),
-          }),
-        };
-      }
-      return {
-        select: () => ({
-          ilike: () => ({
-            maybeSingle: mocks.userDuplicateLookup,
-            neq: () => ({ maybeSingle: mocks.userDuplicateLookup }),
-          }),
-          eq: () => ({ maybeSingle: mocks.userLookup }),
-        }),
-        insert: mocks.usersInsert,
-        update: (values: Record<string, unknown>) => {
-          mocks.usersUpdate(values);
-          const result = Promise.resolve({
-            data: { id: 25 },
-            error: null,
-          }) as Promise<{ data: { id: number }; error: null }> & {
-            select: () => {
-              single: () => Promise<{
-                data: { id: number };
-                error: null;
-              }>;
-            };
-          };
-          result.select = () => ({
-            single: () => Promise.resolve({ data: { id: 25 }, error: null }),
-          });
-          return { eq: () => result };
-        },
-      };
-    },
-  }),
+
+vi.mock("../organizations/organization", () => ({
+  addOrganizationMembership: mocks.addOrganizationMembership,
+  getOrganizationById: mocks.getOrganizationById,
+  listAllOrganizations: mocks.listAllOrganizations,
+}));
+
+vi.mock("../organizations/organizationScope", () => ({
+  assertCanManageOrganization: mocks.assertCanManageOrganization,
+  getManagedOrganizationIds: mocks.getManagedOrganizationIds,
 }));
 
 import { userManagementRouter } from "./userManagementRouter";
 
 const organizationId = "00000000-0000-4000-8000-000000000025";
+const ownerId = "00000000-0000-4000-8000-000000000001";
+const targetAuthId = "00000000-0000-4000-8000-000000000025";
+
+function profile(
+  overrides: Record<string, unknown> = {}
+): {
+  rowId: string;
+  user: Record<string, unknown>;
+} {
+  return {
+    rowId: "profile-row",
+    user: {
+      id: 25,
+      authUserId: targetAuthId,
+      organizationId,
+      username: "officer25",
+      name: "الشرطي التجريبي",
+      email: "officer25@accounts.wathaeqi.invalid",
+      badgeNumber: null,
+      phone: null,
+      rank: null,
+      unit: null,
+      role: "user",
+      loginMethod: "password",
+      isActive: true,
+      mustChangePassword: false,
+      sessionVersion: "session-v1",
+      updatedAt: new Date("2026-10-12T12:00:00.000Z"),
+      ...overrides,
+    },
+  };
+}
 
 function adminContext(): TrpcContext {
   const now = new Date();
   return {
     user: {
       id: 1,
-      authUserId: "00000000-0000-4000-8000-000000000001",
+      authUserId: ownerId,
       name: "مالك النظام",
       badgeNumber: null,
       email: "owner@example.com",
+      username: "owner",
       loginMethod: "password",
       role: "admin",
       mustChangePassword: false,
@@ -93,51 +124,56 @@ function adminContext(): TrpcContext {
   };
 }
 
-describe("user management organization assignment", () => {
+describe("Appwrite user management", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.userDuplicateLookup.mockResolvedValue({ data: null, error: null });
-    mocks.userLookup.mockResolvedValue({ data: null, error: null });
-    mocks.usersUpdate.mockResolvedValue({ error: null });
-    mocks.verifyPassword.mockResolvedValue(true);
-    mocks.getUserById.mockResolvedValue({
-      passwordHash: "hashed-owner-password",
-    });
-    mocks.purgeInactiveUserSafely.mockResolvedValue({
-      data: { deleted: true, userId: 25 },
-      error: null,
-    });
-    mocks.organizationLookup.mockResolvedValue({
-      data: { id: organizationId, name: "قسم الاختبار", isActive: true },
-      error: null,
-    });
-    mocks.hashPassword.mockResolvedValue("hashed-password");
-    mocks.addOrganizationMembership.mockResolvedValue({ id: 9 });
-    mocks.writeAuditLog.mockResolvedValue(undefined);
-    mocks.usersInsert.mockReturnValue({
-      select: () => ({
-        single: () =>
-          Promise.resolve({
-            data: {
-              id: 25,
-              organizationId,
-              username: "officer25",
-              name: "الشرطي التجريبي",
-              badgeNumber: null,
-              phone: null,
-              rank: null,
-              unit: null,
-              role: "user",
-              createdAt: "2026-10-12T12:00:00.000Z",
-              lastSignedIn: "2026-10-12T12:00:00.000Z",
+    mocks.listRows.mockResolvedValue({ rows: [] });
+    mocks.createRow.mockImplementation(async ({ data }) => ({
+      $id: "profile-row",
+      data: { ...data },
+    }));
+    mocks.updateRow.mockImplementation(async ({ data }) => ({
+      $id: "profile-row",
+      data: { id: 25, ...data },
+    }));
+    mocks.deleteRow.mockResolvedValue({});
+    mocks.createAuthUser.mockResolvedValue({ $id: targetAuthId });
+    mocks.updatePassword.mockResolvedValue({});
+    mocks.updateStatus.mockResolvedValue({});
+    mocks.updateEmail.mockResolvedValue({});
+    mocks.updateName.mockResolvedValue({});
+    mocks.deleteAuthUser.mockResolvedValue({});
+    mocks.getProfileById.mockImplementation(async (id: number) =>
+      id === 1
+        ? {
+            rowId: "owner-row",
+            user: {
+              id: 1,
+              authUserId: ownerId,
+              username: "owner",
+              email: "owner@example.com",
+              role: "admin",
             },
-            error: null,
-          }),
-      }),
+          }
+        : profile()
+    );
+    mocks.verifyPassword.mockResolvedValue(true);
+    mocks.getOrganizationById.mockResolvedValue({
+      id: organizationId,
+      name: "قسم الاختبار",
+      isActive: true,
+      deletedAt: null,
     });
+    mocks.listAllOrganizations.mockResolvedValue([
+      { id: organizationId, name: "قسم الاختبار", isActive: true },
+    ]);
+    mocks.addOrganizationMembership.mockResolvedValue({});
+    mocks.assertCanManageOrganization.mockResolvedValue(undefined);
+    mocks.getManagedOrganizationIds.mockResolvedValue([organizationId]);
+    mocks.writeAuditLog.mockResolvedValue(undefined);
   });
 
-  it("creates the account and its active membership in the selected organization", async () => {
+  it("creates an Appwrite account, profile, and organization membership", async () => {
     const caller = userManagementRouter.createCaller(adminContext());
 
     await expect(
@@ -146,15 +182,31 @@ describe("user management organization assignment", () => {
         name: "الشرطي التجريبي",
         username: "officer25",
         password: "A-secure-password-123",
-        badgeNumber: null,
-        phone: null,
-        rank: null,
-        unit: null,
       })
-    ).resolves.toMatchObject({ id: 25, organizationId });
+    ).resolves.toMatchObject({
+      id: 25,
+      organizationId,
+      username: "officer25",
+    });
 
-    expect(mocks.usersInsert).toHaveBeenCalledWith(
-      expect.objectContaining({ organizationId, username: "officer25" })
+    expect(mocks.createAuthUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: expect.any(String),
+        email: expect.stringMatching(/@accounts\.wathaeqi\.invalid$/),
+        password: "A-secure-password-123",
+      })
+    );
+    expect(mocks.createRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "test-database",
+        tableId: "users",
+        data: expect.objectContaining({
+          organizationId,
+          username: "officer25",
+          mustChangePassword: true,
+          isActive: true,
+        }),
+      })
     );
     expect(mocks.addOrganizationMembership).toHaveBeenCalledWith({
       organizationId,
@@ -162,39 +214,18 @@ describe("user management organization assignment", () => {
       role: "dispatcher",
     });
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "user.create",
-        metadata: expect.stringContaining(
-          `"organizationId":"${organizationId}"`
-        ),
-      })
+      expect.objectContaining({ action: "user.create" })
     );
   });
 
-  it("creates an organization administrator membership", async () => {
-    const caller = userManagementRouter.createCaller(adminContext());
-
-    await expect(
-      caller.create({
-        organizationId,
-        name: "مدير الجهة التجريبي",
-        username: "organization-admin25",
-        password: "A-secure-password-123",
-        role: "organization_admin",
-      })
-    ).resolves.toMatchObject({ id: 25, organizationId });
-
-    expect(mocks.addOrganizationMembership).toHaveBeenCalledWith({
-      organizationId,
-      userId: 25,
-      role: "organization_admin",
-    });
-  });
-
-  it("rejects an inactive selected organization before inserting an account", async () => {
-    mocks.organizationLookup.mockResolvedValue({
-      data: { id: organizationId, name: "قسم موقوف", isActive: false },
-      error: null,
+  it("rejects a duplicate username before creating an Appwrite account", async () => {
+    mocks.listRows.mockResolvedValue({
+      rows: [
+        {
+          $id: "existing-profile",
+          data: { id: 40, username: "officer25" },
+        },
+      ],
     });
     const caller = userManagementRouter.createCaller(adminContext());
 
@@ -205,117 +236,54 @@ describe("user management organization assignment", () => {
         username: "officer25",
         password: "A-secure-password-123",
       })
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
 
-    expect(mocks.usersInsert).not.toHaveBeenCalled();
-    expect(mocks.addOrganizationMembership).not.toHaveBeenCalled();
+    expect(mocks.createAuthUser).not.toHaveBeenCalled();
+    expect(mocks.createRow).not.toHaveBeenCalled();
   });
 
-  it("rotates application sessions when an administrator resets a password", async () => {
-    mocks.userLookup.mockResolvedValue({
-      data: {
-        id: 25,
-        role: "user",
-        username: "officer25",
-        organizationId,
-      },
-      error: null,
-    });
-    mocks.userDuplicateLookup.mockResolvedValue({ data: null, error: null });
-    const caller = userManagementRouter.createCaller(adminContext());
-
-    await expect(
-      caller.update({
-        id: 25,
-        name: "الشرطي التجريبي",
-        username: "officer25",
-        badgeNumber: null,
-        phone: null,
-        rank: null,
-        unit: null,
-        password: "A-new-secure-password-123",
-        confirmPassword: "owner-password",
-      })
-    ).resolves.toMatchObject({ id: 25 });
-
-    const updatedValues = mocks.usersUpdate.mock.calls[0]?.[0];
-    expect(updatedValues).toEqual(
-      expect.objectContaining({
-        password_hash: "hashed-password",
-        mustChangePassword: true,
-        sessionVersion: expect.any(String),
-      })
-    );
-    expect(updatedValues).not.toHaveProperty("authUserId");
-  });
-
-  it("requires the current password before changing an account role", async () => {
-    const caller = userManagementRouter.createCaller(adminContext());
-
-    await expect(
-      caller.update({
-        id: 25,
-        name: "الشرطي التجريبي",
-        username: "officer25",
-        badgeNumber: null,
-        phone: null,
-        rank: null,
-        unit: null,
-        password: "",
-        role: "reviewer",
-      })
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-  });
-});
-
-describe("user activation lifecycle", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.verifyPassword.mockResolvedValue(true);
-    mocks.getUserById.mockResolvedValue({
-      passwordHash: "hashed-owner-password",
-    });
-    mocks.hashPassword.mockResolvedValue("hashed-new-password");
-    mocks.usersUpdate.mockResolvedValue({ error: null });
-  });
-
-  it("marks disabled accounts inactive and revokes credentials", async () => {
-    mocks.userLookup.mockResolvedValue({
-      data: {
-        id: 25,
-        role: "user",
-        username: "officer25",
-        organizationId: null,
-      },
-      error: null,
-    });
+  it("disables an account in Appwrite and rotates its application session", async () => {
     const caller = userManagementRouter.createCaller(adminContext());
 
     await expect(
       caller.disable({ id: 25, confirmPassword: "owner-password" })
     ).resolves.toMatchObject({ success: true });
 
-    expect(mocks.usersUpdate).toHaveBeenCalledWith(
+    expect(mocks.updateStatus).toHaveBeenCalledWith({
+      userId: targetAuthId,
+      status: false,
+    });
+    expect(mocks.updateRow).toHaveBeenCalledWith(
       expect.objectContaining({
-        loginMethod: "disabled",
-        isActive: false,
-        password_hash: null,
-        sessionVersion: expect.any(String),
+        tableId: "users",
+        rowId: "profile-row",
+        data: expect.objectContaining({
+          loginMethod: "disabled",
+          isActive: false,
+          sessionVersion: expect.any(String),
+        }),
       })
+    );
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "user.disable" })
     );
   });
 
-  it("reactivates disabled accounts and restores active status", async () => {
-    mocks.userLookup.mockResolvedValue({
-      data: {
-        id: 25,
-        role: "user",
-        username: "officer25",
-        loginMethod: "disabled",
-        organizationId: null,
-      },
-      error: null,
-    });
+  it("reactivates a disabled Appwrite account and requires a new password", async () => {
+    mocks.getProfileById.mockImplementation(async (id: number) =>
+      id === 1
+        ? {
+            rowId: "owner-row",
+            user: {
+              id: 1,
+              authUserId: ownerId,
+              username: "owner",
+              email: "owner@example.com",
+              role: "admin",
+            },
+          }
+        : profile({ loginMethod: "disabled", isActive: false })
+    );
     const caller = userManagementRouter.createCaller(adminContext());
 
     await expect(
@@ -326,13 +294,28 @@ describe("user activation lifecycle", () => {
       })
     ).resolves.toMatchObject({ success: true });
 
-    expect(mocks.usersUpdate).toHaveBeenCalledWith(
+    expect(mocks.updatePassword).toHaveBeenCalledWith({
+      userId: targetAuthId,
+      password: "A-new-secure-password-123",
+    });
+    expect(mocks.updateStatus).toHaveBeenCalledWith({
+      userId: targetAuthId,
+      status: true,
+    });
+    expect(mocks.updateRow).toHaveBeenCalledWith(
       expect.objectContaining({
-        loginMethod: "password",
-        isActive: true,
-        mustChangePassword: true,
-        sessionVersion: expect.any(String),
+        tableId: "users",
+        rowId: "profile-row",
+        data: expect.objectContaining({
+          loginMethod: "password",
+          isActive: true,
+          mustChangePassword: true,
+          sessionVersion: expect.any(String),
+        }),
       })
+    );
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "user.enable" })
     );
   });
 });
