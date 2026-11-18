@@ -198,9 +198,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
       if (!mounted) return;
       final selectedId = _selectedDocument?.id;
-      final refreshedSelection = selectedId == null
-          ? null
-          : documents.where((item) => item.id == selectedId).firstOrNull;
+      final matchingSelection = selectedId == null
+          ? <OfficialDocument>[]
+          : documents.where((item) => item.id == selectedId).toList();
+      final refreshedSelection =
+          matchingSelection.isEmpty ? null : matchingSelection.first;
       setState(() {
         _documents = documents;
         _templates = templates;
