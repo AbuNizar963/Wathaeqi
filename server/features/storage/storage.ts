@@ -295,14 +295,13 @@ export async function storagePutOrganizationAttachment(
 
   const safeFileName = sanitizeFileName(fileName);
   const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  return storagePutOrganizationAttachmentAtKey(
-    safeOrganizationId,
-    telegramId,
-    key,
-    safeFileName,
-    data,
-    contentType
-  );
+  const body = Buffer.from(data);
+  await getStorageProvider().upload(key, body, {
+    contentType,
+    cacheControl: "3600",
+  });
+
+  return { key, url: storageStableUrl(key) };
 }
 
 export async function storageDelete(key: string): Promise<void> {
