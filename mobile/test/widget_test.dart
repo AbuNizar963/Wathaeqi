@@ -1145,14 +1145,14 @@ void main() {
     final welcomePanel = find.byKey(const ValueKey<String>('welcome-panel'));
     expect(welcomePanel, findsOneWidget);
     final welcomePanelHeight = tester.getSize(welcomePanel).height;
-    expect(find.text('حالة صندوق الخروج'), findsNothing);
+    expect(find.text('حالة المزامنة المحلية'), findsNothing);
     expect(find.text('لا توجد برقيات معلقة محليًا.'), findsNothing);
     await tester.drag(find.text('الجهة الحالية'), const Offset(300, 0));
     await _pumpDashboardFrames(tester, frameCount: 8);
 
     final status = find.text('لا توجد برقيات معلقة محليًا.');
     expect(status, findsOneWidget);
-    expect(find.text('حالة صندوق الخروج'), findsOneWidget);
+    expect(find.text('حالة المزامنة المحلية'), findsOneWidget);
     expect(find.textContaining('الخادم متصل • آخر تحقق'), findsOneWidget);
     final outboxPanel = find.byKey(
       const ValueKey<String>('outbox-status-panel'),
@@ -1171,7 +1171,7 @@ void main() {
 
     expect(status, findsOneWidget);
     expect(
-      find.text('جارٍ فحص صندوق الخروج وإرسال البرقيات بالترتيب...'),
+      find.text('جارٍ فحص التغييرات المحلية ومزامنتها بالترتيب...'),
       findsNothing,
     );
   });
