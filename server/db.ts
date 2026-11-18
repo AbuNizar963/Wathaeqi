@@ -606,36 +606,6 @@ export async function upsertOrganizationSettingsForOrganization(
   return saved;
 }
 
-export async function updateRouteIncomingSerial(input: {
-  routeId: number;
-  serialNumber: number;
-  serialCode: string;
-}): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("telegram_routes")
-    .update({
-      incomingSerialNumber: input.serialNumber,
-      incomingSerialCode: input.serialCode,
-    })
-    .eq("id", input.routeId);
-  throwIfError(error, "Failed to save incoming organization serial");
-}
-
-export async function updateRouteOutgoingSerial(input: {
-  routeId: number;
-  serialNumber: number;
-  serialCode: string;
-}): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("telegram_routes")
-    .update({
-      routeSerialNumber: input.serialNumber,
-      routeSerialCode: input.serialCode,
-    })
-    .eq("id", input.routeId);
-  throwIfError(error, "Failed to save outgoing organization serial");
-}
-
 export type TelegramListItem = Telegram & {
   senderOrganizationName: string | null;
 };
@@ -1764,18 +1734,6 @@ export async function markNotificationRead(
 }
 
 /** Resolve pending route work for every account in the receiving organization. */
-export async function resolveRouteNotifications(
-  routeId: number
-): Promise<void> {
-  const { error } = await getSupabaseAdmin()
-    .from("notifications")
-    .update({ readAt: new Date().toISOString() })
-    .eq("routeId", routeId)
-    .in("type", ["route.approved", "route.requested"])
-    .is("readAt", null);
-  throwIfError(error, "Failed to resolve route notifications");
-}
-
 async function countTelegrams(
   _userId: number,
   canViewAll: boolean,
