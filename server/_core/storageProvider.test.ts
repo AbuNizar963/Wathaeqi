@@ -51,7 +51,9 @@ describe("Appwrite storage provider", () => {
     mocks.deleteFile.mockResolvedValue({});
   });
 
-  it("uploads files privately using a deterministic Appwrite file ID", async () => {
+  it(
+    "uploads files privately using a deterministic Appwrite file ID",
+    async () => {
     const key =
       "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
     const body = Buffer.from("report");
@@ -75,7 +77,8 @@ describe("Appwrite storage provider", () => {
         "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments",
       permissions: [],
     });
-  });
+    }
+  );
 
   it("creates an expiring Appwrite file-token URL", async () => {
     const key =
@@ -99,7 +102,9 @@ describe("Appwrite storage provider", () => {
     expect(url.searchParams.get("token")).toBe("short-lived-token");
   });
 
-  it("creates a short-lived Appwrite user JWT for direct upload", async () => {
+  it(
+    "creates a short-lived Appwrite user JWT for direct upload",
+    async () => {
     const key =
       "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
     const authorization = await getStorageProvider().createSignedUploadUrl(
@@ -127,7 +132,8 @@ describe("Appwrite storage provider", () => {
       "/v1/storage/buckets/document-attachments/files"
     );
     expect(url.searchParams.get("project")).toBe("wathaeqi");
-  });
+    }
+  );
 
   it("reads metadata and downloads bytes from Appwrite", async () => {
     const key =
