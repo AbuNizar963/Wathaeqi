@@ -1,5 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
-import { TRPCError } from "@trpc/server";
+import { Account, TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { publicUser } from "./_core/auth";
 import {
@@ -9,13 +9,14 @@ import {
   deleteCurrentAppwriteSession,
   setAppwriteSessionCookie,
 } from "./_core/appwriteAuth";
+import { getAppwriteSessionClient } from "./_core/appwrite";
 import {
   clearSuccessfulLoginRateLimit,
   enforceLoginRateLimit,
 } from "./_core/loginRateLimit";
 import { ENV } from "./_core/env";
 import { createInitialOwnerProfile, isInitialOwnerSetupAvailable } from "./features/auth/ownerBootstrap";
-import { platformOwnerProcedure, publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, router } from "./_core/trpc";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
 
@@ -24,8 +25,6 @@ async function authenticateOwnerForLogin(username: string, password: string) {
     const authenticated = await authenticateAppwriteUser(username, password);
     if (!authenticated || !isPlatformOwner(authenticated.user)) {
       if (authenticated?.session.secret) {
-        const { Account } = await import("node-appwrite");
-        const { getAppwriteSessionClient } = await import("./_core/appwrite");
         await new Account(
           getAppwriteSessionClient(authenticated.session.secret)
         )
