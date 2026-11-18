@@ -82,18 +82,21 @@ describe("Appwrite telegram attachment repository", () => {
   });
 
   it("lists all attachment metadata for a telegram", async () => {
-    await expect(listTelegramAttachments(attachment.telegramId)).resolves.toEqual([
-      attachment,
-    ]);
+    await expect(
+      listTelegramAttachments(attachment.telegramId)
+    ).resolves.toEqual([attachment]);
     expect(mocks.listRows).toHaveBeenCalledOnce();
   });
 
-  it("rejects duplicate storage-key rows instead of choosing an arbitrary one", async () => {
+  it(
+    "rejects duplicate storage-key rows instead of choosing an arbitrary one",
+    async () => {
     mocks.listRows.mockResolvedValue({ rows: [row, row] });
     await expect(
       getTelegramAttachmentByStorageKey(attachment.storageKey)
     ).rejects.toThrow("Duplicate telegram attachment storage keys");
-  });
+    }
+  );
 
   it("surfaces Appwrite read errors", async () => {
     mocks.listRows.mockRejectedValue(new Error("permission denied"));
