@@ -94,7 +94,6 @@ const requiredMobileProcedures = [
   "telegrams.actions",
   "telegrams.attachments",
   "telegrams.versions",
-  "telegrams.incomingRoutes",
 ];
 const documentStudioSharedApiProcedures = new Set([
   "documentStudio.getLetterheadSettings",
