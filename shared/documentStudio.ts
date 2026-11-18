@@ -88,10 +88,7 @@ export function validateTemplateFieldValues(
         message: `الحقل «${field.label}» مطلوب.`,
       });
     }
-    if (
-      field.maxLength !== undefined &&
-      value.length > field.maxLength
-    ) {
+    if (field.maxLength !== undefined && value.length > field.maxLength) {
       issues.push({
         fieldKey: field.key,
         message: `يجب ألا يتجاوز «${field.label}» ${field.maxLength} حرفاً.`,
