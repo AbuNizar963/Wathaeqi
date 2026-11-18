@@ -3113,8 +3113,6 @@ class _DashboardPageState extends State<DashboardPage>
       ],
     ),
   );
-
-
 }
 
 class _AccountMenuItem extends StatelessWidget {
