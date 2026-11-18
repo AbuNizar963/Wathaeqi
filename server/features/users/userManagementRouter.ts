@@ -171,7 +171,6 @@ async function hasRows(
   return result.rows.length > 0;
 }
 
-
 async function getActiveOrganizationForAccount(organizationId: string) {
   const organization = await getOrganizationById(organizationId);
   if (!organization) {
