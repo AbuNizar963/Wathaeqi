@@ -1490,7 +1490,6 @@ class _DashboardPageState extends State<DashboardPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _searchDebounce?.cancel();
-    _syncMessageTimer?.cancel();
     final mutationSubscription = _mutationSubscription;
     if (mutationSubscription != null) {
       unawaited(mutationSubscription.cancel());
@@ -2254,10 +2253,7 @@ class _DashboardPageState extends State<DashboardPage>
     ),
   );
 
-  String _syncTime(DateTime value) {
-    final local = value.toLocal();
-    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
-  }
+
 }
 
 class _AccountMenuItem extends StatelessWidget {
