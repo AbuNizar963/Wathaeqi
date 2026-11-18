@@ -210,7 +210,6 @@ export const userManagementRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const client = getSupabaseAdmin();
       const managedOrganizationIds = await getManagedOrganizationIds(ctx.user);
       if (input.organizationId) {
         await assertCanManageOrganization(ctx.user, input.organizationId);
@@ -218,98 +217,103 @@ export const userManagementRouter = router({
       const scopedOrganizationIds = input.organizationId
         ? [input.organizationId]
         : managedOrganizationIds;
-      let query = client
-        .from("users")
-        .select(
-          "id, organizationId, username, name, badgeNumber, phone, rank, unit, role, loginMethod, createdAt, lastSignedIn",
-          { count: "exact" }
-        )
-        .or("isActive.eq.true,loginMethod.eq.disabled")
-        .in("organizationId", scopedOrganizationIds)
-        .order("createdAt", { ascending: false })
-        .range(
-          (input.page - 1) * input.pageSize,
-          input.page * input.pageSize - 1
-        );
-      const search = input.search.toLowerCase();
-      if (search) {
-        query = query.or(
-          `name.ilike.%${search}%,username.ilike.%${search}%,badgeNumber.ilike.%${search}%,phone.ilike.%${search}%`
-        );
+      if (scopedOrganizationIds.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page: input.page,
+          pageSize: input.pageSize,
+          totalPages: 1,
+        };
       }
-      const { data, error, count } = await query;
-      if (error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر تحميل حسابات المستخدمين",
-        });
-      const users = data ?? [];
-      const pageOrganizationIds = Array.from(
-        new Set(
-          users
-            .map(user => user.organizationId)
-            .filter((id): id is string => typeof id === "string")
-        )
+
+      const search = input.search.toLowerCase();
+      const userRows = await listAllRows(USERS_TABLE, [
+        Query.equal("organizationId", scopedOrganizationIds),
+      ]);
+      const filteredRows = userRows.filter(row => {
+        const data = userRowData(row);
+        const visible =
+          data.isActive === true || data.loginMethod === "disabled";
+        if (!visible) return false;
+        if (!search) return true;
+
+        return [
+          data.name,
+          data.username,
+          data.badgeNumber,
+          data.phone,
+        ].some(
+          value =>
+            typeof value === "string" &&
+            value.toLowerCase().includes(search)
+        );
+      });
+      filteredRows.sort((left, right) => {
+        const leftDate = Date.parse(
+          String(userRowData(left).createdAt ?? "")
+        );
+        const rightDate = Date.parse(
+          String(userRowData(right).createdAt ?? "")
+        );
+        return rightDate - leftDate;
+      });
+
+      const total = filteredRows.length;
+      const startIndex = (input.page - 1) * input.pageSize;
+      const pageRows = filteredRows.slice(
+        startIndex,
+        startIndex + input.pageSize
       );
-      const organizationNames = new Map<string, string>();
-      const membershipRoles = new Map<number, string>();
-      if (pageOrganizationIds.length > 0) {
-        const organizations = await client
-          .from("organizations")
-          .select("id, name")
-          .in("id", pageOrganizationIds);
-        if (organizations.error) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "تعذر تحميل جهات حسابات المستخدمين",
-          });
-        }
-        for (const organization of organizations.data ?? []) {
+      const users = pageRows.map(mapManagedUser);
+      const organizationNames = new Map(
+        (await listAllOrganizations()).map(organization => [
+          organization.id,
+          organization.name,
+        ])
+      );
+      const userIds = users.map(user => user.id);
+      const membershipRoles = new Map<string, string>();
+      if (userIds.length > 0) {
+        const memberships = await listAllRows("organization_memberships", [
+          Query.equal("userId", userIds),
+          Query.equal("isActive", true),
+        ]);
+        for (const row of memberships) {
+          const membership = userRowData(row);
           if (
-            typeof organization.id === "string" &&
-            typeof organization.name === "string"
+            typeof membership.userId === "number" &&
+            typeof membership.organizationId === "string" &&
+            typeof membership.role === "string"
           ) {
-            organizationNames.set(organization.id, organization.name);
+            membershipRoles.set(
+              `${membership.userId}:${membership.organizationId}`,
+              membership.role
+            );
           }
         }
       }
-      if (users.length > 0) {
-        const memberships = await client
-          .from("organization_memberships")
-          .select("userId, role")
-          .in(
-            "userId",
-            users.map(user => user.id)
-          )
-          .eq("isActive", true);
-        if (memberships.error) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "تعذر تحميل صلاحيات حسابات المستخدمين",
-          });
-        }
-        for (const membership of memberships.data ?? []) {
-          membershipRoles.set(
-            Number(membership.userId),
-            String(membership.role)
-          );
-        }
-      }
+
       return {
         items: users.map(user => ({
           ...user,
-          membershipRole: membershipRoles.get(Number(user.id)) ?? null,
+          membershipRole:
+            user.organizationId === null
+              ? null
+              : (membershipRoles.get(
+                  `${user.id}:${user.organizationId}`
+                ) ?? null),
           organizationName:
-            typeof user.organizationId === "string"
-              ? (organizationNames.get(user.organizationId) ?? null)
-              : null,
+            user.organizationId === null
+              ? null
+              : (organizationNames.get(user.organizationId) ?? null),
         })),
-        total: count ?? 0,
+        total,
         page: input.page,
         pageSize: input.pageSize,
-        totalPages: Math.max(1, Math.ceil((count ?? 0) / input.pageSize)),
+        totalPages: Math.max(1, Math.ceil(total / input.pageSize)),
       };
-    }),
+    })),
 
   create: organizationManagerProcedure
     .input(
