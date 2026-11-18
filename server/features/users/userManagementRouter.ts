@@ -32,8 +32,6 @@ import {
 type AppwriteUserRow = Record<string, unknown> & { $id: string };
 
 const USERS_TABLE = "users";
-const DATABASE_ID = getAppwriteDatabaseId();
-
 function userRowData(row: AppwriteUserRow): Record<string, unknown> {
   return row.data && typeof row.data === "object"
     ? (row.data as Record<string, unknown>)
@@ -49,7 +47,7 @@ async function listAllRows(
 
   while (true) {
     const result = await getAppwriteTablesDB().listRows({
-      databaseId: DATABASE_ID,
+      databaseId: getAppwriteDatabaseId(),
       tableId,
       queries: [
         ...queries,
@@ -82,7 +80,7 @@ async function createUserProfileRow(
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const row = await getAppwriteTablesDB().createRow({
-        databaseId: DATABASE_ID,
+        databaseId: getAppwriteDatabaseId(),
         tableId: USERS_TABLE,
         rowId: randomUUID(),
         data: {
@@ -137,7 +135,7 @@ async function deleteUserMembershipRows(userId: number): Promise<number> {
   ]);
   for (const row of rows) {
     await getAppwriteTablesDB().deleteRow({
-      databaseId: DATABASE_ID,
+      databaseId: getAppwriteDatabaseId(),
       tableId: "organization_memberships",
       rowId: row.$id,
     });
@@ -152,7 +150,7 @@ async function deleteRowsForUser(
   const rows = await listAllRows(tableId, [Query.equal("userId", userId)]);
   for (const row of rows) {
     await getAppwriteTablesDB().deleteRow({
-      databaseId: DATABASE_ID,
+      databaseId: getAppwriteDatabaseId(),
       tableId,
       rowId: row.$id,
     });
@@ -165,7 +163,7 @@ async function hasRows(
   queries: string[]
 ): Promise<boolean> {
   const result = await getAppwriteTablesDB().listRows({
-    databaseId: DATABASE_ID,
+    databaseId: getAppwriteDatabaseId(),
     tableId,
     queries: [...queries, Query.limit(1)],
     total: false,
