@@ -76,7 +76,7 @@ export async function createInitialOwnerProfile(input: {
     throw new Error("إعداد إعادة تعيين كلمة مرور المالك غير مكتمل على الخادم");
   }
 
-  const owner = await getIncompleteOwner();
+  const owner = await getExistingOwner();
   if (!owner || owner.username.trim() !== input.username.trim()) {
     throw new Error("حساب المالك غير متاح لإعادة تعيين كلمة المرور");
   }
