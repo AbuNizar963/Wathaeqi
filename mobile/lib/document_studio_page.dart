@@ -38,7 +38,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   bool _loading = true;
   bool _saving = false;
   String? _loadError;
-  String? _organizationId;
   bool _canIssueDocuments = false;
   Map<String, dynamic> _letterhead = {};
 
@@ -69,7 +68,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Map<String, String> _fieldValues = {};
   List<DocumentTemplateField> _templateFields = [];
   final Map<String, TextEditingController> _fieldControllers = {};
-  bool _documentContentDirty = false;
   bool _templateContentDirty = false;
 
   static const _categories = <String, String>{
@@ -118,7 +116,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentContent = DocumentStudioQuillCodec.toTipTapJson(
       _documentEditor.document,
     );
-    _documentContentDirty = true;
   }
 
   void _onTemplateEditorChanged() {
@@ -135,15 +132,28 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     });
 
     try {
-      final results = await Future.wait([
-        widget.api.call('documentStudio.listDocuments'),
-        widget.api.call('documentStudio.listTemplates'),
-        widget.api.call('organizations.context'),
-      ]);
-
-      final documentsRaw = results[0];
-      final templatesRaw = results[1];
-      final contextRaw = results[2];
+      dynamic documentsRaw;
+      dynamic templatesRaw;
+      dynamic contextRaw;
+      try {
+        documentsRaw = await widget.api.call('documentStudio.listDocuments');
+      } catch (_) {
+        documentsRaw = await widget.api.readCachedResponse(
+          'documentStudio.listDocuments',
+        );
+      }
+      try {
+        templatesRaw = await widget.api.call('documentStudio.listTemplates');
+      } catch (_) {
+        templatesRaw = await widget.api.readCachedResponse(
+          'documentStudio.listTemplates',
+        );
+      }
+      try {
+        contextRaw = await widget.api.call('organizations.context');
+      } catch (_) {
+        contextRaw = await widget.api.readCachedResponse('organizations.context');
+      }
 
       final documents = documentsRaw is List
           ? documentsRaw
@@ -174,7 +184,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       try {
         final rawLetterhead = await widget.api.call(
           'documentStudio.getLetterheadSettings',
-          input: {'organizationId': organizationId},
+          input: organizationId == null
+              ? null
+              : {'organizationId': organizationId},
         );
         if (rawLetterhead is Map) {
           letterhead = Map<String, dynamic>.from(rawLetterhead);
@@ -187,7 +199,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       setState(() {
         _documents = documents;
         _templates = templates;
-        _organizationId = organizationId;
         _canIssueDocuments = context['isOwner'] == true ||
             const ['system_admin', 'organization_admin']
                 .contains(context['role']?.toString());
@@ -232,7 +243,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentEditor.removeListener(_onDocumentEditorChanged);
     _documentEditor.dispose();
     _documentContent = content;
-    _documentContentDirty = false;
     _documentEditor = _makeEditor(content);
     _documentEditor.addListener(_onDocumentEditorChanged);
     setState(() {});
@@ -324,12 +334,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
     setState(() => _saving = true);
-    final content = _applyFieldValues(
-      _documentContentDirty
-          ? _documentContent
-          : (_selectedDocument?.content ?? _documentContent),
-      _fieldValues,
-    );
+    final content = _applyFieldValues(_documentContent, _fieldValues);
     final input = <String, dynamic>{
       'title': _titleController.text.trim(),
       'category': _documentCategory,
@@ -486,7 +491,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     String? key,
     String? label,
     DocumentTemplateFieldType? type,
-    bool? required,
+    bool? isRequired,
     List<DocumentTemplateFieldOption>? options,
   }) {
     final current = _templateFields[index];
@@ -494,7 +499,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       key: key ?? current.key,
       label: label ?? current.label,
       type: type ?? current.type,
-      required: required ?? current.required,
+      required: isRequired ?? current.required,
       maxLength: current.maxLength,
       options: options ?? current.options,
       defaultValue: current.defaultValue,
@@ -706,12 +711,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Widget _buildDocumentForm() {
     final canEdit = _selectedDocument == null ||
         _selectedDocument!.status == 'draft';
+    final matchingTemplates = _templates
+        .where((template) => template.id == _selectedTemplateId)
+        .toList();
     final fields = _selectedDocument?.templateFieldsSnapshot ??
-        _templates
-            .where((template) => template.id == _selectedTemplateId)
-            .firstOrNull
-            ?.fields ??
-        const <DocumentTemplateField>[];
+        (matchingTemplates.isNotEmpty
+            ? matchingTemplates.first.fields
+            : const <DocumentTemplateField>[]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -856,7 +862,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         _buildA4Editor(
           controller: _documentEditor,
           editable: canEdit,
-          contentDirty: _documentContentDirty,
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -1108,7 +1113,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         _buildA4Editor(
           controller: _templateEditor,
           editable: true,
-          contentDirty: _templateContentDirty,
         ),
         const SizedBox(height: 12),
         FilledButton.icon(
@@ -1242,7 +1246,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   value: field.required,
                   onChanged: (value) => _updateTemplateField(
                     index,
-                    required: value ?? false,
+                    isRequired: value ?? false,
                   ),
                 ),
                 const Text('حقل مطلوب'),
@@ -1267,7 +1271,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Widget _buildA4Editor({
     required QuillController controller,
     required bool editable,
-    required bool contentDirty,
   }) {
     controller.readOnly = !editable;
     return Card(
