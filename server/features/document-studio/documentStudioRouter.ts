@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../../_core/trpc";
 import { getRequestAuditContext } from "../../auditContext";
+import { isPlatformOwner } from "../../ownerAccess";
 import {
   allocateOrganizationSerialNumber,
   getOrganizationSettings,
@@ -404,6 +405,15 @@ export const documentStudioRouter = router({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "يجب أن تكون لديك عضوية نشطة في جهة العمل لإصدار الوثيقة.",
+        });
+      }
+      if (
+        !isPlatformOwner(ctx.user) &&
+        !["system_admin", "organization_admin"].includes(membership.role)
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا تملك صلاحية إصدار الوثائق الرسمية في هذه الجهة.",
         });
       }
       if (
