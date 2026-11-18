@@ -51,7 +51,7 @@ class DocumentStudioQuillCodec {
         flushList();
         final alignment = attributes['align']?.toString();
         final blockAttributes = <String, dynamic>{
-          if (alignment != null) 'textAlign': alignment,
+          'textAlign': ?alignment,
         };
         if (attributes['header'] is num) {
           blocks.add({
