@@ -56,7 +56,7 @@ const chartColors = [
   "#9a6476",
 ];
 const categoryLabels: Record<string, string> = {
-  telegram: "البرقيات",
+  telegram: "وثائقي",
   user: "الحسابات",
   organization: "الجهات",
   platform: "المنصة والإعدادات",
