@@ -542,6 +542,4 @@ describe("telegrams.create", () => {
     expect(mocked.recordTelegramAction).not.toHaveBeenCalled();
     expect(mocked.recordTelegramVersion).not.toHaveBeenCalled();
   });
-
-
 });
