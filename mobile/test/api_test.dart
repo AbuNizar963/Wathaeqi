@@ -877,10 +877,24 @@ void main() {
         );
       }
       if (request.url.toString() == storageUrl) {
-        expect(request.method, 'PUT');
-        expect(request.headers['content-type'], 'application/pdf');
-        expect(request.headers.containsKey('cookie'), isFalse);
-        expect(request.bodyBytes, bytes);
+        expect(request, isA<http.MultipartRequest>());
+        final uploadRequest = request as http.MultipartRequest;
+        expect(uploadRequest.method, 'POST');
+        expect(uploadRequest.headers['X-Appwrite-Project'], 'project-test');
+        expect(uploadRequest.headers['X-Appwrite-JWT'], 'signed-upload-jwt');
+        expect(uploadRequest.headers.containsKey('cookie'), isFalse);
+        expect(uploadRequest.fields, {
+          'permissions': '[]',
+          'fileId': 'a' * 32,
+          'folder':
+              'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
+        });
+        expect(uploadRequest.files, hasLength(1));
+        final uploadedFile = uploadRequest.files.single;
+        expect(uploadedFile.field, 'file');
+        expect(uploadedFile.filename, 'report.pdf');
+        expect(uploadedFile.contentType.toString(), 'application/pdf');
+        expect(await uploadedFile.finalize().toBytes(), bytes);
         return http.Response('', 200);
       }
       if (request.url.path.endsWith('/attachments/finalize')) {
