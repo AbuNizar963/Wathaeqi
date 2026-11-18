@@ -452,6 +452,11 @@ export default function DocumentStudioPage() {
   const canEditDocument =
     activeTab !== "archive" &&
     (!selectedDocument || selectedDocument.status === "draft");
+  const canIssueDocuments =
+    organizationContext.data?.isOwner === true ||
+    ["system_admin", "organization_admin"].includes(
+      organizationContext.data?.role ?? ""
+    );
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -854,7 +859,9 @@ export default function DocumentStudioPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {selectedDocument?.status === "draft" && activeTab === "documents" ? (
+                  {selectedDocument?.status === "draft" &&
+                  activeTab === "documents" &&
+                  canIssueDocuments ? (
                     <Button
                       variant="secondary"
                       disabled={issueDocumentMutation.isPending}
