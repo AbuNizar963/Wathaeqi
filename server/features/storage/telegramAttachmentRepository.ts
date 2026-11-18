@@ -105,7 +105,9 @@ async function listAllAttachmentRows(
     if (pageRows.length < 100) return rows;
     const nextCursor = pageRows[pageRows.length - 1]?.$id;
     if (!nextCursor || nextCursor === cursor) {
-      throw new Error("Appwrite telegram attachment pagination did not advance");
+      throw new Error(
+        "Appwrite telegram attachment pagination did not advance"
+      );
     }
     cursor = nextCursor;
   }
@@ -157,7 +159,9 @@ export async function getTelegramAttachmentById(
 export async function getTelegramAttachmentByStorageKey(
   storageKey: string
 ): Promise<TelegramAttachmentRecord | null> {
-  const rows = await listAttachmentRows([Query.equal("storageKey", storageKey)]);
+  const rows = await listAttachmentRows([
+    Query.equal("storageKey", storageKey),
+  ]);
   if (rows.length > 1) {
     throw new Error("Duplicate telegram attachment storage keys in Appwrite");
   }
