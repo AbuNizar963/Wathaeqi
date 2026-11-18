@@ -313,7 +313,7 @@ export const userManagementRouter = router({
         pageSize: input.pageSize,
         totalPages: Math.max(1, Math.ceil(total / input.pageSize)),
       };
-    })),
+    }),
 
   create: organizationManagerProcedure
     .input(
