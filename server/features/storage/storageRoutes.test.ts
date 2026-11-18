@@ -258,9 +258,7 @@ describe("signed telegram attachment uploads", () => {
     };
   }
 
-  it(
-    "creates a one-object signed upload URL after checking telegram scope",
-    async () => {
+  it("creates a one-object signed upload URL after checking telegram scope", async () => {
     const { authorize, createUrl, res } =
       createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -290,18 +288,16 @@ describe("signed telegram attachment uploads", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         key,
-        uploadUrl: "https://fra.cloud.appwrite.io/v1/storage/buckets/document-attachments/files?project=wathaeqi",
+        uploadUrl: appwriteUploadUrl,
         uploadJwt: "short-lived-upload-jwt",
         fileId: "a".repeat(32),
-        folder: "organizations/" + testOrganizationId + "/telegrams/7/attachments",
+        folder: attachmentFolder,
         sizeBytes: pdfBytes.byteLength,
       })
     );
   });
 
-  it(
-    "validates stored object size and file signature before recording metadata",
-    async () => {
+  it("validates stored object size and file signature before recording metadata", async () => {
     const { authorize, finalize, res } =
       createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -340,9 +336,7 @@ describe("signed telegram attachment uploads", () => {
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
-  it(
-    "rejects a signed upload request outside the user's telegram scope",
-    async () => {
+  it("rejects a signed upload request outside the user's telegram scope", async () => {
     canAccessTelegramScope.mockResolvedValueOnce(false);
     const { authorize, res } = createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -385,9 +379,7 @@ describe("signed telegram attachment uploads", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it(
-    "removes invalid file content and does not create attachment metadata",
-    async () => {
+  it("removes invalid file content and does not create attachment metadata", async () => {
     storageDownload.mockResolvedValueOnce({
       body: Buffer.from("not a PDF"),
       contentType: "application/pdf",
@@ -414,9 +406,7 @@ describe("signed telegram attachment uploads", () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  it(
-    "does not create another metadata row when finalization is retried",
-    async () => {
+  it("does not create another metadata row when finalization is retried", async () => {
     getTelegramAttachmentByStorageKey.mockResolvedValueOnce({
       id: 99,
       telegramId: 7,
@@ -1030,9 +1020,7 @@ describe("storage route", () => {
     );
   });
 
-  it(
-    "resolves a legacy attachment owner from its telegram during rollout",
-    async () => {
+  it("resolves a legacy attachment owner from its telegram during rollout", async () => {
     const key = "telegrams/42/report.pdf";
     const telegram = {
       id: 7,
@@ -1061,9 +1049,7 @@ describe("storage route", () => {
     );
   });
 
-  it(
-    "requires matching metadata and organization scope for a new attachment key",
-    async () => {
+  it("requires matching metadata and organization scope for a new attachment key", async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
     const currentOrganizationId = "550e8400-e29b-41d4-a716-446655440099";
     const key = `organizations/${organizationId}/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf`;
