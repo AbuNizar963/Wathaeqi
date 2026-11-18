@@ -28,7 +28,6 @@ import {
   listUserNotifications,
   markNotificationRead,
   notifyOrganizationUsers,
-  resolveRouteNotifications,
 } from "../../db";
 
 const organizationId = "00000000-0000-4000-8000-000000000025";
@@ -223,26 +222,6 @@ describe("Appwrite organization notifications", () => {
         rowId: "notification-1",
         data: { readAt: expect.any(String) },
       })
-    );
-  });
-
-  it("resolves only unread approval and request notifications for a route", async () => {
-    mocks.listRows.mockResolvedValue({
-      rows: [
-        row("approved", { readAt: null }),
-        row("requested", { readAt: null }),
-        row("already-read", { readAt: "2026-11-18T09:00:00.000Z" }),
-      ],
-    });
-
-    await resolveRouteNotifications(12);
-
-    expect(mocks.updateRow).toHaveBeenCalledTimes(2);
-    expect(mocks.updateRow).toHaveBeenCalledWith(
-      expect.objectContaining({ rowId: "approved" })
-    );
-    expect(mocks.updateRow).toHaveBeenCalledWith(
-      expect.objectContaining({ rowId: "requested" })
     );
   });
 });

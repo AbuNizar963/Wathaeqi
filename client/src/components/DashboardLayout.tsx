@@ -570,7 +570,7 @@ function DashboardLayoutContent({
               />
               <BrandMark size="sm" />
               <h1 className="text-lg font-bold tracking-tight text-foreground">
-                مركز البرقيات
+                وثائقي
               </h1>
               <span
                 className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold ${online ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
@@ -596,7 +596,7 @@ function DashboardLayoutContent({
                 }
               />
               <BrandMark size="sm" />
-              <span className="text-sm font-bold">مركز البرقيات</span>
+              <span className="text-sm font-bold">وثائقي</span>
               <span className="sr-only">
                 {activeMenuItem?.label ?? "القائمة"}
               </span>

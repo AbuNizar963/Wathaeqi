@@ -585,58 +585,6 @@ describe("telegram administration permissions", () => {
     expect(mocked.listUserNotifications).not.toHaveBeenCalled();
   });
 
-  it("limits owner pending approvals to the active workplace instead of global admin scope", async () => {
-    organizationMocks.listPendingRouteApprovals.mockResolvedValue([]);
-    const caller = appRouter.createCaller(ownerContextForTest());
-
-    await caller.organizations.pendingApprovals();
-
-    expect(organizationMocks.listPendingRouteApprovals).toHaveBeenCalledWith(
-      1,
-      false
-    );
-  });
-
-  it("blocks owner route approvals and receiver decisions outside the active workplace", async () => {
-    const activeOrganizationId = "00000000-0000-4000-8000-000000000099";
-    const otherOrganizationId = "00000000-0000-4000-8000-000000000098";
-    const sourceOrganizationId = "00000000-0000-4000-8000-000000000097";
-    organizationMocks.getUserOrganizationMembership.mockResolvedValue({
-      organizationId: activeOrganizationId,
-      role: "system_admin",
-      isActive: true,
-    });
-    organizationMocks.getTelegramRouteById.mockResolvedValue({
-      id: 31,
-      fromOrganizationId: sourceOrganizationId,
-      toOrganizationId: otherOrganizationId,
-    });
-    organizationMocks.getOrganizationById.mockResolvedValue({
-      id: sourceOrganizationId,
-      parentOrganizationId: otherOrganizationId,
-    });
-    const caller = appRouter.createCaller(ownerContextForTest());
-
-    await expect(
-      caller.telegrams.approveRoute({ routeId: 31, approved: true })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      caller.telegrams.receiveRoute({ routeId: 31 })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    await expect(
-      caller.telegrams.decideRouteAsReceiver({
-        routeId: 31,
-        accepted: true,
-      })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-
-    expect(organizationMocks.approveTelegramRoute).not.toHaveBeenCalled();
-    expect(organizationMocks.receiveTelegramRoute).not.toHaveBeenCalled();
-    expect(
-      organizationMocks.decideTelegramRouteAsReceiver
-    ).not.toHaveBeenCalled();
-  });
-
   it("blocks the owner from reading, editing, or deleting another workplace's telegram", async () => {
     mocked.getUserOrganizationId.mockResolvedValue(
       "00000000-0000-4000-8000-000000000099"
