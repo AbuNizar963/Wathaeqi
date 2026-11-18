@@ -352,22 +352,13 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const username = input.username.toLowerCase();
-      const client = getSupabaseAdmin();
-      const existing = await client
-        .from("users")
-        .select("id")
-        .ilike("username", username)
-        .maybeSingle();
-      if (existing.error)
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "تعذر التحقق من اسم المستخدم",
-        });
-      if (existing.data)
+      const existing = await getUserRowsByUsername(username);
+      if (existing.length > 0) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "اسم المستخدم مستخدم بالفعل",
         });
+      }
 
       const organization = await getActiveOrganizationForAccount(
         input.organizationId
@@ -387,73 +378,114 @@ export const userManagementRouter = router({
           message: "تعيين أدوار الإدارة العليا متاح لمالك النظام فقط",
         });
       }
+
+      const authUserId = randomUUID();
+      const email = syntheticAccountEmail(username);
       const now = new Date().toISOString();
-      const { data, error } = await client
-        .from("users")
-        .insert({
-          authUserId: randomUUID(),
+      let authUserCreated = false;
+      let profileRow: AppwriteUserRow | null = null;
+      try {
+        await getAppwriteUsers().create({
+          userId: authUserId,
+          email,
+          password: input.password,
+          name: input.name,
+        });
+        authUserCreated = true;
+
+        profileRow = await createUserProfileRow({
+          authUserId,
+          sessionVersion: randomUUID(),
           organizationId: organization.id,
           username,
-          password_hash: await hashPassword(input.password),
           name: input.name,
           badgeNumber: input.badgeNumber?.trim() || null,
           phone: input.phone?.trim() || null,
           rank: input.rank?.trim() || null,
           unit: input.unit?.trim() || null,
-          email: null,
+          email,
           loginMethod: "password",
           mustChangePassword: true,
           role: "user",
+          isActive: true,
+          isPlatformOwner: false,
+          bio: null,
+          avatarKey: null,
           createdAt: now,
           updatedAt: now,
           lastSignedIn: now,
-        })
-        .select(
-          "id, organizationId, username, name, badgeNumber, phone, rank, unit, role, createdAt, lastSignedIn"
-        )
-        .single();
+        });
 
-      if (error || !data) {
-        console.error("[userManagement.create] Supabase insert failed", error);
+        const userId = Number(userRowData(profileRow).id);
+        await addOrganizationMembership({
+          organizationId: organization.id,
+          userId,
+          role: input.role,
+        });
+
+        await writeAuditLog({
+          ...getRequestAuditContext(ctx.req),
+          actorUserId: ctx.user.id,
+          actorName: ctx.user.name ?? ctx.user.username ?? "مالك النظام",
+          action: "user.create",
+          entityType: "user",
+          entityId: String(userId),
+          metadata: JSON.stringify({
+            username,
+            organizationId: organization.id,
+            organizationName: organization.name,
+            badgeNumber: input.badgeNumber ?? null,
+          }),
+        });
+
+        return {
+          id: userId,
+          organizationId: organization.id,
+          username,
+          name: input.name,
+          badgeNumber: input.badgeNumber?.trim() || null,
+          phone: input.phone?.trim() || null,
+          rank: input.rank?.trim() || null,
+          unit: input.unit?.trim() || null,
+          role: "user",
+          createdAt: now,
+          lastSignedIn: now,
+        };
+      } catch (error) {
+        if (profileRow) {
+          const userId = Number(userRowData(profileRow).id);
+          try {
+            await deleteUserMembershipRows(userId);
+            await getAppwriteTablesDB().deleteRow({
+              databaseId: getAppwriteDatabaseId(),
+              tableId: USERS_TABLE,
+              rowId: profileRow.$id,
+            });
+          } catch (cleanupError) {
+            console.error(
+              "[userManagement.create] Failed to clean up Appwrite profile",
+              cleanupError
+            );
+          }
+        }
+        if (authUserCreated) {
+          try {
+            await getAppwriteUsers().delete({ userId: authUserId });
+          } catch (cleanupError) {
+            console.error(
+              "[userManagement.create] Failed to clean up Appwrite auth user",
+              cleanupError
+            );
+          }
+        }
+        if (error instanceof TRPCError) throw error;
+        console.error("[userManagement.create] Appwrite insert failed", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message:
-            "تعذر إنشاء حساب المستخدم. تحقق من إعدادات قاعدة البيانات وحاول مجددًا.",
+            "تعذر إنشاء حساب المستخدم. تحقق من إعدادات Appwrite وحاول مجددًا.",
         });
       }
-
-      try {
-        await addOrganizationMembership({
-          organizationId: organization.id,
-          userId: data.id,
-          role: input.role,
-        });
-      } catch (membershipError) {
-        const cleanup = await client.from("users").delete().eq("id", data.id);
-        if (cleanup.error) {
-          console.error(
-            "[userManagement.create] Failed to remove account after membership failure",
-            cleanup.error
-          );
-        }
-        throw membershipError;
-      }
-
-      await writeAuditLog({
-        ...getRequestAuditContext(ctx.req),
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? ctx.user.username ?? "مالك النظام",
-        action: "user.create",
-        entityType: "user",
-        entityId: String(data.id),
-        metadata: JSON.stringify({
-          username,
-          organizationId: organization.id,
-          organizationName: organization.name,
-          badgeNumber: input.badgeNumber ?? null,
-        }),
-      });
-      return data;
     }),
 
   update: organizationManagerProcedure
