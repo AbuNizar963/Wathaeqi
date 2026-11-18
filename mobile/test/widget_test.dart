@@ -1146,11 +1146,11 @@ void main() {
     expect(welcomePanel, findsOneWidget);
     final welcomePanelHeight = tester.getSize(welcomePanel).height;
     expect(find.text('حالة المزامنة المحلية'), findsNothing);
-    expect(find.text('لا توجد برقيات معلقة محليًا.'), findsNothing);
+    expect(find.text('لا توجد تغييرات محلية معلقة.'), findsNothing);
     await tester.drag(find.text('الجهة الحالية'), const Offset(300, 0));
     await _pumpDashboardFrames(tester, frameCount: 8);
 
-    final status = find.text('لا توجد برقيات معلقة محليًا.');
+    final status = find.text('لا توجد تغييرات محلية معلقة.');
     expect(status, findsOneWidget);
     expect(find.text('حالة المزامنة المحلية'), findsOneWidget);
     expect(find.textContaining('الخادم متصل • آخر تحقق'), findsOneWidget);
@@ -1193,13 +1193,13 @@ void main() {
 
     // Connection and outbox status belong to the swipeable outbox card.
     expect(find.text('الجهة الحالية'), findsOneWidget);
-    expect(find.text('لا توجد برقيات معلقة محليًا.'), findsNothing);
+    expect(find.text('لا توجد تغييرات محلية معلقة.'), findsNothing);
     expect(find.textContaining('الخادم غير متصل'), findsNothing);
 
     await tester.drag(find.text('الجهة الحالية'), const Offset(300, 0));
     await _pumpDashboardFrames(tester, frameCount: 8);
 
-    expect(find.text('لا توجد برقيات معلقة محليًا.'), findsOneWidget);
+    expect(find.text('لا توجد تغييرات محلية معلقة.'), findsOneWidget);
     expect(find.textContaining('الخادم غير متصل'), findsOneWidget);
   });
 
