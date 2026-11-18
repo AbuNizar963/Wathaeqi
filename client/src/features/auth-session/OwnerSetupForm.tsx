@@ -30,7 +30,10 @@ export default function OwnerSetupForm() {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 py-8">
       <form
-        className="surface-elevated flex w-full max-w-lg flex-col gap-5 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
+        className={[
+          "surface-elevated flex w-full max-w-lg flex-col gap-5 rounded-[1.5rem]",
+          "border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8",
+        ].join(" ")}
         onSubmit={submit}
       >
         <div className="flex flex-col items-center gap-3 text-center">
@@ -39,9 +42,10 @@ export default function OwnerSetupForm() {
             إنشاء حساب مالك النظام
           </h1>
           <p className="text-sm text-muted-foreground">
-            هذه خطوة الإعداد الأولى. أنشئ حساب المالك الذي سيملك
-            صلاحيات إدارة النظام.
-            بعد نجاح الإنشاء سيُغلق هذا الإعداد تلقائياً.
+            {[
+              "هذه خطوة الإعداد الأولى. أنشئ حساب المالك الذي سيملك",
+              "صلاحيات إدارة النظام. بعد نجاح الإنشاء سيُغلق هذا الإعداد تلقائياً.",
+            ].join(" ")}
           </p>
         </div>
 
