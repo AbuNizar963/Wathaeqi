@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
@@ -76,6 +78,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   final Map<String, TextEditingController> _fieldControllers = {};
   bool _templateContentDirty = false;
   bool _creatingTemplate = false;
+  StreamSubscription<ApiMutationEvent>? _mutationSubscription;
 
   static const _categories = <String, String>{
     'general': 'عام',
@@ -93,6 +96,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _templateEditor = _makeEditor(_templateContent);
     _documentEditor.addListener(_onDocumentEditorChanged);
     _templateEditor.addListener(_onTemplateEditorChanged);
+    _mutationSubscription = widget.api.mutationEvents.listen((event) {
+      if (event.isDocumentStudioMutation && !_saving) {
+        unawaited(_load());
+      }
+    });
     _load();
   }
 
@@ -100,6 +108,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   void dispose() {
     _documentEditor.removeListener(_onDocumentEditorChanged);
     _templateEditor.removeListener(_onTemplateEditorChanged);
+    final subscription = _mutationSubscription;
+    if (subscription != null) unawaited(subscription.cancel());
     _documentEditor.dispose();
     _templateEditor.dispose();
     _titleController.dispose();
