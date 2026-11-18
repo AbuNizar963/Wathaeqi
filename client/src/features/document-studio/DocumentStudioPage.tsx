@@ -169,16 +169,8 @@ export default function DocumentStudioPage() {
   );
   const documentOrganizationId =
     selectedDocument?.organizationId ?? organizationContext.data?.organizationId;
-  const organizationSettings = trpc.organizations.settings.get.useQuery(
-    { organizationId: documentOrganizationId ?? "" },
-    {
-      enabled: Boolean(
-        documentOrganizationId && organizationContext.data?.isOwner
-      ),
-    }
-  );
-  const organizationLogo = trpc.organizations.logoForExport.useQuery(
-    { organizationId: documentOrganizationId ?? "" },
+  const letterheadSettings = trpc.documentStudio.getLetterheadSettings.useQuery(
+    { organizationId: documentOrganizationId },
     { enabled: Boolean(documentOrganizationId) }
   );
   const documentTemplateFields = selectedDocument
@@ -443,14 +435,14 @@ export default function DocumentStudioPage() {
     });
   }
 
-  const settings = organizationSettings.data;
+  const settings = letterheadSettings.data;
   const organizationName =
     settings?.departmentName ??
     (documentOrganizationId === organizationContext.data?.organizationId
       ? organizationContext.data?.organizationName
       : null) ??
     "وثائقي";
-  const logoUrl = organizationLogo.data?.logoUrl ?? settings?.logoUrl ?? null;
+  const logoUrl = settings?.logoUrl ?? null;
   const dividerColor =
     platformDocumentSettings.data?.headerDividerColor ?? "#334155";
   const isSavingDocument =
