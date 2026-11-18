@@ -55,15 +55,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   DateTime _documentDate = DateTime.now();
   Map<String, dynamic> _documentContent = {
     'type': 'doc',
-    'content': [{'type': 'paragraph'}],
+    'content': [
+      {'type': 'paragraph'},
+    ],
   };
   Map<String, dynamic> _templateContent = {
     'type': 'doc',
-    'content': [{'type': 'paragraph'}],
+    'content': [
+      {'type': 'paragraph'},
+    ],
   };
   Map<String, dynamic> _templateBaseContent = {
     'type': 'doc',
-    'content': [{'type': 'paragraph'}],
+    'content': [
+      {'type': 'paragraph'},
+    ],
   };
   Map<String, String> _fieldValues = {};
   List<DocumentTemplateField> _templateFields = [];
@@ -153,28 +159,30 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       try {
         contextRaw = await widget.api.call('organizations.context');
       } catch (_) {
-        contextRaw = await widget.api.readCachedResponse('organizations.context');
+        contextRaw = await widget.api.readCachedResponse(
+          'organizations.context',
+        );
       }
 
       final documents = documentsRaw is List
           ? documentsRaw
-              .whereType<Map>()
-              .map(
-                (item) => OfficialDocument.fromJson(
-                  Map<String, dynamic>.from(item),
-                ),
-              )
-              .toList()
+                .whereType<Map>()
+                .map(
+                  (item) => OfficialDocument.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList()
           : _documents;
       final templates = templatesRaw is List
           ? templatesRaw
-              .whereType<Map>()
-              .map(
-                (item) => DocumentTemplate.fromJson(
-                  Map<String, dynamic>.from(item),
-                ),
-              )
-              .toList()
+                .whereType<Map>()
+                .map(
+                  (item) => DocumentTemplate.fromJson(
+                    Map<String, dynamic>.from(item),
+                  ),
+                )
+                .toList()
           : _templates;
 
       final context = contextRaw is Map
@@ -201,8 +209,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       final matchingSelection = selectedId == null
           ? <OfficialDocument>[]
           : documents.where((item) => item.id == selectedId).toList();
-      final refreshedSelection =
-          matchingSelection.isEmpty ? null : matchingSelection.first;
+      final refreshedSelection = matchingSelection.isEmpty
+          ? null
+          : matchingSelection.first;
       setState(() {
         _documents = documents;
         _templates = templates;
@@ -215,9 +224,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           _editingTemplateId = null;
           _creatingTemplate = false;
         }
-        _canIssueDocuments = context['isOwner'] == true ||
-            const ['system_admin', 'organization_admin']
-                .contains(context['role']?.toString());
+        _canIssueDocuments =
+            context['isOwner'] == true ||
+            const [
+              'system_admin',
+              'organization_admin',
+            ].contains(context['role']?.toString());
         _letterhead = letterhead;
         _loading = false;
       });
@@ -236,9 +248,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _syncLocalChanges() async {
@@ -303,7 +314,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _subjectController.clear();
     _templateBaseContent = {
       'type': 'doc',
-      'content': [{'type': 'paragraph'}],
+      'content': [
+        {'type': 'paragraph'},
+      ],
     };
     _resetFieldControllers(const [], {});
     _replaceDocumentEditor(_templateBaseContent);
@@ -324,9 +337,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       document.fieldValues,
     );
     _replaceDocumentEditor(document.content);
-    setState(() => _tab = document.status == 'archived'
-        ? DocumentStudioTab.archive
-        : DocumentStudioTab.documents);
+    setState(
+      () => _tab = document.status == 'archived'
+          ? DocumentStudioTab.archive
+          : DocumentStudioTab.documents,
+    );
   }
 
   void _useTemplate(DocumentTemplate template) {
@@ -486,7 +501,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _templateFields = [];
     _replaceTemplateEditor({
       'type': 'doc',
-      'content': [{'type': 'paragraph'}],
+      'content': [
+        {'type': 'paragraph'},
+      ],
     });
     setState(() => _tab = DocumentStudioTab.templates);
   }
@@ -690,8 +707,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Widget _buildDocumentList({required bool archived}) {
     final items = _documents
-        .where((document) => document.status == (archived ? 'archived' : 'draft') ||
-            (!archived && document.status == 'issued'))
+        .where(
+          (document) =>
+              document.status == (archived ? 'archived' : 'draft') ||
+              (!archived && document.status == 'issued'),
+        )
         .toList();
     if (items.isEmpty) {
       return _emptyState(
@@ -731,18 +751,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Widget _buildDocumentForm() {
-    final canEdit = _selectedDocument == null ||
-        _selectedDocument!.status == 'draft';
+    final canEdit =
+        _selectedDocument == null || _selectedDocument!.status == 'draft';
     final matchingTemplates = _templates
         .where((template) => template.id == _selectedTemplateId)
         .toList();
-    final documentFields = _selectedDocument?.templateFieldsSnapshot ??
+    final documentFields =
+        _selectedDocument?.templateFieldsSnapshot ??
         const <DocumentTemplateField>[];
     final fields = documentFields.isNotEmpty
         ? documentFields
         : (matchingTemplates.isNotEmpty
-            ? matchingTemplates.first.fields
-            : const <DocumentTemplateField>[]);
+              ? matchingTemplates.first.fields
+              : const <DocumentTemplateField>[]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -806,7 +827,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         OutlinedButton.icon(
           onPressed: canEdit ? _chooseDocumentDate : null,
           icon: const Icon(Icons.calendar_month_outlined),
-          label: Text('التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}'),
+          label: Text(
+            'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+          ),
         ),
         const SizedBox(height: 10),
         DropdownButtonFormField<String?>(
@@ -877,17 +900,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       ),
                     ],
                   ),
-                  for (final field in fields) _buildDocumentField(field, canEdit),
+                  for (final field in fields)
+                    _buildDocumentField(field, canEdit),
                 ],
               ),
             ),
           ),
         ],
         const SizedBox(height: 12),
-        _buildA4Editor(
-          controller: _documentEditor,
-          editable: canEdit,
-        ),
+        _buildA4Editor(controller: _documentEditor, editable: canEdit),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -969,7 +990,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ? () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.tryParse(controller.text) ?? DateTime.now(),
+                    initialDate:
+                        DateTime.tryParse(controller.text) ?? DateTime.now(),
                     firstDate: DateTime(1950),
                     lastDate: DateTime(2100),
                   );
@@ -1144,10 +1166,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         for (var index = 0; index < _templateFields.length; index++)
           _buildTemplateFieldEditor(index),
         const SizedBox(height: 12),
-        _buildA4Editor(
-          controller: _templateEditor,
-          editable: true,
-        ),
+        _buildA4Editor(controller: _templateEditor, editable: true),
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: _saving ? null : _saveTemplate,
@@ -1160,8 +1179,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Widget _buildTemplateFieldEditor(int index) {
     final field = _templateFields[index];
-    final optionsText =
-        (field.options ?? const []).map((option) => option.label).join(', ');
+    final optionsText = (field.options ?? const [])
+        .map((option) => option.label)
+        .join(', ');
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
@@ -1175,8 +1195,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 labelText: 'اسم الحقل',
                 border: OutlineInputBorder(),
               ),
-              onChanged: (value) =>
-                  _updateTemplateField(index, label: value),
+              onChanged: (value) => _updateTemplateField(index, label: value),
             ),
             const SizedBox(height: 8),
             TextFormField(
@@ -1190,9 +1209,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ),
               onChanged: (value) => _updateTemplateField(
                 index,
-                key: value
-                    .toLowerCase()
-                    .replaceAll(RegExp(r'[^a-z0-9_]'), '_'),
+                key: value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_'),
               ),
             ),
             const SizedBox(height: 8),
@@ -1231,17 +1248,17 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   type: value,
                   options: value == DocumentTemplateFieldType.select
                       ? (field.options?.isNotEmpty == true
-                          ? field.options
-                          : const [
-                              DocumentTemplateFieldOption(
-                                value: 'yes',
-                                label: 'نعم',
-                              ),
-                              DocumentTemplateFieldOption(
-                                value: 'no',
-                                label: 'لا',
-                              ),
-                            ])
+                            ? field.options
+                            : const [
+                                DocumentTemplateFieldOption(
+                                  value: 'yes',
+                                  label: 'نعم',
+                                ),
+                                DocumentTemplateFieldOption(
+                                  value: 'no',
+                                  label: 'لا',
+                                ),
+                              ])
                       : const [],
                 );
               },
@@ -1278,10 +1295,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               children: [
                 Checkbox(
                   value: field.required,
-                  onChanged: (value) => _updateTemplateField(
-                    index,
-                    isRequired: value ?? false,
-                  ),
+                  onChanged: (value) =>
+                      _updateTemplateField(index, isRequired: value ?? false),
                 ),
                 const Text('حقل مطلوب'),
                 const Spacer(),
@@ -1345,15 +1360,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _letterhead['departmentName']?.toString() ??
-                            'وثائقي',
+                        _letterhead['departmentName']?.toString() ?? 'وثائقي',
                         style: const TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
-                      if ((_letterhead['unitName']?.toString() ?? '').isNotEmpty)
+                      if ((_letterhead['unitName']?.toString() ?? '')
+                          .isNotEmpty)
                         Text(
                           _letterhead['unitName'].toString(),
                           style: const TextStyle(color: Colors.black87),
@@ -1414,9 +1429,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             color: Colors.white,
             child: QuillEditor.basic(
               controller: controller,
-              config: const QuillEditorConfig(
-                padding: EdgeInsets.zero,
-              ),
+              config: const QuillEditorConfig(padding: EdgeInsets.zero),
             ),
           ),
           const Padding(
@@ -1481,14 +1494,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  switch (_tab) {
-                    DocumentStudioTab.documents => 'إعداد الوثائق الرسمية',
-                    DocumentStudioTab.templates => 'النماذج الإدارية',
-                    DocumentStudioTab.archive => 'أرشيف الوثائق',
-                  },
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                child: Text(switch (_tab) {
+                  DocumentStudioTab.documents => 'إعداد الوثائق الرسمية',
+                  DocumentStudioTab.templates => 'النماذج الإدارية',
+                  DocumentStudioTab.archive => 'أرشيف الوثائق',
+                }, style: Theme.of(context).textTheme.titleMedium),
               ),
               FutureBuilder<int>(
                 future: pendingCountFuture,
