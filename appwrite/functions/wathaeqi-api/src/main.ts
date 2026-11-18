@@ -122,7 +122,7 @@ export default async function main({
 }: AppwriteFunctionContext): Promise<Response | unknown> {
   // Appwrite injects a short-lived API key scoped to this function execution.
   // Reuse it instead of storing a permanent project API key in function vars.
-  if (req.headers["x-appwrite-key"]) {
+  if (!process.env.APPWRITE_API_KEY && req.headers["x-appwrite-key"]) {
     ENV.appwriteApiKey = req.headers["x-appwrite-key"];
   }
 
