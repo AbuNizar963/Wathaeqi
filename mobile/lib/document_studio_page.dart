@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'dart:ui' show TextDirection;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
@@ -338,7 +340,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _selectedTemplateId = document.templateId;
     _selectedTemplateRevision = document.templateRevision;
     _documentCategory = document.category;
-    _documentDate = DateTime.tryParse(document.documentDate) ?? DateTime.now();
+    _documentDate = document.documentDate;
     _titleController.text = document.title;
     _subjectController.text = document.subject;
     _templateBaseContent = document.content;
@@ -966,7 +968,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             labelText: label,
             border: const OutlineInputBorder(),
           ),
-          items: (field.options ?? const [])
+          items: field.options
               .map(
                 (option) => DropdownMenuItem(
                   value: option.value,
@@ -1189,7 +1191,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Widget _buildTemplateFieldEditor(int index) {
     final field = _templateFields[index];
-    final optionsText = (field.options ?? const [])
+    final optionsText = field.options
         .map((option) => option.label)
         .join(', ');
     return Card(
@@ -1257,7 +1259,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   index,
                   type: value,
                   options: value == DocumentTemplateFieldType.select
-                      ? (field.options?.isNotEmpty == true
+                      ? (field.options.isNotEmpty
                             ? field.options
                             : const [
                                 DocumentTemplateFieldOption(
@@ -1361,7 +1363,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     width: 52,
                     height: 52,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) =>
+                    errorBuilder: (_, _, _) =>
                         const SizedBox(width: 52, height: 52),
                   ),
                 const SizedBox(width: 10),
@@ -1487,11 +1489,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
-  String _formatDate(String value) {
-    final date = DateTime.tryParse(value);
-    if (date == null) return value;
-    return DateFormat('yyyy/MM/dd').format(date.toLocal());
-  }
+  String _formatDate(DateTime value) =>
+      DateFormat('yyyy/MM/dd').format(value.toLocal());
 
   @override
   Widget build(BuildContext context) {

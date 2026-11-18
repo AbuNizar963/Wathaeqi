@@ -614,8 +614,6 @@ class PoliceApi {
         return 'offline_document_studio_templates';
       case 'documentStudio.getLetterheadSettings':
         return 'offline_document_studio_letterhead';
-      case 'organizations.context':
-        return 'offline_organization_context';
       default:
         return null;
     }
@@ -647,14 +645,6 @@ class PoliceApi {
       return null;
     }
   }
-
-  /// Reads a previously successful read-only response without treating it as
-  /// the authoritative result. Callers can render it immediately and then
-  /// invoke [call] to revalidate it with the server.
-  Future<dynamic> readCachedResponse(
-    String procedure, {
-    Map<String, dynamic>? input,
-  }) => _readOfflineResponse(procedure, input);
 
   Future<void> _writeOfflineResponse(
     String procedure,

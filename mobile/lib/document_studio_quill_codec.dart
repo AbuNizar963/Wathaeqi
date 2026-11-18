@@ -93,7 +93,6 @@ class DocumentStudioQuillCodec {
     }
 
     for (final operation in document.toDelta().toJson()) {
-      if (operation is! Map) continue;
       final insert = operation['insert'];
       final attributes = operation['attributes'] is Map
           ? Map<String, dynamic>.from(operation['attributes'] as Map)
@@ -231,10 +230,11 @@ class DocumentStudioQuillCodec {
 
     if (type == 'image' && node['attrs'] is Map) {
       final src = (node['attrs'] as Map)['src'];
-      if (src is String)
+      if (src is String) {
         operations.add({
           'insert': {'image': src},
         });
+      }
       return;
     }
 
