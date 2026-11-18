@@ -154,7 +154,6 @@ async function createTelegramAttachmentUploadUrl(
       context.user.authUserId
     );
     res.set("Cache-Control", "no-store");
-    res.set("Cache-Control", "no-store");
     res.status(200).json({
       ...upload,
       fileName: metadata.fileName,
