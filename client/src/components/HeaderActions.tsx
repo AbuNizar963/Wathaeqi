@@ -10,7 +10,11 @@ export default function HeaderActions() {
   if (!user) return null;
 
   return (
-    <div dir="rtl" className="flex items-center gap-2" aria-label="إجراءات الحساب">
+    <div
+      dir="rtl"
+      className="flex items-center gap-2"
+      aria-label="إجراءات الحساب"
+    >
       <Button
         type="button"
         variant="outline"
