@@ -7,11 +7,7 @@
  */
 
 export type DocumentTemplateFieldType =
-  | "text"
-  | "multiline"
-  | "date"
-  | "number"
-  | "select";
+  "text" | "multiline" | "date" | "number" | "select";
 
 export interface DocumentTemplateFieldOption {
   value: string;
