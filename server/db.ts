@@ -17,6 +17,7 @@ import { getAppwriteDatabaseId, getAppwriteTablesDB } from "./_core/appwrite";
 import { getSupabaseAdmin } from "./_core/supabase";
 import {
   addOrganizationMembership,
+  getOrganizationByIdIncludingInactive,
   getPrimaryOrganization,
   getUserOrganizationMembership,
 } from "./features/organizations/organization";
@@ -99,35 +100,22 @@ async function getOrganizationIdentity(
 ): Promise<OrganizationIdentity | null> {
   if (!organizationId) return null;
 
-  const client = getSupabaseAdmin();
-  const { data, error } = await client
-    .from("organizations")
-    .select("name, parentOrganizationId")
-    .eq("id", organizationId)
-    .maybeSingle();
-  throwIfError(error, "Failed to load current organization");
-  if (!data) return null;
+  const organization =
+    await getOrganizationByIdIncludingInactive(organizationId);
+  if (!organization) return null;
 
-  const name = typeof data.name === "string" ? data.name.trim() : "";
+  const name = organization.name.trim();
   if (!name) return null;
 
-  const parentOrganizationId =
-    typeof data.parentOrganizationId === "string"
-      ? data.parentOrganizationId
-      : null;
-  if (!parentOrganizationId) return { name, parentName: null };
-
-  const { data: parent, error: parentError } = await client
-    .from("organizations")
-    .select("name")
-    .eq("id", parentOrganizationId)
-    .maybeSingle();
-  throwIfError(parentError, "Failed to load parent organization");
+  const parentOrganization = organization.parentOrganizationId
+    ? await getOrganizationByIdIncludingInactive(
+        organization.parentOrganizationId
+      )
+    : null;
 
   return {
     name,
-    parentName:
-      typeof parent?.name === "string" ? parent.name.trim() || null : null,
+    parentName: parentOrganization?.name.trim() || null,
   };
 }
 
