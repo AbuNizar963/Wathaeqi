@@ -40,6 +40,24 @@ export const authenticatedProcedure = t.procedure.use(requireUser);
 // remain available so the account can read its organization's telegrams.
 export const protectedProcedure = authenticatedProcedure;
 
+export const platformOwnerProcedure = authenticatedProcedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user || !isPlatformOwner(ctx.user)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "هذه الخدمة متاحة لمالك المنصة فقط",
+      });
+    }
+
+    return next({
+      ctx: {
+        ...ctx,
+        user: ctx.user,
+      },
+    });
+  })
+);
+
 export const adminProcedure = t.procedure.use(requireUser).use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
