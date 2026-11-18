@@ -1744,8 +1744,6 @@ class _DashboardPageState extends State<DashboardPage>
           });
         } else {
           setState(() {
-            if (e is NetworkException) _recordServerCheck(false);
-            if (e is ApiException) _recordServerCheck(true);
             error = _dashboardRefreshError(e);
             // No cached dashboard is available, so report the connection
             // failure instead of claiming that cached data is being shown.
