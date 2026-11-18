@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { publicUser } from "./_core/auth";
 import {
@@ -15,6 +15,10 @@ import {
   enforceLoginRateLimit,
 } from "./_core/loginRateLimit";
 import { ENV } from "./_core/env";
+import {
+  createInitialOwnerProfile,
+  isInitialOwnerSetupAvailable,
+} from "./features/auth/ownerBootstrap";
 import { isAllowedPushEndpoint } from "./_core/pushEndpoint";
 import { isPlatformOwner, isPlatformOwnerUserId } from "./ownerAccess";
 import {
@@ -708,6 +712,67 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+
+    ownerSetupStatus: publicProcedure.query(async () => ({
+      available: await isInitialOwnerSetupAvailable(),
+    })),
+
+    createInitialOwner: publicProcedure
+      .input(
+        z.object({
+          setupSecret: z.string().min(32).max(256),
+          name: z.string().trim().min(2).max(120),
+          username: z
+            .string()
+            .trim()
+            .min(3)
+            .max(120)
+            .regex(/^[a-zA-Z0-9._-]+$/),
+          email: z.string().trim().email().max(320),
+          password: z.string().min(12).max(256),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const configuredSecret = ENV.ownerSetupSecret;
+        const suppliedSecret = Buffer.from(input.setupSecret, "utf8");
+        const expectedSecret = Buffer.from(configuredSecret, "utf8");
+        if (
+          expectedSecret.length < 32 ||
+          suppliedSecret.length !== expectedSecret.length ||
+          !timingSafeEqual(suppliedSecret, expectedSecret)
+        ) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "رمز الإعداد الأولي غير صحيح",
+          });
+        }
+
+        if (!(await isInitialOwnerSetupAvailable())) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "إعداد المالك الأول غير متاح أو تم إنشاء المالك مسبقاً",
+          });
+        }
+
+        await createInitialOwnerProfile(input);
+        const authenticated = await authenticateForLogin(
+          input.username.trim(),
+          input.password
+        );
+        if (!authenticated) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "تم إنشاء الحساب، لكن تعذر بدء الجلسة. سجّل الدخول من الصفحة الرئيسية",
+          });
+        }
+
+        await setAppwriteSessionCookie(
+          ctx.res,
+          authenticated.session,
+          authenticated.user
+        );
+        return publicUser(authenticated.user);
+      }),
 
     login: publicProcedure
       .input(
