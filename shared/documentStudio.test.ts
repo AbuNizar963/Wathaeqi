@@ -61,7 +61,6 @@ describe("validateTemplateFieldValues", () => {
   });
 });
 
-
 describe("Document Studio Appwrite content codecs", () => {
   it("round-trips template metadata inside the existing content column", () => {
     const template = {
