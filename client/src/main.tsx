@@ -23,7 +23,7 @@ const queryClient = new QueryClient({
 
 const configuredAppwriteApiUrl = import.meta.env.VITE_APPWRITE_API_URL?.trim();
 const trpcEndpoint = configuredAppwriteApiUrl
-  ? `${configuredAppwriteApiUrl.replace(/\\/+$/, "")}/api/trpc`
+  ? `${configuredAppwriteApiUrl.replace(/\/+$/, "")}/api/trpc`
   : "/api/trpc";
 
 const trpcClient = trpc.createClient({
