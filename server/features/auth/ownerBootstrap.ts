@@ -144,10 +144,22 @@ export async function createInitialOwnerProfile(input: {
   // row ID prevents replay and concurrent reuse across multiple function instances.
   await consumeOwnerSetupOnce(owner);
 
-  await users.updatePassword({
-    userId: owner.authUserId,
-    password: input.password,
-  });
+  try {
+    await users.updatePassword({
+      userId: owner.authUserId,
+      password: input.password,
+    });
+  } catch (error) {
+    // A rejected password must not permanently consume the one-time setup path.
+    await getAppwriteTablesDB()
+      .deleteRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: OWNER_SETUP_TABLE_ID,
+        rowId: OWNER_SETUP_ROW_ID,
+      })
+      .catch(() => undefined);
+    throw error;
+  }
 
   // Use the server API-key client so Appwrite includes the session secret for the secure cookie.
   const sessionAccount = new Account(getAppwriteAdminClient());
