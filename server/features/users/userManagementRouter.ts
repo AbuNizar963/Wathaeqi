@@ -18,6 +18,7 @@ import {
   verifyAppwriteUserPassword,
 } from "../../_core/appwriteAuth";
 import { writeAuditLog } from "../../db";
+import { getSupabaseAdmin } from "../../_core/supabase";
 import {
   addOrganizationMembership,
   getOrganizationById,
