@@ -14,14 +14,10 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Activity,
-  Building2,
   FileText,
-  History,
   LockKeyhole,
   PanelLeft,
   ShieldCheck,
-  Users,
   WifiOff,
   X,
 } from "lucide-react";
@@ -40,34 +36,6 @@ const menuItems = [
     icon: FileText,
     label: "الوثائق",
     path: "/",
-  },
-  {
-    key: "owner-dashboard",
-    icon: Activity,
-    label: "لوحة قيادة المالك",
-    path: "/owner-dashboard",
-    ownerOnly: true,
-  },
-  {
-    key: "audit-log",
-    icon: History,
-    label: "سجل الإجراءات",
-    path: "/audit-log",
-    auditOnly: true,
-  },
-  {
-    key: "accounts",
-    icon: Users,
-    label: "إدارة المستخدمين",
-    action: "open-owner-user-management",
-    adminOnly: true,
-  },
-  {
-    key: "organizations",
-    icon: Building2,
-    label: "إدارة الجهات",
-    action: "open-owner-organization-management",
-    adminOnly: true,
   },
 ];
 
