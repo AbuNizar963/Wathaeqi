@@ -108,8 +108,6 @@ const document = {
   id: "document-1",
   ownerId,
   organizationId: null,
-  templateId: null,
-  templateRevision: null,
   templateFieldsSnapshot: [],
   title: "كتاب تكليف",
   category: "personnel",
@@ -196,25 +194,6 @@ describe("document studio authorization and API", () => {
       serialCode: "DOC-00012",
       issuedAt: timestamp,
     });
-    dbMocks.getUserOrganizationMembership.mockResolvedValue({
-      isActive: true,
-      organizationId: "org-1",
-      role: "organization_admin",
-    });
-    documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue({
-      organizationId: "org-1",
-      timezone: "UTC",
-      serialPrefix: "DOC",
-      numberSystem: "latin",
-      departmentName: "إدارة الوثائق",
-      unitName: "الوحدة",
-      unitChiefRank: "",
-      unitChiefName: "",
-      logoUrl: null,
-      dateFormat: "dd/MM/yyyy",
-    });
-    documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(12);
-    dbMocks.writeAuditLog.mockResolvedValue(undefined);
   });
 
   it("returns letterhead settings only for the active organization", async () => {
@@ -360,7 +339,9 @@ describe("document studio authorization and API", () => {
       expectedUpdatedAt: timestamp,
     });
 
-    expect(documentOrganizationMocks.allocateDocumentOrganizationSerialNumber).toHaveBeenCalledWith("org-1");
+    expect(
+      documentOrganizationMocks.allocateDocumentOrganizationSerialNumber
+    ).toHaveBeenCalledWith("org-1");
     expect(mocks.issueOfficialDocument).toHaveBeenCalledWith(
       ownerId,
       document.id,
