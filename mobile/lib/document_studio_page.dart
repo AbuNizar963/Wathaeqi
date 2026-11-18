@@ -69,6 +69,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   List<DocumentTemplateField> _templateFields = [];
   final Map<String, TextEditingController> _fieldControllers = {};
   bool _templateContentDirty = false;
+  bool _creatingTemplate = false;
 
   static const _categories = <String, String>{
     'general': 'عام',
@@ -196,9 +197,16 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       }
 
       if (!mounted) return;
+      final selectedId = _selectedDocument?.id;
+      final refreshedSelection = selectedId == null
+          ? null
+          : documents.where((item) => item.id == selectedId).firstOrNull;
       setState(() {
         _documents = documents;
         _templates = templates;
+        if (selectedId != null) {
+          _selectedDocument = refreshedSelection;
+        }
         _canIssueDocuments = context['isOwner'] == true ||
             const ['system_admin', 'organization_admin']
                 .contains(context['role']?.toString());
@@ -463,6 +471,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _editingTemplateId = null;
     _editingTemplateRevision = 1;
     _selectedTemplate = null;
+    _creatingTemplate = true;
     _templateTitleController.clear();
     _templateDescriptionController.clear();
     _templateCategory = 'general';
@@ -476,6 +485,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   void _selectTemplate(DocumentTemplate template) {
     _selectedTemplate = template;
+    _creatingTemplate = false;
     _editingTemplateId = template.id;
     _editingTemplateRevision = template.revision;
     _templateTitleController.text = template.title;
@@ -601,7 +611,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'expectedRevision': _editingTemplateRevision,
       });
       await _load();
-      _startNewTemplate();
+      setState(() {
+        _selectedTemplate = null;
+        _editingTemplateId = null;
+        _creatingTemplate = false;
+      });
       _showMessage('تم إيقاف النموذج مع الاحتفاظ بسجلاته');
     } catch (error) {
       _showMessage('تعذر إيقاف النموذج: $error');
@@ -1005,7 +1019,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ],
         ),
         const SizedBox(height: 8),
-        if (_editingTemplateId == null && _selectedTemplate == null)
+        if (!_creatingTemplate && _selectedTemplate == null)
           for (final template in activeTemplates)
             Card(
               child: ListTile(
@@ -1026,7 +1040,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 onTap: () => _selectTemplate(template),
               ),
             ),
-        if (_editingTemplateId != null || _selectedTemplate == null)
+        if (_creatingTemplate || _selectedTemplate != null)
           _buildTemplateForm(),
       ],
     );
@@ -1524,8 +1538,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       _buildDocumentForm()
                   else if (_tab == DocumentStudioTab.templates)
                     _buildTemplateLibrary()
+                  else if (_selectedDocument == null)
+                    _buildDocumentList(archived: true)
                   else
-                    _buildDocumentList(archived: true),
+                    _buildDocumentForm(),
                 ],
               ),
             ),

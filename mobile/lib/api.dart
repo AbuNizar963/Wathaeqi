@@ -121,6 +121,8 @@ class PoliceApi {
 
   Stream<ApiMutationEvent> get mutationEvents => _mutationEvents.stream;
 
+  OfflineVault get offlineVault => _vault;
+
   Future<dynamic> readCachedResponse(
     String procedure, [
     Map<String, dynamic>? input,
@@ -609,6 +611,10 @@ class PoliceApi {
         return 'offline_document_studio_documents';
       case 'documentStudio.listTemplates':
         return 'offline_document_studio_templates';
+      case 'documentStudio.getLetterheadSettings':
+        return 'offline_document_studio_letterhead';
+      case 'organizations.context':
+        return 'offline_organization_context';
       default:
         return null;
     }
