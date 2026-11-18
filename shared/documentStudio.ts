@@ -94,15 +94,15 @@ export function validateTemplateFieldValues(
         message: `يجب ألا يتجاوز «${field.label}» ${field.maxLength} حرفاً.`,
       });
     }
-    if (
-      field.type === "select" &&
-      value.length > 0 &&
-      !(field.options ?? []).some(option => option.value === value)
-    ) {
-      issues.push({
-        fieldKey: field.key,
-        message: `القيمة المحددة للحقل «${field.label}» غير صالحة.`,
-      });
+    if (field.type === "select" && value.length > 0) {
+      const options = field.options ?? [];
+      const isAllowed = options.some(option => option.value === value);
+      if (!isAllowed) {
+        issues.push({
+          fieldKey: field.key,
+          message: `القيمة المحددة للحقل «${field.label}» غير صالحة.`,
+        });
+      }
     }
   }
 
