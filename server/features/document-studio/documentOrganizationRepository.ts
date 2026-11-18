@@ -72,11 +72,7 @@ export async function getDocumentOrganizationSettings(
   const data = rowData(row);
   return {
     organizationId,
-    departmentName: requiredString(
-      data.departmentName,
-      "إدارة الوثائق",
-      255
-    ),
+    departmentName: requiredString(data.departmentName, "إدارة الوثائق", 255),
     unitName: requiredString(data.unitName, "الوحدة الإدارية", 255),
     unitChiefRank: requiredString(data.unitChiefRank, "", 120),
     unitChiefName: requiredString(data.unitChiefName, "", 255),
