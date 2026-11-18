@@ -153,7 +153,8 @@ describe("document studio authorization and API", () => {
       organizationId: "org-1",
       role: "organization_admin",
     });
-    documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue({
+    documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue(
+      {
       organizationId: "org-1",
       timezone: "UTC",
       serialPrefix: "DOC",
@@ -163,8 +164,9 @@ describe("document studio authorization and API", () => {
       unitChiefRank: "",
       unitChiefName: "",
       logoUrl: null,
-      dateFormat: "dd/MM/yyyy",
-    });
+        dateFormat: "dd/MM/yyyy",
+      }
+    );
     documentOrganizationMocks.allocateDocumentOrganizationSerialNumber.mockResolvedValue(
       12
     );
@@ -196,7 +198,9 @@ describe("document studio authorization and API", () => {
     });
   });
 
-  it("returns letterhead settings only for the active organization", async () => {
+  it(
+    "returns letterhead settings only for the active organization",
+    async () => {
     const caller = appRouter.createCaller(context());
 
     const result = await caller.documentStudio.getLetterheadSettings({
@@ -226,7 +230,9 @@ describe("document studio authorization and API", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it("scopes template and document lists to the authenticated Appwrite owner", async () => {
+  it(
+    "scopes template and document lists to the authenticated Appwrite owner",
+    async () => {
     const caller = appRouter.createCaller(context());
 
     await caller.documentStudio.listTemplates();
@@ -236,7 +242,9 @@ describe("document studio authorization and API", () => {
     expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(ownerId);
   });
 
-  it("denies authenticated non-owners access to document services", async () => {
+  it(
+    "denies authenticated non-owners access to document services",
+    async () => {
     const caller = appRouter.createCaller(nonOwnerContext());
 
     await expect(caller.documentStudio.listDocuments()).rejects.toMatchObject({
@@ -245,7 +253,9 @@ describe("document studio authorization and API", () => {
     expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
   });
 
-  it("derives template ownership from the session, not mutation input", async () => {
+  it(
+    "derives template ownership from the session, not mutation input",
+    async () => {
     const caller = appRouter.createCaller(context());
 
     await caller.documentStudio.createTemplate(templateInput);
@@ -256,7 +266,9 @@ describe("document studio authorization and API", () => {
     });
   });
 
-  it("captures the current owned template revision when creating a document", async () => {
+  it(
+    "captures the current owned template revision when creating a document",
+    async () => {
     const caller = appRouter.createCaller(context());
 
     await caller.documentStudio.createDocument({
@@ -278,7 +290,9 @@ describe("document studio authorization and API", () => {
     });
   });
 
-  it("does not create a document from a template owned by another user", async () => {
+  it(
+    "does not create a document from a template owned by another user",
+    async () => {
     mocks.getDocumentTemplate.mockResolvedValueOnce(null);
     const caller = appRouter.createCaller(context());
 
@@ -331,7 +345,9 @@ describe("document studio authorization and API", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  it("allocates an outgoing serial only when issuing an owned draft", async () => {
+  it(
+    "allocates an outgoing serial only when issuing an owned draft",
+    async () => {
     const caller = appRouter.createCaller(context());
 
     const saved = await caller.documentStudio.issueDocument({
@@ -356,7 +372,9 @@ describe("document studio authorization and API", () => {
     expect(saved.status).toBe("issued");
   });
 
-  it("validates required template values before creating a document", async () => {
+  it(
+    "validates required template values before creating a document",
+    async () => {
     mocks.getDocumentTemplate.mockResolvedValueOnce({
       ...template,
       fields: [
