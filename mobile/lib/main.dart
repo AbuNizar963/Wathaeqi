@@ -409,6 +409,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
@@ -674,9 +675,6 @@ String _dashboardRefreshError(Object error) {
 
 class _DashboardPageState extends State<DashboardPage>
     with WidgetsBindingObserver {
-  static const _idleOutboxMessage = 'لا توجد برقيات معلقة محليًا.';
-  String get _greetingName =>
-      (_account['name'] ?? _account['username'] ?? 'أبو نزار').toString();
 
   late final Map<String, dynamic> _account;
   bool loading = true;
@@ -709,9 +707,6 @@ class _DashboardPageState extends State<DashboardPage>
   String searchQuery = '';
   DateTime? _filterFrom;
   DateTime? _filterTo;
-  bool _showPriority = true;
-  bool _showCategory = true;
-  bool _showCreator = true;
   String statusFilter = 'all';
   String priorityFilter = 'all';
   String classificationFilter = 'all';
@@ -720,15 +715,9 @@ class _DashboardPageState extends State<DashboardPage>
   final push = PushNotificationService();
   late final TelegramOutbox _outbox;
   late final DocumentStudioOutbox _documentStudioOutbox;
-  int _pendingOutbox = 0;
-  bool _outboxSyncing = false;
   bool _outboxSyncInProgress = false;
-  String _syncPhase = 'idle';
-  String? _lastSyncMessage;
-  DateTime? _lastSyncAt;
   bool? _serverReachable;
   DateTime? _serverCheckedAt;
-  Timer? _syncMessageTimer;
   Timer? _searchDebounce;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
   bool _refreshInProgress = false;
@@ -748,27 +737,6 @@ class _DashboardPageState extends State<DashboardPage>
         _account['departmentName'];
     final label = '$value'.trim();
     return label.isEmpty || label == 'null' ? 'الجهة الحالية غير محددة' : label;
-  }
-
-  String get _serverStatusMessage {
-    if (_serverReachable == true) {
-      final checkedAt = _serverCheckedAt;
-      return checkedAt == null
-          ? 'الخادم متصل.'
-          : 'الخادم متصل • آخر تحقق ${_syncTime(checkedAt)}';
-    }
-    if (_serverReachable == false) {
-      return _pendingOutbox > 0
-          ? 'الخادم غير متصل؛ ستبقى التغييرات محفوظة محليًا حتى عودة الاتصال.'
-          : 'الخادم غير متصل؛ لا توجد تغييرات معلقة محليًا.';
-    }
-    return 'لم يُتحقق من اتصال الخادم بعد.';
-  }
-
-  Color get _serverStatusColor {
-    if (_serverReachable == true) return context.appSuccess;
-    if (_serverReachable == false) return context.appWarning;
-    return context.appMutedText;
   }
 
   void _recordServerCheck(bool reachable) {
@@ -912,48 +880,6 @@ class _DashboardPageState extends State<DashboardPage>
     });
   }
 
-  Widget _organizationLogoWidget({
-    required double size,
-    required double borderRadius,
-  }) {
-    final bytes = _organizationLogoBytes;
-    final fallback = Image.asset(
-      'assets/police-telegrams-icon.png',
-      fit: BoxFit.contain,
-      semanticLabel: 'الصورة الافتراضية لنظام برقيات الشرطة',
-    );
-
-    return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: const Color(0xFFE1E5EB)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          borderRadius > 3.0 ? borderRadius - 3.0 : 0.0,
-        ),
-        child: Center(
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: bytes == null
-                ? fallback
-                : Image.memory(
-                    bytes,
-                    fit: BoxFit.contain,
-                    semanticLabel: 'شعار الجهة',
-                    errorBuilder: (context, error, stackTrace) => fallback,
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _checkForAppUpdate({bool force = false}) async {
     if (!mounted) return;
     if (_updateCheckInProgress) {
@@ -1045,63 +971,21 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _syncOutbox({bool showProgress = true}) async {
     if (_outboxSyncInProgress) return;
-    _outboxSyncInProgress = true;
-    _syncMessageTimer?.cancel();
-    _syncMessageTimer = null;
     if (mounted) {
-      setState(() {
-        if (showProgress) {
-          _outboxSyncing = true;
-          _syncPhase = 'syncing';
-          _lastSyncMessage = 'جارٍ فحص التغييرات المحلية ومزامنتها...';
-        }
-      });
+      setState(() => _outboxSyncInProgress = true);
+    } else {
+      _outboxSyncInProgress = true;
     }
+
     try {
       final legacyResult = await _outbox.sync(widget.api);
       final documentResult = await _documentStudioOutbox.sync();
-      final legacyPending = await _outbox.pendingCount();
-      final documentPending = await _documentStudioOutbox.pendingCount();
-      final pending = legacyPending + documentPending;
       final totalSynced = legacyResult.synced + documentResult.synced;
-      if (!mounted) return;
-      _syncMessageTimer?.cancel();
-      setState(() {
-        _pendingOutbox = pending;
-        _lastSyncAt = DateTime.now();
-        if (legacyResult.permanentFailures > 0) {
-          _syncPhase = 'error';
-          _lastSyncMessage = legacyResult.permanentErrorMessages.isEmpty
-              ? 'تم رفض عملية قديمة من الخادم وتحتاج إلى مراجعة.'
-              : legacyResult.permanentErrorMessages.first;
-        } else if (documentResult.lastError != null) {
-          _syncPhase = 'error';
-          _lastSyncMessage = documentResult.lastError;
-        } else if (totalSynced > 0) {
-          _syncPhase = pending == 0 ? 'success' : 'partial';
-          _lastSyncMessage =
-              'تمت مزامنة $totalSynced عملية بنجاح${pending > 0 ? '، وبقيت $pending معلقة' : ''}.';
-        } else if (pending == 0) {
-          _syncPhase = 'idle';
-          _lastSyncMessage = _idleOutboxMessage;
-        } else {
-          _syncPhase = 'waiting';
-          _lastSyncMessage = 'تنتظر $pending عملية عودة الاتصال للمزامنة.';
-        }
-      });
-      if (_syncPhase == 'success') {
-        _syncMessageTimer = Timer(const Duration(seconds: 8), () {
-          if (!mounted) return;
-          setState(() {
-            _syncPhase = 'idle';
-            _lastSyncMessage = _pendingOutbox == 0
-                ? _idleOutboxMessage
-                : 'تنتظر $_pendingOutbox عملية عودة الاتصال للمزامنة.';
-          });
-        });
-      }
+
       if (totalSynced > 0) _loadUnreadNotificationCount();
-      if (mounted && legacyResult.permanentFailures > 0) {
+      if (!mounted || !showProgress) return;
+
+      if (legacyResult.permanentFailures > 0) {
         final details = legacyResult.permanentErrorMessages.isEmpty
             ? 'تحقق أو صلاحيات'
             : legacyResult.permanentErrorMessages.join('، ');
@@ -1109,29 +993,20 @@ class _DashboardPageState extends State<DashboardPage>
           context,
           'تم رفض ${legacyResult.permanentFailures} عملية قديمة من الخادم: $details',
         );
+      } else if (documentResult.lastError != null) {
+        Toast.error(context, 'تعذرت مزامنة الوثائق: ${documentResult.lastError}');
+      } else if (totalSynced > 0) {
+        Toast.success(context, 'تمت مزامنة $totalSynced عملية بنجاح');
       }
     } catch (_) {
-      if (!mounted) return;
-      final legacyPending = await _outbox.pendingCount();
-      final documentPending = await _documentStudioOutbox.pendingCount();
-      final pending = legacyPending + documentPending;
-      setState(() {
-        _pendingOutbox = pending;
-        _syncPhase = pending > 0 ? 'waiting' : 'error';
-        _lastSyncAt = DateTime.now();
-        _lastSyncMessage = pending > 0
-            ? 'تعذر الاتصال؛ ستتم إعادة المحاولة عند عودة الشبكة.'
-            : 'تعذر التحقق من حالة المزامنة.';
-      });
+      if (mounted && showProgress) {
+        Toast.error(context, 'تعذر تنفيذ المزامنة الآن؛ ستبقى التغييرات محفوظة محلياً');
+      }
     } finally {
       if (mounted) {
-        setState(() {
-          _outboxSyncInProgress = false;
-          _outboxSyncing = false;
-        });
+        setState(() => _outboxSyncInProgress = false);
       } else {
         _outboxSyncInProgress = false;
-        _outboxSyncing = false;
       }
     }
   }
@@ -2374,129 +2249,12 @@ class _DashboardPageState extends State<DashboardPage>
     ),
   );
 
-  Widget _systemStatusIndicator() {
-    final Color accent;
-    final String title;
-    if (loading) {
-      accent = context.appInfo;
-      title = 'جارٍ التحديث';
-    } else if (_usingCachedData) {
-      accent = context.appWarning;
-      title = 'النظام غير متصل';
-    } else if (error != null) {
-      accent = context.appDanger;
-      // The detailed error card already contains the connection-error text.
-      // Keep this compact indicator distinct to avoid duplicate announcements.
-      title = 'النظام غير متصل';
-    } else {
-      accent = context.appSuccess;
-      title = 'النظام متصل';
-    }
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: accent,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Semantics(
-          label: title,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-          ),
-        ),
-      ],
-    );
-  }
-
   String _syncTime(DateTime value) {
     final local = value.toLocal();
     return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
 
-  bool _isIncoming(Map<String, dynamic> row) {
-    final direction = '${row['direction'] ?? row['type'] ?? ''}'
-        .trim()
-        .toLowerCase();
-    if (direction == 'incoming' || direction == 'واردة') return true;
-    if (direction == 'outgoing' || direction == 'صادرة') return false;
 
-    final organizationId = activeOrganizationId;
-    if (organizationId == null || organizationId.isEmpty) return false;
-
-    final senderOrganizationId = row['organizationId']?.toString();
-    final receiverOrganizationId = row['currentOrganizationId']?.toString();
-    if (senderOrganizationId == organizationId) return false;
-    if (receiverOrganizationId == organizationId) return true;
-    return false;
-  }
-
-  Widget _telegramDetailLine(String label, String value, {bool strong = true}) {
-    final colors = Theme.of(context).colorScheme;
-    return RichText(
-      textAlign: TextAlign.right,
-      text: TextSpan(
-        style: TextStyle(
-          fontFamily: 'Cairo',
-          color: strong ? colors.onSurfaceVariant : colors.onSurface,
-          fontSize: 14,
-          height: 1.45,
-          fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
-        ),
-        children: [
-          TextSpan(text: '$label '),
-          TextSpan(
-            text: value,
-            style: TextStyle(
-              color: strong ? colors.onSurfaceVariant : colors.onSurface,
-              fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _telegramChip(
-    String label,
-    Color background,
-    Color foreground, {
-    IconData? icon,
-  }) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-    decoration: BoxDecoration(
-      color: background,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 13, color: foreground),
-          const SizedBox(width: 3),
-        ],
-        Text(
-          label,
-          style: TextStyle(
-            color: foreground,
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _AccountMenuItem extends StatelessWidget {
