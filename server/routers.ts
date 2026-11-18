@@ -75,8 +75,6 @@ import {
   deleteMobilePushToken,
   listUserNotifications,
   markNotificationRead,
-  notifyOrganizationUsers,
-  notifyUser,
   upsertPushSubscription,
   upsertMobilePushToken,
 } from "./db";
@@ -94,6 +92,7 @@ import {
   listOrganizationDescendants,
   provisionOrganizationAccount,
   listOrganizationsForUser,
+  listRoutingTargets,
   listRoutingDirectory,
   listRoutingTargets,
   purgeArchivedOrganizationPermanently,
