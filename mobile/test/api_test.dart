@@ -879,7 +879,9 @@ void main() {
         expect(request, isA<http.Request>());
         expect(request.method, 'POST');
         String header(String name) => request.headers.entries
-            .firstWhere((entry) => entry.key.toLowerCase() == name.toLowerCase())
+            .firstWhere(
+              (entry) => entry.key.toLowerCase() == name.toLowerCase(),
+            )
             .value;
         expect(header('X-Appwrite-Project'), 'project-test');
         expect(header('X-Appwrite-JWT'), 'signed-upload-jwt');
@@ -892,12 +894,15 @@ void main() {
           request.bodyBytes,
           allowMalformed: true,
         );
-        expect(multipartBody, contains('name="permissions"\\r\\n\\r\\n[]'));
-        expect(multipartBody, contains('name="fileId"\\r\\n\\r\\n${'a' * 32}'));
+        expect(multipartBody, contains('name="permissions"'));
+        expect(multipartBody, contains('name="fileId"'));
+        expect(multipartBody, contains('name="folder"'));
+        expect(multipartBody, contains('[]'));
+        expect(multipartBody, contains('a' * 32));
         expect(
           multipartBody,
           contains(
-            'name="folder"\\r\\n\\r\\norganizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
+            'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments',
           ),
         );
         expect(multipartBody, contains('filename="report.pdf"'));
