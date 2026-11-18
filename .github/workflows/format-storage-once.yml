@@ -1,0 +1,61 @@
+name: One-time Appwrite storage formatting
+
+on:
+  push:
+    branches: ["migration/netlify-appwrite-foundation"]
+    paths:
+      - ".format-storage-request"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format only the Appwrite storage migration files
+        run: |
+          pnpm exec prettier --write \
+            server/_core/storageProvider.test.ts \
+            server/_core/storageProvider.ts \
+            server/features/storage/storage.ts \
+            server/features/storage/storageRoutes.ts \
+            server/features/storage/telegramAttachmentRepository.test.ts \
+            server/features/storage/telegramAttachmentRepository.ts
+
+      - name: Commit formatting only
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            server/_core/storageProvider.test.ts \
+            server/_core/storageProvider.ts \
+            server/features/storage/storage.ts \
+            server/features/storage/storageRoutes.ts \
+            server/features/storage/telegramAttachmentRepository.test.ts \
+            server/features/storage/telegramAttachmentRepository.ts
+          git commit -m "Format Appwrite storage migration"
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
