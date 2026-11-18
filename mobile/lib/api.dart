@@ -382,63 +382,77 @@ class PoliceApi {
       throw const FormatException('بيانات الاتصال بمخزن Appwrite غير صالحة');
     }
 
-    const chunkSize = 5 * 1024 * 1024;
-    final chunkedUpload = bytes.length > chunkSize;
-    for (var offset = 0; offset < bytes.length; offset += chunkSize) {
-      final endExclusive =
-          (offset + chunkSize < bytes.length) ? offset + chunkSize : bytes.length;
-      final chunk = Uint8List.fromList(bytes.sublist(offset, endExclusive));
-      final storageRequest = http.MultipartRequest('POST', uploadUri);
-      storageRequest.headers.addAll({
-        'X-Appwrite-Project': projectId,
-        'X-Appwrite-JWT': uploadJwt,
-        if (chunkedUpload)
-          'Content-Range':
-              'bytes $offset-${endExclusive - 1}/${bytes.length}',
-        if (offset > 0) 'X-Appwrite-ID': fileId,
-      });
-      storageRequest.fields['permissions'] = '[]';
-      if (offset == 0) {
-        storageRequest.fields['fileId'] = fileId;
-        storageRequest.fields['folder'] = folder;
-      }
-      storageRequest.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          chunk,
-          filename: fileName,
-          contentType: MediaType.parse(contentType),
-        ),
-      );
-
-      final storageResponse = await send(() async {
-        final streamedResponse = await _httpClient.send(storageRequest);
-        return http.Response.fromStream(streamedResponse);
-      }, timeout: const Duration(seconds: 60));
-      if (storageResponse.statusCode < 200 ||
-          storageResponse.statusCode >= 300) {
-        throw ApiException(
-          storageResponse.statusCode,
-          _message(storageResponse.body),
-        );
-      }
-    }
-
     final finalizeUri = Uri.parse(
       '$baseUrl/api/telegrams/$telegramId/attachments/finalize',
     );
-    final finalizeResponse = await send(
+    final finalizeBody = jsonEncode({
+      'key': key,
+      'fileName': fileName,
+      'contentType': contentType,
+      'sizeBytes': bytes.length,
+    });
+
+    Future<http.Response> finalizeUpload() => send(
       () => _httpClient.post(
         finalizeUri,
         headers: requestHeaders,
-        body: jsonEncode({
-          'key': key,
-          'fileName': fileName,
-          'contentType': contentType,
-          'sizeBytes': bytes.length,
-        }),
+        body: finalizeBody,
       ),
     );
+
+    const chunkSize = 5 * 1024 * 1024;
+    final chunkedUpload = bytes.length > chunkSize;
+    try {
+      for (var offset = 0; offset < bytes.length; offset += chunkSize) {
+        final endExclusive = (offset + chunkSize < bytes.length)
+            ? offset + chunkSize
+            : bytes.length;
+        final chunk = Uint8List.fromList(bytes.sublist(offset, endExclusive));
+        final storageRequest = http.MultipartRequest('POST', uploadUri);
+        storageRequest.headers.addAll({
+          'X-Appwrite-Project': projectId,
+          'X-Appwrite-JWT': uploadJwt,
+          if (chunkedUpload)
+            'Content-Range':
+                'bytes $offset-${endExclusive - 1}/${bytes.length}',
+          if (offset > 0) 'X-Appwrite-ID': fileId,
+        });
+        storageRequest.fields['permissions'] = '[]';
+        if (offset == 0) {
+          storageRequest.fields['fileId'] = fileId;
+          storageRequest.fields['folder'] = folder;
+        }
+        storageRequest.files.add(
+          http.MultipartFile.fromBytes(
+            'file',
+            chunk,
+            filename: fileName,
+            contentType: MediaType.parse(contentType),
+          ),
+        );
+
+        final storageResponse = await send(() async {
+          final streamedResponse = await _httpClient.send(storageRequest);
+          return http.Response.fromStream(streamedResponse);
+        }, timeout: const Duration(seconds: 60));
+        if (storageResponse.statusCode < 200 ||
+            storageResponse.statusCode >= 300) {
+          throw ApiException(
+            storageResponse.statusCode,
+            _message(storageResponse.body),
+          );
+        }
+      }
+    } catch (_) {
+      try {
+        await finalizeUpload();
+      } catch (_) {
+        // Finalization removes any partial object when no metadata was committed.
+      }
+      rethrow;
+    }
+
+    final finalizeResponse = await finalizeUpload();
     if (finalizeResponse.statusCode < 200 ||
         finalizeResponse.statusCode >= 300) {
       throw ApiException(
