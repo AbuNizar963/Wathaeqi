@@ -28,6 +28,7 @@ export const ENV = {
   adminEmails: splitCsv(process.env.ADMIN_EMAILS),
   authSessionSecret: process.env.AUTH_SESSION_SECRET ?? "",
   ownerUsername: process.env.OWNER_USERNAME ?? "AbuNizar",
+  ownerSetupSecret: process.env.OWNER_SETUP_SECRET ?? "",
   ownerPasswordHash: process.env.OWNER_PASSWORD_HASH ?? "",
   ownerInitialPassword: process.env.OWNER_INITIAL_PASSWORD ?? "",
   ownerNotificationWebhookUrl: process.env.OWNER_NOTIFICATION_WEBHOOK_URL ?? "",
