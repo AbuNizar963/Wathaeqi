@@ -81,9 +81,9 @@ export async function createInitialOwnerProfile(input: {
 
   const users = new Users(getAppwriteAdminClient());
   const authUser = await users.get({ userId: owner.authUserId });
-  if (
-    authUser.email.trim().toLowerCase() !== owner.email.trim().toLowerCase()
-  ) {
+  const authEmail = authUser.email.trim().toLowerCase();
+  const ownerEmail = owner.email.trim().toLowerCase();
+  if (authEmail !== ownerEmail) {
     throw new Error("بيانات حساب المالك لا تتطابق مع حساب المصادقة المرتبط");
   }
 
