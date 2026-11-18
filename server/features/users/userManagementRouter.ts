@@ -1,4 +1,5 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
+import { Query } from "node-appwrite";
 import { z } from "zod";
 import { getRequestAuditContext } from "../../auditContext";
 import { TRPCError } from "@trpc/server";
@@ -7,46 +8,191 @@ import {
   organizationManagerProcedure,
   router,
 } from "../../_core/trpc";
-import { hashPassword, verifyPassword } from "../../_core/auth";
-import { getSupabaseAdmin } from "../../_core/supabase";
-import { getUserById, writeAuditLog } from "../../db";
-import { addOrganizationMembership } from "../organizations/organization";
+import {
+  getAppwriteDatabaseId,
+  getAppwriteTablesDB,
+  getAppwriteUsers,
+} from "../../_core/appwrite";
+import {
+  getAppwriteProfileById,
+  verifyAppwriteUserPassword,
+} from "../../_core/appwriteAuth";
+import { writeAuditLog } from "../../db";
+import {
+  addOrganizationMembership,
+  getOrganizationById,
+  listAllOrganizations,
+} from "../organizations/organization";
 import { isPlatformOwner } from "../../ownerAccess";
 import {
   assertCanManageOrganization,
   getManagedOrganizationIds,
 } from "../organizations/organizationScope";
 
-async function getActiveOrganizationForAccount(organizationId: string) {
-  const { data, error } = await getSupabaseAdmin()
-    .from("organizations")
-    .select("id, name, isActive")
-    .eq("id", organizationId)
-    .maybeSingle();
+type AppwriteUserRow = Record<string, unknown> & { $id: string };
 
-  if (error) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "تعذر التحقق من الجهة المختارة للحساب",
+const USERS_TABLE = "users";
+const DATABASE_ID = getAppwriteDatabaseId();
+
+function userRowData(row: AppwriteUserRow): Record<string, unknown> {
+  return row.data && typeof row.data === "object"
+    ? (row.data as Record<string, unknown>)
+    : row;
+}
+
+async function listAllRows(
+  tableId: string,
+  queries: string[]
+): Promise<AppwriteUserRow[]> {
+  const rows: AppwriteUserRow[] = [];
+  let cursor: string | null = null;
+
+  while (true) {
+    const result = await getAppwriteTablesDB().listRows({
+      databaseId: DATABASE_ID,
+      tableId,
+      queries: [
+        ...queries,
+        Query.limit(100),
+        ...(cursor ? [Query.cursorAfter(cursor)] : []),
+      ],
+      total: false,
+    });
+    const page = result.rows as unknown as AppwriteUserRow[];
+    rows.push(...page);
+    if (page.length < 100) return rows;
+
+    const nextCursor = page[page.length - 1]?.$id;
+    if (!nextCursor || nextCursor === cursor) {
+      throw new Error(`Appwrite pagination did not advance for ${tableId}`);
+    }
+    cursor = nextCursor;
+  }
+}
+
+async function getUserRowsByUsername(
+  username: string
+): Promise<AppwriteUserRow[]> {
+  return listAllRows(USERS_TABLE, [Query.equal("username", username)]);
+}
+
+async function createUserProfileRow(
+  values: Record<string, unknown>
+): Promise<AppwriteUserRow> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const row = await getAppwriteTablesDB().createRow({
+        databaseId: DATABASE_ID,
+        tableId: USERS_TABLE,
+        rowId: randomUUID(),
+        data: {
+          id: randomInt(1, 2_147_483_647),
+          ...values,
+        },
+      });
+      return row as unknown as AppwriteUserRow;
+    } catch (error) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? Number((error as { code?: unknown }).code)
+          : 0;
+      if (code !== 409 || attempt === 4) throw error;
+    }
+  }
+  throw new Error("Unable to allocate a unique Appwrite user profile ID");
+}
+
+function mapManagedUser(row: AppwriteUserRow) {
+  const data = userRowData(row);
+  return {
+    id: Number(data.id),
+    organizationId:
+      typeof data.organizationId === "string" ? data.organizationId : null,
+    username: String(data.username ?? ""),
+    name: typeof data.name === "string" ? data.name : null,
+    badgeNumber:
+      typeof data.badgeNumber === "string" ? data.badgeNumber : null,
+    phone: typeof data.phone === "string" ? data.phone : null,
+    rank: typeof data.rank === "string" ? data.rank : null,
+    unit: typeof data.unit === "string" ? data.unit : null,
+    role: String(data.role ?? "user"),
+    loginMethod:
+      typeof data.loginMethod === "string" ? data.loginMethod : "password",
+    createdAt: data.createdAt ?? null,
+    lastSignedIn: data.lastSignedIn ?? null,
+  };
+}
+
+function syntheticAccountEmail(username: string): string {
+  const localPart = createHash("sha256")
+    .update(username.toLowerCase())
+    .digest("hex")
+    .slice(0, 32);
+  return `${localPart}@accounts.wathaeqi.invalid`;
+}
+
+async function deleteUserMembershipRows(userId: number): Promise<number> {
+  const rows = await listAllRows("organization_memberships", [
+    Query.equal("userId", userId),
+  ]);
+  for (const row of rows) {
+    await getAppwriteTablesDB().deleteRow({
+      databaseId: DATABASE_ID,
+      tableId: "organization_memberships",
+      rowId: row.$id,
     });
   }
-  if (!data || data.isActive !== true) {
+  return rows.length;
+}
+
+async function deleteRowsForUser(
+  tableId: string,
+  userId: number
+): Promise<number> {
+  const rows = await listAllRows(tableId, [Query.equal("userId", userId)]);
+  for (const row of rows) {
+    await getAppwriteTablesDB().deleteRow({
+      databaseId: DATABASE_ID,
+      tableId,
+      rowId: row.$id,
+    });
+  }
+  return rows.length;
+}
+
+async function hasRows(
+  tableId: string,
+  queries: string[]
+): Promise<boolean> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: DATABASE_ID,
+    tableId,
+    queries: [...queries, Query.limit(1)],
+    total: false,
+  });
+  return result.rows.length > 0;
+}
+
+
+async function getActiveOrganizationForAccount(organizationId: string) {
+  const organization = await getOrganizationById(organizationId);
+  if (!organization) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "الجهة المختارة غير موجودة أو غير مفعّلة",
     });
   }
-  return data as { id: string; name: string; isActive: boolean };
+  return organization;
 }
 
 async function requireCurrentPassword(
   userId: number,
   password: string
 ): Promise<void> {
-  const user = await getUserById(userId);
+  const profile = await getAppwriteProfileById(userId);
   if (
-    !user?.passwordHash ||
-    !(await verifyPassword(password, user.passwordHash))
+    !profile?.user.username ||
+    !(await verifyAppwriteUserPassword(profile.user.username, password))
   ) {
     throw new TRPCError({
       code: "FORBIDDEN",
