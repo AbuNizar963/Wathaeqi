@@ -121,6 +121,19 @@ class PoliceApi {
 
   Stream<ApiMutationEvent> get mutationEvents => _mutationEvents.stream;
 
+  Future<dynamic> readCachedResponse(
+    String procedure, [
+    Map<String, dynamic>? input,
+  ]) =>
+      _readOfflineResponse(procedure, input);
+
+  Future<void> writeCachedResponse(
+    String procedure,
+    Map<String, dynamic>? input,
+    dynamic value,
+  ) =>
+      _writeOfflineResponse(procedure, input, value);
+
   Future<dynamic> call(
     String procedure, {
     Map<String, dynamic>? input,
@@ -594,6 +607,10 @@ class PoliceApi {
         return 'offline_organization_context';
       case 'dashboard.stats':
         return 'offline_dashboard_stats';
+      case 'documentStudio.listDocuments':
+        return 'offline_document_studio_documents';
+      case 'documentStudio.listTemplates':
+        return 'offline_document_studio_templates';
       default:
         return null;
     }
