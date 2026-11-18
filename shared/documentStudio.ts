@@ -44,8 +44,10 @@ export interface DocumentTemplate {
 export interface OfficialDocument {
   id: string;
   ownerId: string;
+  organizationId: string | null;
   templateId: string | null;
   templateRevision: number | null;
+  templateFieldsSnapshot: DocumentTemplateField[];
   title: string;
   category: string;
   subject: string;
@@ -176,6 +178,8 @@ export function decodeTemplateStorageContent(
 
 export interface DecodedOfficialDocumentContent {
   content: Record<string, unknown>;
+  organizationId: string | null;
+  templateFieldsSnapshot: DocumentTemplateField[];
   subject: string;
   fieldValues: Record<string, string>;
   serialNumber: number;
@@ -197,6 +201,8 @@ export function encodeOfficialDocumentStorageContent(
   document: Pick<
     OfficialDocument,
     | "content"
+    | "organizationId"
+    | "templateFieldsSnapshot"
     | "subject"
     | "fieldValues"
     | "serialNumber"
@@ -212,6 +218,8 @@ export function encodeOfficialDocumentStorageContent(
   return JSON.stringify({
     format: DOCUMENT_CONTENT_FORMAT,
     editor: document.content,
+    organizationId: document.organizationId,
+    templateFieldsSnapshot: document.templateFieldsSnapshot,
     subject: document.subject,
     fieldValues: document.fieldValues,
     serialNumber: document.serialNumber,
@@ -241,6 +249,11 @@ export function decodeOfficialDocumentStorageContent(
         : "draft";
     return {
       content: parsed.editor,
+      organizationId:
+        typeof parsed.organizationId === "string" ? parsed.organizationId : null,
+      templateFieldsSnapshot: Array.isArray(parsed.templateFieldsSnapshot)
+        ? (parsed.templateFieldsSnapshot as DocumentTemplateField[])
+        : [],
       subject: typeof parsed.subject === "string" ? parsed.subject : "",
       fieldValues: isRecord(parsed.fieldValues)
         ? Object.fromEntries(
@@ -281,6 +294,8 @@ export function decodeOfficialDocumentStorageContent(
       : typeof parsed === "string" && parsed.length > 0
         ? preserveLegacyContent(parsed)
         : emptyEditorDocument(),
+    organizationId: null,
+    templateFieldsSnapshot: [],
     subject: "",
     fieldValues: {},
     serialNumber: 0,

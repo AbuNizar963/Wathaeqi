@@ -101,6 +101,8 @@ describe("Document Studio Appwrite content codecs", () => {
         type: "doc",
         content: [{ type: "paragraph" }],
       },
+      organizationId: "org-1",
+      templateFieldsSnapshot: fields,
       subject: "تكليف موظف",
       fieldValues: { employee_name: "أحمد" },
       serialNumber: 12,
