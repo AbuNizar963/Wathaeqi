@@ -123,7 +123,7 @@ class AppwriteStorageProvider implements StorageProvider {
       throw new Error("An authenticated Appwrite user is required for uploads");
     }
 
-    const { fileId, fileName, folder } = parseStorageKey(key);
+    const { fileId, folder } = parseStorageKey(key);
     const match = key.match(
       /^organizations\/[0-9a-f-]{36}\/telegrams\/[1-9]\d*\/attachments\/[0-9a-f-]{36}-(.+)$/i
     );
