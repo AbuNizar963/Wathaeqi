@@ -16,7 +16,10 @@ import {
   enforceLoginRateLimit,
 } from "./_core/loginRateLimit";
 import { ENV } from "./_core/env";
-import { createInitialOwnerProfile, isInitialOwnerSetupAvailable } from "./features/auth/ownerBootstrap";
+import {
+  createInitialOwnerProfile,
+  isInitialOwnerSetupAvailable,
+} from "./features/auth/ownerBootstrap";
 import { publicProcedure, router } from "./_core/trpc";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
