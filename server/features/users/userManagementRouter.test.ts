@@ -72,9 +72,7 @@ const organizationId = "00000000-0000-4000-8000-000000000025";
 const ownerId = "00000000-0000-4000-8000-000000000001";
 const targetAuthId = "00000000-0000-4000-8000-000000000025";
 
-function profile(
-  overrides: Record<string, unknown> = {}
-): {
+function profile(overrides: Record<string, unknown> = {}): {
   rowId: string;
   user: Record<string, unknown>;
 } {
