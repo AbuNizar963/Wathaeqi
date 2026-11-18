@@ -72,7 +72,10 @@ export async function isInitialOwnerSetupAvailable(): Promise<boolean> {
 export async function createInitialOwnerProfile(input: {
   username: string;
   password: string;
-}): Promise<{ user: User; session: Awaited<ReturnType<Account["createEmailPasswordSession"]>> }> {
+}): Promise<{
+  user: User;
+  session: Awaited<ReturnType<Account["createEmailPasswordSession"]>>;
+}> {
   if (ENV.ownerSetupSecret.length < 32) {
     throw new Error("إعداد إعادة تعيين كلمة مرور المالك غير مكتمل على الخادم");
   }
@@ -95,7 +98,9 @@ export async function createInitialOwnerProfile(input: {
   // Create the session directly from the verified owner email. The guest-scoped
   // account.get() verification in the generic login path can fail after the
   // session is issued even though Appwrite has already authenticated the user.
-  const session = await new Account(getAppwriteSessionClient()).createEmailPasswordSession({
+  const session = await new Account(
+    getAppwriteSessionClient()
+  ).createEmailPasswordSession({
     email: owner.email,
     password: input.password,
   });
