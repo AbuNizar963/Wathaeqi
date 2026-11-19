@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { trpc } from "@/lib/ownerTrpc";
+import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import type {
   DocumentTemplate,
   DocumentTemplateField,
