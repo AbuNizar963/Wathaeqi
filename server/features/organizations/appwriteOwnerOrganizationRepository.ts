@@ -1,13 +1,27 @@
 import { Query } from "node-appwrite";
-import type {
-  Organization,
-  OrganizationMembership,
-} from "../../../drizzle/schema";
 import {
   getAppwriteDatabaseId,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { getAppwriteProfileById } from "../../_core/appwriteAuth";
+
+type Organization = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+};
+
+type OrganizationMembership = {
+  organizationId: string;
+  userId: number;
+  role: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 type AppwriteOrganizationRow = Record<string, unknown> & {
   $id: string;
