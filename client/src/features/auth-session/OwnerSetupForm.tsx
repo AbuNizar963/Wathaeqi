@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BrandMark } from "@/components/BrandMark";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/ownerTrpc";
 
 export default function OwnerSetupForm() {
   const utils = trpc.useUtils();
@@ -59,7 +59,7 @@ export default function OwnerSetupForm() {
             required
           />
           <p className="text-xs text-muted-foreground">
-            الرمز الذي تضيفه في متغير OWNER_SETUP_SECRET داخل Netlify.
+            الرمز الذي تضيفه في متغير OWNER_SETUP_SECRET ضمن إعدادات وظيفة Appwrite.
           </p>
         </div>
 
