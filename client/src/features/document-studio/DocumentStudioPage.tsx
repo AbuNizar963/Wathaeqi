@@ -28,7 +28,9 @@ import type {
 import DocumentEditor from "./DocumentEditor";
 import {
   buildTelegramWatermarkCss,
-  buildTelegramWatermarkHtml,
+  OFFICIAL_MINISTRY_NAME,
+  TELEGRAM_WATERMARK_COLUMNS,
+  TELEGRAM_WATERMARK_ROWS,
 } from "@/features/telegrams/documents/telegramWatermark";
 
 type StudioTab = "documents" | "templates" | "archive";
@@ -499,19 +501,19 @@ export default function DocumentStudioPage() {
             <Archive className="ml-2 h-4 w-4" />
             الأرشيف
           </Button>
+          <Button
+            variant={previewMode ? "secondary" : "outline"}
+            onClick={() => setPreviewMode(current => !current)}
+          >
+            {previewMode ? (
+              <EyeOff className="ml-2 h-4 w-4" />
+            ) : (
+              <Eye className="ml-2 h-4 w-4" />
+            )}
+            {previewMode ? "العودة للتحرير" : "معاينة الوثيقة"}
+          </Button>
           {activeTab === "documents" || activeTab === "archive" ? (
             <>
-              <Button
-                variant={previewMode ? "secondary" : "outline"}
-                onClick={() => setPreviewMode(current => !current)}
-              >
-                {previewMode ? (
-                  <EyeOff className="ml-2 h-4 w-4" />
-                ) : (
-                  <Eye className="ml-2 h-4 w-4" />
-                )}
-                {previewMode ? "العودة للتحرير" : "معاينة الوثيقة"}
-              </Button>
               <Button variant="outline" onClick={() => window.print()}>
                 <Printer className="ml-2 h-4 w-4" />
                 طباعة / PDF
@@ -1160,7 +1162,6 @@ function DocumentWatermark({
   opacityPercent: number;
   showMinistryText: boolean;
 }) {
-  const watermarkHtml = buildTelegramWatermarkHtml(logoUrl, { showMinistryText });
   const watermarkCss = buildTelegramWatermarkCss(opacityPercent / 100);
 
   return (
@@ -1169,11 +1170,27 @@ function DocumentWatermark({
         .document-a4-page > :not(style):not(.document-watermark-layer) { position: relative; z-index: 2; }
         .document-watermark-layer { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
         ${watermarkCss}`}</style>
-      <div
-        className="document-watermark-layer"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: watermarkHtml }}
-      />
+      <div className="document-watermark-layer" aria-hidden="true">
+        <div className="page-watermark">
+          {showMinistryText ? (
+            <div className="watermark-text-pattern">
+              {Array.from({ length: TELEGRAM_WATERMARK_ROWS }, (_, row) => (
+                <div
+                  key={row}
+                  className={row % 2 ? "watermark-text-row watermark-text-row-offset" : "watermark-text-row"}
+                >
+                  {Array.from({ length: TELEGRAM_WATERMARK_COLUMNS }, (_, column) => (
+                    <span key={column}>{OFFICIAL_MINISTRY_NAME}</span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {logoUrl ? (
+            <img className="watermark-logo" src={logoUrl} alt="" decoding="async" />
+          ) : null}
+        </div>
+      </div>
     </>
   );
 }
