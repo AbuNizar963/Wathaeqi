@@ -203,8 +203,17 @@ class PoliceApi {
       await _writeOfflineResponse(procedure, input, value);
     } else {
       await _syncOfflineCacheAfterMutation(procedure, input, value);
+      // Only document events require their payload for local refresh logic.
+      // Other procedures can contain passwords or one-time account secrets.
+      final includesDocumentData =
+          procedure.startsWith('telegrams.') ||
+          procedure.startsWith('documentStudio.');
       _mutationEvents.add(
-        ApiMutationEvent(procedure: procedure, input: input, result: value),
+        ApiMutationEvent(
+          procedure: procedure,
+          input: includesDocumentData ? input : null,
+          result: includesDocumentData ? value : null,
+        ),
       );
     }
     return value;

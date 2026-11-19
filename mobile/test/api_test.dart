@@ -69,6 +69,53 @@ void main() {
   });
 
   test(
+    'credential mutations do not broadcast passwords or returned secrets',
+    () async {
+      final client = MockClient(
+        (request) async => http.Response(
+          jsonEncode({
+            'result': {
+              'data': {
+                'json': {'temporaryPassword': 'secret-result'},
+              },
+            },
+          }),
+          200,
+        ),
+      );
+      addTearDown(client.close);
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+      final events = <ApiMutationEvent>[];
+      final subscription = api.mutationEvents.listen(events.add);
+      addTearDown(subscription.cancel);
+
+      final response = await api.call(
+        'profile.changePassword',
+        mutation: true,
+        input: {'currentPassword': 'old-secret', 'newPassword': 'new-secret'},
+      );
+      await api.call(
+        'userManagement.create',
+        mutation: true,
+        input: {'password': 'temporary-secret'},
+      );
+
+      expect(response, {'temporaryPassword': 'secret-result'});
+      expect(events.map((event) => event.procedure), [
+        'profile.changePassword',
+        'userManagement.create',
+      ]);
+      expect(
+        events.every((event) => event.input == null && event.result == null),
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'critical platform document reads ignore stale cached settings',
     () async {
       var offline = false;

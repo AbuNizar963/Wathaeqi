@@ -204,7 +204,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         final rawLetterhead = await widget.api.call(
           'documentStudio.getLetterheadSettings',
           input: organizationId == null
-              ? null
+              ? <String, dynamic>{}
               : {'organizationId': organizationId},
         );
         if (rawLetterhead is Map) {
@@ -393,7 +393,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           : await _outbox.updateDocument({
               ...input,
               'id': _selectedDocument!.id,
-              'expectedUpdatedAt': _selectedDocument!.updatedAt,
+              'expectedUpdatedAt': _selectedDocument!.expectedUpdatedAt,
             });
       if (!mounted) return;
       _selectedDocument = OfficialDocument.fromJson(saved);
@@ -446,7 +446,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     try {
       final saved = await _outbox.issueDocument({
         'id': document.id,
-        'expectedUpdatedAt': document.updatedAt,
+        'expectedUpdatedAt': document.expectedUpdatedAt,
       });
       _selectedDocument = OfficialDocument.fromJson(saved);
       await _load();
@@ -484,7 +484,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     try {
       final saved = await _outbox.archiveDocument({
         'id': document.id,
-        'expectedUpdatedAt': document.updatedAt,
+        'expectedUpdatedAt': document.expectedUpdatedAt,
       });
       _selectedDocument = OfficialDocument.fromJson(saved);
       await _load();

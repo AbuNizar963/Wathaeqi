@@ -97,6 +97,7 @@ void main() {
         expect(restored.content['type'], 'doc');
         expect(restored.serialCode, 'DOC-0012');
         expect(restored.documentDate, document.documentDate);
+        expect(restored.expectedUpdatedAt, '2026-11-18T11:00:00.000Z');
       },
     );
   });

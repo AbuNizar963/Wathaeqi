@@ -196,6 +196,9 @@ class OfficialDocument {
   final DateTime? issuedAt;
   final DateTime? archivedAt;
 
+  /// The API requires an ISO-8601 UTC string for optimistic concurrency.
+  String get expectedUpdatedAt => updatedAt.toUtc().toIso8601String();
+
   factory OfficialDocument.fromJson(Map<String, dynamic> json) =>
       OfficialDocument(
         id: json['id'] as String? ?? '',

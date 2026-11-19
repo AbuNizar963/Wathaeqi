@@ -115,7 +115,8 @@ const flutterProcedures = dartSource
     ]
       .map(match => match[1]!)
       .filter(
-        name => !name.startsWith("https.") &&
+        name =>
+          !name.startsWith("https.") &&
           !documentStudioSharedApiProcedures.has(name)
       )
   : requiredMobileProcedures;

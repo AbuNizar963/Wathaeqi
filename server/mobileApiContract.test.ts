@@ -47,7 +47,7 @@ const documentStudioSharedApiProcedures = new Set([
 function listMobileProcedureCalls(): Map<string, string[]> {
   const calls = new Map<string, string[]>();
   const callPattern =
-    /\b(?:call|readCachedResponse)\(\s*['"]([A-Za-z][A-Za-z0-9_.]+)['"]/g;
+    /\b(?:call|readCachedResponse|_mutate)\(\s*['"]([A-Za-z][A-Za-z0-9_.]+)['"]/g;
 
   for (const file of listDartFiles(mobileLib)) {
     const source = readFileSync(file, "utf8");
@@ -63,6 +63,19 @@ function listMobileProcedureCalls(): Map<string, string[]> {
 }
 
 describe("Flutter mobile API contract", () => {
+  it("tracks the literal mobile procedure calls in the shared snapshot", () => {
+    const contract = JSON.parse(
+      readFileSync(
+        join(repositoryRoot, "shared/mobile-api-contract.json"),
+        "utf8"
+      )
+    ) as { version: number; mobileProcedures: string[] };
+    expect(contract.version).toBe(1);
+    expect(contract.mobileProcedures).toEqual(
+      [...listMobileProcedureCalls().keys()].sort()
+    );
+  });
+
   it("keeps every statically named mobile tRPC call registered by the server", () => {
     const serverProcedures = new Set(listProcedurePaths(appRouter._def.record));
     const calls = listMobileProcedureCalls();

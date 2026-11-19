@@ -78,44 +78,43 @@ class _DetailsApi extends PoliceApi {
 }
 
 void main() {
-  testWidgets(
-    'detail shows version history, action log and attachments',
-    (tester) async {
-      final api = _DetailsApi();
-      await tester.pumpWidget(
-        MaterialApp(
-          home: TelegramDetailsPage(
-            api: api,
-            telegramId: 17,
-            officialDocument: false,
-            initialTelegram: {
-              'id': 17,
-              'serialCode': 'TEST-17',
-              'subject': 'موضوع التفاصيل',
-              'body': 'نص البرقية التجريبي',
-              'status': 'in_review',
-              'createdAt': '2026-11-01T10:00:00Z',
-            },
-            account: {'id': 8, 'role': 'user'},
-            organizationRole: 'reviewer',
-            organizationIsOwner: true,
-          ),
+  testWidgets('detail shows version history, action log and attachments', (
+    tester,
+  ) async {
+    final api = _DetailsApi();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TelegramDetailsPage(
+          api: api,
+          telegramId: 17,
+          officialDocument: false,
+          initialTelegram: {
+            'id': 17,
+            'serialCode': 'TEST-17',
+            'subject': 'موضوع التفاصيل',
+            'body': 'نص البرقية التجريبي',
+            'status': 'in_review',
+            'createdAt': '2026-11-01T10:00:00Z',
+          },
+          account: {'id': 8, 'role': 'user'},
+          organizationRole: 'reviewer',
+          organizationIsOwner: true,
         ),
-      );
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.textContaining('إصدارات الوثيقة'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text('إصدارات الوثيقة (1)'), findsOneWidget);
-      expect(find.textContaining('تصحيح الموضوع'), findsOneWidget);
-      expect(find.text('سجل التدقيق والإجراءات (1)'), findsOneWidget);
-      expect(find.text('المرفقات'), findsOneWidget);
-      expect(find.text('محضر.pdf'), findsOneWidget);
-      expect(api.calls, contains('telegrams.versions'));
-    },
-  );
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('إصدارات الوثيقة'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('إصدارات الوثيقة (1)'), findsOneWidget);
+    expect(find.textContaining('تصحيح الموضوع'), findsOneWidget);
+    expect(find.text('سجل التدقيق والإجراءات (1)'), findsOneWidget);
+    expect(find.text('المرفقات'), findsOneWidget);
+    expect(find.text('محضر.pdf'), findsOneWidget);
+    expect(api.calls, contains('telegrams.versions'));
+  });
 
   testWidgets('version history failure is visible and can be retried', (
     tester,

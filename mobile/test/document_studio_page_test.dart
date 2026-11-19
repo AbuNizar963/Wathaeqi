@@ -5,6 +5,9 @@ import 'package:police_telegrams/document_studio_outbox.dart';
 import 'package:police_telegrams/document_studio_page.dart';
 
 class _DocumentStudioTestApi extends PoliceApi {
+  _DocumentStudioTestApi({this.includeOrganization = true});
+
+  final bool includeOrganization;
   final calls = <String, Map<String, dynamic>?>{};
 
   @override
@@ -19,7 +22,7 @@ class _DocumentStudioTestApi extends PoliceApi {
       'documentStudio.listDocuments' => <dynamic>[],
       'documentStudio.listTemplates' => <dynamic>[],
       'organizations.context' => {
-        'organizationId': 'org-test',
+        if (includeOrganization) 'organizationId': 'org-test',
         'role': 'organization_admin',
         'isOwner': false,
       },
@@ -47,7 +50,7 @@ void main() {
   testWidgets('document studio opens with its three work areas', (
     tester,
   ) async {
-    final api = _DocumentStudioTestApi();
+    final api = _DocumentStudioTestApi(includeOrganization: false);
     final outbox = _DocumentStudioTestOutbox(api: api);
 
     await tester.pumpWidget(
@@ -70,6 +73,7 @@ void main() {
     expect(find.text('الأرشيف'), findsOneWidget);
     expect(api.calls.containsKey('documentStudio.listDocuments'), isTrue);
     expect(api.calls.containsKey('documentStudio.listTemplates'), isTrue);
+    expect(api.calls['documentStudio.getLetterheadSettings'], isEmpty);
 
     await tester.tap(find.text('القوالب'));
     await tester.pumpAndSettle();
