@@ -493,6 +493,13 @@ function DashboardLayoutContent({
       ["system_admin", "auditor"].includes(
         organizationContext.data?.role ?? ""
       ));
+  const visibleMenuItems = menuItems.filter(item => {
+    if (["documents", "contacts", "notifications"].includes(item.key)) {
+      return true;
+    }
+    if (item.key === "activity") return canViewAuditLogs;
+    return isPlatformOwnerAccount;
+  });
   const [location, setLocation] = useLocation();
   const { state, setOpen, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -503,7 +510,25 @@ function DashboardLayoutContent({
   );
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = visibleMenuItems.find(item => item.path === location);
+
+  useEffect(() => {
+    if (organizationContext.isLoading) return;
+    const ownerOnlyPaths = ["/dashboard", "/users", "/organizations", "/settings"];
+    if (!isPlatformOwnerAccount && ownerOnlyPaths.includes(location)) {
+      setLocation("/");
+      return;
+    }
+    if (!canViewAuditLogs && location === "/activity") {
+      setLocation("/");
+    }
+  }, [
+    organizationContext.isLoading,
+    isPlatformOwnerAccount,
+    canViewAuditLogs,
+    location,
+    setLocation,
+  ]);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -594,7 +619,7 @@ function DashboardLayoutContent({
               التنقل الرئيسي
             </p>
             <SidebarMenu className="gap-1.5">
-              {menuItems.map(item => {
+              {visibleMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.key}>
