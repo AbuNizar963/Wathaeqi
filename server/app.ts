@@ -1,21 +1,11 @@
-import { timingSafeEqual } from "node:crypto";
 import express, { type Express } from "express";
-import { rateLimit } from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerStorageRoutes } from "./features/storage/storageRoutes";
-import { appRouter } from "./routers";
+import { ownerApiRouter } from "./ownerApiRouter";
 import { createContext } from "./_core/context";
 import { serveStatic } from "./_core/static";
-import { getSupabaseAdmin } from "./_core/supabase";
-import { registerTelegramExportRoutes } from "./telegramExport";
-import { getTelegramSerialCode } from "@shared/telegramSerial";
-import { getAppwriteAuthenticatedUserFromRequest } from "./_core/appwriteAuth";
 import { assertProductionEnvironment, ENV } from "./_core/env";
 import { getContentSecurityPolicy } from "./_core/csp";
-import { notifyMobileRelease } from "./features/notifications/notification";
-import { getUserOrganizationMembership } from "./features/organizations/organization";
 import { createRateLimit } from "./_core/rateLimit";
-import { verificationRateLimit } from "./_core/verificationRateLimit";
 
 function isSameOriginRequest(req: express.Request): boolean {
   const origin = req.get("origin");
@@ -26,6 +16,7 @@ function isSameOriginRequest(req: express.Request): boolean {
       return false;
     }
   }
+
   const referer = req.get("referer");
   if (referer) {
     try {
@@ -34,52 +25,26 @@ function isSameOriginRequest(req: express.Request): boolean {
       return false;
     }
   }
+
   return true;
 }
 
 /**
- * Creates the HTTP application shared by the local server and Netlify.
+ * Creates the Appwrite-backed Wathaeqi owner application.
  *
- * Vite is deliberately not imported here. Keeping development tooling out of
- * this module prevents serverless bundlers from tracing Vite's native build
- * dependencies into the production API function.
+ * The former Telegram, organization-administration, notification and
+ * Supabase-backed routes are intentionally not mounted here. The active
+ * product surface is the owner's document workspace and account settings.
  */
-export function getJsonBodyLimit(path: string): string {
-  if (path === "/api/telegram-render") return "4mb";
-  if (path.includes("/api/trpc/telegrams.importRows")) return "50mb";
-  if (path.includes("/api/trpc/telegrams.importWorkbookPreview")) return "22mb";
-  if (path.includes("/api/trpc/telegrams.uploadAttachment")) return "16mb";
-  if (path.includes("/api/trpc/settings.uploadLogo")) return "4mb";
-  return "1mb";
-}
-
-function requiresAuthenticatedLargeBody(path: string): boolean {
-  return (
-    path === "/api/telegram-render" ||
-    path.includes("/api/trpc/telegrams.importRows") ||
-    path.includes("/api/trpc/telegrams.importWorkbookPreview") ||
-    path.includes("/api/trpc/telegrams.uploadAttachment") ||
-    path.includes("/api/trpc/settings.uploadLogo")
-  );
-}
-
-function requiresOrganizationAdminLargeBody(path: string): boolean {
-  return (
-    path.includes("/api/trpc/telegrams.importRows") ||
-    path.includes("/api/trpc/telegrams.importWorkbookPreview") ||
-    path.includes("/api/trpc/settings.uploadLogo")
-  );
-}
-
 export function createApp(
   options: { productionStatic?: boolean } = {}
 ): Express {
   assertProductionEnvironment();
+
   const app = express();
-  // Netlify supplies the client address through its trusted proxy in production.
-  // Do not trust forwarded headers in local development or test environments.
   app.set("trust proxy", ENV.isProduction ? 1 : false);
   app.disable("x-powered-by");
+
   app.use((req, res, next) => {
     const csp = getContentSecurityPolicy(ENV.isProduction);
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -92,6 +57,7 @@ export function createApp(
       );
     }
     res.setHeader(csp.header, csp.value);
+
     if (
       ["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
       req.path.startsWith("/api/") &&
@@ -100,206 +66,37 @@ export function createApp(
       res.status(403).json({ error: "الطلب غير صالح لمصدر خارجي" });
       return;
     }
+
     next();
   });
 
-  // Defense-in-depth per-instance request limit; retain shared edge limits in production.
   app.use(
     "/api",
     createRateLimit({
       windowMs: 60_000,
-      maxRequests: 300,
+      maxRequests: 180,
       message: "طلبات كثيرة إلى واجهة النظام؛ أعد المحاولة لاحقًا",
     })
   );
 
-  // Authenticate large-payload routes before parsing attacker-controlled bodies.
-  // This prevents unauthenticated requests from forcing 16–50 MB JSON allocations.
-  app.use(
-    rateLimit({
-      windowMs: 60_000,
-      limit: 60,
-      standardHeaders: true,
-      legacyHeaders: false,
-      skip: req => !requiresAuthenticatedLargeBody(req.path),
-      handler: (_req, res) =>
-        res
-          .status(429)
-          .json({ error: "طلبات كثيرة لهذه العملية؛ أعد المحاولة لاحقًا" }),
-    }),
-    (req, res, next) => {
-      const path = req.path;
-      if (!requiresAuthenticatedLargeBody(path)) return next();
-
-      void (async () => {
-        const user = await getAppwriteAuthenticatedUserFromRequest(req);
-        if (!user) {
-          res.status(401).json({ error: "يجب تسجيل الدخول أولًا" });
-          return;
-        }
-
-        if (requiresOrganizationAdminLargeBody(path)) {
-          const membership = await getUserOrganizationMembership(user.id);
-          if (
-            !membership ||
-            !["system_admin", "organization_admin"].includes(membership.role)
-          ) {
-            res.status(403).json({ error: "لا تملك صلاحية هذه العملية" });
-            return;
-          }
-        }
-
-        next();
-      })().catch(next);
-    }
-  );
-
-  app.use((req, res, next) =>
-    express.json({ limit: getJsonBodyLimit(req.path) })(req, res, next)
-  );
+  app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ limit: "64kb", extended: false }));
 
-  // Appwrite enforces authentication endpoint limits; this bounded local
-  // limiter adds per-instance protection without depending on the old database.
-  app.use(
-    "/api/trpc/auth.login",
-    createRateLimit({
-      windowMs: 15 * 60_000,
-      maxRequests: 10,
-      message: "تم تجاوز عدد محاولات تسجيل الدخول. حاول لاحقًا.",
-    })
-  );
-
-  registerStorageRoutes(app);
-  registerTelegramExportRoutes(app);
-
-  app.get("/api/verify/:token", verificationRateLimit, async (req, res) => {
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Referrer-Policy", "no-referrer");
-    const token = typeof req.params.token === "string" ? req.params.token : "";
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        token
-      )
-    ) {
-      return res.status(404).json({ valid: false });
-    }
-
-    try {
-      const supabase = getSupabaseAdmin();
-      const { data: telegram, error } = await supabase
-        .from("telegrams")
-        .select(
-          "serialNumber, serialCode, organizationSerialCode, originalSerial, telegramDate, createdAt, organizationId, archivedAt, status"
-        )
-        .eq("verificationToken", token)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!telegram) return res.status(404).json({ valid: false });
-
-      const { data: organization, error: organizationError } = await supabase
-        .from("organizations")
-        .select("name")
-        .eq("id", telegram.organizationId)
-        .maybeSingle();
-
-      if (organizationError) throw organizationError;
-
-      return res.status(200).json({
-        valid: true,
-        status:
-          telegram.status === "archived" || telegram.archivedAt
-            ? "archived"
-            : "valid",
-        // Match the organization-scoped serial printed in the telegram header.
-        displaySerialCode:
-          getTelegramSerialCode(telegram) ||
-          String(telegram.serialNumber ?? ""),
-        serialNumber: telegram.serialNumber,
-        createdAt: telegram.telegramDate ?? telegram.createdAt,
-        unitName: organization?.name ?? "الوحدة الشرطية",
-      });
-    } catch (error) {
-      console.error("Telegram verification failed:", error);
-      return res
-        .status(500)
-        .json({ valid: false, error: "تعذر التحقق حاليًا" });
-    }
-  });
-
   app.get("/api/health", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
     res.status(200).json({
       ok: true,
-      service: "police-telegrams-platform",
+      service: "wathaeqi-owner-api",
       auth: "appwrite-auth",
-      database: "appwrite-primary-legacy-routes-pending",
+      database: "appwrite",
       timestamp: new Date().toISOString(),
     });
-  });
-
-  app.post("/api/internal/mobile-release", async (req, res) => {
-    const configuredSecret = ENV.releaseNotificationSecret;
-    const requestSecret = req.get("x-release-notification-secret") ?? "";
-    const configuredBytes = Buffer.from(configuredSecret, "utf8");
-    const requestBytes = Buffer.from(requestSecret, "utf8");
-    if (
-      !configuredSecret ||
-      configuredBytes.length !== requestBytes.length ||
-      !timingSafeEqual(configuredBytes, requestBytes)
-    ) {
-      return res.status(404).json({ error: "Not found" });
-    }
-
-    const version =
-      typeof req.body?.version === "string" ? req.body.version.trim() : "";
-    const buildNumber = Number(req.body?.buildNumber);
-    const releaseUrl =
-      typeof req.body?.releaseUrl === "string"
-        ? req.body.releaseUrl.trim()
-        : "";
-    if (
-      !/^\d+\.\d+\.\d+$/.test(version) ||
-      !Number.isSafeInteger(buildNumber) ||
-      buildNumber <= 0
-    ) {
-      return res.status(400).json({ error: "Invalid release version" });
-    }
-
-    let parsedReleaseUrl: URL;
-    try {
-      parsedReleaseUrl = new URL(releaseUrl);
-    } catch {
-      return res.status(400).json({ error: "Invalid release URL" });
-    }
-    if (
-      parsedReleaseUrl.protocol !== "https:" ||
-      parsedReleaseUrl.hostname !== "github.com" ||
-      !parsedReleaseUrl.pathname.includes("/releases/")
-    ) {
-      return res.status(400).json({ error: "Invalid release URL" });
-    }
-
-    try {
-      const result = await notifyMobileRelease({
-        version,
-        buildNumber,
-        releaseUrl,
-        title: typeof req.body?.title === "string" ? req.body.title : undefined,
-        body: typeof req.body?.body === "string" ? req.body.body : undefined,
-      });
-      return res.status(202).json(result);
-    } catch (error) {
-      console.error("Mobile release notification failed:", error);
-      return res.status(500).json({ error: "Notification dispatch failed" });
-    }
   });
 
   app.use(
     "/api/trpc",
     createExpressMiddleware({
-      router: appRouter,
+      router: ownerApiRouter,
       createContext,
     })
   );
