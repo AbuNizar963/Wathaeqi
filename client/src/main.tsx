@@ -26,7 +26,7 @@ const trpcEndpoint = configuredAppwriteApiUrl
   ? `${configuredAppwriteApiUrl.replace(/\/+$/, "")}/api/trpc`
   : "/api/trpc";
 
-const trpcClient = trpc.createClient({
+const trpcClient = ownerTrpc.createClient({
   links: [
     httpBatchLink({
       url: trpcEndpoint,
