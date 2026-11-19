@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { trpc } from "@/lib/trpc";
+import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import type {
   DocumentTemplate,
   DocumentTemplateField,
@@ -455,10 +455,11 @@ export default function DocumentStudioPage() {
     activeTab !== "archive" &&
     (!selectedDocument || selectedDocument.status === "draft");
   const canIssueDocuments =
-    organizationContext.data?.isOwner === true ||
-    ["system_admin", "organization_admin"].includes(
-      organizationContext.data?.role ?? ""
-    );
+    Boolean(letterheadSettings.data) &&
+    (organizationContext.data?.isOwner === true ||
+      ["system_admin", "organization_admin"].includes(
+        organizationContext.data?.role ?? ""
+      ));
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -857,7 +858,7 @@ export default function DocumentStudioPage() {
                         : "إعداد وثيقة جديدة"}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    تحفظ الوثائق كمسودات حتى إصدارها
+                    تحفظ الوثائق كمسودات، ويظهر الإصدار عند إعداد ترويسة الجهة
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">

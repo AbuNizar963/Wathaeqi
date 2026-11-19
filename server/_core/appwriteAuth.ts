@@ -3,7 +3,7 @@ import { Account, Query } from "node-appwrite";
 import { SignJWT, jwtVerify } from "jose";
 import { parse } from "cookie";
 import type { Request, Response } from "express";
-import type { User } from "../../drizzle/schema";
+import type { User } from "./user";
 import {
   getAppwriteAdminClient,
   getAppwriteDatabaseId,
@@ -311,10 +311,12 @@ function serializeCookie(value: string, maxAge: number): string {
     `${APPWRITE_SESSION_COOKIE}=${encodeURIComponent(value)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${ENV.appwriteSessionCookieSameSite}`,
     `Max-Age=${maxAge}`,
   ];
-  if (ENV.isProduction) parts.push("Secure");
+  if (ENV.isProduction || ENV.appwriteSessionCookieSameSite === "None") {
+    parts.push("Secure");
+  }
   return parts.join("; ");
 }
 

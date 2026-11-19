@@ -14,14 +14,10 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Activity,
-  Building2,
   FileText,
-  History,
   LockKeyhole,
   PanelLeft,
   ShieldCheck,
-  Users,
   WifiOff,
   X,
 } from "lucide-react";
@@ -30,7 +26,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { trpc } from "@/lib/trpc";
+import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import { BrandMark } from "./BrandMark";
 import HeaderActions from "./HeaderActions";
 
@@ -40,34 +36,6 @@ const menuItems = [
     icon: FileText,
     label: "الوثائق",
     path: "/",
-  },
-  {
-    key: "owner-dashboard",
-    icon: Activity,
-    label: "لوحة قيادة المالك",
-    path: "/owner-dashboard",
-    ownerOnly: true,
-  },
-  {
-    key: "audit-log",
-    icon: History,
-    label: "سجل الإجراءات",
-    path: "/audit-log",
-    auditOnly: true,
-  },
-  {
-    key: "accounts",
-    icon: Users,
-    label: "إدارة المستخدمين",
-    action: "open-owner-user-management",
-    adminOnly: true,
-  },
-  {
-    key: "organizations",
-    icon: Building2,
-    label: "إدارة الجهات",
-    action: "open-owner-organization-management",
-    adminOnly: true,
   },
 ];
 
@@ -108,7 +76,10 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  if (loading) {
+  // Owner recovery is a public, one-time bootstrap path. Do not make it wait
+  // for the ordinary session lookup; the recovery-status query below is the
+  // authoritative gate for rendering the setup form.
+  if (loading && !ownerRecoveryRequested) {
     return <DashboardLayoutSkeleton />;
   }
 
@@ -117,9 +88,69 @@ export default function DashboardLayout({
       if (ownerSetupStatusQuery.isLoading) {
         return <DashboardLayoutSkeleton />;
       }
-      if (ownerSetupStatusQuery.data?.available) {
+
+      if (ownerSetupStatusQuery.data?.available === true) {
         return <OwnerSetupForm />;
       }
+
+      return (
+        <div
+          className="flex min-h-dvh items-center justify-center px-4 py-8"
+          dir="rtl"
+        >
+          <section
+            className="surface-elevated w-full max-w-lg space-y-4 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
+            role="alert"
+          >
+            <div className="flex flex-col items-center gap-3 text-center">
+              <BrandMark size="lg" />
+              <h1 className="text-xl font-semibold tracking-tight">
+                تعذّر فتح استعادة كلمة مرور المالك
+              </h1>
+              {ownerSetupStatusQuery.isError ? (
+                <>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    لم نتمكن من التحقق من حالة إعداد المالك عبر خدمة Appwrite.
+                    لم يتم تغيير كلمة المرور أو استهلاك رمز الإعداد.
+                  </p>
+                  <p
+                    className="w-full break-words rounded-lg bg-muted p-3 text-xs text-muted-foreground"
+                    dir="ltr"
+                  >
+                    {ownerSetupStatusQuery.error.message}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm leading-6 text-muted-foreground">
+                  خدمة الإعداد أفادت بأن الاستعادة غير متاحة حالياً. لم يتم
+                  تغيير كلمة المرور أو إنشاء حساب جديد. تحقق من إعداد وظيفة
+                  Appwrite وحالة رمز الإعداد قبل المحاولة مجدداً.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => void ownerSetupStatusQuery.refetch()}
+                disabled={ownerSetupStatusQuery.isFetching}
+              >
+                {ownerSetupStatusQuery.isFetching
+                  ? "جارٍ إعادة الفحص..."
+                  : "إعادة المحاولة"}
+              </Button>
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="w-full"
+              >
+                <a href="/">العودة إلى تسجيل الدخول</a>
+              </Button>
+            </div>
+          </section>
+        </div>
+      );
     }
     return (
       <div className="flex min-h-dvh items-center justify-center px-4">
@@ -509,37 +540,24 @@ function DashboardLayoutContent({
               التنقل الرئيسي
             </p>
             <SidebarMenu className="gap-1.5">
-              {menuItems
-                .filter(
-                  item =>
-                    (!item.adminOnly || canManageUsers) &&
-                    (!item.ownerOnly || isPlatformOwnerAccount) &&
-                    (!item.auditOnly || canViewAuditLogs)
-                )
-                .map(item => {
-                  const isActive = location === item.path;
-                  return (
-                    <SidebarMenuItem key={item.key}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => {
-                          if (item.action) {
-                            window.dispatchEvent(new CustomEvent(item.action));
-                          } else if (item.path) {
-                            setLocation(item.path);
-                          }
-                        }}
-                        tooltip={item.label}
-                        className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
-                      >
-                        <item.icon
-                          className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
-                        />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+              {menuItems.map(item => {
+                const isActive = location === item.path;
+                return (
+                  <SidebarMenuItem key={item.key}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => setLocation(item.path)}
+                      tooltip={item.label}
+                      className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
+                    >
+                      <item.icon
+                        className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
+                      />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>

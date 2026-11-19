@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { Account, Query, Users } from "node-appwrite";
-import type { User } from "../../../drizzle/schema";
 import {
   getAppwriteAdminClient,
   getAppwriteDatabaseId,
@@ -8,8 +7,13 @@ import {
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
+import type { User } from "../../_core/user";
 
 const USERS_TABLE_ID = "users";
+const OWNER_SETUP_TABLE_ID = "app_records";
+const OWNER_SETUP_ROW_ID = "owner-setup-consumed";
+const OWNER_SETUP_RECORD_TYPE = "owner_password_setup";
+const OWNER_SETUP_RECORD_KEY = "initial_owner";
 
 type AppwriteRow = {
   $id: string;
@@ -59,8 +63,56 @@ async function getExistingOwner(): Promise<ExistingOwner | null> {
   return { rowId: row.$id, authUserId, username, email, data };
 }
 
+async function isOwnerSetupAlreadyConsumed(): Promise<boolean> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: OWNER_SETUP_TABLE_ID,
+    queries: [
+      Query.equal("recordType", OWNER_SETUP_RECORD_TYPE),
+      Query.equal("recordKey", OWNER_SETUP_RECORD_KEY),
+      Query.limit(1),
+    ],
+    total: false,
+  });
+  return result.rows.length > 0;
+}
+
+async function consumeOwnerSetupOnce(owner: ExistingOwner): Promise<void> {
+  const now = new Date().toISOString();
+  try {
+    // A fixed row ID makes the claim single-use across concurrent server instances.
+    await getAppwriteTablesDB().createRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: OWNER_SETUP_TABLE_ID,
+      rowId: OWNER_SETUP_ROW_ID,
+      data: {
+        recordType: OWNER_SETUP_RECORD_TYPE,
+        recordKey: OWNER_SETUP_RECORD_KEY,
+        ownerId: owner.authUserId,
+        organizationId:
+          typeof owner.data.organizationId === "string"
+            ? owner.data.organizationId
+            : null,
+        createdAt: now,
+        updatedAt: now,
+        payload: JSON.stringify({ status: "consumed" }),
+      },
+    });
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? Number((error as { code?: unknown }).code)
+        : 0;
+    if (code === 409) {
+      throw new Error("تم استخدام رمز إعداد المالك مسبقًا");
+    }
+    throw error;
+  }
+}
+
 export async function isInitialOwnerSetupAvailable(): Promise<boolean> {
   if (ENV.ownerSetupSecret.length < 32) return false;
+  if (await isOwnerSetupAlreadyConsumed()) return false;
   return (await getExistingOwner()) !== null;
 }
 
@@ -88,10 +140,26 @@ export async function createInitialOwnerProfile(input: {
     throw new Error("بيانات حساب المالك لا تتطابق مع حساب المصادقة المرتبط");
   }
 
-  await users.updatePassword({
-    userId: owner.authUserId,
-    password: input.password,
-  });
+  // Consume the recovery capability before changing credentials. A fixed Appwrite
+  // row ID prevents replay and concurrent reuse across multiple function instances.
+  await consumeOwnerSetupOnce(owner);
+
+  try {
+    await users.updatePassword({
+      userId: owner.authUserId,
+      password: input.password,
+    });
+  } catch (error) {
+    // A rejected password must not permanently consume the one-time setup path.
+    await getAppwriteTablesDB()
+      .deleteRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: OWNER_SETUP_TABLE_ID,
+        rowId: OWNER_SETUP_ROW_ID,
+      })
+      .catch(() => undefined);
+    throw error;
+  }
 
   // Use the server API-key client so Appwrite includes the session secret for the secure cookie.
   const sessionAccount = new Account(getAppwriteAdminClient());

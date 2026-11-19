@@ -4,7 +4,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import type { Request } from "express";
-import type { User } from "../../drizzle/schema";
+import type { User } from "./user";
 import { getAppwriteAuthenticatedUserFromRequest } from "./appwriteAuth";
 
 export const SESSION_COOKIE = "police_telegrams_session";

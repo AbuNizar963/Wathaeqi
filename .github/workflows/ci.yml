@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "migration/appwrite-functions-transfer"]
   pull_request:
     branches: ["main"]
 
@@ -31,9 +31,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-
-
-
       - name: Reject legacy platform dependencies
         run: |
           if git grep -niE 'vite-plugin-manus-runtime|BUILT_IN_FORGE|VITE_FRONTEND_FORGE|OAUTH_SERVER_URL|VITE_OAUTH_PORTAL_URL|OWNER_OPEN_ID|MANUS_|__MANUS__|manus' -- ':!pnpm-lock.yaml' ':!.github/workflows/ci.yml'; then
@@ -41,6 +38,12 @@ jobs:
             exit 1
           fi
 
+      - name: Reject retired database runtime dependencies
+        run: |
+          if git grep -niE 'supabase|SUPABASE|@supabase|drizzle/schema|drizzle-orm|drizzle-kit|DATABASE_URL|postgresql' -- client server shared appwrite netlify scripts package.json .env.example netlify.toml vite.config.ts ':!scripts/verify-appwrite-api-bundle.mjs'; then
+            echo "Retired Supabase/PostgreSQL runtime dependency detected"
+            exit 1
+          fi
       - name: Check formatting
         run: pnpm lint
 
@@ -53,28 +56,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3
-        with:
-          # Pin to the latest maintained v2 release; CLI v3 has breaking CI semantics.
-          version: 2.122.1
 
-      - name: Start local Supabase services
-        run: supabase start -x studio,edge-runtime,logflare,vector
-
-      - name: Apply migrations to local database
-        run: supabase db reset
-
-      - name: Run database tests
-        run: supabase test db
-
-      - name: Verify concurrent organization and settings writes
-        run: |
-          set -a
-          eval "$(supabase status --output env)"
-          set +a
-          node scripts/test-organization-management-concurrency.mjs
+      - name: Build Appwrite owner API function
+        run: pnpm build:appwrite-api
 
       - name: Production build
         run: pnpm build
-

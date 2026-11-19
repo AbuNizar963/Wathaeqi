@@ -5,6 +5,7 @@ on:
     branches:
       - feat/wathaeqi-appwrite-web
       - migration/appwrite-phase-1
+      - migration/appwrite-functions-transfer
       - refactor/document-studio-web
     paths:
       - package.json
@@ -12,6 +13,8 @@ on:
       - patches/**
       - server/_core/appwrite.test.ts
       - server/_core/env.ts
+      - server/app.bodyLimits.test.ts
+      - server/features/document-studio/documentStudioRouter.test.ts
       - .github/workflows/refresh-wathaeqi-lock.yml
 
 permissions:
@@ -36,17 +39,17 @@ jobs:
           node-version: 24
       - name: Regenerate pnpm lockfile
         run: pnpm install --no-frozen-lockfile
-      - name: Format Appwrite foundation tests
-        run: pnpm exec prettier --write server/_core/appwrite.test.ts server/_core/env.ts
+      - name: Format Appwrite foundation and owner API tests
+        run: pnpm exec prettier --write server/_core/appwrite.test.ts server/_core/env.ts server/app.bodyLimits.test.ts server/features/document-studio/documentStudioRouter.test.ts
       - name: Commit generated maintenance changes if needed
         run: |
           set -euo pipefail
-          if git diff --quiet -- pnpm-lock.yaml server/_core/appwrite.test.ts server/_core/env.ts; then
+          if git diff --quiet -- pnpm-lock.yaml server/_core/appwrite.test.ts server/_core/env.ts server/app.bodyLimits.test.ts server/features/document-studio/documentStudioRouter.test.ts; then
             echo "Lockfile and Appwrite foundation files are already current."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml server/_core/appwrite.test.ts server/_core/env.ts
+          git add pnpm-lock.yaml server/_core/appwrite.test.ts server/_core/env.ts server/app.bodyLimits.test.ts server/features/document-studio/documentStudioRouter.test.ts
           git commit -m "chore: refresh dependencies and format Appwrite tests"
           git push

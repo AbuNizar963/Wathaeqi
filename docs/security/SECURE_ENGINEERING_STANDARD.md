@@ -55,7 +55,7 @@ Use the current applicable OWASP guidance, including:
 - Enforce object-level authorization for every read, write, export, download, delete, and background action.
 - Derive organization scope from the authenticated server-side user/membership, not from request parameters alone.
 - Test horizontal and vertical privilege escalation, cross-tenant IDs, stale memberships, and race conditions.
-- Treat Supabase service-role access and other privileged credentials as RLS bypasses; explicitly enforce authorization in every privileged server path.
+- Treat Appwrite API keys as privileged server credentials; explicitly enforce authorization in every privileged server path.
 - Review views, RPCs, triggers, and SECURITY DEFINER functions for privilege escalation and unintended public execution.
 
 ### Input, output, and API security
@@ -73,13 +73,13 @@ Use the current applicable OWASP guidance, including:
 - Protect CSV/spreadsheet exports from formula injection. Bound archive expansion, parsing time, and memory usage.
 - Test malformed files, MIME/signature mismatch, oversized files, duplicate/replayed finalization, and cross-organization access.
 
-### Database and Supabase
-- Enable RLS on exposed tables and use explicit least-privilege policies.
-- Combine role checks with row ownership/tenant predicates; authenticated status alone is not authorization.
-- For UPDATE policies, review both USING and WITH CHECK.
-- Review views for security-invoker behavior and functions for SECURITY DEFINER, search_path, EXECUTE grants, and explicit authorization.
-- Never expose service_role/secret keys to web or mobile clients.
-- Pin dependencies and commit lockfiles. Run database tests and available Supabase security advisors for schema/function changes.
+### Appwrite Auth, TablesDB, and Storage
+- Keep Appwrite API keys server-side and grant only the scopes required by the service.
+- Enforce authenticated identity, platform-owner role, and row ownership on every read/write path; authentication alone is not authorization.
+- Review TablesDB permissions and indexes, and test negative access cases for every protected table.
+- Keep Storage buckets private; issue short-lived access tokens only after authorization.
+- Never expose API keys or session secrets to web or mobile clients.
+- Pin dependencies and commit lockfiles. Run isolated Appwrite repository tests and access-control checks for schema/function changes.
 
 ### Flutter/mobile security
 - Keep secrets out of the app bundle; assume client binaries and local storage can be inspected or modified.
@@ -102,7 +102,7 @@ Use the current applicable OWASP guidance, including:
 | Change area | Minimum evidence |
 | --- | --- |
 | Server/API/auth/session | Type check, focused regression tests, full server test suite, API authorization tests |
-| Tenant/RLS/schema/RPC | Migration review, Supabase database tests, cross-tenant negative tests, security advisor review where available |
+| Tenant/RLS/schema/RPC | Appwrite TablesDB schema review, repository tests, owner-scope negative tests, permission review |
 | Upload/storage/export | Signature/size tests, URL scheme tests, replay/finalization tests, cross-tenant access tests |
 | Flutter/mobile | Dart format check, flutter analyze, flutter test, Android debug build; platform release build when release configuration changes |
 | Dependencies/workflows | Lockfile consistency, dependency review, workflow permission/trigger review, successful Actions |

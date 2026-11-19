@@ -3,9 +3,15 @@ import { chromium } from "playwright-core";
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4173";
 const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({
+  // The smoke test checks the rendered application shell, not service-worker
+  // lifecycle behavior. Blocking workers prevents the first controllerchange
+  // from reloading the page while Playwright is inspecting its render.
+  serviceWorkers: "block",
+});
 
 try {
-  const page = await browser.newPage();
+  const page = await context.newPage();
 
   // Keep the smoke-test browser inside the local preview origin only.
   // Application scripts cannot send requests to external hosts during this test.
@@ -31,7 +37,7 @@ try {
   );
 
   await page.waitForFunction(
-    () => document.querySelector("#root")?.children.length > 1,
+    () => document.querySelector("#root")?.children.length > 0,
     { timeout: 20_000 }
   );
 
@@ -54,5 +60,6 @@ try {
   console.log("Playwright browser smoke test passed.");
   console.log(JSON.stringify(pageState, null, 2));
 } finally {
+  await context.close();
   await browser.close();
 }

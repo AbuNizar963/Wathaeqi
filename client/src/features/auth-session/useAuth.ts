@@ -1,4 +1,4 @@
-import { trpc } from "@/lib/trpc";
+import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import { useEffect, useMemo } from "react";
 
 type UseAuthOptions = {

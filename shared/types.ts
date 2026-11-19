@@ -1,7 +1,9 @@
 /**
- * Unified type exports
- * Import shared types from this single entry point.
+ * Shared application error exports.
+ *
+ * Database model types are defined alongside the Appwrite repositories that
+ * own their storage contracts; this module does not re-export retired ORM
+ * schema types.
  */
 
-export type * from "../drizzle/schema";
 export * from "./_core/errors";

@@ -15,10 +15,15 @@ type AppwriteAdminConfig = {
 };
 
 let adminClient: Client | null = null;
+let adminClientKey: string | null = null;
 let tablesDb: TablesDB | null = null;
+let tablesDbClient: Client | null = null;
 let storage: Storage | null = null;
+let storageClient: Client | null = null;
 let tokens: Tokens | null = null;
+let tokensClient: Client | null = null;
 let users: Users | null = null;
+let usersClient: Client | null = null;
 
 function normalizeEndpointPath(pathname: string): string {
   let normalizedPath = pathname;
@@ -138,44 +143,63 @@ export function getAppwriteSessionClient(sessionSecret?: string): Client {
 }
 
 export function getAppwriteAdminClient(): Client {
-  if (adminClient) return adminClient;
-
   const config = readAdminConfig();
+  if (adminClient && adminClientKey === config.apiKey) return adminClient;
+
+  // Appwrite Functions can inject a short-lived, per-execution API key.
+  // Rebuild cached SDK services when that key changes between warm executions.
+  adminClientKey = config.apiKey;
   adminClient = new Client()
     .setEndpoint(config.endpoint)
     .setProject(config.projectId)
     .setKey(config.apiKey);
+  tablesDb = null;
+  tablesDbClient = null;
+  storage = null;
+  storageClient = null;
+  tokens = null;
+  tokensClient = null;
+  users = null;
+  usersClient = null;
 
   return adminClient;
 }
 
 export function getAppwriteTablesDB(): TablesDB {
-  if (!tablesDb) {
-    tablesDb = new TablesDB(getAppwriteAdminClient());
+  const client = getAppwriteAdminClient();
+  if (!tablesDb || tablesDbClient !== client) {
+    tablesDb = new TablesDB(client);
+    tablesDbClient = client;
   }
 
   return tablesDb;
 }
 
 export function getAppwriteStorage(): Storage {
-  if (!storage) {
-    storage = new Storage(getAppwriteAdminClient());
+  const client = getAppwriteAdminClient();
+  if (!storage || storageClient !== client) {
+    storage = new Storage(client);
+    storageClient = client;
   }
 
   return storage;
 }
 
 export function getAppwriteTokens(): Tokens {
-  if (!tokens) {
-    tokens = new Tokens(getAppwriteAdminClient());
+  const client = getAppwriteAdminClient();
+  if (!tokens || tokensClient !== client) {
+    tokens = new Tokens(client);
+    tokensClient = client;
   }
 
   return tokens;
 }
 
 export function getAppwriteUsers(): Users {
-  if (!users) {
-    users = new Users(getAppwriteAdminClient());
+  const client = getAppwriteAdminClient();
+  if (!users || usersClient !== client) {
+    users = new Users(client);
+    usersClient = client;
   }
 
   return users;

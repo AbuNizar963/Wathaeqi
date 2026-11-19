@@ -1,14 +1,14 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../../_core/trpc";
+import { platformOwnerProcedure, router } from "../../_core/ownerTrpc";
 import { getRequestAuditContext } from "../../auditContext";
 import { isPlatformOwner } from "../../ownerAccess";
-import { getUserOrganizationMembership } from "../organizations/organization";
+import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
+import { writeAuditLog } from "../audit/appwriteAuditRepository";
 import {
-  allocateOrganizationSerialNumber,
-  getOrganizationSettings,
-  writeAuditLog,
-} from "../../db";
+  allocateDocumentOrganizationSerialNumber,
+  getDocumentOrganizationSettings,
+} from "./documentOrganizationRepository";
 import { localizeDigits, normalizeNumberSystem } from "@shared/numberSystem";
 import { validateTemplateFieldValues } from "../../../shared/documentStudio";
 import type { DocumentTemplateField } from "../../../shared/documentStudio";
@@ -162,7 +162,7 @@ async function resolveTemplateSnapshot(
 }
 
 export const documentStudioRouter = router({
-  getLetterheadSettings: protectedProcedure
+  getLetterheadSettings: platformOwnerProcedure
     .input(
       z.object({
         organizationId: z.string().min(1).max(36).optional(),
@@ -170,13 +170,16 @@ export const documentStudioRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const membership = await getUserOrganizationMembership(ctx.user.id);
-      const organizationId =
-        input.organizationId ??
+      const ownerOrganizationId =
+        ctx.user.organizationId ??
         (membership?.isActive ? membership.organizationId : undefined);
+      const organizationId = input.organizationId ?? ownerOrganizationId;
       if (!organizationId) return null;
       if (
-        !isPlatformOwner(ctx.user) &&
-        (!membership?.isActive || membership.organizationId !== organizationId)
+        !ownerOrganizationId ||
+        organizationId !== ownerOrganizationId ||
+        !membership?.isActive ||
+        membership.organizationId !== organizationId
       ) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -184,7 +187,7 @@ export const documentStudioRouter = router({
         });
       }
 
-      const settings = await getOrganizationSettings(organizationId);
+      const settings = await getDocumentOrganizationSettings(organizationId);
       if (!settings) return null;
       return {
         organizationId,
@@ -199,11 +202,11 @@ export const documentStudioRouter = router({
         timezone: settings.timezone,
       };
     }),
-  listTemplates: protectedProcedure.query(({ ctx }) =>
+  listTemplates: platformOwnerProcedure.query(({ ctx }) =>
     listDocumentTemplates(ctx.user.authUserId)
   ),
 
-  getTemplate: protectedProcedure
+  getTemplate: platformOwnerProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const template = await getDocumentTemplate(ctx.user.authUserId, input.id);
@@ -211,7 +214,7 @@ export const documentStudioRouter = router({
       return template;
     }),
 
-  createTemplate: protectedProcedure
+  createTemplate: platformOwnerProcedure
     .input(templateWriteSchema)
     .mutation(async ({ ctx, input }) =>
       createDocumentTemplate(ctx.user.authUserId, {
@@ -220,7 +223,7 @@ export const documentStudioRouter = router({
       })
     ),
 
-  updateTemplate: protectedProcedure
+  updateTemplate: platformOwnerProcedure
     .input(
       templateWriteSchema.extend({
         id: z.string().min(1).max(36),
@@ -248,7 +251,7 @@ export const documentStudioRouter = router({
       }
     }),
 
-  deactivateTemplate: protectedProcedure
+  deactivateTemplate: platformOwnerProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),
@@ -269,11 +272,11 @@ export const documentStudioRouter = router({
       }
     }),
 
-  listDocuments: protectedProcedure.query(({ ctx }) =>
+  listDocuments: platformOwnerProcedure.query(({ ctx }) =>
     listOfficialDocuments(ctx.user.authUserId)
   ),
 
-  getDocument: protectedProcedure
+  getDocument: platformOwnerProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const document = await getOfficialDocument(ctx.user.authUserId, input.id);
@@ -281,7 +284,7 @@ export const documentStudioRouter = router({
       return document;
     }),
 
-  createDocument: protectedProcedure
+  createDocument: platformOwnerProcedure
     .input(documentWriteSchema)
     .mutation(async ({ ctx, input }) => {
       const snapshot = await resolveTemplateSnapshot(
@@ -303,7 +306,7 @@ export const documentStudioRouter = router({
       });
     }),
 
-  updateDocument: protectedProcedure
+  updateDocument: platformOwnerProcedure
     .input(
       documentWriteSchema.extend({
         id: z.string().min(1).max(36),
@@ -370,7 +373,7 @@ export const documentStudioRouter = router({
       }
     }),
 
-  archiveDocument: protectedProcedure
+  archiveDocument: platformOwnerProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),
@@ -411,7 +414,7 @@ export const documentStudioRouter = router({
       }
     }),
 
-  issueDocument: protectedProcedure
+  issueDocument: platformOwnerProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),
@@ -457,7 +460,7 @@ export const documentStudioRouter = router({
 
       const organizationId =
         existing.organizationId ?? membership.organizationId;
-      const settings = await getOrganizationSettings(organizationId);
+      const settings = await getDocumentOrganizationSettings(organizationId);
       if (!settings) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
@@ -465,10 +468,8 @@ export const documentStudioRouter = router({
         });
       }
 
-      const serialNumber = await allocateOrganizationSerialNumber(
-        organizationId,
-        "outgoing"
-      );
+      const serialNumber =
+        await allocateDocumentOrganizationSerialNumber(organizationId);
       const serialCode = localizeDigits(
         `${settings.serialPrefix}-${String(serialNumber).padStart(5, "0")}`,
         normalizeNumberSystem(settings.numberSystem)

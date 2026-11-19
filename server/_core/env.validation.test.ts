@@ -11,11 +11,9 @@ describe("assertProductionEnvironment", () => {
     appwriteDatabaseId: "wathaeqi-db",
     appwriteBucketId: "telegram-attachments",
     authSessionSecret: "a".repeat(32),
-    supabaseUrl: "",
-    supabaseSecretKey: "",
   };
 
-  it("accepts a valid Appwrite production environment without Supabase", () => {
+  it("accepts a valid Appwrite production environment", () => {
     expect(() => assertProductionEnvironment(validEnvironment)).not.toThrow();
   });
 

@@ -24,7 +24,7 @@ server/                              بقية خدمات المجال؛ تُنظ
 shared/features/organizations/       التسلسل الهرمي المشترك للمؤسسات
 shared/features/platform-settings/   أنواع وإعدادات الوثائق المشتركة
 shared/                              عقود وأنواع وقواعد مشتركة بين الطبقات
-supabase/ و drizzle/                 سياسات قاعدة البيانات والترحيلات والمخطط
+appwrite/ و server/_core/appwrite.ts  وظائف Appwrite وعميل الخادم ومصادقة المالك وتخزين الملفات
 mobile/                              موجود على فرع flutter-mobile-app فقط
 ```
 

@@ -1,0 +1,24 @@
+{
+  "name": "wathaeqi-owner-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "build/main.cjs",
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@trpc/server": "11.19.0",
+    "cookie": "1.0.2",
+    "jose": "6.2.12",
+    "node-appwrite": "31.2.0",
+    "superjson": "1.13.3",
+    "zod": "4.6.7"
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

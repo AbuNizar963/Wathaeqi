@@ -16,7 +16,7 @@ pnpm test
 pnpm build
 ```
 
-For database changes, use the local Supabase workflow in `.github/workflows/ci.yml` to reset a disposable local database, apply migrations, and run database tests. Never point destructive test commands at production.
+For data changes, use isolated Appwrite test doubles or a dedicated non-production Appwrite project. Never point destructive test commands at the live owner database.
 
 ### Flutter
 

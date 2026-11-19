@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BrandMark } from "@/components/BrandMark";
-import { trpc } from "@/lib/trpc";
+import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 
 export default function OwnerSetupForm() {
   const utils = trpc.useUtils();
@@ -12,6 +12,9 @@ export default function OwnerSetupForm() {
         utils.auth.me.invalidate(),
         utils.auth.ownerSetupStatus.invalidate(),
       ]);
+      // The recovery mutation sets an HttpOnly session cookie. A clean
+      // navigation ensures the next page load is authenticated with that cookie.
+      window.location.replace("/");
     },
   });
   const [setupSecret, setSetupSecret] = useState("");
@@ -59,7 +62,7 @@ export default function OwnerSetupForm() {
             required
           />
           <p className="text-xs text-muted-foreground">
-            الرمز الذي تضيفه في متغير OWNER_SETUP_SECRET داخل Netlify.
+            الرمز الذي تحفظه ضمن إعدادات وظيفة Appwrite.
           </p>
         </div>
 

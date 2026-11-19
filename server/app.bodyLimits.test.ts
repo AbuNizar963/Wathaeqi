@@ -1,8 +1,19 @@
-import { describe, expect, it } from "vitest";
-import { createApp, getJsonBodyLimit } from "./app";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./ownerApiRouter", () => ({ ownerApiRouter: {} }));
+vi.mock("./_core/context", () => ({ createContext: vi.fn() }));
+vi.mock("./_core/static", () => ({ serveStatic: vi.fn() }));
+vi.mock("@trpc/server/adapters/express", () => ({
+  createExpressMiddleware:
+    () =>
+    (_request: unknown, _response: unknown, next: (error?: Error) => void) =>
+      next(),
+}));
+
+import { createApp } from "./app";
 import { ENV } from "./_core/env";
 
-async function postUnauthenticated(path: string): Promise<number> {
+async function getHealth(): Promise<{ status: number; body: unknown }> {
   const server = createApp().listen(0);
   await new Promise<void>((resolve, reject) => {
     server.once("listening", resolve);
@@ -16,13 +27,8 @@ async function postUnauthenticated(path: string): Promise<number> {
   }
 
   try {
-    const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Invalid JSON proves the auth gate runs before the JSON parser.
-      body: "{",
-    });
-    return response.status;
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/health`);
+    return { status: response.status, body: await response.json() };
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close(error => (error ? reject(error) : resolve()));
@@ -30,87 +36,45 @@ async function postUnauthenticated(path: string): Promise<number> {
   }
 }
 
-async function postUnauthenticatedAttempts(
-  path: string,
-  count: number
-): Promise<number[]> {
-  const server = createApp().listen(0);
-  await new Promise<void>((resolve, reject) => {
-    server.once("listening", resolve);
-    server.once("error", reject);
+describe("Appwrite owner application", () => {
+  it("reports Appwrite as the active authentication and database provider", async () => {
+    const response = await getHealth();
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        ok: true,
+        service: "wathaeqi-owner-api",
+        auth: "appwrite-auth",
+        database: "appwrite",
+      })
+    );
   });
 
-  const address = server.address();
-  if (!address || typeof address === "string") {
-    await new Promise<void>(resolve => server.close(() => resolve()));
-    throw new Error("Test server did not bind to a TCP port");
-  }
+  it("keeps the retired Telegram routes outside the owner API", async () => {
+    const server = createApp().listen(0);
+    await new Promise<void>((resolve, reject) => {
+      server.once("listening", resolve);
+      server.once("error", reject);
+    });
 
-  try {
-    const statuses: number[] = [];
-    for (let attempt = 0; attempt < count; attempt += 1) {
-      const response = await fetch(`http://127.0.0.1:${address.port}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{",
-      });
-      statuses.push(response.status);
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      await new Promise<void>(resolve => server.close(() => resolve()));
+      throw new Error("Test server did not bind to a TCP port");
     }
-    return statuses;
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      server.close(error => (error ? reject(error) : resolve()));
-    });
-  }
-}
 
-describe("request body limits", () => {
-  it("keeps ordinary API requests small", () => {
-    expect(getJsonBodyLimit("/api/trpc/auth.login")).toBe("1mb");
-    expect(getJsonBodyLimit("/api/trpc/telegrams.create")).toBe("1mb");
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${address.port}/api/trpc/telegrams.list`
+      );
+      expect(response.status).toBe(404);
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        server.close(error => (error ? reject(error) : resolve()));
+      });
+    }
   });
 
-  it("allows only the payload sizes required by file operations", () => {
-    expect(getJsonBodyLimit("/api/trpc/telegrams.uploadAttachment")).toBe(
-      "16mb"
-    );
-    expect(getJsonBodyLimit("/api/trpc/settings.uploadLogo")).toBe("4mb");
-    expect(getJsonBodyLimit("/api/trpc/telegrams.importRows")).toBe("50mb");
-    expect(getJsonBodyLimit("/api/trpc/telegrams.importWorkbookPreview")).toBe(
-      "22mb"
-    );
-    expect(
-      getJsonBodyLimit(
-        "/api/trpc/telegrams.importRows,telegrams.uploadAttachment"
-      )
-    ).toBe("50mb");
-  });
-
-  it("keeps the HTML export request below the Vercel payload ceiling", () => {
-    expect(getJsonBodyLimit("/api/telegram-render")).toBe("4mb");
-  });
-
-  it("rejects unauthenticated uploads before parsing JSON", async () => {
-    await expect(
-      postUnauthenticated("/api/trpc/telegrams.uploadAttachment")
-    ).resolves.toBe(401);
-    await expect(
-      postUnauthenticated("/api/trpc/telegrams.importWorkbookPreview")
-    ).resolves.toBe(401);
-  });
-
-  it("rate limits repeated large-payload authorization checks", async () => {
-    const statuses = await postUnauthenticatedAttempts(
-      "/api/trpc/telegrams.uploadAttachment",
-      61
-    );
-
-    expect(statuses.slice(0, 60)).toEqual(Array(60).fill(401));
-    expect(statuses[60]).toBe(429);
-  });
-});
-
-describe("proxy trust configuration", () => {
   it("configures one trusted proxy hop only in production", () => {
     expect(createApp().get("trust proxy")).toBe(ENV.isProduction ? 1 : false);
   });

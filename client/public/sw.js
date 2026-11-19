@@ -1,4 +1,4 @@
-const CACHE_NAME = "police-telegrams-shell-v9";
+const CACHE_NAME = "wathaeqi-shell-v10";
 const SHELL = [
   "/",
   "/manifest.json",
@@ -48,7 +48,9 @@ self.addEventListener("activate", event => {
           keys
             .filter(
               key =>
-                key.startsWith("police-telegrams-shell-") && key !== CACHE_NAME
+                (key.startsWith("police-telegrams-shell-") ||
+                key.startsWith("wathaeqi-shell-")) &&
+                key !== CACHE_NAME
             )
             .map(key => caches.delete(key))
         )

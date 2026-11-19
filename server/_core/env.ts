@@ -5,15 +5,15 @@ const splitCsv = (value: string | undefined): string[] =>
     .filter(Boolean);
 
 export const ENV = {
-  supabaseUrl: process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "",
-  supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
-  supabaseStorageBucket:
-    process.env.SUPABASE_STORAGE_BUCKET ?? "telegram-files",
   // Server-only Appwrite credentials. Never add VITE_ fallbacks for secrets.
   appwriteEndpoint:
-    process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || "",
+    process.env.APPWRITE_ENDPOINT ||
+    process.env.APPWRITE_FUNCTION_API_ENDPOINT ||
+    process.env.VITE_APPWRITE_ENDPOINT ||
+    "",
   appwriteProjectId:
     process.env.APPWRITE_PROJECT_ID ||
+    process.env.APPWRITE_FUNCTION_PROJECT_ID ||
     process.env.VITE_APPWRITE_PROJECT_ID ||
     "",
   appwriteApiKey: process.env.APPWRITE_API_KEY ?? "",
@@ -27,6 +27,8 @@ export const ENV = {
     "",
   adminEmails: splitCsv(process.env.ADMIN_EMAILS),
   authSessionSecret: process.env.AUTH_SESSION_SECRET ?? "",
+  appwriteSessionCookieSameSite:
+    process.env.APPWRITE_SESSION_COOKIE_SAMESITE === "None" ? "None" : "Lax",
   ownerUsername: process.env.OWNER_USERNAME ?? "AbuNizar",
   ownerSetupSecret: process.env.OWNER_SETUP_SECRET ?? "",
   ownerPasswordHash: process.env.OWNER_PASSWORD_HASH ?? "",
