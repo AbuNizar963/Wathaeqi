@@ -84,13 +84,17 @@ export default function PlatformDocumentSettingsPage() {
       ) : settingsQuery.isError ? (
         <Card className="space-y-3 p-6" role="alert">
           <p className="font-semibold">تعذّر تحميل إعدادات الوثائق</p>
-          <p className="text-sm text-muted-foreground">{settingsQuery.error.message}</p>
+          <p className="text-sm text-muted-foreground">
+            {settingsQuery.error.message}
+          </p>
           <Button
             variant="outline"
             onClick={() => void settingsQuery.refetch()}
             disabled={settingsQuery.isFetching}
           >
-            {settingsQuery.isFetching ? "جارٍ إعادة المحاولة..." : "إعادة المحاولة"}
+            {settingsQuery.isFetching
+              ? "جارٍ إعادة المحاولة..."
+              : "إعادة المحاولة"}
           </Button>
         </Card>
       ) : (
@@ -99,7 +103,9 @@ export default function PlatformDocumentSettingsPage() {
             <section className="space-y-2">
               <label className="flex items-center justify-between gap-3">
                 <span>
-                  <span className="block font-semibold">العلامة المائية النصية</span>
+                  <span className="block font-semibold">
+                    العلامة المائية النصية
+                  </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     إظهار اسم الجهة الرسمي بشكل متكرر خلف محتوى الوثيقة
                   </span>
@@ -109,7 +115,10 @@ export default function PlatformDocumentSettingsPage() {
                   className="h-5 w-5 accent-primary"
                   checked={values.showMinistryWatermarkText}
                   onChange={event =>
-                    updateValue("showMinistryWatermarkText", event.target.checked)
+                    updateValue(
+                      "showMinistryWatermarkText",
+                      event.target.checked
+                    )
                   }
                 />
               </label>
@@ -137,7 +146,10 @@ export default function PlatformDocumentSettingsPage() {
                 step={1}
                 value={values.watermarkOpacityPercent}
                 onChange={event =>
-                  updateValue("watermarkOpacityPercent", Number(event.target.value))
+                  updateValue(
+                    "watermarkOpacityPercent",
+                    Number(event.target.value)
+                  )
                 }
                 className="w-full accent-primary"
               />
@@ -168,7 +180,9 @@ export default function PlatformDocumentSettingsPage() {
                 </span>
               </div>
               {!colorIsValid ? (
-                <p className="text-xs text-destructive">أدخل لوناً صالحاً بصيغة HEX.</p>
+                <p className="text-xs text-destructive">
+                  أدخل لوناً صالحاً بصيغة HEX.
+                </p>
               ) : null}
             </section>
 
@@ -229,7 +243,8 @@ export default function PlatformDocumentSettingsPage() {
             </div>
             {settingsQuery.data?.updatedAt ? (
               <p className="text-xs text-muted-foreground">
-                آخر تحديث: {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
+                آخر تحديث:{" "}
+                {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">

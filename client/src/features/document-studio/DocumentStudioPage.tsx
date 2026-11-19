@@ -860,8 +860,13 @@ export default function DocumentStudioPage() {
               <div className="document-a4-page relative isolate mx-auto w-full max-w-[210mm] bg-white text-slate-900">
                 <DocumentWatermark
                   logoUrl={logoUrl}
-                  opacityPercent={platformDocumentSettings.data?.watermarkOpacityPercent ?? 12}
-                  showMinistryText={platformDocumentSettings.data?.showMinistryWatermarkText ?? true}
+                  opacityPercent={
+                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
+                  }
+                  showMinistryText={
+                    platformDocumentSettings.data?.showMinistryWatermarkText ??
+                    true
+                  }
                 />
                 <DocumentLetterhead
                   organizationName={organizationName}
@@ -1109,8 +1114,13 @@ export default function DocumentStudioPage() {
               <div className="document-a4-page relative isolate mx-auto w-full max-w-[210mm] bg-white text-slate-900">
                 <DocumentWatermark
                   logoUrl={logoUrl}
-                  opacityPercent={platformDocumentSettings.data?.watermarkOpacityPercent ?? 12}
-                  showMinistryText={platformDocumentSettings.data?.showMinistryWatermarkText ?? true}
+                  opacityPercent={
+                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
+                  }
+                  showMinistryText={
+                    platformDocumentSettings.data?.showMinistryWatermarkText ??
+                    true
+                  }
                 />
                 <DocumentLetterhead
                   organizationName={organizationName}
@@ -1177,17 +1187,29 @@ function DocumentWatermark({
               {Array.from({ length: TELEGRAM_WATERMARK_ROWS }, (_, row) => (
                 <div
                   key={row}
-                  className={row % 2 ? "watermark-text-row watermark-text-row-offset" : "watermark-text-row"}
+                  className={
+                    row % 2
+                      ? "watermark-text-row watermark-text-row-offset"
+                      : "watermark-text-row"
+                  }
                 >
-                  {Array.from({ length: TELEGRAM_WATERMARK_COLUMNS }, (_, column) => (
-                    <span key={column}>{OFFICIAL_MINISTRY_NAME}</span>
-                  ))}
+                  {Array.from(
+                    { length: TELEGRAM_WATERMARK_COLUMNS },
+                    (_, column) => (
+                      <span key={column}>{OFFICIAL_MINISTRY_NAME}</span>
+                    )
+                  )}
                 </div>
               ))}
             </div>
           ) : null}
           {logoUrl ? (
-            <img className="watermark-logo" src={logoUrl} alt="" decoding="async" />
+            <img
+              className="watermark-logo"
+              src={logoUrl}
+              alt=""
+              decoding="async"
+            />
           ) : null}
         </div>
       </div>

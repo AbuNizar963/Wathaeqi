@@ -13,18 +13,25 @@ function assert(condition, message) {
   }
 }
 
-const [indexHtml, dashboardLayout, headerActions, sidebarLayout, appRoutes, settingsPage, documentStudio] =
-  await Promise.all(
-    [
-      "client/index.html",
-      "client/src/components/DashboardLayout.tsx",
-      "client/src/components/HeaderActions.tsx",
-      "client/src/components/ui/sidebar.tsx",
-      "client/src/App.tsx",
-      "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
-      "client/src/features/document-studio/DocumentStudioPage.tsx",
-    ].map(readProjectFile)
-  );
+const [
+  indexHtml,
+  dashboardLayout,
+  headerActions,
+  sidebarLayout,
+  appRoutes,
+  settingsPage,
+  documentStudio,
+] = await Promise.all(
+  [
+    "client/index.html",
+    "client/src/components/DashboardLayout.tsx",
+    "client/src/components/HeaderActions.tsx",
+    "client/src/components/ui/sidebar.tsx",
+    "client/src/App.tsx",
+    "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
+    "client/src/features/document-studio/DocumentStudioPage.tsx",
+  ].map(readProjectFile)
+);
 
 const viewportMatch = indexHtml.match(
   /<meta\s+name="viewport"\s+content="([^"]+)"\s*\/>/i
