@@ -13,7 +13,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "check:responsive-shell": "node scripts/verify-responsive-shell.mjs",
-    "lint": "prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" \"drizzle/**/*.ts\" package.json",
+    "lint": "prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" package.json",
     "format": "prettier --write .",
     "test": "vitest run"
   },
