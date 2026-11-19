@@ -33,7 +33,7 @@ function isSameOriginRequest(req: express.Request): boolean {
  * Creates the Appwrite-backed Wathaeqi owner application.
  *
  * The former Telegram, organization-administration, notification and
- * Supabase-backed routes are intentionally not mounted here. The active
+ * legacy data routes are intentionally not mounted here. The active
  * product surface is the owner's document workspace and account settings.
  */
 export function createApp(
