@@ -44,7 +44,7 @@ assert(
   dashboardLayout.includes('<BrandMark size="sm" />') &&
     dashboardLayout.includes("وثائقي") &&
     dashboardLayout.includes("النظام متصل") &&
-    !homePage.includes("TELEGRAM OPERATIONS"),
+    !dashboardLayout.includes("TELEGRAM OPERATIONS"),
   "The top bar must contain the brand, title, and status while the legacy label is removed."
 );
 
