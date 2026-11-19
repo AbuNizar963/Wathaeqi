@@ -12,12 +12,25 @@ const DocumentStudioPage = lazy(
 );
 const Profile = lazy(() => import("./features/users/Profile"));
 const WorkspacePage = lazy(() => import("./features/workspace/WorkspacePage"));
+const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
+const TelegramsPage = lazy(() => import("./features/telegrams/TelegramsPage"));
+const TelegramDetailPage = lazy(
+  () => import("./features/telegrams/TelegramDetailPage")
+);
+const AuditLogPage = lazy(() => import("./features/audit/AuditLogPage"));
+const OrganizationsPage = lazy(
+  () => import("./features/organizations/OrganizationsPage")
+);
+const UsersPage = lazy(() => import("./features/users/UsersPage"));
+const DepartmentSettingsPage = lazy(
+  () => import("./features/settings/DepartmentSettingsPage")
+);
 const PlatformDocumentSettingsPage = lazy(
   () => import("./features/platform-settings/PlatformDocumentSettingsPage")
 );
 const About = lazy(() => import("./pages/About"));
 const Terms = lazy(() => import("./pages/Terms"));
-function DashboardPage({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: React.ReactNode }) {
   return <DashboardLayout>{children}</DashboardLayout>;
 }
 
@@ -36,65 +49,87 @@ function Router() {
     >
       <Switch>
         <Route path="/dashboard">
-          <DashboardPage>
-            <WorkspacePage section="dashboard" />
-          </DashboardPage>
+          <Shell>
+            <DashboardPage />
+          </Shell>
+        </Route>
+        <Route path="/telegrams">
+          <Shell>
+            <TelegramsPage />
+          </Shell>
+        </Route>
+        <Route path="/telegrams/:id">
+          {params => (
+            <Shell>
+              <TelegramDetailPage id={params.id} />
+            </Shell>
+          )}
+        </Route>
+        <Route path="/audit-logs">
+          <Shell>
+            <AuditLogPage />
+          </Shell>
         </Route>
         <Route path="/contacts">
-          <DashboardPage>
+          <Shell>
             <WorkspacePage section="contacts" />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/notifications">
-          <DashboardPage>
+          <Shell>
             <WorkspacePage section="notifications" />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/activity">
-          <DashboardPage>
+          <Shell>
             <WorkspacePage section="activity" />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/users">
-          <DashboardPage>
-            <WorkspacePage section="users" />
-          </DashboardPage>
+          <Shell>
+            <UsersPage />
+          </Shell>
         </Route>
         <Route path="/organizations">
-          <DashboardPage>
-            <WorkspacePage section="organizations" />
-          </DashboardPage>
+          <Shell>
+            <OrganizationsPage />
+          </Shell>
+        </Route>
+        <Route path="/department-settings">
+          <Shell>
+            <DepartmentSettingsPage />
+          </Shell>
         </Route>
         <Route path="/settings">
-          <DashboardPage>
+          <Shell>
             <PlatformDocumentSettingsPage />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/profile">
-          <DashboardPage>
+          <Shell>
             <Profile />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/about">
-          <DashboardPage>
+          <Shell>
             <About />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/terms" component={Terms} />
         <Route path="/">
-          <DashboardPage>
+          <Shell>
             <DocumentStudioPage />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route path="/404">
-          <DashboardPage>
+          <Shell>
             <NotFound />
-          </DashboardPage>
+          </Shell>
         </Route>
         <Route>
-          <DashboardPage>
+          <Shell>
             <NotFound />
-          </DashboardPage>
+          </Shell>
         </Route>
       </Switch>
     </Suspense>

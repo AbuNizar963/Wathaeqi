@@ -23,6 +23,7 @@ import {
   Building2,
   LockKeyhole,
   PanelLeft,
+  Send,
   Settings2,
   ShieldCheck,
   WifiOff,
@@ -43,6 +44,12 @@ const menuItems = [
     icon: LayoutDashboard,
     label: "لوحة التحكم",
     path: "/dashboard",
+  },
+  {
+    key: "telegrams",
+    icon: Send,
+    label: "البرقيات",
+    path: "/telegrams",
   },
   {
     key: "documents",
@@ -69,6 +76,12 @@ const menuItems = [
     path: "/activity",
   },
   {
+    key: "audit",
+    icon: ShieldCheck,
+    label: "سجل التدقيق",
+    path: "/audit-logs",
+  },
+  {
     key: "users",
     icon: Users,
     label: "إدارة المستخدمين",
@@ -79,6 +92,12 @@ const menuItems = [
     icon: Building2,
     label: "إدارة الجهات",
     path: "/organizations",
+  },
+  {
+    key: "department-settings",
+    icon: Settings2,
+    label: "إعدادات القسم",
+    path: "/department-settings",
   },
   {
     key: "settings",

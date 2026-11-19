@@ -9,7 +9,7 @@ Always use parameterized queries or ORM methods. Never concatenate user input in
 const result = await db.query(`SELECT * FROM users WHERE id = '${userId}'`);
 
 // GOOD: parameterized query
-const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
+const result = await db.query("SELECT * FROM users WHERE id = $1", [userId]);
 ```
 
 ## ORM Safety (Prisma)

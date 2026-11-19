@@ -48,15 +48,15 @@ cp .env.example .env
 
 اضبط المتغيرات التالية في بيئة الخادم المحلية فقط:
 
-| المتغير | الغرض |
-| --- | --- |
-| `APPWRITE_ENDPOINT` | عنوان Appwrite وينتهي بـ `/v1` |
-| `APPWRITE_PROJECT_ID` | معرّف مشروع Appwrite |
-| `APPWRITE_DATABASE_ID` | معرّف قاعدة TablesDB |
-| `APPWRITE_BUCKET_ID` | معرّف حاوية الملفات عند استخدام التخزين |
-| `APPWRITE_API_KEY` | مفتاح خادمي بصلاحيات محدودة؛ لا يُرسل إلى المتصفح |
-| `AUTH_SESSION_SECRET` | سر توقيع الجلسات، 32 محرفاً عشوائياً على الأقل |
-| `OWNER_SETUP_SECRET` | رمز إعداد المالك لمرة واحدة، 32 محرفاً على الأقل |
+| المتغير                            | الغرض                                                        |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `APPWRITE_ENDPOINT`                | عنوان Appwrite وينتهي بـ `/v1`                               |
+| `APPWRITE_PROJECT_ID`              | معرّف مشروع Appwrite                                         |
+| `APPWRITE_DATABASE_ID`             | معرّف قاعدة TablesDB                                         |
+| `APPWRITE_BUCKET_ID`               | معرّف حاوية الملفات عند استخدام التخزين                      |
+| `APPWRITE_API_KEY`                 | مفتاح خادمي بصلاحيات محدودة؛ لا يُرسل إلى المتصفح            |
+| `AUTH_SESSION_SECRET`              | سر توقيع الجلسات، 32 محرفاً عشوائياً على الأقل               |
+| `OWNER_SETUP_SECRET`               | رمز إعداد المالك لمرة واحدة، 32 محرفاً على الأقل             |
 | `APPWRITE_SESSION_COOKIE_SAMESITE` | استخدم `None` عند فصل نطاق الواجهة عن نطاق الوظيفة عبر HTTPS |
 
 يحتاج عميل الواجهة إلى:
@@ -124,13 +124,12 @@ pnpm build
 
 ## هيكل المستودع
 
-| المسار | المحتوى |
-| --- | --- |
-| `client/src` | واجهة الويب |
-| `server` | API ومصادقة المالك ومستودعات Appwrite |
-| `appwrite/functions` | مصادر وظائف Appwrite |
-| `shared` | أنواع وقواعد الوثائق المشتركة |
-| `docs/migrations` | خطط الترحيل وتدقيق مخطط Appwrite |
-| `scripts` | فحوص البناء والتحقق |
-| `.github/workflows` | GitHub Actions |
-
+| المسار               | المحتوى                               |
+| -------------------- | ------------------------------------- |
+| `client/src`         | واجهة الويب                           |
+| `server`             | API ومصادقة المالك ومستودعات Appwrite |
+| `appwrite/functions` | مصادر وظائف Appwrite                  |
+| `shared`             | أنواع وقواعد الوثائق المشتركة         |
+| `docs/migrations`    | خطط الترحيل وتدقيق مخطط Appwrite      |
+| `scripts`            | فحوص البناء والتحقق                   |
+| `.github/workflows`  | GitHub Actions                        |

@@ -18,9 +18,7 @@ export default async function apiHealth(request: Request): Promise<Response> {
 
   const env = (globalThis as NetlifyRuntime).Netlify?.env;
   const endpoint =
-    env?.get("APPWRITE_ENDPOINT") ??
-    env?.get("VITE_APPWRITE_ENDPOINT") ??
-    "";
+    env?.get("APPWRITE_ENDPOINT") ?? env?.get("VITE_APPWRITE_ENDPOINT") ?? "";
   const projectId =
     env?.get("APPWRITE_PROJECT_ID") ??
     env?.get("VITE_APPWRITE_PROJECT_ID") ??

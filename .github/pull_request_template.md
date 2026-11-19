@@ -1,4 +1,5 @@
 ## Summary
+
 <!-- What changed and why? -->
 
 ## Change type
@@ -33,7 +34,9 @@ Commands and results:
 <!-- List exact commands and outcomes. Mention pending/cancelled/skipped checks explicitly. -->
 
 ## Residual risks / manual checks
+
 <!-- State what could not be verified. Do not claim a penetration test or OWASP certification unless actually performed. -->
 
 ## Risk and rollback
+
 <!-- User impact, data impact, deployment notes, and rollback plan. -->
