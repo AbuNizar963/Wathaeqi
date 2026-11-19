@@ -478,7 +478,8 @@ function DashboardLayoutContent({
     staleTime: 30_000,
   });
   const isPlatformOwnerAccount =
-    user?.isPlatformOwner === true || organizationContext.data?.isOwner === true;
+    user?.isPlatformOwner === true ||
+    organizationContext.data?.isOwner === true;
   const canViewAuditLogs =
     user?.role === "admin" ||
     organizationContext.data?.isOwner === true ||
@@ -507,7 +508,12 @@ function DashboardLayoutContent({
 
   useEffect(() => {
     if (organizationContext.isLoading) return;
-    const ownerOnlyPaths = ["/dashboard", "/users", "/organizations", "/settings"];
+    const ownerOnlyPaths = [
+      "/dashboard",
+      "/users",
+      "/organizations",
+      "/settings",
+    ];
     if (!isPlatformOwnerAccount && ownerOnlyPaths.includes(location)) {
       setLocation("/");
       return;

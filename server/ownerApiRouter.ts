@@ -46,7 +46,10 @@ import {
   MAX_WATERMARK_OPACITY_PERCENT,
 } from "../shared/features/platform-settings/platformDocumentSettings";
 
-async function authenticatePlatformUserForLogin(username: string, password: string) {
+async function authenticatePlatformUserForLogin(
+  username: string,
+  password: string
+) {
   try {
     const authenticated = await authenticateAppwriteUser(username, password);
     return authenticated;
@@ -62,9 +65,7 @@ async function authenticatePlatformUserForLogin(username: string, password: stri
 }
 
 const ownerAuthRouter = router({
-  me: publicProcedure.query(({ ctx }) =>
-    ctx.user ?? null
-  ),
+  me: publicProcedure.query(({ ctx }) => ctx.user ?? null),
 
   ownerSetupStatus: publicProcedure.query(async () => ({
     available: await isInitialOwnerSetupAvailable(),

@@ -7,7 +7,11 @@ import {
   getAppwriteTablesDB,
   getAppwriteUsers,
 } from "../../_core/appwrite";
-import { authenticatedProcedure, platformOwnerProcedure, router } from "../../_core/ownerTrpc";
+import {
+  authenticatedProcedure,
+  platformOwnerProcedure,
+  router,
+} from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
@@ -161,7 +165,9 @@ const activityRouter = router({
       databaseId: getAppwriteDatabaseId(),
       tableId: "audit_logs",
       queries: [
-        ...(isPlatformOwner(ctx.user) ? [] : [Query.equal("actorUserId", ctx.user.id)]),
+        ...(isPlatformOwner(ctx.user)
+          ? []
+          : [Query.equal("actorUserId", ctx.user.id)]),
         Query.orderDesc("createdAt"),
         Query.limit(100),
       ],
