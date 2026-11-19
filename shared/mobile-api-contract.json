@@ -86,6 +86,12 @@
     "profile.changePassword",
     "profile.dismissTemporaryPasswordChange",
     "profile.get",
-    "profile.update"
+    "profile.update",
+    "workspace.activity.list",
+    "workspace.administration.overview",
+    "workspace.contacts.create",
+    "workspace.contacts.delete",
+    "workspace.contacts.list",
+    "workspace.contacts.update"
   ]
 }
