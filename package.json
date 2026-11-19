@@ -16,7 +16,6 @@
     "lint": "prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" \"drizzle/**/*.ts\" package.json",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:supabase": "supabase test db",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
