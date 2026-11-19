@@ -50,8 +50,8 @@ async function listOrganizationRows(
 
 /**
  * Minimal Appwrite-only organization reads used by the owner API.
- * This module deliberately has no dependency on the legacy organization
- * service, Supabase, or the general database facade.
+ * This module deliberately has no dependency on the retired organization
+ * service or the general database facade.
  */
 export async function getOrganizationById(
   organizationId: string
