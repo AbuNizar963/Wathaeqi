@@ -13,7 +13,7 @@ vi.mock("@trpc/server/adapters/express", () => ({
 import { createApp } from "./app";
 
 describe("retired Telegram verification endpoint", () => {
-  it("does not expose the legacy Supabase-backed verification route", async () => {
+  it("does not expose the retired verification route", async () => {
     const server = createApp().listen(0);
     await new Promise<void>((resolve, reject) => {
       server.once("listening", resolve);
