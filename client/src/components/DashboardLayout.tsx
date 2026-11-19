@@ -15,6 +15,10 @@ import {
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   FileText,
+  Contact,
+  FileClock,
+  Users,
+  Building2,
   LockKeyhole,
   PanelLeft,
   Settings2,
@@ -37,6 +41,30 @@ const menuItems = [
     icon: FileText,
     label: "الوثائق",
     path: "/",
+  },
+  {
+    key: "contacts",
+    icon: Contact,
+    label: "جهات الاتصال",
+    path: "/contacts",
+  },
+  {
+    key: "activity",
+    icon: FileClock,
+    label: "سجل النشاط",
+    path: "/activity",
+  },
+  {
+    key: "users",
+    icon: Users,
+    label: "إدارة المستخدمين",
+    path: "/users",
+  },
+  {
+    key: "organizations",
+    icon: Building2,
+    label: "إدارة الجهات",
+    path: "/organizations",
   },
   {
     key: "settings",
