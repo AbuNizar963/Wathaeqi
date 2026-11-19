@@ -29,7 +29,7 @@ const DEFAULT_APPWRITE_OWNER_API_URL =
 const configuredAppwriteApiUrl = import.meta.env.VITE_APPWRITE_API_URL?.trim();
 const appwriteApiUrl =
   configuredAppwriteApiUrl || DEFAULT_APPWRITE_OWNER_API_URL;
-const trpcEndpoint = `${appwriteApiUrl.replace(/\\/+$/, "")}/api/trpc`;
+const trpcEndpoint = `${appwriteApiUrl.replace(/\/+$/, "")}/api/trpc`;
 
 const trpcClient = ownerTrpc.createClient({
   links: [
