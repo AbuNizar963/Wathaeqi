@@ -33,6 +33,7 @@ import './features/notifications/push_notifications.dart';
 import 'public_pages.dart';
 import 'telegram_display.dart';
 import 'telegram_actions.dart';
+import 'telegram_routes.dart';
 import './features/reports/telegram_report_labels.dart';
 import 'telegram_edit_dialog.dart';
 import 'telegram_outbox.dart';
@@ -2746,6 +2747,13 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
                     telegramStatus: '${data?['status'] ?? 'draft'}',
                     canOperate: _canOperate,
                     isAdmin: _isAdmin,
+                    onChanged: load,
+                  ),
+                  const SizedBox(height: 12),
+                  TelegramRoutesPanel(
+                    api: widget.api,
+                    telegramId: widget.telegramId,
+                    canOperate: _canOperate,
                     onChanged: load,
                   ),
                 ],
