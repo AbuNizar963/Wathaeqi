@@ -8,31 +8,6 @@ import {
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
 
-type User = {
-  id: number;
-  authUserId: string;
-  sessionVersion: string;
-  organizationId: string;
-  name: string | null;
-  username: string;
-  passwordHash: null;
-  badgeNumber: string | null;
-  bio: string | null;
-  phone: string | null;
-  rank: string | null;
-  unit: string | null;
-  avatarKey: string | null;
-  email: string;
-  loginMethod: string;
-  isActive: boolean;
-  isPlatformOwner: boolean;
-  mustChangePassword: boolean;
-  role: string;
-  createdAt: Date;
-  updatedAt: Date;
-  lastSignedIn: Date;
-};
-
 const USERS_TABLE_ID = "users";
 const OWNER_SETUP_TABLE_ID = "app_records";
 const OWNER_SETUP_ROW_ID = "owner-setup-consumed";
