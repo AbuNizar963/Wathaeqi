@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { Query } from "node-appwrite";
 import { z } from "zod";
-import { getAppwriteDatabaseId, getAppwriteTablesDB } from "../_core/appwrite";
-import { platformOwnerProcedure, router } from "../_core/ownerTrpc";
+import { getAppwriteDatabaseId, getAppwriteTablesDB } from "../../_core/appwrite";
+import { platformOwnerProcedure, router } from "../../_core/ownerTrpc";
 
 type AppwriteRow = Record<string, unknown> & {
   $id: string;
