@@ -76,7 +76,10 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  if (loading) {
+  // Owner recovery is a public, one-time bootstrap path. Do not make it wait
+  // for the ordinary session lookup; the recovery-status query below is the
+  // authoritative gate for rendering the setup form.
+  if (loading && !ownerRecoveryRequested) {
     return <DashboardLayoutSkeleton />;
   }
 
