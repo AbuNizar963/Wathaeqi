@@ -69,7 +69,8 @@ const emptyContact: ContactForm = {
   organization: "",
 };
 
-const sectionTitles: Record<WorkspaceSection, string> = {\n  dashboard: "لوحة التحكم",
+const sectionTitles: Record<WorkspaceSection, string> = {
+  dashboard: "لوحة التحكم",
   contacts: "جهات الاتصال",
   activity: "سجل النشاط",
   users: "إدارة المستخدمين",
@@ -282,7 +283,9 @@ export default function WorkspacePage({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            {section === "dashboard" ? (\n              <LayoutDashboard className="h-6 w-6" />\n            ) : section === "contacts" ? (
+            {section === "dashboard" ? (
+              <LayoutDashboard className="h-6 w-6" />
+            ) : section === "contacts" ? (
               <Contact className="h-6 w-6" />
             ) : section === "activity" ? (
               <FileClock className="h-6 w-6" />
