@@ -26,7 +26,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/ownerTrpc";
 import { BrandMark } from "./BrandMark";
 import HeaderActions from "./HeaderActions";
 
