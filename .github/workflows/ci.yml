@@ -40,7 +40,7 @@ jobs:
 
       - name: Reject retired database runtime dependencies
         run: |
-          if git grep -niE 'supabase|SUPABASE|@supabase|drizzle/schema|drizzle-orm|drizzle-kit|DATABASE_URL|postgresql' -- client server shared appwrite scripts package.json .env.example vite.config.ts ':!scripts/verify-appwrite-api-bundle.mjs'; then
+          if git grep -niE 'supabase|SUPABASE|@supabase|drizzle/schema|drizzle-orm|drizzle-kit|DATABASE_URL|postgresql' -- client server shared appwrite netlify scripts package.json .env.example netlify.toml vite.config.ts ':!scripts/verify-appwrite-api-bundle.mjs'; then
             echo "Retired Supabase/PostgreSQL runtime dependency detected"
             exit 1
           fi
