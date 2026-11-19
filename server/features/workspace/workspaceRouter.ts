@@ -9,6 +9,7 @@ import {
 } from "../../_core/appwrite";
 import { authenticatedProcedure, platformOwnerProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
+import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 
 type AppwriteRow = Record<string, unknown> & {
