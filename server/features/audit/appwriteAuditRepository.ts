@@ -1,42 +1,28 @@
 import { createHash, randomInt, randomUUID } from "node:crypto";
 import { Query } from "node-appwrite";
-import type { AuditLog } from "../../../drizzle/schema";
 import {
   getAppwriteDatabaseId,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
 
-type WriteAuditLogInput = Omit<
-  AuditLog,
-  | "id"
-  | "createdAt"
-  | "ipAddress"
-  | "userAgent"
-  | "deviceType"
-  | "actorRank"
-  | "actorRole"
-  | "organizationId"
-  | "reason"
-  | "beforeState"
-  | "afterState"
-  | "previousHash"
-  | "entryHash"
-> &
-  Partial<
-    Pick<
-      AuditLog,
-      | "ipAddress"
-      | "userAgent"
-      | "deviceType"
-      | "actorRank"
-      | "actorRole"
-      | "organizationId"
-      | "reason"
-      | "beforeState"
-      | "afterState"
-    >
-  >;
+type WriteAuditLogInput = {
+  actorUserId: number;
+  actorName: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  metadata?: unknown;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  deviceType?: string | null;
+  actorRank?: string | null;
+  actorRole?: string | null;
+  organizationId?: string | null;
+  reason?: string | null;
+  beforeState?: unknown;
+  afterState?: unknown;
+};
 
 type AppwriteAuditHeadRow = {
   $id: string;
