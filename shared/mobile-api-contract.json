@@ -97,6 +97,9 @@
     "workspace.contacts.create",
     "workspace.contacts.delete",
     "workspace.contacts.list",
-    "workspace.contacts.update"
+    "workspace.contacts.update",
+    "workspace.notifications.list",
+    "workspace.notifications.markAllRead",
+    "workspace.notifications.markRead"
   ]
 }
