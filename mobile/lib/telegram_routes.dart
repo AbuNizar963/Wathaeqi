@@ -80,9 +80,9 @@ class _TelegramRoutesPanelState extends State<TelegramRoutesPanel> {
           'telegrams.routes',
           input: {'telegramId': widget.telegramId},
         ),
-        widget.api.call('organizations.context').catchError(
-          (_) => <String, dynamic>{},
-        ),
+        widget.api
+            .call('organizations.context')
+            .catchError((_) => <String, dynamic>{}),
       ]);
       if (!mounted) return;
       final rawRoutes = results[0];
@@ -306,10 +306,9 @@ class _TelegramRoutesPanelState extends State<TelegramRoutesPanel> {
                     OutlinedButton(
                       onPressed: busy
                           ? null
-                          : () =>
-                                _run('telegrams.receiveRoute', {
-                                  'routeId': routeId,
-                                }),
+                          : () => _run('telegrams.receiveRoute', {
+                              'routeId': routeId,
+                            }),
                       child: const Text('تسجيل الاستلام'),
                     ),
                   if (isReceiver &&
