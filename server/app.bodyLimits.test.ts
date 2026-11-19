@@ -39,7 +39,9 @@ async function getHealth(): Promise<{ status: number; body: unknown }> {
 }
 
 describe("Appwrite owner application", () => {
-  it("reports Appwrite as the active authentication and database provider", async () => {
+  it(
+    "reports Appwrite as the active authentication and database provider",
+    async () => {
     const response = await getHealth();
     expect(response.status).toBe(200);
     expect(response.body).toEqual(
@@ -50,9 +52,12 @@ describe("Appwrite owner application", () => {
         database: "appwrite",
       })
     );
-  });
+    }
+  );
 
-  it("keeps the retired Telegram routes outside the owner API", async () => {
+  it(
+    "keeps the retired Telegram routes outside the owner API",
+    async () => {
     const server = createApp().listen(0);
     await new Promise<void>((resolve, reject) => {
       server.once("listening", resolve);
@@ -75,7 +80,8 @@ describe("Appwrite owner application", () => {
         server.close(error => (error ? reject(error) : resolve()));
       });
     }
-  });
+    }
+  );
 
   it("configures one trusted proxy hop only in production", () => {
     expect(createApp().get("trust proxy")).toBe(ENV.isProduction ? 1 : false);
