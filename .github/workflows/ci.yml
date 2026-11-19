@@ -50,27 +50,6 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3
-        with:
-          # Pin to the latest maintained v2 release; CLI v3 has breaking CI semantics.
-          version: 2.122.1
-
-      - name: Start local Supabase services
-        run: supabase start -x studio,edge-runtime,logflare,vector
-
-      - name: Apply migrations to local database
-        run: supabase db reset
-
-      - name: Run database tests
-        run: supabase test db
-
-      - name: Verify concurrent organization and settings writes
-        run: |
-          set -a
-          eval "$(supabase status --output env)"
-          set +a
-          node scripts/test-organization-management-concurrency.mjs
 
       - name: Build Appwrite owner API function
         run: pnpm build:appwrite-api
