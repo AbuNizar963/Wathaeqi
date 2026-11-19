@@ -105,7 +105,8 @@ assert(
 
 assert(
   documentStudio.includes("معاينة الوثيقة") &&
-    documentStudio.includes("buildTelegramWatermarkHtml") &&
+    documentStudio.includes("OFFICIAL_MINISTRY_NAME") &&
+    documentStudio.includes("buildTelegramWatermarkCss") &&
     documentStudio.includes("editable={!previewMode}"),
   "The document workspace must expose a read-only preview and apply watermark settings."
 );
