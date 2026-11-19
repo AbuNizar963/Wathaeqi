@@ -13,12 +13,11 @@ function assert(condition, message) {
   }
 }
 
-const [indexHtml, dashboardLayout, homePage, headerActions, sidebarLayout] =
+const [indexHtml, dashboardLayout, headerActions, sidebarLayout] =
   await Promise.all(
     [
       "client/index.html",
       "client/src/components/DashboardLayout.tsx",
-      "client/src/pages/Home.tsx",
       "client/src/components/HeaderActions.tsx",
       "client/src/components/ui/sidebar.tsx",
     ].map(readProjectFile)
