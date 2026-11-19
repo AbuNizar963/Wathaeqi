@@ -95,6 +95,16 @@ const requiredMobileProcedures = [
   "telegrams.attachments",
   "telegrams.versions",
 ];
+const appwriteSharedApiProcedures = new Set(
+  (
+    JSON.parse(
+      readFileSync(
+        join(repositoryRoot, "shared/mobile-api-contract.json"),
+        "utf8"
+      )
+    ) as { webProcedures: string[] }
+  ).webProcedures
+);
 const documentStudioSharedApiProcedures = new Set([
   "documentStudio.getLetterheadSettings",
   "documentStudio.listDocuments",
@@ -139,7 +149,7 @@ describe("Flutter tRPC API contract", () => {
   it("exposes every statically named Flutter procedure", () => {
     expect(flutterProcedures.length).toBeGreaterThan(0);
     const missing = [...new Set(flutterProcedures)].filter(
-      path => !routerProcedure(path)
+      path => !routerProcedure(path) && !appwriteSharedApiProcedures.has(path)
     );
     expect(missing).toEqual([]);
   });

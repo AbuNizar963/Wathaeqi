@@ -44,6 +44,20 @@ const documentStudioSharedApiProcedures = new Set([
   "documentStudio.deactivateTemplate",
 ]);
 
+// The Flutter client now targets the Appwrite tRPC router implemented on the
+// web branch. This branch keeps a snapshot of those documented procedures in
+// the shared contract, so mobile calls can be verified here without the router.
+const appwriteSharedApiProcedures = new Set(
+  (
+    JSON.parse(
+      readFileSync(
+        join(repositoryRoot, "shared/mobile-api-contract.json"),
+        "utf8"
+      )
+    ) as { webProcedures: string[] }
+  ).webProcedures
+);
+
 function listMobileProcedureCalls(): Map<string, string[]> {
   const calls = new Map<string, string[]>();
   const callPattern =
@@ -83,6 +97,7 @@ describe("Flutter mobile API contract", () => {
       .filter(
         ([procedure]) =>
           !documentStudioSharedApiProcedures.has(procedure) &&
+          !appwriteSharedApiProcedures.has(procedure) &&
           !serverProcedures.has(procedure)
       )
       .map(([procedure, files]) => ({ procedure, files: [...new Set(files)] }));
