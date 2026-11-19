@@ -477,7 +477,8 @@ function DashboardLayoutContent({
     enabled: Boolean(user),
     staleTime: 30_000,
   });
-  const isPlatformOwnerAccount = organizationContext.data?.isOwner === true;
+  const isPlatformOwnerAccount =
+    user?.isPlatformOwner === true || organizationContext.data?.isOwner === true;
   const canViewAuditLogs =
     user?.role === "admin" ||
     organizationContext.data?.isOwner === true ||
