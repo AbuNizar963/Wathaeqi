@@ -3,6 +3,7 @@ import {
   Building2,
   Contact,
   FileClock,
+  LayoutDashboard,
   Pencil,
   Plus,
   RefreshCw,
@@ -20,7 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 
-type WorkspaceSection = "contacts" | "activity" | "users" | "organizations";
+type WorkspaceSection = "dashboard" | "contacts" | "activity" | "users" | "organizations";
 
 type OrganizationForm = {
   name: string;
@@ -68,7 +69,7 @@ const emptyContact: ContactForm = {
   organization: "",
 };
 
-const sectionTitles: Record<WorkspaceSection, string> = {
+const sectionTitles: Record<WorkspaceSection, string> = {\n  dashboard: "لوحة التحكم",
   contacts: "جهات الاتصال",
   activity: "سجل النشاط",
   users: "إدارة المستخدمين",
@@ -89,6 +90,12 @@ export default function WorkspacePage({
   const [editingOrganizationId, setEditingOrganizationId] = useState<
     string | null
   >(null);
+  const documentsQuery = trpc.documentStudio.listDocuments.useQuery(undefined, {
+    enabled: section === "dashboard",
+  });
+  const templatesQuery = trpc.documentStudio.listTemplates.useQuery(undefined, {
+    enabled: section === "dashboard",
+  });
   const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
     enabled: section === "contacts",
   });
@@ -97,7 +104,7 @@ export default function WorkspacePage({
   });
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
-    { enabled: section === "users" || section === "organizations" }
+    { enabled: section === "dashboard" || section === "users" || section === "organizations" }
   );
   const utils = trpc.useUtils();
 
@@ -275,7 +282,7 @@ export default function WorkspacePage({
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            {section === "contacts" ? (
+            {section === "dashboard" ? (\n              <LayoutDashboard className="h-6 w-6" />\n            ) : section === "contacts" ? (
               <Contact className="h-6 w-6" />
             ) : section === "activity" ? (
               <FileClock className="h-6 w-6" />
@@ -329,7 +336,42 @@ export default function WorkspacePage({
         </div>
       ) : null}
 
-      {section === "contacts" ? (
+      {section === "dashboard" ? (
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SummaryCard label="إجمالي الوثائق" value={documentsQuery.data?.length} icon={<FileClock className="h-4 w-4" />} />
+            <SummaryCard label="مسودات" value={documentsQuery.data?.filter(item => item.status === "draft").length} icon={<Pencil className="h-4 w-4" />} />
+            <SummaryCard label="وثائق صادرة" value={documentsQuery.data?.filter(item => item.status === "issued").length} icon={<ShieldCheck className="h-4 w-4" />} />
+            <SummaryCard label="وثائق مؤرشفة" value={documentsQuery.data?.filter(item => item.status === "archived").length} icon={<FileClock className="h-4 w-4" />} />
+            <SummaryCard label="النماذج النشطة" value={templatesQuery.data?.length} icon={<Contact className="h-4 w-4" />} />
+            <SummaryCard label="المستخدمون والجهات" value={(administrationQuery.data?.totals.users ?? 0) + (administrationQuery.data?.totals.organizations ?? 0)} icon={<Users className="h-4 w-4" />} />
+          </div>
+          <Card className="space-y-3 p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-semibold">أحدث الوثائق</h2>
+              <Badge variant="secondary">{documentsQuery.data?.length ?? 0}</Badge>
+            </div>
+            {isLoading ? <Loading /> : isError ? <ErrorMessage message={errorMessage} onRetry={refresh} /> : (documentsQuery.data ?? []).length === 0 ? (
+              <EmptyState text="لم تُنشأ وثائق بعد. ابدأ بإنشاء وثيقتك الأولى." />
+            ) : (
+              <div className="divide-y rounded-xl border">
+                {(documentsQuery.data ?? []).slice(0, 8).map(item => (
+                  <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{item.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">{item.subject || item.category}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={item.status === "issued" ? "default" : "secondary"}>{item.status === "issued" ? "صادرة" : item.status === "archived" ? "مؤرشفة" : "مسودة"}</Badge>
+                      <time className="text-xs text-muted-foreground" dir="ltr">{new Date(item.updatedAt).toLocaleDateString("ar")}</time>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      ) : section === "contacts" ? (
         <Card className="space-y-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-semibold">دليل جهات الاتصال</h2>
