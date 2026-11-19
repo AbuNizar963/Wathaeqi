@@ -5,10 +5,6 @@ const splitCsv = (value: string | undefined): string[] =>
     .filter(Boolean);
 
 export const ENV = {
-  supabaseUrl: process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "",
-  supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? "",
-  supabaseStorageBucket:
-    process.env.SUPABASE_STORAGE_BUCKET ?? "telegram-files",
   // Server-only Appwrite credentials. Never add VITE_ fallbacks for secrets.
   appwriteEndpoint:
     process.env.APPWRITE_ENDPOINT ||
