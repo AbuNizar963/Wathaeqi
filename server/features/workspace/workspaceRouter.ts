@@ -1,12 +1,14 @@
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { Query } from "node-appwrite";
 import { z } from "zod";
 import {
   getAppwriteDatabaseId,
   getAppwriteTablesDB,
+  getAppwriteUsers,
 } from "../../_core/appwrite";
 import { platformOwnerProcedure, router } from "../../_core/ownerTrpc";
+import { writeAuditLog } from "../audit/appwriteAuditRepository";
 
 type AppwriteRow = Record<string, unknown> & {
   $id: string;
@@ -233,7 +235,355 @@ const administrationRouter = router({
       },
     };
   }),
-});
+
+  createOrganization: platformOwnerProcedure
+    .input(
+      z.object({
+        name: z.string().trim().min(2).max(256),
+        code: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9_-]+$/),
+        type: z.string().trim().min(2).max(64).default("department"),
+        parentOrganizationId: z.string().trim().max(64).default(""),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const tables = getAppwriteTablesDB();
+      const databaseId = getAppwriteDatabaseId();
+      const code = input.code.toUpperCase();
+      const duplicate = await tables.listRows({
+        databaseId,
+        tableId: "organizations",
+        queries: [Query.equal("code", code), Query.limit(1)],
+        total: false,
+      });
+      if (duplicate.rows.length) {
+        throw new TRPCError({ code: "CONFLICT", message: "رمز الجهة مستخدم مسبقاً" });
+      }
+      const parentId = input.parentOrganizationId || null;
+      if (parentId) {
+        const parent = await tables.listRows({
+          databaseId,
+          tableId: "organizations",
+          queries: [Query.equal("id", parentId), Query.equal("isActive", true), Query.limit(1)],
+          total: false,
+        });
+        if (!parent.rows.length) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "الجهة الأم غير موجودة أو غير نشطة" });
+        }
+      }
+      const now = new Date().toISOString();
+      const id = randomUUID();
+      await tables.createRow({
+        databaseId,
+        tableId: "organizations",
+        rowId: randomUUID(),
+        data: {
+          id,
+          parentOrganizationId: parentId,
+          code,
+          name: input.name,
+          type: input.type,
+          isActive: true,
+          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        action: "organization.created",
+        entityType: "organization",
+        entityId: id,
+        metadata: { code, name: input.name },
+      });
+      return { id, name: input.name, code, type: input.type, isActive: true, parentOrganizationId: parentId };
+    }),
+
+  updateOrganization: platformOwnerProcedure
+    .input(
+      z.object({
+        id: z.string().min(1).max(64),
+        name: z.string().trim().min(2).max(256),
+        code: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9_-]+$/),
+        type: z.string().trim().min(2).max(64),
+        parentOrganizationId: z.string().trim().max(64).default(""),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const tables = getAppwriteTablesDB();
+      const databaseId = getAppwriteDatabaseId();
+      const found = await tables.listRows({
+        databaseId,
+        tableId: "organizations",
+        queries: [Query.equal("id", input.id), Query.limit(2)],
+        total: false,
+      });
+      const row = found.rows[0] as unknown as AppwriteRow | undefined;
+      if (!row || found.rows.length !== 1) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      }
+      const duplicate = await tables.listRows({
+        databaseId,
+        tableId: "organizations",
+        queries: [Query.equal("code", input.code.toUpperCase()), Query.limit(2)],
+        total: false,
+      });
+      if (duplicate.rows.some(item => (item as unknown as AppwriteRow).$id !== row.$id)) {
+        throw new TRPCError({ code: "CONFLICT", message: "رمز الجهة مستخدم مسبقاً" });
+      }
+      const parentId = input.parentOrganizationId || null;
+      if (parentId === input.id) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن جعل الجهة تابعة لنفسها" });
+      }
+      if (parentId) {
+        const parent = await tables.listRows({
+          databaseId,
+          tableId: "organizations",
+          queries: [Query.equal("id", parentId), Query.equal("isActive", true), Query.limit(1)],
+          total: false,
+        });
+        if (!parent.rows.length) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "الجهة الأم غير موجودة أو غير نشطة" });
+        }
+      }
+      await tables.updateRow({
+        databaseId,
+        tableId: "organizations",
+        rowId: row.$id,
+        data: {
+          name: input.name,
+          code: input.code.toUpperCase(),
+          type: input.type,
+          parentOrganizationId: parentId,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        action: "organization.updated",
+        entityType: "organization",
+        entityId: input.id,
+      });
+      return { success: true as const };
+    }),
+
+  setOrganizationActive: platformOwnerProcedure
+    .input(z.object({ id: z.string().min(1).max(64), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const tables = getAppwriteTablesDB();
+      const databaseId = getAppwriteDatabaseId();
+      const found = await tables.listRows({
+        databaseId,
+        tableId: "organizations",
+        queries: [Query.equal("id", input.id), Query.limit(2)],
+        total: false,
+      });
+      const row = found.rows[0] as unknown as AppwriteRow | undefined;
+      if (!row || found.rows.length !== 1) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      }
+      if (!input.isActive) {
+        const members = await tables.listRows({
+          databaseId,
+          tableId: "organization_memberships",
+          queries: [Query.equal("organizationId", input.id), Query.equal("isActive", true), Query.limit(1)],
+          total: false,
+        });
+        if (members.rows.length) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "لا يمكن إيقاف جهة لديها أعضاء نشطون؛ انقل الأعضاء أو عطّل عضوياتهم أولاً",
+          });
+        }
+      }
+      const now = new Date().toISOString();
+      await tables.updateRow({
+        databaseId,
+        tableId: "organizations",
+        rowId: row.$id,
+        data: { isActive: input.isActive, deletedAt: input.isActive ? null : now, updatedAt: now },
+      });
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        action: input.isActive ? "organization.activated" : "organization.deactivated",
+        entityType: "organization",
+        entityId: input.id,
+      });
+      return { success: true as const };
+    }),
+
+  createUser: platformOwnerProcedure
+    .input(
+      z.object({
+        name: z.string().trim().min(2).max(256),
+        username: z.string().trim().min(3).max(64).regex(/^[A-Za-z0-9_.-]+$/),
+        email: z.string().trim().email().max(254),
+        password: z.string().min(12).max(128),
+        organizationId: z.string().min(1).max(64),
+        role: z.enum(["user", "admin"]).default("user"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const tables = getAppwriteTablesDB();
+      const databaseId = getAppwriteDatabaseId();
+      const organization = await tables.listRows({
+        databaseId,
+        tableId: "organizations",
+        queries: [Query.equal("id", input.organizationId), Query.equal("isActive", true), Query.limit(1)],
+        total: false,
+      });
+      if (!organization.rows.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "اختر جهة نشطة وصالحة" });
+      }
+      const duplicate = await tables.listRows({
+        databaseId,
+        tableId: "users",
+        queries: [Query.equal("username", input.username), Query.limit(1)],
+        total: false,
+      });
+      if (duplicate.rows.length) {
+        throw new TRPCError({ code: "CONFLICT", message: "اسم المستخدم مستخدم مسبقاً" });
+      }
+
+      const authUserId = randomUUID();
+      const profileId = randomInt(1, 2_147_483_647);
+      const now = new Date().toISOString();
+      const authUsers = getAppwriteUsers();
+      await authUsers.create({
+        userId: authUserId,
+        email: input.email,
+        password: input.password,
+        name: input.name,
+      });
+
+      let profileRowId: string | null = null;
+      try {
+        const profile = await tables.createRow({
+          databaseId,
+          tableId: "users",
+          rowId: randomUUID(),
+          data: {
+            id: profileId,
+            authUserId,
+            sessionVersion: randomUUID(),
+            organizationId: input.organizationId,
+            name: input.name,
+            username: input.username,
+            badgeNumber: null,
+            bio: null,
+            phone: null,
+            rank: null,
+            unit: null,
+            avatarKey: null,
+            email: input.email,
+            loginMethod: "appwrite",
+            isActive: true,
+            isPlatformOwner: false,
+            mustChangePassword: true,
+            role: input.role,
+            createdAt: now,
+            updatedAt: now,
+            lastSignedIn: now,
+            passwordHashCiphertext: null,
+          },
+        }) as unknown as AppwriteRow;
+        profileRowId = profile.$id;
+        await tables.createRow({
+          databaseId,
+          tableId: "organization_memberships",
+          rowId: randomUUID(),
+          data: {
+            id: randomInt(1, 2_147_483_647),
+            organizationId: input.organizationId,
+            userId: profileId,
+            role: input.role === "admin" ? "organization_admin" : "dispatcher",
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          },
+        });
+      } catch (error) {
+        if (profileRowId) {
+          try {
+            await tables.deleteRow({ databaseId, tableId: "users", rowId: profileRowId });
+          } catch {
+            // Preserve the original creation failure.
+          }
+        }
+        try {
+          await authUsers.delete({ userId: authUserId });
+        } catch {
+          // Preserve the original creation failure.
+        }
+        throw error;
+      }
+
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        action: "user.created",
+        entityType: "user",
+        entityId: String(profileId),
+        metadata: { username: input.username, organizationId: input.organizationId, role: input.role },
+      });
+      return { id: String(profileId), name: input.name, username: input.username, email: input.email, isActive: true };
+    }),
+
+  setUserActive: platformOwnerProcedure
+    .input(z.object({ id: z.coerce.number().int().positive(), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const tables = getAppwriteTablesDB();
+      const databaseId = getAppwriteDatabaseId();
+      const found = await tables.listRows({
+        databaseId,
+        tableId: "users",
+        queries: [Query.equal("id", input.id), Query.limit(2)],
+        total: false,
+      });
+      const row = found.rows[0] as unknown as AppwriteRow | undefined;
+      if (!row || found.rows.length !== 1) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "حساب المستخدم غير موجود" });
+      }
+      const data = rowData(row);
+      if (data.isPlatformOwner === true || data.authUserId === ctx.user.authUserId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكن إيقاف حساب مالك المنصة" });
+      }
+      const authUserId = String(data.authUserId ?? "");
+      if (!authUserId) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "حساب Appwrite المرتبط غير موجود" });
+      }
+      await getAppwriteUsers().updateStatus({ userId: authUserId, status: input.isActive });
+      const now = new Date().toISOString();
+      await tables.updateRow({
+        databaseId,
+        tableId: "users",
+        rowId: row.$id,
+        data: { isActive: input.isActive, updatedAt: now },
+      });
+      const memberships = await tables.listRows({
+        databaseId,
+        tableId: "organization_memberships",
+        queries: [Query.equal("userId", input.id), Query.limit(100)],
+        total: false,
+      });
+      await Promise.all(memberships.rows.map(item => tables.updateRow({
+        databaseId,
+        tableId: "organization_memberships",
+        rowId: (item as unknown as AppwriteRow).$id,
+        data: { isActive: input.isActive, updatedAt: now },
+      })));
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        action: input.isActive ? "user.activated" : "user.deactivated",
+        entityType: "user",
+        entityId: String(input.id),
+      });
+      return { success: true as const };
+    }),
+}); 
 
 export const workspaceRouter = router({
   contacts: contactsRouter,
