@@ -5,6 +5,15 @@
 > الفرع: `migration/appwrite-functions-transfer`  
 > الحالة: تدقيق قراءة فقط؛ لم تُنقل بيانات ولم تُحذف خدمة أو إعداد.
 
+## 0. تقدم فصل التشغيل — 19 نوفمبر 2026
+
+- أزيل عميل Supabase الخاص بالمتصفح `client/src/lib/supabase.ts` بعد تحويل الواجهة النشطة إلى `ownerTrpc`/Appwrite.
+- حُذفت متغيرات `VITE_SUPABASE_URL` و`VITE_SUPABASE_PUBLISHABLE_KEY` من `.env.example`.
+- أزيلت خطوات تشغيل Supabase المحلي واختبارات SQL من GitHub Actions؛ كما أزيل أمر `test:supabase` من `package.json`.
+- أصبح `server/app.ts` يركّب واجهة المالك والمستندات فقط عبر Appwrite، ولم يعد يركّب API البرقيات أو مسارات التخزين القديمة أو التحقق المعتمد على Supabase.
+- هذا فصل لمسار التشغيل وليس إزالة نهائية لكل كود Supabase: ما زالت وحدات legacy مثل `server/db.ts` و`server/features/organizations/organization.ts` و`server/_core/supabase.ts` موجودة حتى اكتمال حصرها وترحيلها أو إزالتها بأمان.
+- لم تُحذف ملفات SQL التاريخية أو تُنفذ أي كتابة على مشروع Supabase أو بياناته.
+
 ## 1. نتيجة فحص قاعدة Appwrite الحية
 
 قاعدة البيانات: `wathaeqi-db` — المشروع: `wathaeqi`.
@@ -62,11 +71,11 @@
 | `server/_core/supabase.ts` | إنشاء عميل إداري باستخدام المفتاح الخادمي | إزالة جميع المستهلكين أولاً ثم حذف الوحدة |
 | `server/db.ts` | المستخدمون، المؤسسات، الإعدادات، البرقيات، الأرقام، الإصدارات، المرفقات، الإشعارات، التدقيق، ولوحة المالك | نقل المستودعات واختبارات التوافق لكل نطاق |
 | `server/features/organizations/organization.ts` | عمليات Supabase وRPCs للإنشاء والحذف الآمن والحذف النهائي والحسابات وتهيئة المحافظات | تنفيذ عمليات خادمية مكافئة مع ضمان الذرية والتدقيق |
-| `server/app.ts` | قراءة البرقية والجهة في `GET /api/verify/:token` | استخدام TablesDB واختبارات مطابقة الاستجابة |
-| `server/_core/verificationRateLimit.ts` | RPC باسم `consume_auth_login_rate_limit` | بديل مشترك وذري يعمل عبر أكثر من نسخة خادم؛ لا يكفي محدد ذاكرة محلي |
-| `server/features/storage/storageRoutes.ts` | تفسير روابط التخزين القديمة عبر `ENV.supabaseStorageBucket` | دعم مفاتيح Appwrite وروابط legacy أثناء فترة انتقال آمنة |
-| `server/_core/env.ts` و`.env.example` | متغيرات Supabase ومخزن الملفات القديم | حذفها بعد إزالة كل قراءة تشغيلية لها |
-| `package.json` و`pnpm-lock.yaml` | الاعتماد `@supabase/supabase-js` | إزالتهما بعد نجاح فحص الاستيرادات والبناء والاختبارات |
+| `server/app.ts` | تم تحويل التطبيق إلى `ownerApiRouter` المعتمد على Appwrite؛ أزيلت منه مسارات التحقق القديمة والبرقيات والتخزين والإشعارات | لا يوجد اعتماد Supabase في مسار الخادم النشط؛ يلزم اختبار API بعد التغيير |
+| `server/_core/verificationRateLimit.ts` | ما زال يحتوي RPC القديم، لكنه لم يعد مركباً في `server/app.ts` بعد فصل API المالك | إزالة الوحدة واختباراتها بعد حصر أي مستوردات متبقية |
+| `server/features/storage/storageRoutes.ts` | مسارات المرفقات والشعارات القديمة لم تعد مركبة في تطبيق المالك؛ ما زالت تحتوي مرجعاً إلى `ENV.supabaseStorageBucket` | إزالتها أو نقلها إلى Appwrite فقط إذا أعيد اعتماد وظيفة المرفقات |
+| `server/_core/env.ts` و`.env.example` | أزيلت إعدادات Supabase الخاصة بالمتصفح؛ متغيرات الخادم باقية مؤقتاً لأن وحدات legacy غير النشطة ما زالت تقرؤها | حذف حقول الخادم بعد حذف/ترحيل وحدات legacy المتبقية |
+| `package.json` و`pnpm-lock.yaml` | أزيل أمر `test:supabase` من scripts؛ اعتماد `@supabase/supabase-js` ما زال مطلوباً من وحدات legacy غير النشطة | حذف الاعتماد بعد إزالة آخر استيراد خادمي ثم تحديث lockfile |
 | `supabase/migrations` و`supabase/tests` | تاريخ مخطط المصدر واختباراته | الاحتفاظ بها كمرجع ترحيل/أرشيف حتى اعتماد سياسة الأرشفة؛ لا تحذف تلقائياً |
 
 ## 3. ما هو قائم بالفعل في Appwrite
