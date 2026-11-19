@@ -117,6 +117,16 @@ export default function WorkspacePage({
   const activityQuery = trpc.workspace.activity.list.useQuery(undefined, {
     enabled: section === "activity",
   });
+  const administrationQuery = trpc.workspace.administration.overview.useQuery(
+    undefined,
+    {
+      enabled:
+        section === "dashboard" ||
+        section === "users" ||
+        section === "organizations",
+    }
+  );
+  const utils = trpc.useUtils();
   const markNotificationRead =
     trpc.workspace.notifications.markRead.useMutation({
       onSuccess: async () => {
@@ -132,17 +142,6 @@ export default function WorkspacePage({
       },
       onError: error => toast.error(error.message),
     });
-  const administrationQuery = trpc.workspace.administration.overview.useQuery(
-    undefined,
-    {
-      enabled:
-        section === "dashboard" ||
-        section === "users" ||
-        section === "organizations",
-    }
-  );
-  const utils = trpc.useUtils();
-
   const createContact = trpc.workspace.contacts.create.useMutation({
     onSuccess: async () => {
       await utils.workspace.contacts.list.invalidate();
