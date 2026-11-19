@@ -129,9 +129,14 @@ assert(
 );
 
 assert(
-  ["/dashboard", "/contacts", "/activity", "/notifications", "/users", "/organizations"].every(path =>
-    appRoutes.includes(`path="${path}"`)
-  ),
+  [
+    "/dashboard",
+    "/contacts",
+    "/activity",
+    "/notifications",
+    "/users",
+    "/organizations",
+  ].every(path => appRoutes.includes(`path="${path}"`)),
   "Every restored workspace navigation item must resolve to a registered route."
 );
 

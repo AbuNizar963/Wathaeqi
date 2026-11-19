@@ -35,13 +35,21 @@ function Router() {
       }
     >
       <Switch>
-        <Route path="/dashboard"><DashboardPage><WorkspacePage section="dashboard" /></DashboardPage></Route>
+        <Route path="/dashboard">
+          <DashboardPage>
+            <WorkspacePage section="dashboard" />
+          </DashboardPage>
+        </Route>
         <Route path="/contacts">
           <DashboardPage>
             <WorkspacePage section="contacts" />
           </DashboardPage>
         </Route>
-        <Route path="/notifications"><DashboardPage><WorkspacePage section="notifications" /></DashboardPage></Route>
+        <Route path="/notifications">
+          <DashboardPage>
+            <WorkspacePage section="notifications" />
+          </DashboardPage>
+        </Route>
         <Route path="/activity">
           <DashboardPage>
             <WorkspacePage section="activity" />

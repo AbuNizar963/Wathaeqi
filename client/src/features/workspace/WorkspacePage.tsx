@@ -22,7 +22,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 
-type WorkspaceSection = "dashboard" | "contacts" | "activity" | "notifications" | "users" | "organizations";
+type WorkspaceSection =
+  | "dashboard"
+  | "contacts"
+  | "activity"
+  | "notifications"
+  | "users"
+  | "organizations";
 
 type OrganizationForm = {
   name: string;
@@ -102,28 +108,38 @@ export default function WorkspacePage({
   const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
     enabled: section === "contacts",
   });
-  const notificationsQuery = trpc.workspace.notifications.list.useQuery(undefined, {
-    enabled: section === "notifications",
-  });
+  const notificationsQuery = trpc.workspace.notifications.list.useQuery(
+    undefined,
+    {
+      enabled: section === "notifications",
+    }
+  );
   const activityQuery = trpc.workspace.activity.list.useQuery(undefined, {
     enabled: section === "activity",
   });
-  const markNotificationRead = trpc.workspace.notifications.markRead.useMutation({
-    onSuccess: async () => {
-      await utils.workspace.notifications.list.invalidate();
-    },
-    onError: error => toast.error(error.message),
-  });
-  const markAllNotificationsRead = trpc.workspace.notifications.markAllRead.useMutation({
-    onSuccess: async result => {
-      await utils.workspace.notifications.list.invalidate();
-      toast.success(`تم تعليم ${result.updated} تنبيهاً كمقروء`);
-    },
-    onError: error => toast.error(error.message),
-  });
+  const markNotificationRead =
+    trpc.workspace.notifications.markRead.useMutation({
+      onSuccess: async () => {
+        await utils.workspace.notifications.list.invalidate();
+      },
+      onError: error => toast.error(error.message),
+    });
+  const markAllNotificationsRead =
+    trpc.workspace.notifications.markAllRead.useMutation({
+      onSuccess: async result => {
+        await utils.workspace.notifications.list.invalidate();
+        toast.success(`تم تعليم ${result.updated} تنبيهاً كمقروء`);
+      },
+      onError: error => toast.error(error.message),
+    });
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
-    { enabled: section === "dashboard" || section === "users" || section === "organizations" }
+    {
+      enabled:
+        section === "dashboard" ||
+        section === "users" ||
+        section === "organizations",
+    }
   );
   const utils = trpc.useUtils();
 
@@ -317,68 +333,72 @@ export default function WorkspacePage({
             ) : section === "notifications" ? (
               <Bell className="h-6 w-6" />
             ) : section === "notifications" ? (
-        <Card className="space-y-4 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-semibold">صندوق الإشعارات</h2>
-            <Button
-              variant="outline"
-              disabled={
-                markAllNotificationsRead.isPending ||
-                !(notificationsQuery.data ?? []).some(item => !item.readAt)
-              }
-              onClick={() => markAllNotificationsRead.mutate()}
-            >
-              تعليم الكل كمقروء
-            </Button>
-          </div>
-          {isLoading ? (
-            <Loading />
-          ) : isError ? (
-            <ErrorMessage message={errorMessage} onRetry={refresh} />
-          ) : (notificationsQuery.data ?? []).length === 0 ? (
-            <EmptyState text="لا توجد إشعارات جديدة." />
-          ) : (
-            <div className="space-y-2">
-              {(notificationsQuery.data ?? []).map(item => (
-                <div
-                  key={item.id}
-                  className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3 ${item.readAt ? "opacity-70" : "border-primary/40 bg-primary/5"}`}
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{item.title}</p>
-                      {!item.readAt ? <Badge>جديد</Badge> : null}
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {item.body}
-                    </p>
-                    <time
-                      className="mt-2 block text-xs text-muted-foreground"
-                      dir="ltr"
-                    >
-                      {item.createdAt
-                        ? new Date(item.createdAt).toLocaleString("ar")
-                        : "—"}
-                    </time>
-                  </div>
-                  {!item.readAt ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={markNotificationRead.isPending}
-                      onClick={() => markNotificationRead.mutate({ id: item.id })}
-                    >
-                      تعليم كمقروء
-                    </Button>
-                  ) : (
-                    <Badge variant="secondary">مقروء</Badge>
-                  )}
+              <Card className="space-y-4 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="font-semibold">صندوق الإشعارات</h2>
+                  <Button
+                    variant="outline"
+                    disabled={
+                      markAllNotificationsRead.isPending ||
+                      !(notificationsQuery.data ?? []).some(
+                        item => !item.readAt
+                      )
+                    }
+                    onClick={() => markAllNotificationsRead.mutate()}
+                  >
+                    تعليم الكل كمقروء
+                  </Button>
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      ) : section === "users" ? (
+                {isLoading ? (
+                  <Loading />
+                ) : isError ? (
+                  <ErrorMessage message={errorMessage} onRetry={refresh} />
+                ) : (notificationsQuery.data ?? []).length === 0 ? (
+                  <EmptyState text="لا توجد إشعارات جديدة." />
+                ) : (
+                  <div className="space-y-2">
+                    {(notificationsQuery.data ?? []).map(item => (
+                      <div
+                        key={item.id}
+                        className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3 ${item.readAt ? "opacity-70" : "border-primary/40 bg-primary/5"}`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">{item.title}</p>
+                            {!item.readAt ? <Badge>جديد</Badge> : null}
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {item.body}
+                          </p>
+                          <time
+                            className="mt-2 block text-xs text-muted-foreground"
+                            dir="ltr"
+                          >
+                            {item.createdAt
+                              ? new Date(item.createdAt).toLocaleString("ar")
+                              : "—"}
+                          </time>
+                        </div>
+                        {!item.readAt ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={markNotificationRead.isPending}
+                            onClick={() =>
+                              markNotificationRead.mutate({ id: item.id })
+                            }
+                          >
+                            تعليم كمقروء
+                          </Button>
+                        ) : (
+                          <Badge variant="secondary">مقروء</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ) : section === "users" ? (
               <Users className="h-6 w-6" />
             ) : (
               <Building2 className="h-6 w-6" />
@@ -394,8 +414,8 @@ export default function WorkspacePage({
                   : section === "notifications"
                     ? "عرض التنبيهات المرتبطة بحسابك وإدارة حالة قراءتها"
                     : section === "users"
-                    ? "عرض حسابات المستخدمين وحالاتها وصلاحياتها"
-                    : "عرض الجهات المسجلة وحالتها وعلاقاتها التنظيمية"}
+                      ? "عرض حسابات المستخدمين وحالاتها وصلاحياتها"
+                      : "عرض الجهات المسجلة وحالتها وعلاقاتها التنظيمية"}
             </p>
           </div>
         </div>
@@ -433,31 +453,90 @@ export default function WorkspacePage({
       {section === "dashboard" ? (
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <SummaryCard label="إجمالي الوثائق" value={documentsQuery.data?.length} icon={<FileClock className="h-4 w-4" />} />
-            <SummaryCard label="مسودات" value={documentsQuery.data?.filter(item => item.status === "draft").length} icon={<Pencil className="h-4 w-4" />} />
-            <SummaryCard label="وثائق صادرة" value={documentsQuery.data?.filter(item => item.status === "issued").length} icon={<ShieldCheck className="h-4 w-4" />} />
-            <SummaryCard label="وثائق مؤرشفة" value={documentsQuery.data?.filter(item => item.status === "archived").length} icon={<FileClock className="h-4 w-4" />} />
-            <SummaryCard label="النماذج النشطة" value={templatesQuery.data?.length} icon={<Contact className="h-4 w-4" />} />
-            <SummaryCard label="المستخدمون والجهات" value={(administrationQuery.data?.totals.users ?? 0) + (administrationQuery.data?.totals.organizations ?? 0)} icon={<Users className="h-4 w-4" />} />
+            <SummaryCard
+              label="إجمالي الوثائق"
+              value={documentsQuery.data?.length}
+              icon={<FileClock className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="مسودات"
+              value={
+                documentsQuery.data?.filter(item => item.status === "draft")
+                  .length
+              }
+              icon={<Pencil className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="وثائق صادرة"
+              value={
+                documentsQuery.data?.filter(item => item.status === "issued")
+                  .length
+              }
+              icon={<ShieldCheck className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="وثائق مؤرشفة"
+              value={
+                documentsQuery.data?.filter(item => item.status === "archived")
+                  .length
+              }
+              icon={<FileClock className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="النماذج النشطة"
+              value={templatesQuery.data?.length}
+              icon={<Contact className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="المستخدمون والجهات"
+              value={
+                (administrationQuery.data?.totals.users ?? 0) +
+                (administrationQuery.data?.totals.organizations ?? 0)
+              }
+              icon={<Users className="h-4 w-4" />}
+            />
           </div>
           <Card className="space-y-3 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">أحدث الوثائق</h2>
-              <Badge variant="secondary">{documentsQuery.data?.length ?? 0}</Badge>
+              <Badge variant="secondary">
+                {documentsQuery.data?.length ?? 0}
+              </Badge>
             </div>
-            {isLoading ? <Loading /> : isError ? <ErrorMessage message={errorMessage} onRetry={refresh} /> : (documentsQuery.data ?? []).length === 0 ? (
+            {isLoading ? (
+              <Loading />
+            ) : isError ? (
+              <ErrorMessage message={errorMessage} onRetry={refresh} />
+            ) : (documentsQuery.data ?? []).length === 0 ? (
               <EmptyState text="لم تُنشأ وثائق بعد. ابدأ بإنشاء وثيقتك الأولى." />
             ) : (
               <div className="divide-y rounded-xl border">
                 {(documentsQuery.data ?? []).slice(0, 8).map(item => (
-                  <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
+                  <div
+                    key={item.id}
+                    className="flex flex-wrap items-center justify-between gap-3 p-3"
+                  >
                     <div className="min-w-0">
                       <p className="truncate font-medium">{item.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{item.subject || item.category}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {item.subject || item.category}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant={item.status === "issued" ? "default" : "secondary"}>{item.status === "issued" ? "صادرة" : item.status === "archived" ? "مؤرشفة" : "مسودة"}</Badge>
-                      <time className="text-xs text-muted-foreground" dir="ltr">{new Date(item.updatedAt).toLocaleDateString("ar")}</time>
+                      <Badge
+                        variant={
+                          item.status === "issued" ? "default" : "secondary"
+                        }
+                      >
+                        {item.status === "issued"
+                          ? "صادرة"
+                          : item.status === "archived"
+                            ? "مؤرشفة"
+                            : "مسودة"}
+                      </Badge>
+                      <time className="text-xs text-muted-foreground" dir="ltr">
+                        {new Date(item.updatedAt).toLocaleDateString("ar")}
+                      </time>
                     </div>
                   </div>
                 ))}

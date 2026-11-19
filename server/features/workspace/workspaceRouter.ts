@@ -213,7 +213,10 @@ const notificationsRouter = router({
       })) as unknown as AppwriteRow;
       const data = rowData(row);
       if (Number(data.userId) !== ctx.user.id) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "التنبيه غير موجود" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "التنبيه غير موجود",
+        });
       }
       if (!data.readAt) {
         await tables.updateRow({
@@ -234,7 +237,9 @@ const notificationsRouter = router({
       queries: [Query.equal("userId", ctx.user.id), Query.limit(100)],
       total: false,
     });
-    const unread = result.rows.filter(row => !rowData(row as AppwriteRow).readAt);
+    const unread = result.rows.filter(
+      row => !rowData(row as AppwriteRow).readAt
+    );
     await Promise.all(
       unread.map(row =>
         tables.updateRow({
