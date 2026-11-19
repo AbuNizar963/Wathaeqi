@@ -348,72 +348,6 @@ export default function WorkspacePage({
               <FileClock className="h-6 w-6" />
             ) : section === "notifications" ? (
               <Bell className="h-6 w-6" />
-            ) : section === "notifications" ? (
-              <Card className="space-y-4 p-4 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="font-semibold">صندوق الإشعارات</h2>
-                  <Button
-                    variant="outline"
-                    disabled={
-                      markAllNotificationsRead.isPending ||
-                      !(notificationsQuery.data ?? []).some(
-                        item => !item.readAt
-                      )
-                    }
-                    onClick={() => markAllNotificationsRead.mutate()}
-                  >
-                    تعليم الكل كمقروء
-                  </Button>
-                </div>
-                {isLoading ? (
-                  <Loading />
-                ) : isError ? (
-                  <ErrorMessage message={errorMessage} onRetry={refresh} />
-                ) : (notificationsQuery.data ?? []).length === 0 ? (
-                  <EmptyState text="لا توجد إشعارات جديدة." />
-                ) : (
-                  <div className="space-y-2">
-                    {(notificationsQuery.data ?? []).map(item => (
-                      <div
-                        key={item.id}
-                        className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3 ${item.readAt ? "opacity-70" : "border-primary/40 bg-primary/5"}`}
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold">{item.title}</p>
-                            {!item.readAt ? <Badge>جديد</Badge> : null}
-                          </div>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {item.body}
-                          </p>
-                          <time
-                            className="mt-2 block text-xs text-muted-foreground"
-                            dir="ltr"
-                          >
-                            {item.createdAt
-                              ? new Date(item.createdAt).toLocaleString("ar")
-                              : "—"}
-                          </time>
-                        </div>
-                        {!item.readAt ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={markNotificationRead.isPending}
-                            onClick={() =>
-                              markNotificationRead.mutate({ id: item.id })
-                            }
-                          >
-                            تعليم كمقروء
-                          </Button>
-                        ) : (
-                          <Badge variant="secondary">مقروء</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
             ) : section === "users" ? (
               <Users className="h-6 w-6" />
             ) : (
@@ -734,6 +668,70 @@ export default function WorkspacePage({
                       ? new Date(item.createdAt).toLocaleString("ar")
                       : "—"}
                   </time>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      ) : section === "notifications" ? (
+        <Card className="space-y-4 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-semibold">صندوق الإشعارات</h2>
+            <Button
+              variant="outline"
+              disabled={
+                markAllNotificationsRead.isPending ||
+                !(notificationsQuery.data ?? []).some(item => !item.readAt)
+              }
+              onClick={() => markAllNotificationsRead.mutate()}
+            >
+              تعليم الكل كمقروء
+            </Button>
+          </div>
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
+            <ErrorMessage message={errorMessage} onRetry={refresh} />
+          ) : (notificationsQuery.data ?? []).length === 0 ? (
+            <EmptyState text="لا توجد إشعارات جديدة." />
+          ) : (
+            <div className="space-y-2">
+              {(notificationsQuery.data ?? []).map(item => (
+                <div
+                  key={item.id}
+                  className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3 ${item.readAt ? "opacity-70" : "border-primary/40 bg-primary/5"}`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{item.title}</p>
+                      {!item.readAt ? <Badge>جديد</Badge> : null}
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {item.body}
+                    </p>
+                    <time
+                      className="mt-2 block text-xs text-muted-foreground"
+                      dir="ltr"
+                    >
+                      {item.createdAt
+                        ? new Date(item.createdAt).toLocaleString("ar")
+                        : "—"}
+                    </time>
+                  </div>
+                  {!item.readAt ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={markNotificationRead.isPending}
+                      onClick={() =>
+                        markNotificationRead.mutate({ id: item.id })
+                      }
+                    >
+                      تعليم كمقروء
+                    </Button>
+                  ) : (
+                    <Badge variant="secondary">مقروء</Badge>
+                  )}
                 </div>
               ))}
             </div>
