@@ -11,6 +11,7 @@ const DocumentStudioPage = lazy(
   () => import("./features/document-studio/DocumentStudioPage")
 );
 const Profile = lazy(() => import("./features/users/Profile"));
+const WorkspacePage = lazy(() => import("./features/workspace/WorkspacePage"));
 const PlatformDocumentSettingsPage = lazy(
   () => import("./features/platform-settings/PlatformDocumentSettingsPage")
 );
@@ -34,6 +35,10 @@ function Router() {
       }
     >
       <Switch>
+        <Route path="/contacts"><DashboardPage><WorkspacePage section="contacts" /></DashboardPage></Route>
+        <Route path="/activity"><DashboardPage><WorkspacePage section="activity" /></DashboardPage></Route>
+        <Route path="/users"><DashboardPage><WorkspacePage section="users" /></DashboardPage></Route>
+        <Route path="/organizations"><DashboardPage><WorkspacePage section="organizations" /></DashboardPage></Route>
         <Route path="/settings">
           <DashboardPage>
             <PlatformDocumentSettingsPage />
