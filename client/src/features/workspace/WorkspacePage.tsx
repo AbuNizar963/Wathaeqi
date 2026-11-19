@@ -333,7 +333,12 @@ export default function WorkspacePage({
   const mutationPending =
     createContact.isPending ||
     updateContact.isPending ||
-    deleteContact.isPending;
+    deleteContact.isPending ||
+    createUser.isPending ||
+    setUserActive.isPending ||
+    createOrganization.isPending ||
+    updateOrganization.isPending ||
+    setOrganizationActive.isPending;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5" dir="rtl">
