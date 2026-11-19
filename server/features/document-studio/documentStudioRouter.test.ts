@@ -33,14 +33,6 @@ const documentOrganizationMocks = vi.hoisted(() => ({
 
 vi.mock("./documentOrganizationRepository", () => documentOrganizationMocks);
 
-vi.mock("../../db", async importOriginal => {
-  const actual = await importOriginal<typeof import("../../db")>();
-  return {
-    ...actual,
-    writeAuditLog: dbMocks.writeAuditLog,
-  };
-});
-
 vi.mock("../organizations/appwriteOwnerOrganizationRepository", () => ({
   getOrganizationById: vi.fn(),
   getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
@@ -50,7 +42,7 @@ vi.mock("../audit/appwriteAuditRepository", () => ({
   writeAuditLog: dbMocks.writeAuditLog,
 }));
 
-import { appRouter } from "../../routers";
+import { documentStudioRouter } from "./documentStudioRouter";
 
 const ownerId = "550e8400-e29b-41d4-a716-446655440000";
 const timestamp = "2026-11-18T10:00:00.000Z";
@@ -199,7 +191,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("returns active organization letterhead settings", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     const result = await caller.documentStudio.getLetterheadSettings({
       organizationId: "org-1",
@@ -216,7 +208,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("does not expose another organization's letterhead", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await expect(
       caller.documentStudio.getLetterheadSettings({
@@ -229,7 +221,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("scopes lists to the authenticated owner", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await caller.documentStudio.listTemplates();
     await caller.documentStudio.listDocuments();
@@ -239,7 +231,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("denies non-owners document access", async () => {
-    const caller = appRouter.createCaller(nonOwnerContext());
+    const caller = documentStudioRouter.createCaller(nonOwnerContext());
 
     await expect(caller.documentStudio.listDocuments()).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -248,7 +240,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("uses session owner for template writes", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await caller.documentStudio.createTemplate(templateInput);
 
@@ -259,7 +251,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("snapshots template revision on document creation", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await caller.documentStudio.createDocument({
       ...documentInput,
@@ -282,7 +274,7 @@ describe("document studio authorization and API", () => {
 
   it("rejects templates owned by another user", async () => {
     mocks.getDocumentTemplate.mockResolvedValueOnce(null);
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await expect(
       caller.documentStudio.createDocument({
@@ -294,7 +286,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("rejects duplicate template field keys before writing", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await expect(
       caller.documentStudio.createTemplate({
@@ -322,7 +314,7 @@ describe("document studio authorization and API", () => {
     mocks.updateOfficialDocument.mockRejectedValueOnce(
       new mocks.DocumentStudioConflictError("stale")
     );
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await expect(
       caller.documentStudio.updateDocument({
@@ -334,7 +326,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("allocates serial for an owned draft", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     const saved = await caller.documentStudio.issueDocument({
       id: document.id,
@@ -370,7 +362,7 @@ describe("document studio authorization and API", () => {
         },
       ],
     });
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await expect(
       caller.documentStudio.createDocument({
@@ -382,7 +374,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("archives without physically deleting the owned document", async () => {
-    const caller = appRouter.createCaller(context());
+    const caller = documentStudioRouter.createCaller(context());
 
     await caller.documentStudio.archiveDocument({
       id: document.id,
@@ -397,7 +389,7 @@ describe("document studio authorization and API", () => {
   });
 
   it("rejects unauthenticated access before calling repositories", async () => {
-    const caller = appRouter.createCaller(context(false));
+    const caller = documentStudioRouter.createCaller(context(false));
 
     await expect(caller.documentStudio.listDocuments()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
