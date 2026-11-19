@@ -184,17 +184,24 @@ export default function WorkspacePage({
   };
 
   const mutationPending =
-    createContact.isPending || updateContact.isPending || deleteContact.isPending;
+    createContact.isPending ||
+    updateContact.isPending ||
+    deleteContact.isPending;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5" dir="rtl">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            {section === "contacts" ? <Contact className="h-6 w-6" /> :
-              section === "activity" ? <FileClock className="h-6 w-6" /> :
-              section === "users" ? <Users className="h-6 w-6" /> :
-              <Building2 className="h-6 w-6" />}
+            {section === "contacts" ? (
+              <Contact className="h-6 w-6" />
+            ) : section === "activity" ? (
+              <FileClock className="h-6 w-6" />
+            ) : section === "users" ? (
+              <Users className="h-6 w-6" />
+            ) : (
+              <Building2 className="h-6 w-6" />
+            )}
           </span>
           <div>
             <h1 className="text-2xl font-bold">{sectionTitles[section]}</h1>
@@ -216,10 +223,26 @@ export default function WorkspacePage({
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard label="المستخدمون" value={administrationQuery.data?.totals.users} icon={<Users className="h-4 w-4" />} />
-        <SummaryCard label="المستخدمون النشطون" value={administrationQuery.data?.totals.activeUsers} icon={<ShieldCheck className="h-4 w-4" />} />
-        <SummaryCard label="الجهات" value={administrationQuery.data?.totals.organizations} icon={<Building2 className="h-4 w-4" />} />
-        <SummaryCard label="الجهات النشطة" value={administrationQuery.data?.totals.activeOrganizations} icon={<Building2 className="h-4 w-4" />} />
+        <SummaryCard
+          label="المستخدمون"
+          value={administrationQuery.data?.totals.users}
+          icon={<Users className="h-4 w-4" />}
+        />
+        <SummaryCard
+          label="المستخدمون النشطون"
+          value={administrationQuery.data?.totals.activeUsers}
+          icon={<ShieldCheck className="h-4 w-4" />}
+        />
+        <SummaryCard
+          label="الجهات"
+          value={administrationQuery.data?.totals.organizations}
+          icon={<Building2 className="h-4 w-4" />}
+        />
+        <SummaryCard
+          label="الجهات النشطة"
+          value={administrationQuery.data?.totals.activeOrganizations}
+          icon={<Building2 className="h-4 w-4" />}
+        />
       </div>
 
       {section === "contacts" ? (
@@ -238,97 +261,388 @@ export default function WorkspacePage({
             </Button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="الاسم" value={form.name} onChange={value => setForm(current => ({ ...current, name: value }))} />
-            <Field label="البريد الإلكتروني" value={form.email} onChange={value => setForm(current => ({ ...current, email: value }))} />
-            <Field label="الهاتف" value={form.phone} onChange={value => setForm(current => ({ ...current, phone: value }))} />
-            <Field label="الجهة" value={form.organization} onChange={value => setForm(current => ({ ...current, organization: value }))} />
+            <Field
+              label="الاسم"
+              value={form.name}
+              onChange={value =>
+                setForm(current => ({ ...current, name: value }))
+              }
+            />
+            <Field
+              label="البريد الإلكتروني"
+              value={form.email}
+              onChange={value =>
+                setForm(current => ({ ...current, email: value }))
+              }
+            />
+            <Field
+              label="الهاتف"
+              value={form.phone}
+              onChange={value =>
+                setForm(current => ({ ...current, phone: value }))
+              }
+            />
+            <Field
+              label="الجهة"
+              value={form.organization}
+              onChange={value =>
+                setForm(current => ({ ...current, organization: value }))
+              }
+            />
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={saveContact} disabled={mutationPending || !form.name.trim()}>
+            <Button
+              onClick={saveContact}
+              disabled={mutationPending || !form.name.trim()}
+            >
               <Save className="ml-2 h-4 w-4" />
               {editingId ? "حفظ التعديلات" : "إضافة جهة الاتصال"}
             </Button>
-            {(editingId || Object.values(form).some(Boolean)) ? (
-              <Button variant="ghost" onClick={() => { setEditingId(null); setForm(emptyContact); }}>
+            {editingId || Object.values(form).some(Boolean) ? (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm(emptyContact);
+                }}
+              >
                 <X className="ml-2 h-4 w-4" />
                 إلغاء
               </Button>
             ) : null}
           </div>
-          <SearchField value={search} onChange={setSearch} placeholder="ابحث بالاسم أو الجهة أو الهاتف..." />
-          {isLoading ? <Loading /> : isError ? <ErrorMessage message={errorMessage} onRetry={refresh} /> :
-            contacts.length === 0 ? <EmptyState text="لا توجد جهات اتصال مطابقة." /> :
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث بالاسم أو الجهة أو الهاتف..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
+            <ErrorMessage message={errorMessage} onRetry={refresh} />
+          ) : contacts.length === 0 ? (
+            <EmptyState text="لا توجد جهات اتصال مطابقة." />
+          ) : (
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full min-w-[620px] text-sm">
-                <thead className="bg-muted/60 text-right"><tr><th className="p-3">الاسم</th><th className="p-3">الجهة</th><th className="p-3">الهاتف</th><th className="p-3">البريد</th><th className="p-3">الإجراءات</th></tr></thead>
-                <tbody>{contacts.map(item => <tr key={item.id} className="border-t">
-                  <td className="p-3 font-medium">{item.name}</td><td className="p-3">{item.organization || "—"}</td><td className="p-3" dir="ltr">{item.phone || "—"}</td><td className="p-3" dir="ltr">{item.email || "—"}</td>
-                  <td className="p-3"><div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => startEdit(item)} aria-label="تعديل"><Pencil className="h-4 w-4" /></Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" disabled={mutationPending} onClick={() => { if (window.confirm("هل تريد حذف جهة الاتصال؟")) deleteContact.mutate({ id: item.id }); }} aria-label="حذف"><Trash2 className="h-4 w-4" /></Button>
-                  </div></td>
-                </tr>)}</tbody>
+                <thead className="bg-muted/60 text-right">
+                  <tr>
+                    <th className="p-3">الاسم</th>
+                    <th className="p-3">الجهة</th>
+                    <th className="p-3">الهاتف</th>
+                    <th className="p-3">البريد</th>
+                    <th className="p-3">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contacts.map(item => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-3 font-medium">{item.name}</td>
+                      <td className="p-3">{item.organization || "—"}</td>
+                      <td className="p-3" dir="ltr">
+                        {item.phone || "—"}
+                      </td>
+                      <td className="p-3" dir="ltr">
+                        {item.email || "—"}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEdit(item)}
+                            aria-label="تعديل"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive"
+                            disabled={mutationPending}
+                            onClick={() => {
+                              if (window.confirm("هل تريد حذف جهة الاتصال؟"))
+                                deleteContact.mutate({ id: item.id });
+                            }}
+                            aria-label="حذف"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
-            </div>}
+            </div>
+          )}
         </Card>
       ) : section === "activity" ? (
         <Card className="space-y-4 p-4 sm:p-5">
-          <SearchField value={search} onChange={setSearch} placeholder="ابحث في سجل النشاط..." />
-          {isLoading ? <Loading /> : isError ? <ErrorMessage message={errorMessage} onRetry={refresh} /> :
-            activities.length === 0 ? <EmptyState text="لا توجد عمليات مسجلة بعد." /> :
-            <div className="space-y-2">{activities.map(item => <div key={item.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3">
-              <div className="min-w-0"><p className="font-semibold">{item.actorName}</p><p className="mt-1 text-sm">{item.action} · {item.entityType}{item.entityId ? ` · ${item.entityId}` : ""}</p>
-                {item.metadata ? <pre className="mt-2 max-w-full overflow-auto rounded-lg bg-muted p-2 text-xs">{JSON.stringify(item.metadata, null, 2)}</pre> : null}
-              </div><time className="shrink-0 text-xs text-muted-foreground" dir="ltr">{item.createdAt ? new Date(item.createdAt).toLocaleString("ar") : "—"}</time>
-            </div>)}</div>}
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث في سجل النشاط..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
+            <ErrorMessage message={errorMessage} onRetry={refresh} />
+          ) : activities.length === 0 ? (
+            <EmptyState text="لا توجد عمليات مسجلة بعد." />
+          ) : (
+            <div className="space-y-2">
+              {activities.map(item => (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold">{item.actorName}</p>
+                    <p className="mt-1 text-sm">
+                      {item.action} · {item.entityType}
+                      {item.entityId ? ` · ${item.entityId}` : ""}
+                    </p>
+                    {item.metadata ? (
+                      <pre className="mt-2 max-w-full overflow-auto rounded-lg bg-muted p-2 text-xs">
+                        {JSON.stringify(item.metadata, null, 2)}
+                      </pre>
+                    ) : null}
+                  </div>
+                  <time
+                    className="shrink-0 text-xs text-muted-foreground"
+                    dir="ltr"
+                  >
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleString("ar")
+                      : "—"}
+                  </time>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       ) : section === "users" ? (
         <Card className="space-y-4 p-4 sm:p-5">
-          <SearchField value={search} onChange={setSearch} placeholder="ابحث باسم المستخدم أو البريد..." />
-          {isLoading ? <Loading /> : isError ? <ErrorMessage message={errorMessage} onRetry={refresh} /> :
-            users.length === 0 ? <EmptyState text="لا توجد حسابات مستخدمين." /> :
-            <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[680px] text-sm">
-              <thead className="bg-muted/60 text-right"><tr><th className="p-3">المستخدم</th><th className="p-3">اسم الدخول</th><th className="p-3">البريد</th><th className="p-3">الدور</th><th className="p-3">الحالة</th><th className="p-3">آخر دخول</th></tr></thead>
-              <tbody>{users.map(item => <tr key={item.id} className="border-t"><td className="p-3 font-medium">{item.name}{item.isPlatformOwner ? <Badge className="mr-2">مالك المنصة</Badge> : null}</td><td className="p-3">{item.username || "—"}</td><td className="p-3" dir="ltr">{item.email || "—"}</td><td className="p-3">{item.role}</td><td className="p-3"><Badge variant={item.isActive ? "default" : "secondary"}>{item.isActive ? "نشط" : "موقوف"}</Badge></td><td className="p-3">{item.lastSignedIn ? new Date(item.lastSignedIn).toLocaleString("ar") : "—"}</td></tr>)}</tbody>
-            </table></div>}
-          <p className="text-xs text-muted-foreground">يعرض هذا القسم بيانات الحسابات من Appwrite دون إظهار كلمات المرور أو مفاتيح الجلسات.</p>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث باسم المستخدم أو البريد..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
+            <ErrorMessage message={errorMessage} onRetry={refresh} />
+          ) : users.length === 0 ? (
+            <EmptyState text="لا توجد حسابات مستخدمين." />
+          ) : (
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full min-w-[680px] text-sm">
+                <thead className="bg-muted/60 text-right">
+                  <tr>
+                    <th className="p-3">المستخدم</th>
+                    <th className="p-3">اسم الدخول</th>
+                    <th className="p-3">البريد</th>
+                    <th className="p-3">الدور</th>
+                    <th className="p-3">الحالة</th>
+                    <th className="p-3">آخر دخول</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(item => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-3 font-medium">
+                        {item.name}
+                        {item.isPlatformOwner ? (
+                          <Badge className="mr-2">مالك المنصة</Badge>
+                        ) : null}
+                      </td>
+                      <td className="p-3">{item.username || "—"}</td>
+                      <td className="p-3" dir="ltr">
+                        {item.email || "—"}
+                      </td>
+                      <td className="p-3">{item.role}</td>
+                      <td className="p-3">
+                        <Badge
+                          variant={item.isActive ? "default" : "secondary"}
+                        >
+                          {item.isActive ? "نشط" : "موقوف"}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        {item.lastSignedIn
+                          ? new Date(item.lastSignedIn).toLocaleString("ar")
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            يعرض هذا القسم بيانات الحسابات من Appwrite دون إظهار كلمات المرور أو
+            مفاتيح الجلسات.
+          </p>
         </Card>
       ) : (
         <Card className="space-y-4 p-4 sm:p-5">
-          <SearchField value={search} onChange={setSearch} placeholder="ابحث باسم الجهة أو رمزها..." />
-          {isLoading ? <Loading /> : isError ? <ErrorMessage message={errorMessage} onRetry={refresh} /> :
-            organizations.length === 0 ? <EmptyState text="لا توجد جهات مسجلة." /> :
-            <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[600px] text-sm">
-              <thead className="bg-muted/60 text-right"><tr><th className="p-3">الجهة</th><th className="p-3">الرمز</th><th className="p-3">النوع</th><th className="p-3">الجهة الأم</th><th className="p-3">الحالة</th></tr></thead>
-              <tbody>{organizations.map(item => <tr key={item.id} className="border-t"><td className="p-3 font-medium">{item.name}</td><td className="p-3" dir="ltr">{item.code}</td><td className="p-3">{item.type}</td><td className="p-3">{organizations.find(parent => parent.id === item.parentOrganizationId)?.name || "—"}</td><td className="p-3"><Badge variant={item.isActive ? "default" : "secondary"}>{item.isActive ? "نشطة" : "موقوفة"}</Badge></td></tr>)}</tbody>
-            </table></div>}
-          <p className="text-xs text-muted-foreground">يعرض هذا القسم شجرة الجهات المحفوظة في Appwrite. لم تُجرَ أي تغييرات على بيانات الجهات.</p>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث باسم الجهة أو رمزها..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
+            <ErrorMessage message={errorMessage} onRetry={refresh} />
+          ) : organizations.length === 0 ? (
+            <EmptyState text="لا توجد جهات مسجلة." />
+          ) : (
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full min-w-[600px] text-sm">
+                <thead className="bg-muted/60 text-right">
+                  <tr>
+                    <th className="p-3">الجهة</th>
+                    <th className="p-3">الرمز</th>
+                    <th className="p-3">النوع</th>
+                    <th className="p-3">الجهة الأم</th>
+                    <th className="p-3">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {organizations.map(item => (
+                    <tr key={item.id} className="border-t">
+                      <td className="p-3 font-medium">{item.name}</td>
+                      <td className="p-3" dir="ltr">
+                        {item.code}
+                      </td>
+                      <td className="p-3">{item.type}</td>
+                      <td className="p-3">
+                        {organizations.find(
+                          parent => parent.id === item.parentOrganizationId
+                        )?.name || "—"}
+                      </td>
+                      <td className="p-3">
+                        <Badge
+                          variant={item.isActive ? "default" : "secondary"}
+                        >
+                          {item.isActive ? "نشطة" : "موقوفة"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            يعرض هذا القسم شجرة الجهات المحفوظة في Appwrite. لم تُجرَ أي تغييرات
+            على بيانات الجهات.
+          </p>
         </Card>
       )}
     </div>
   );
 }
 
-function SummaryCard({ label, value, icon }: { label: string; value?: number; icon: React.ReactNode }) {
-  return <Card className="flex items-center gap-3 p-4"><span className="rounded-xl bg-primary/10 p-2 text-primary">{icon}</span><div><p className="text-xs text-muted-foreground">{label}</p><p className="mt-1 text-xl font-bold tabular-nums">{value ?? "—"}</p></div></Card>;
+function SummaryCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value?: number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Card className="flex items-center gap-3 p-4">
+      <span className="rounded-xl bg-primary/10 p-2 text-primary">{icon}</span>
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-xl font-bold tabular-nums">{value ?? "—"}</p>
+      </div>
+    </Card>
+  );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <label className="grid gap-1.5 text-sm font-medium">{label}<Input value={value} onChange={event => onChange(event.target.value)} /></label>;
+function Field({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-1.5 text-sm font-medium">
+      {label}
+      <Input value={value} onChange={event => onChange(event.target.value)} />
+    </label>
+  );
 }
 
-function SearchField({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
-  return <div className="relative"><Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input className="pr-9" value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} /></div>;
+function SearchField({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="relative">
+      <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        className="pr-9"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
 }
 
 function Loading() {
-  return <div className="rounded-xl border p-8 text-center text-sm text-muted-foreground" role="status">جارٍ تحميل البيانات...</div>;
+  return (
+    <div
+      className="rounded-xl border p-8 text-center text-sm text-muted-foreground"
+      role="status"
+    >
+      جارٍ تحميل البيانات...
+    </div>
+  );
 }
 
-function ErrorMessage({ message, onRetry }: { message?: string; onRetry: () => void }) {
-  return <div className="space-y-3 rounded-xl border border-destructive/30 p-6 text-center" role="alert"><p className="font-semibold">تعذر تحميل البيانات</p><p className="text-sm text-muted-foreground">{message || "حدث خطأ غير متوقع"}</p><Button variant="outline" onClick={onRetry}>إعادة المحاولة</Button></div>;
+function ErrorMessage({
+  message,
+  onRetry,
+}: {
+  message?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div
+      className="space-y-3 rounded-xl border border-destructive/30 p-6 text-center"
+      role="alert"
+    >
+      <p className="font-semibold">تعذر تحميل البيانات</p>
+      <p className="text-sm text-muted-foreground">
+        {message || "حدث خطأ غير متوقع"}
+      </p>
+      <Button variant="outline" onClick={onRetry}>
+        إعادة المحاولة
+      </Button>
+    </div>
+  );
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">{text}</div>;
+  return (
+    <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+      {text}
+    </div>
+  );
 }

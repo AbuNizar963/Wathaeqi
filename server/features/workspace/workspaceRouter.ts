@@ -32,10 +32,7 @@ const contactsRouter = router({
     const result = await getAppwriteTablesDB().listRows({
       databaseId: getAppwriteDatabaseId(),
       tableId: "contacts",
-      queries: [
-        Query.equal("ownerId", ctx.user.authUserId),
-        Query.limit(100),
-      ],
+      queries: [Query.equal("ownerId", ctx.user.authUserId), Query.limit(100)],
       total: true,
     });
     return result.rows.map(row => {
@@ -51,12 +48,14 @@ const contactsRouter = router({
   }),
 
   create: platformOwnerProcedure
-    .input(z.object({
-      name: z.string().trim().min(2).max(256),
-      email: z.string().trim().email().max(254).or(z.literal("")).default(""),
-      phone: z.string().trim().max(32).default(""),
-      organization: z.string().trim().max(256).default(""),
-    }))
+    .input(
+      z.object({
+        name: z.string().trim().min(2).max(256),
+        email: z.string().trim().email().max(254).or(z.literal("")).default(""),
+        phone: z.string().trim().max(32).default(""),
+        organization: z.string().trim().max(256).default(""),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const row = await getAppwriteTablesDB().createRow({
         databaseId: getAppwriteDatabaseId(),
@@ -81,25 +80,30 @@ const contactsRouter = router({
     }),
 
   update: platformOwnerProcedure
-    .input(z.object({
-      id: z.string().min(1).max(36),
-      name: z.string().trim().min(2).max(256),
-      email: z.string().trim().email().max(254).or(z.literal("")).default(""),
-      phone: z.string().trim().max(32).default(""),
-      organization: z.string().trim().max(256).default(""),
-    }))
+    .input(
+      z.object({
+        id: z.string().min(1).max(36),
+        name: z.string().trim().min(2).max(256),
+        email: z.string().trim().email().max(254).or(z.literal("")).default(""),
+        phone: z.string().trim().max(32).default(""),
+        organization: z.string().trim().max(256).default(""),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const tables = getAppwriteTablesDB();
-      const existing = await tables.getRow({
+      const existing = (await tables.getRow({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
         rowId: input.id,
-      }) as unknown as AppwriteRow;
+      })) as unknown as AppwriteRow;
       const data = rowData(existing);
       if (data.ownerId !== ctx.user.authUserId) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "جهة الاتصال غير موجودة" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "جهة الاتصال غير موجودة",
+        });
       }
-      const row = await tables.updateRow({
+      const row = (await tables.updateRow({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
         rowId: input.id,
@@ -109,7 +113,7 @@ const contactsRouter = router({
           phone: input.phone || null,
           organization: input.organization || null,
         },
-      }) as unknown as AppwriteRow;
+      })) as unknown as AppwriteRow;
       const saved = rowData(row);
       return {
         id: row.$id,
@@ -124,13 +128,16 @@ const contactsRouter = router({
     .input(z.object({ id: z.string().min(1).max(36) }))
     .mutation(async ({ ctx, input }) => {
       const tables = getAppwriteTablesDB();
-      const existing = await tables.getRow({
+      const existing = (await tables.getRow({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
         rowId: input.id,
-      }) as unknown as AppwriteRow;
+      })) as unknown as AppwriteRow;
       if (rowData(existing).ownerId !== ctx.user.authUserId) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "جهة الاتصال غير موجودة" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "جهة الاتصال غير موجودة",
+        });
       }
       await tables.deleteRow({
         databaseId: getAppwriteDatabaseId(),
@@ -188,7 +195,10 @@ const administrationRouter = router({
       const data = rowData(row as AppwriteRow);
       return {
         id: String(data.id ?? (row as AppwriteRow).$id),
-        name: parseOptionalText(data.name) ?? parseOptionalText(data.username) ?? "بدون اسم",
+        name:
+          parseOptionalText(data.name) ??
+          parseOptionalText(data.username) ??
+          "بدون اسم",
         username: parseOptionalText(data.username),
         email: parseOptionalText(data.email),
         organizationId: parseOptionalText(data.organizationId),

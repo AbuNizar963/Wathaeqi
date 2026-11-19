@@ -117,9 +117,14 @@ assert(
 );
 
 assert(
-  ["الوثائق", "جهات الاتصال", "سجل النشاط", "إدارة المستخدمين", "إدارة الجهات", "إعدادات الوثائق"].every(label =>
-    dashboardLayout.includes(`label: "${label}"`)
-  ),
+  [
+    "الوثائق",
+    "جهات الاتصال",
+    "سجل النشاط",
+    "إدارة المستخدمين",
+    "إدارة الجهات",
+    "إعدادات الوثائق",
+  ].every(label => dashboardLayout.includes(`label: "${label}"`)),
   "The sidebar must expose the full Wathaeqi workspace navigation."
 );
 
