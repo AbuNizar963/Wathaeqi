@@ -17,6 +17,7 @@ import {
   FileText,
   LockKeyhole,
   PanelLeft,
+  Settings2,
   ShieldCheck,
   WifiOff,
   X,
@@ -37,6 +38,12 @@ const menuItems = [
     label: "الوثائق",
     path: "/",
   },
+  {
+    key: "settings",
+    icon: Settings2,
+    label: "إعدادات الوثائق",
+    path: "/settings",
+  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -49,11 +56,12 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const isMobile = useIsMobile();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => !isMobile);
   const { loading, user } = useAuth();
   const ownerRecoveryRequested =
     new URLSearchParams(window.location.search).get("owner-recovery") === "1";
@@ -75,6 +83,10 @@ export default function DashboardLayout({
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
+
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
 
   // Owner recovery is a public, one-time bootstrap path. Do not make it wait
   // for the ordinary session lookup; the recovery-status query below is the

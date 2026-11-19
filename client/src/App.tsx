@@ -11,6 +11,9 @@ const DocumentStudioPage = lazy(
   () => import("./features/document-studio/DocumentStudioPage")
 );
 const Profile = lazy(() => import("./features/users/Profile"));
+const PlatformDocumentSettingsPage = lazy(
+  () => import("./features/platform-settings/PlatformDocumentSettingsPage")
+);
 const About = lazy(() => import("./pages/About"));
 const Terms = lazy(() => import("./pages/Terms"));
 function DashboardPage({ children }: { children: React.ReactNode }) {
@@ -31,6 +34,11 @@ function Router() {
       }
     >
       <Switch>
+        <Route path="/settings">
+          <DashboardPage>
+            <PlatformDocumentSettingsPage />
+          </DashboardPage>
+        </Route>
         <Route path="/profile">
           <DashboardPage>
             <Profile />
