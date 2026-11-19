@@ -516,7 +516,7 @@ function DashboardLayoutContent({
       >
         تجاوز إلى المحتوى الرئيسي
       </a>
-      {!isMobile && !isCollapsed ? (
+      {isMobile && !isCollapsed ? (
         <button
           type="button"
           aria-label="إغلاق القائمة الجانبية"

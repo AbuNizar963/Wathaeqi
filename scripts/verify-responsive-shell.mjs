@@ -69,6 +69,7 @@ assert(
   dashboardLayout.includes("const isMobile = useIsMobile();") &&
     dashboardLayout.includes("useState(() => !isMobile)") &&
     dashboardLayout.includes('collapsible="offcanvas"') &&
+    dashboardLayout.includes("isMobile && !isCollapsed") &&
     dashboardLayout.includes("fixed inset-0 z-20") &&
     dashboardLayout.includes("setOpen(false)"),
   "The desktop sidebar must overlay the page and close through its backdrop."
