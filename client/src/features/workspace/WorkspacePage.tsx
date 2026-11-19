@@ -86,7 +86,9 @@ export default function WorkspacePage({
   const [userForm, setUserForm] = useState<UserForm>(emptyUser);
   const [organizationForm, setOrganizationForm] =
     useState<OrganizationForm>(emptyOrganization);
-  const [editingOrganizationId, setEditingOrganizationId] = useState<string | null>(null);
+  const [editingOrganizationId, setEditingOrganizationId] = useState<
+    string | null
+  >(null);
   const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
     enabled: section === "contacts",
   });
@@ -132,37 +134,42 @@ export default function WorkspacePage({
     },
     onError: error => toast.error(error.message),
   });
-  const setUserActive = trpc.workspace.administration.setUserActive.useMutation({
-    onSuccess: async () => {
-      await utils.workspace.administration.overview.invalidate();
-      toast.success("تم تحديث حالة المستخدم");
-    },
-    onError: error => toast.error(error.message),
-  });
-  const createOrganization = trpc.workspace.administration.createOrganization.useMutation({
-    onSuccess: async () => {
-      await utils.workspace.administration.overview.invalidate();
-      setOrganizationForm(emptyOrganization);
-      toast.success("تم إنشاء الجهة");
-    },
-    onError: error => toast.error(error.message),
-  });
-  const updateOrganization = trpc.workspace.administration.updateOrganization.useMutation({
-    onSuccess: async () => {
-      await utils.workspace.administration.overview.invalidate();
-      setEditingOrganizationId(null);
-      setOrganizationForm(emptyOrganization);
-      toast.success("تم تحديث الجهة");
-    },
-    onError: error => toast.error(error.message),
-  });
-  const setOrganizationActive = trpc.workspace.administration.setOrganizationActive.useMutation({
-    onSuccess: async () => {
-      await utils.workspace.administration.overview.invalidate();
-      toast.success("تم تحديث حالة الجهة");
-    },
-    onError: error => toast.error(error.message),
-  });
+  const setUserActive = trpc.workspace.administration.setUserActive.useMutation(
+    {
+      onSuccess: async () => {
+        await utils.workspace.administration.overview.invalidate();
+        toast.success("تم تحديث حالة المستخدم");
+      },
+      onError: error => toast.error(error.message),
+    }
+  );
+  const createOrganization =
+    trpc.workspace.administration.createOrganization.useMutation({
+      onSuccess: async () => {
+        await utils.workspace.administration.overview.invalidate();
+        setOrganizationForm(emptyOrganization);
+        toast.success("تم إنشاء الجهة");
+      },
+      onError: error => toast.error(error.message),
+    });
+  const updateOrganization =
+    trpc.workspace.administration.updateOrganization.useMutation({
+      onSuccess: async () => {
+        await utils.workspace.administration.overview.invalidate();
+        setEditingOrganizationId(null);
+        setOrganizationForm(emptyOrganization);
+        toast.success("تم تحديث الجهة");
+      },
+      onError: error => toast.error(error.message),
+    });
+  const setOrganizationActive =
+    trpc.workspace.administration.setOrganizationActive.useMutation({
+      onSuccess: async () => {
+        await utils.workspace.administration.overview.invalidate();
+        toast.success("تم تحديث حالة الجهة");
+      },
+      onError: error => toast.error(error.message),
+    });
 
   const contacts = useMemo(() => {
     const rows = contactsQuery.data ?? [];
@@ -298,28 +305,28 @@ export default function WorkspacePage({
       </header>
 
       {section === "users" || section === "organizations" ? (
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard
-          label="المستخدمون"
-          value={administrationQuery.data?.totals.users}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <SummaryCard
-          label="المستخدمون النشطون"
-          value={administrationQuery.data?.totals.activeUsers}
-          icon={<ShieldCheck className="h-4 w-4" />}
-        />
-        <SummaryCard
-          label="الجهات"
-          value={administrationQuery.data?.totals.organizations}
-          icon={<Building2 className="h-4 w-4" />}
-        />
-        <SummaryCard
-          label="الجهات النشطة"
-          value={administrationQuery.data?.totals.activeOrganizations}
-          icon={<Building2 className="h-4 w-4" />}
-        />
-      </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryCard
+            label="المستخدمون"
+            value={administrationQuery.data?.totals.users}
+            icon={<Users className="h-4 w-4" />}
+          />
+          <SummaryCard
+            label="المستخدمون النشطون"
+            value={administrationQuery.data?.totals.activeUsers}
+            icon={<ShieldCheck className="h-4 w-4" />}
+          />
+          <SummaryCard
+            label="الجهات"
+            value={administrationQuery.data?.totals.organizations}
+            icon={<Building2 className="h-4 w-4" />}
+          />
+          <SummaryCard
+            label="الجهات النشطة"
+            value={administrationQuery.data?.totals.activeOrganizations}
+            icon={<Building2 className="h-4 w-4" />}
+          />
+        </div>
       ) : null}
 
       {section === "contacts" ? (
@@ -504,27 +511,90 @@ export default function WorkspacePage({
           <div className="space-y-3 rounded-xl border p-4">
             <h2 className="font-semibold">إضافة مستخدم جديد</h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label="الاسم الكامل" value={userForm.name} onChange={value => setUserForm(current => ({ ...current, name: value }))} />
-              <Field label="اسم المستخدم" value={userForm.username} onChange={value => setUserForm(current => ({ ...current, username: value }))} />
-              <Field label="البريد الإلكتروني" value={userForm.email} onChange={value => setUserForm(current => ({ ...current, email: value }))} />
-              <Field label="كلمة مرور مؤقتة (12 محرفاً على الأقل)" value={userForm.password} onChange={value => setUserForm(current => ({ ...current, password: value }))} />
-              <label className="grid gap-1.5 text-sm font-medium">الجهة
-                <select className="h-10 rounded-md border bg-background px-3" value={userForm.organizationId} onChange={event => setUserForm(current => ({ ...current, organizationId: event.target.value }))}>
+              <Field
+                label="الاسم الكامل"
+                value={userForm.name}
+                onChange={value =>
+                  setUserForm(current => ({ ...current, name: value }))
+                }
+              />
+              <Field
+                label="اسم المستخدم"
+                value={userForm.username}
+                onChange={value =>
+                  setUserForm(current => ({ ...current, username: value }))
+                }
+              />
+              <Field
+                label="البريد الإلكتروني"
+                value={userForm.email}
+                onChange={value =>
+                  setUserForm(current => ({ ...current, email: value }))
+                }
+              />
+              <Field
+                label="كلمة مرور مؤقتة (12 محرفاً على الأقل)"
+                value={userForm.password}
+                onChange={value =>
+                  setUserForm(current => ({ ...current, password: value }))
+                }
+              />
+              <label className="grid gap-1.5 text-sm font-medium">
+                الجهة
+                <select
+                  className="h-10 rounded-md border bg-background px-3"
+                  value={userForm.organizationId}
+                  onChange={event =>
+                    setUserForm(current => ({
+                      ...current,
+                      organizationId: event.target.value,
+                    }))
+                  }
+                >
                   <option value="">اختر الجهة</option>
-                  {(administrationQuery.data?.organizations ?? []).filter(item => item.isActive).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  {(administrationQuery.data?.organizations ?? [])
+                    .filter(item => item.isActive)
+                    .map(item => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                 </select>
               </label>
-              <label className="grid gap-1.5 text-sm font-medium">الصلاحية
-                <select className="h-10 rounded-md border bg-background px-3" value={userForm.role} onChange={event => setUserForm(current => ({ ...current, role: event.target.value as UserForm["role"] }))}>
+              <label className="grid gap-1.5 text-sm font-medium">
+                الصلاحية
+                <select
+                  className="h-10 rounded-md border bg-background px-3"
+                  value={userForm.role}
+                  onChange={event =>
+                    setUserForm(current => ({
+                      ...current,
+                      role: event.target.value as UserForm["role"],
+                    }))
+                  }
+                >
                   <option value="user">مستخدم</option>
                   <option value="admin">مدير جهة</option>
                 </select>
               </label>
             </div>
-            <Button onClick={() => createUser.mutate(userForm)} disabled={mutationPending || !userForm.name.trim() || !userForm.username.trim() || !userForm.email.trim() || userForm.password.length < 12 || !userForm.organizationId}>
+            <Button
+              onClick={() => createUser.mutate(userForm)}
+              disabled={
+                mutationPending ||
+                !userForm.name.trim() ||
+                !userForm.username.trim() ||
+                !userForm.email.trim() ||
+                userForm.password.length < 12 ||
+                !userForm.organizationId
+              }
+            >
               <Plus className="ml-2 h-4 w-4" /> إنشاء الحساب
             </Button>
-            <p className="text-xs text-muted-foreground">سيُنشأ الحساب في Appwrite Auth ويرتبط بملف المستخدم وعضوية الجهة. لن يتم إنشاء مالك منصة جديد.</p>
+            <p className="text-xs text-muted-foreground">
+              سيُنشأ الحساب في Appwrite Auth ويرتبط بملف المستخدم وعضوية الجهة.
+              لن يتم إنشاء مالك منصة جديد.
+            </p>
           </div>
           <SearchField
             value={search}
@@ -579,12 +649,32 @@ export default function WorkspacePage({
                       </td>
                       <td className="p-3">
                         {!item.isPlatformOwner ? (
-                          <Button size="sm" variant="outline" disabled={mutationPending} onClick={() => {
-                            if (window.confirm(item.isActive ? "إيقاف حساب هذا المستخدم؟" : "إعادة تفعيل حساب هذا المستخدم؟")) {
-                              setUserActive.mutate({ id: Number(item.id), isActive: !item.isActive });
-                            }
-                          }}>{item.isActive ? "إيقاف" : "تفعيل"}</Button>
-                        ) : <span className="text-xs text-muted-foreground">محمي</span>}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={mutationPending}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  item.isActive
+                                    ? "إيقاف حساب هذا المستخدم؟"
+                                    : "إعادة تفعيل حساب هذا المستخدم؟"
+                                )
+                              ) {
+                                setUserActive.mutate({
+                                  id: Number(item.id),
+                                  isActive: !item.isActive,
+                                });
+                              }
+                            }}
+                          >
+                            {item.isActive ? "إيقاف" : "تفعيل"}
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            محمي
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -600,29 +690,99 @@ export default function WorkspacePage({
       ) : (
         <Card className="space-y-4 p-4 sm:p-5">
           <div className="space-y-3 rounded-xl border p-4">
-            <h2 className="font-semibold">{editingOrganizationId ? "تعديل بيانات الجهة" : "إضافة جهة جديدة"}</h2>
+            <h2 className="font-semibold">
+              {editingOrganizationId ? "تعديل بيانات الجهة" : "إضافة جهة جديدة"}
+            </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="اسم الجهة" value={organizationForm.name} onChange={value => setOrganizationForm(current => ({ ...current, name: value }))} />
-              <Field label="رمز الجهة" value={organizationForm.code} onChange={value => setOrganizationForm(current => ({ ...current, code: value.toUpperCase() }))} />
-              <label className="grid gap-1.5 text-sm font-medium">نوع الجهة
-                <select className="h-10 rounded-md border bg-background px-3" value={organizationForm.type} onChange={event => setOrganizationForm(current => ({ ...current, type: event.target.value }))}>
+              <Field
+                label="اسم الجهة"
+                value={organizationForm.name}
+                onChange={value =>
+                  setOrganizationForm(current => ({ ...current, name: value }))
+                }
+              />
+              <Field
+                label="رمز الجهة"
+                value={organizationForm.code}
+                onChange={value =>
+                  setOrganizationForm(current => ({
+                    ...current,
+                    code: value.toUpperCase(),
+                  }))
+                }
+              />
+              <label className="grid gap-1.5 text-sm font-medium">
+                نوع الجهة
+                <select
+                  className="h-10 rounded-md border bg-background px-3"
+                  value={organizationForm.type}
+                  onChange={event =>
+                    setOrganizationForm(current => ({
+                      ...current,
+                      type: event.target.value,
+                    }))
+                  }
+                >
                   <option value="department">إدارة / قسم</option>
                   <option value="organization">مؤسسة</option>
                   <option value="unit">وحدة</option>
                 </select>
               </label>
-              <label className="grid gap-1.5 text-sm font-medium">الجهة الأم
-                <select className="h-10 rounded-md border bg-background px-3" value={organizationForm.parentOrganizationId} onChange={event => setOrganizationForm(current => ({ ...current, parentOrganizationId: event.target.value }))}>
+              <label className="grid gap-1.5 text-sm font-medium">
+                الجهة الأم
+                <select
+                  className="h-10 rounded-md border bg-background px-3"
+                  value={organizationForm.parentOrganizationId}
+                  onChange={event =>
+                    setOrganizationForm(current => ({
+                      ...current,
+                      parentOrganizationId: event.target.value,
+                    }))
+                  }
+                >
                   <option value="">بدون جهة أم</option>
-                  {(administrationQuery.data?.organizations ?? []).filter(item => item.isActive && item.id !== editingOrganizationId).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  {(administrationQuery.data?.organizations ?? [])
+                    .filter(
+                      item => item.isActive && item.id !== editingOrganizationId
+                    )
+                    .map(item => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
                 </select>
               </label>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => editingOrganizationId ? updateOrganization.mutate({ id: editingOrganizationId, ...organizationForm }) : createOrganization.mutate(organizationForm)} disabled={mutationPending || !organizationForm.name.trim() || !organizationForm.code.trim()}>
-                <Save className="ml-2 h-4 w-4" /> {editingOrganizationId ? "حفظ التعديلات" : "إنشاء الجهة"}
+              <Button
+                onClick={() =>
+                  editingOrganizationId
+                    ? updateOrganization.mutate({
+                        id: editingOrganizationId,
+                        ...organizationForm,
+                      })
+                    : createOrganization.mutate(organizationForm)
+                }
+                disabled={
+                  mutationPending ||
+                  !organizationForm.name.trim() ||
+                  !organizationForm.code.trim()
+                }
+              >
+                <Save className="ml-2 h-4 w-4" />{" "}
+                {editingOrganizationId ? "حفظ التعديلات" : "إنشاء الجهة"}
               </Button>
-              {editingOrganizationId ? <Button variant="ghost" onClick={() => { setEditingOrganizationId(null); setOrganizationForm(emptyOrganization); }}><X className="ml-2 h-4 w-4" /> إلغاء</Button> : null}
+              {editingOrganizationId ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setEditingOrganizationId(null);
+                    setOrganizationForm(emptyOrganization);
+                  }}
+                >
+                  <X className="ml-2 h-4 w-4" /> إلغاء
+                </Button>
+              ) : null}
             </div>
           </div>
           <SearchField
@@ -670,15 +830,44 @@ export default function WorkspacePage({
                       </td>
                       <td className="p-3">
                         <div className="flex gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => {
-                            setEditingOrganizationId(item.id);
-                            setOrganizationForm({ name: item.name, code: item.code, type: item.type, parentOrganizationId: item.parentOrganizationId ?? "" });
-                          }} aria-label="تعديل الجهة"><Pencil className="h-4 w-4" /></Button>
-                          <Button size="sm" variant="outline" disabled={mutationPending} onClick={() => {
-                            if (window.confirm(item.isActive ? "إيقاف الجهة؟" : "إعادة تفعيل الجهة؟")) {
-                              setOrganizationActive.mutate({ id: item.id, isActive: !item.isActive });
-                            }
-                          }}>{item.isActive ? "إيقاف" : "تفعيل"}</Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingOrganizationId(item.id);
+                              setOrganizationForm({
+                                name: item.name,
+                                code: item.code,
+                                type: item.type,
+                                parentOrganizationId:
+                                  item.parentOrganizationId ?? "",
+                              });
+                            }}
+                            aria-label="تعديل الجهة"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={mutationPending}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  item.isActive
+                                    ? "إيقاف الجهة؟"
+                                    : "إعادة تفعيل الجهة؟"
+                                )
+                              ) {
+                                setOrganizationActive.mutate({
+                                  id: item.id,
+                                  isActive: !item.isActive,
+                                });
+                              }
+                            }}
+                          >
+                            {item.isActive ? "إيقاف" : "تفعيل"}
+                          </Button>
                         </div>
                       </td>
                     </tr>

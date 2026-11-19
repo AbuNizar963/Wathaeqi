@@ -240,7 +240,12 @@ const administrationRouter = router({
     .input(
       z.object({
         name: z.string().trim().min(2).max(256),
-        code: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9_-]+$/),
+        code: z
+          .string()
+          .trim()
+          .min(2)
+          .max(32)
+          .regex(/^[A-Za-z0-9_-]+$/),
         type: z.string().trim().min(2).max(64).default("department"),
         parentOrganizationId: z.string().trim().max(64).default(""),
       })
@@ -256,18 +261,28 @@ const administrationRouter = router({
         total: false,
       });
       if (duplicate.rows.length) {
-        throw new TRPCError({ code: "CONFLICT", message: "رمز الجهة مستخدم مسبقاً" });
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "رمز الجهة مستخدم مسبقاً",
+        });
       }
       const parentId = input.parentOrganizationId || null;
       if (parentId) {
         const parent = await tables.listRows({
           databaseId,
           tableId: "organizations",
-          queries: [Query.equal("id", parentId), Query.equal("isActive", true), Query.limit(1)],
+          queries: [
+            Query.equal("id", parentId),
+            Query.equal("isActive", true),
+            Query.limit(1),
+          ],
           total: false,
         });
         if (!parent.rows.length) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "الجهة الأم غير موجودة أو غير نشطة" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "الجهة الأم غير موجودة أو غير نشطة",
+          });
         }
       }
       const now = new Date().toISOString();
@@ -296,7 +311,14 @@ const administrationRouter = router({
         entityId: id,
         metadata: { code, name: input.name },
       });
-      return { id, name: input.name, code, type: input.type, isActive: true, parentOrganizationId: parentId };
+      return {
+        id,
+        name: input.name,
+        code,
+        type: input.type,
+        isActive: true,
+        parentOrganizationId: parentId,
+      };
     }),
 
   updateOrganization: platformOwnerProcedure
@@ -304,7 +326,12 @@ const administrationRouter = router({
       z.object({
         id: z.string().min(1).max(64),
         name: z.string().trim().min(2).max(256),
-        code: z.string().trim().min(2).max(32).regex(/^[A-Za-z0-9_-]+$/),
+        code: z
+          .string()
+          .trim()
+          .min(2)
+          .max(32)
+          .regex(/^[A-Za-z0-9_-]+$/),
         type: z.string().trim().min(2).max(64),
         parentOrganizationId: z.string().trim().max(64).default(""),
       })
@@ -325,25 +352,45 @@ const administrationRouter = router({
       const duplicate = await tables.listRows({
         databaseId,
         tableId: "organizations",
-        queries: [Query.equal("code", input.code.toUpperCase()), Query.limit(2)],
+        queries: [
+          Query.equal("code", input.code.toUpperCase()),
+          Query.limit(2),
+        ],
         total: false,
       });
-      if (duplicate.rows.some(item => (item as unknown as AppwriteRow).$id !== row.$id)) {
-        throw new TRPCError({ code: "CONFLICT", message: "رمز الجهة مستخدم مسبقاً" });
+      if (
+        duplicate.rows.some(
+          item => (item as unknown as AppwriteRow).$id !== row.$id
+        )
+      ) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "رمز الجهة مستخدم مسبقاً",
+        });
       }
       const parentId = input.parentOrganizationId || null;
       if (parentId === input.id) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن جعل الجهة تابعة لنفسها" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكن جعل الجهة تابعة لنفسها",
+        });
       }
       if (parentId) {
         const parent = await tables.listRows({
           databaseId,
           tableId: "organizations",
-          queries: [Query.equal("id", parentId), Query.equal("isActive", true), Query.limit(1)],
+          queries: [
+            Query.equal("id", parentId),
+            Query.equal("isActive", true),
+            Query.limit(1),
+          ],
           total: false,
         });
         if (!parent.rows.length) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "الجهة الأم غير موجودة أو غير نشطة" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "الجهة الأم غير موجودة أو غير نشطة",
+          });
         }
       }
       await tables.updateRow({
@@ -387,13 +434,18 @@ const administrationRouter = router({
         const members = await tables.listRows({
           databaseId,
           tableId: "organization_memberships",
-          queries: [Query.equal("organizationId", input.id), Query.equal("isActive", true), Query.limit(1)],
+          queries: [
+            Query.equal("organizationId", input.id),
+            Query.equal("isActive", true),
+            Query.limit(1),
+          ],
           total: false,
         });
         if (members.rows.length) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: "لا يمكن إيقاف جهة لديها أعضاء نشطون؛ انقل الأعضاء أو عطّل عضوياتهم أولاً",
+            message:
+              "لا يمكن إيقاف جهة لديها أعضاء نشطون؛ انقل الأعضاء أو عطّل عضوياتهم أولاً",
           });
         }
       }
@@ -402,12 +454,18 @@ const administrationRouter = router({
         databaseId,
         tableId: "organizations",
         rowId: row.$id,
-        data: { isActive: input.isActive, deletedAt: input.isActive ? null : now, updatedAt: now },
+        data: {
+          isActive: input.isActive,
+          deletedAt: input.isActive ? null : now,
+          updatedAt: now,
+        },
       });
       await writeAuditLog({
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
-        action: input.isActive ? "organization.activated" : "organization.deactivated",
+        action: input.isActive
+          ? "organization.activated"
+          : "organization.deactivated",
         entityType: "organization",
         entityId: input.id,
       });
@@ -418,7 +476,12 @@ const administrationRouter = router({
     .input(
       z.object({
         name: z.string().trim().min(2).max(256),
-        username: z.string().trim().min(3).max(64).regex(/^[A-Za-z0-9_.-]+$/),
+        username: z
+          .string()
+          .trim()
+          .min(3)
+          .max(64)
+          .regex(/^[A-Za-z0-9_.-]+$/),
         email: z.string().trim().email().max(254),
         password: z.string().min(12).max(128),
         organizationId: z.string().min(1).max(64),
@@ -431,11 +494,18 @@ const administrationRouter = router({
       const organization = await tables.listRows({
         databaseId,
         tableId: "organizations",
-        queries: [Query.equal("id", input.organizationId), Query.equal("isActive", true), Query.limit(1)],
+        queries: [
+          Query.equal("id", input.organizationId),
+          Query.equal("isActive", true),
+          Query.limit(1),
+        ],
         total: false,
       });
       if (!organization.rows.length) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "اختر جهة نشطة وصالحة" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "اختر جهة نشطة وصالحة",
+        });
       }
       const duplicate = await tables.listRows({
         databaseId,
@@ -444,7 +514,10 @@ const administrationRouter = router({
         total: false,
       });
       if (duplicate.rows.length) {
-        throw new TRPCError({ code: "CONFLICT", message: "اسم المستخدم مستخدم مسبقاً" });
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "اسم المستخدم مستخدم مسبقاً",
+        });
       }
 
       const authUserId = randomUUID();
@@ -460,7 +533,7 @@ const administrationRouter = router({
 
       let profileRowId: string | null = null;
       try {
-        const profile = await tables.createRow({
+        const profile = (await tables.createRow({
           databaseId,
           tableId: "users",
           rowId: randomUUID(),
@@ -488,7 +561,7 @@ const administrationRouter = router({
             lastSignedIn: now,
             passwordHashCiphertext: null,
           },
-        }) as unknown as AppwriteRow;
+        })) as unknown as AppwriteRow;
         profileRowId = profile.$id;
         await tables.createRow({
           databaseId,
@@ -507,7 +580,11 @@ const administrationRouter = router({
       } catch (error) {
         if (profileRowId) {
           try {
-            await tables.deleteRow({ databaseId, tableId: "users", rowId: profileRowId });
+            await tables.deleteRow({
+              databaseId,
+              tableId: "users",
+              rowId: profileRowId,
+            });
           } catch {
             // Preserve the original creation failure.
           }
@@ -526,13 +603,28 @@ const administrationRouter = router({
         action: "user.created",
         entityType: "user",
         entityId: String(profileId),
-        metadata: { username: input.username, organizationId: input.organizationId, role: input.role },
+        metadata: {
+          username: input.username,
+          organizationId: input.organizationId,
+          role: input.role,
+        },
       });
-      return { id: String(profileId), name: input.name, username: input.username, email: input.email, isActive: true };
+      return {
+        id: String(profileId),
+        name: input.name,
+        username: input.username,
+        email: input.email,
+        isActive: true,
+      };
     }),
 
   setUserActive: platformOwnerProcedure
-    .input(z.object({ id: z.coerce.number().int().positive(), isActive: z.boolean() }))
+    .input(
+      z.object({
+        id: z.coerce.number().int().positive(),
+        isActive: z.boolean(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const tables = getAppwriteTablesDB();
       const databaseId = getAppwriteDatabaseId();
@@ -544,17 +636,32 @@ const administrationRouter = router({
       });
       const row = found.rows[0] as unknown as AppwriteRow | undefined;
       if (!row || found.rows.length !== 1) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "حساب المستخدم غير موجود" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "حساب المستخدم غير موجود",
+        });
       }
       const data = rowData(row);
-      if (data.isPlatformOwner === true || data.authUserId === ctx.user.authUserId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "لا يمكن إيقاف حساب مالك المنصة" });
+      if (
+        data.isPlatformOwner === true ||
+        data.authUserId === ctx.user.authUserId
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا يمكن إيقاف حساب مالك المنصة",
+        });
       }
       const authUserId = String(data.authUserId ?? "");
       if (!authUserId) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "حساب Appwrite المرتبط غير موجود" });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "حساب Appwrite المرتبط غير موجود",
+        });
       }
-      await getAppwriteUsers().updateStatus({ userId: authUserId, status: input.isActive });
+      await getAppwriteUsers().updateStatus({
+        userId: authUserId,
+        status: input.isActive,
+      });
       const now = new Date().toISOString();
       await tables.updateRow({
         databaseId,
@@ -568,12 +675,16 @@ const administrationRouter = router({
         queries: [Query.equal("userId", input.id), Query.limit(100)],
         total: false,
       });
-      await Promise.all(memberships.rows.map(item => tables.updateRow({
-        databaseId,
-        tableId: "organization_memberships",
-        rowId: (item as unknown as AppwriteRow).$id,
-        data: { isActive: input.isActive, updatedAt: now },
-      })));
+      await Promise.all(
+        memberships.rows.map(item =>
+          tables.updateRow({
+            databaseId,
+            tableId: "organization_memberships",
+            rowId: (item as unknown as AppwriteRow).$id,
+            data: { isActive: input.isActive, updatedAt: now },
+          })
+        )
+      );
       await writeAuditLog({
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
@@ -583,7 +694,7 @@ const administrationRouter = router({
       });
       return { success: true as const };
     }),
-}); 
+});
 
 export const workspaceRouter = router({
   contacts: contactsRouter,
