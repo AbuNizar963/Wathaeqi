@@ -857,7 +857,7 @@ export default function DocumentStudioPage() {
                 )}
               </section>
 
-              <div className="document-a4-page relative isolate mx-auto w-full max-w-[210mm] bg-white text-slate-900">
+              <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
                 <DocumentWatermark
                   logoUrl={logoUrl}
                   opacityPercent={
@@ -1111,7 +1111,7 @@ export default function DocumentStudioPage() {
                 </section>
               ) : null}
 
-              <div className="document-a4-page relative isolate mx-auto w-full max-w-[210mm] bg-white text-slate-900">
+              <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
                 <DocumentWatermark
                   logoUrl={logoUrl}
                   opacityPercent={
