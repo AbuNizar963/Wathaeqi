@@ -37,6 +37,7 @@ import {
 } from "./features/platform-settings/platformDocumentSettingsRepository";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
+import { workspaceRouter } from "./features/workspace/workspaceRouter";
 import {
   getOrganizationById,
   getUserOrganizationMembership,
@@ -308,6 +309,7 @@ export const ownerApiRouter = router({
   organizations: ownerOrganizationsRouter,
   platformDocumentSettings: ownerPlatformDocumentSettingsRouter,
   documentStudio: documentStudioRouter,
+  workspace: workspaceRouter,
 });
 
 export type OwnerApiRouter = typeof ownerApiRouter;
