@@ -12,6 +12,9 @@ export default function OwnerSetupForm() {
         utils.auth.me.invalidate(),
         utils.auth.ownerSetupStatus.invalidate(),
       ]);
+      // The recovery mutation sets an HttpOnly session cookie. A clean
+      // navigation ensures the next page load is authenticated with that cookie.
+      window.location.replace("/");
     },
   });
   const [setupSecret, setSetupSecret] = useState("");
