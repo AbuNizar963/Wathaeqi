@@ -40,7 +40,7 @@ jobs:
 
       - name: Reject Supabase runtime dependencies
         run: |
-          if git grep -niE 'supabase|SUPABASE|@supabase' -- client server shared package.json .env.example; then
+          if git grep -niE 'supabase|SUPABASE|@supabase|drizzle\/schema|drizzle-orm|drizzle-kit' -- . ':!.github/workflows/ci.yml'; then
             echo "Supabase reference detected in active application code"
             exit 1
           fi
