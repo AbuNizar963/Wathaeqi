@@ -41,6 +41,7 @@ function Router() {
             <WorkspacePage section="contacts" />
           </DashboardPage>
         </Route>
+        <Route path="/notifications"><DashboardPage><WorkspacePage section="notifications" /></DashboardPage></Route>
         <Route path="/activity">
           <DashboardPage>
             <WorkspacePage section="activity" />
