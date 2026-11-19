@@ -1,6 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { Account } from "node-appwrite";
 import { z } from "zod";
 import { publicUser } from "./_core/auth";
 import {
@@ -14,7 +13,6 @@ import {
   setAppwriteSessionCookie,
   updateAppwriteUserProfile,
 } from "./_core/appwriteAuth";
-import { getAppwriteSessionClient } from "./_core/appwrite";
 import {
   clearSuccessfulLoginRateLimit,
   enforceLoginRateLimit,
@@ -65,7 +63,7 @@ async function authenticatePlatformUserForLogin(username: string, password: stri
 
 const ownerAuthRouter = router({
   me: publicProcedure.query(({ ctx }) =>
-    ctx.user ? publicUser(ctx.user) : null
+    ctx.user ?? null
   ),
 
   ownerSetupStatus: publicProcedure.query(async () => ({
