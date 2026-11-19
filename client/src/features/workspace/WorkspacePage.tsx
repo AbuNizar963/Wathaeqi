@@ -297,7 +297,8 @@ export default function WorkspacePage({
         </Button>
       </header>
 
-      {section === "users" || section === "organizations" ? (\n      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {section === "users" || section === "organizations" ? (
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
           label="المستخدمون"
           value={administrationQuery.data?.totals.users}
@@ -319,6 +320,7 @@ export default function WorkspacePage({
           icon={<Building2 className="h-4 w-4" />}
         />
       </div>
+      ) : null}
 
       {section === "contacts" ? (
         <Card className="space-y-4 p-4 sm:p-5">
@@ -545,7 +547,8 @@ export default function WorkspacePage({
                     <th className="p-3">البريد</th>
                     <th className="p-3">الدور</th>
                     <th className="p-3">الحالة</th>
-                    <th className="p-3">آخر دخول</th>\n                    <th className="p-3">الإجراء</th>
+                    <th className="p-3">آخر دخول</th>
+                    <th className="p-3">الإجراء</th>
                   </tr>
                 </thead>
                 <tbody>
