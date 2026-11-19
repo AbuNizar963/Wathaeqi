@@ -85,9 +85,61 @@ export default function DashboardLayout({
       if (ownerSetupStatusQuery.isLoading) {
         return <DashboardLayoutSkeleton />;
       }
-      if (ownerSetupStatusQuery.data?.available) {
+
+      if (ownerSetupStatusQuery.data?.available === true) {
         return <OwnerSetupForm />;
       }
+
+      return (
+        <div
+          className="flex min-h-dvh items-center justify-center px-4 py-8"
+          dir="rtl"
+        >
+          <section
+            className="surface-elevated w-full max-w-lg space-y-4 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
+            role="alert"
+          >
+            <div className="flex flex-col items-center gap-3 text-center">
+              <BrandMark size="lg" />
+              <h1 className="text-xl font-semibold tracking-tight">
+                تعذّر فتح استعادة كلمة مرور المالك
+              </h1>
+              {ownerSetupStatusQuery.isError ? (
+                <>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    لم نتمكن من التحقق من حالة إعداد المالك عبر خدمة Appwrite.
+                    لم يتم تغيير كلمة المرور أو استهلاك رمز الإعداد.
+                  </p>
+                  <p className="w-full break-words rounded-lg bg-muted p-3 text-xs text-muted-foreground" dir="ltr">
+                    {ownerSetupStatusQuery.error.message}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm leading-6 text-muted-foreground">
+                  خدمة الإعداد أفادت بأن الاستعادة غير متاحة حالياً. لم يتم
+                  تغيير كلمة المرور أو إنشاء حساب جديد. تحقق من إعداد وظيفة
+                  Appwrite وحالة رمز الإعداد قبل المحاولة مجدداً.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => void ownerSetupStatusQuery.refetch()}
+                disabled={ownerSetupStatusQuery.isFetching}
+              >
+                {ownerSetupStatusQuery.isFetching
+                  ? "جارٍ إعادة الفحص..."
+                  : "إعادة المحاولة"}
+              </Button>
+              <Button asChild type="button" variant="outline" className="w-full">
+                <a href="/">العودة إلى تسجيل الدخول</a>
+              </Button>
+            </div>
+          </section>
+        </div>
+      );
     }
     return (
       <div className="flex min-h-dvh items-center justify-center px-4">
