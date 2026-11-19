@@ -35,6 +35,7 @@ function Router() {
       }
     >
       <Switch>
+        <Route path="/dashboard"><DashboardPage><WorkspacePage section="dashboard" /></DashboardPage></Route>
         <Route path="/contacts">
           <DashboardPage>
             <WorkspacePage section="contacts" />
