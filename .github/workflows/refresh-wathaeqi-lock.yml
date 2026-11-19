@@ -1,4 +1,5 @@
 name: Refresh Wathaeqi lockfile and format Appwrite foundation tests
+# Regenerate after removing retired Supabase runtime dependencies.
 
 on:
   push:
