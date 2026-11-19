@@ -243,7 +243,7 @@ const ownerProfileRouter = router({
 });
 
 const ownerPlatformDocumentSettingsRouter = router({
-  get: platformOwnerProcedure.query(() => getPlatformDocumentSettings()),
+  get: authenticatedProcedure.query(() => getPlatformDocumentSettings()),
 
   update: platformOwnerProcedure
     .input(
