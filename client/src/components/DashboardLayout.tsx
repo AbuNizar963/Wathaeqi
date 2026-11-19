@@ -15,6 +15,7 @@ import {
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   FileText,
+  LayoutDashboard,
   Contact,
   FileClock,
   Users,
@@ -36,6 +37,12 @@ import { BrandMark } from "./BrandMark";
 import HeaderActions from "./HeaderActions";
 
 const menuItems = [
+  {
+    key: "dashboard",
+    icon: LayoutDashboard,
+    label: "لوحة التحكم",
+    path: "/dashboard",
+  },
   {
     key: "documents",
     icon: FileText,
