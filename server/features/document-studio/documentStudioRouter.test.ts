@@ -394,9 +394,9 @@ describe("document studio authorization and API", () => {
     await expect(caller.listDocuments()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
-    await expect(
-      caller.createTemplate(templateInput)
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(caller.createTemplate(templateInput)).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
     expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
     expect(mocks.createDocumentTemplate).not.toHaveBeenCalled();
   });
