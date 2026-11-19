@@ -21,10 +21,15 @@ const queryClient = new QueryClient({
   },
 });
 
+// The migration preview is a static Appwrite Site. Never fall back to its
+// own origin for tRPC: that origin serves the frontend, not the owner API.
+// The environment variable remains the preferred override for other previews.
+const DEFAULT_APPWRITE_OWNER_API_URL =
+  "https://wathaeqi-api.fra.appwrite.run";
 const configuredAppwriteApiUrl = import.meta.env.VITE_APPWRITE_API_URL?.trim();
-const trpcEndpoint = configuredAppwriteApiUrl
-  ? `${configuredAppwriteApiUrl.replace(/\/+$/, "")}/api/trpc`
-  : "/api/trpc";
+const appwriteApiUrl =
+  configuredAppwriteApiUrl || DEFAULT_APPWRITE_OWNER_API_URL;
+const trpcEndpoint = `${appwriteApiUrl.replace(/\\/+$/, "")}/api/trpc`;
 
 const trpcClient = ownerTrpc.createClient({
   links: [
