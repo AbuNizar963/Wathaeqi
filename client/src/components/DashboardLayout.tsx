@@ -18,6 +18,7 @@ import {
   LayoutDashboard,
   Contact,
   FileClock,
+  Bell,
   Users,
   Building2,
   LockKeyhole,
@@ -54,6 +55,12 @@ const menuItems = [
     icon: Contact,
     label: "جهات الاتصال",
     path: "/contacts",
+  },
+  {
+    key: "notifications",
+    icon: Bell,
+    label: "الإشعارات",
+    path: "/notifications",
   },
   {
     key: "activity",
