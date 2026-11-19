@@ -110,7 +110,10 @@ export default function DashboardLayout({
                     لم نتمكن من التحقق من حالة إعداد المالك عبر خدمة Appwrite.
                     لم يتم تغيير كلمة المرور أو استهلاك رمز الإعداد.
                   </p>
-                  <p className="w-full break-words rounded-lg bg-muted p-3 text-xs text-muted-foreground" dir="ltr">
+                  <p
+                    className="w-full break-words rounded-lg bg-muted p-3 text-xs text-muted-foreground"
+                    dir="ltr"
+                  >
                     {ownerSetupStatusQuery.error.message}
                   </p>
                 </>
@@ -133,7 +136,12 @@ export default function DashboardLayout({
                   ? "جارٍ إعادة الفحص..."
                   : "إعادة المحاولة"}
               </Button>
-              <Button asChild type="button" variant="outline" className="w-full">
+              <Button
+                asChild
+                type="button"
+                variant="outline"
+                className="w-full"
+              >
                 <a href="/">العودة إلى تسجيل الدخول</a>
               </Button>
             </div>
