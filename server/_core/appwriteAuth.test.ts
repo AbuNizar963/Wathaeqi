@@ -244,6 +244,40 @@ describe("Appwrite authentication adapter", () => {
       "Set-Cookie",
       expect.stringContaining("HttpOnly")
     );
+    const newCookie = response.setHeader.mock.calls[0]?.[1].split(
+      ";"
+    )[0] as string;
+    mocks.listRows.mockResolvedValue({
+      rows: [{ ...profileRow, sessionVersion: updated.sessionVersion }],
+      total: 1,
+    });
+
+    await expect(
+      getAppwriteAuthenticatedUserFromRequest({
+        headers: { cookie: newCookie },
+      } as never)
+    ).resolves.toMatchObject({ id: 1, sessionVersion: updated.sessionVersion });
+    expect(mocks.getAppwriteSessionClient).toHaveBeenCalledWith(
+      "new-appwrite-session-secret"
+    );
+    await expect(
+      getAppwriteAuthenticatedUserFromRequest(request)
+    ).resolves.toBeNull();
+  });
+
+  it("does not rotate a session when the current password is incorrect", async () => {
+    const request = {
+      headers: { cookie: await createSessionCookie("session-version-1") },
+    } as never;
+    const response = { setHeader: vi.fn() } as never;
+    mocks.updatePassword.mockRejectedValueOnce({ code: 401 });
+
+    await expect(
+      changeAppwritePassword(request, response, "wrong", "new-password-123")
+    ).rejects.toMatchObject({ name: "AppwriteInvalidCurrentPasswordError" });
+    expect(response.setHeader).not.toHaveBeenCalled();
+    expect(mocks.updateRow).not.toHaveBeenCalled();
+    expect(mocks.createEmailPasswordSession).not.toHaveBeenCalled();
   });
 
   it("clears the session cookie", () => {

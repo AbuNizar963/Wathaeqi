@@ -388,6 +388,18 @@ describe("document studio authorization and API", () => {
     );
   });
 
+  it("rejects an invalid revision timestamp before accessing storage", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+
+    await expect(
+      caller.archiveDocument({
+        id: document.id,
+        expectedUpdatedAt: "not-a-utc-timestamp",
+      })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mocks.archiveOfficialDocument).not.toHaveBeenCalled();
+  });
+
   it("rejects unauthenticated access before calling repositories", async () => {
     const caller = documentStudioRouter.createCaller(context(false));
 
