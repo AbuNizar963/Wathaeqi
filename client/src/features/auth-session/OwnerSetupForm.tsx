@@ -59,8 +59,7 @@ export default function OwnerSetupForm() {
             required
           />
           <p className="text-xs text-muted-foreground">
-            الرمز الذي تضيفه في متغير{" "}
-            <code>OWNER_SETUP_SECRET</code> ضمن إعدادات وظيفة Appwrite.
+            الرمز الذي تحفظه ضمن إعدادات وظيفة Appwrite.
           </p>
         </div>
 
