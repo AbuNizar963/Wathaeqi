@@ -1,5 +1,7 @@
 import {
   Archive,
+  Eye,
+  EyeOff,
   FilePlus2,
   FileText,
   FolderOpen,
@@ -24,6 +26,12 @@ import type {
   OfficialDocument,
 } from "../../../../shared/documentStudio";
 import DocumentEditor from "./DocumentEditor";
+import {
+  buildTelegramWatermarkCss,
+  OFFICIAL_MINISTRY_NAME,
+  TELEGRAM_WATERMARK_COLUMNS,
+  TELEGRAM_WATERMARK_ROWS,
+} from "@/features/telegrams/documents/telegramWatermark";
 
 type StudioTab = "documents" | "templates" | "archive";
 
@@ -111,6 +119,7 @@ function newTemplateField(index: number): DocumentTemplateField {
 
 export default function DocumentStudioPage() {
   const [activeTab, setActiveTab] = useState<StudioTab>("documents");
+  const [previewMode, setPreviewMode] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
@@ -492,6 +501,17 @@ export default function DocumentStudioPage() {
             <Archive className="ml-2 h-4 w-4" />
             الأرشيف
           </Button>
+          <Button
+            variant={previewMode ? "secondary" : "outline"}
+            onClick={() => setPreviewMode(current => !current)}
+          >
+            {previewMode ? (
+              <EyeOff className="ml-2 h-4 w-4" />
+            ) : (
+              <Eye className="ml-2 h-4 w-4" />
+            )}
+            {previewMode ? "العودة للتحرير" : "معاينة الوثيقة"}
+          </Button>
           {activeTab === "documents" || activeTab === "archive" ? (
             <>
               <Button variant="outline" onClick={() => window.print()}>
@@ -512,8 +532,14 @@ export default function DocumentStudioPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="document-studio-no-print space-y-3">
+      <div
+        className={`grid grid-cols-1 gap-4 ${
+          previewMode ? "xl:grid-cols-1" : "xl:grid-cols-[300px_minmax(0,1fr)]"
+        }`}
+      >
+        <aside
+          className={`document-studio-no-print space-y-3 ${previewMode ? "hidden" : ""}`}
+        >
           <Card className="p-3">
             <div className="relative">
               <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -664,7 +690,9 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print">
+              <div
+                className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
+              >
                 <div className="space-y-1">
                   <label className="text-sm font-medium">اسم النموذج</label>
                   <Input
@@ -700,7 +728,9 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
-              <section className="space-y-3 document-studio-no-print">
+              <section
+                className={`space-y-3 document-studio-no-print ${previewMode ? "hidden" : ""}`}
+              >
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">حقول التعبئة</h3>
                   <Button
@@ -827,7 +857,17 @@ export default function DocumentStudioPage() {
                 )}
               </section>
 
-              <div className="document-a4-page mx-auto w-full max-w-[210mm] bg-white text-slate-900">
+              <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
+                <DocumentWatermark
+                  logoUrl={logoUrl}
+                  opacityPercent={
+                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
+                  }
+                  showMinistryText={
+                    platformDocumentSettings.data?.showMinistryWatermarkText ??
+                    true
+                  }
+                />
                 <DocumentLetterhead
                   organizationName={organizationName}
                   unitName={settings?.unitName ?? ""}
@@ -840,6 +880,7 @@ export default function DocumentStudioPage() {
                   <DocumentEditor
                     content={templateContent}
                     onChange={handleTemplateContentChange}
+                    editable={!previewMode}
                     containerClassName="rounded-none border-0 shadow-none"
                     placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
                   />
@@ -914,7 +955,9 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print">
+              <div
+                className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
+              >
                 <div className="space-y-1">
                   <label className="text-sm font-medium">عنوان الوثيقة</label>
                   <Input
@@ -986,7 +1029,7 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
-              {documentTemplateFields.length > 0 ? (
+              {documentTemplateFields.length > 0 && !previewMode ? (
                 <section className="space-y-3 rounded-lg border bg-muted/20 p-3 document-studio-no-print">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="font-semibold">بيانات النموذج</h3>
@@ -1068,7 +1111,17 @@ export default function DocumentStudioPage() {
                 </section>
               ) : null}
 
-              <div className="document-a4-page mx-auto w-full max-w-[210mm] bg-white text-slate-900">
+              <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
+                <DocumentWatermark
+                  logoUrl={logoUrl}
+                  opacityPercent={
+                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
+                  }
+                  showMinistryText={
+                    platformDocumentSettings.data?.showMinistryWatermarkText ??
+                    true
+                  }
+                />
                 <DocumentLetterhead
                   organizationName={organizationName}
                   unitName={settings?.unitName ?? ""}
@@ -1094,7 +1147,7 @@ export default function DocumentStudioPage() {
                   <DocumentEditor
                     content={documentContent}
                     onChange={handleDocumentContentChange}
-                    editable={canEditDocument}
+                    editable={canEditDocument && !previewMode}
                     containerClassName="rounded-none border-0 shadow-none"
                   />
                 </div>
@@ -1107,6 +1160,60 @@ export default function DocumentStudioPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+function DocumentWatermark({
+  logoUrl,
+  opacityPercent,
+  showMinistryText,
+}: {
+  logoUrl: string | null;
+  opacityPercent: number;
+  showMinistryText: boolean;
+}) {
+  const watermarkCss = buildTelegramWatermarkCss(opacityPercent / 100);
+
+  return (
+    <>
+      <style>{`.document-a4-page { position: relative; isolation: isolate; }
+        .document-a4-page > :not(style):not(.document-watermark-layer) { position: relative; z-index: 2; }
+        .document-watermark-layer { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+        ${watermarkCss}`}</style>
+      <div className="document-watermark-layer" aria-hidden="true">
+        <div className="page-watermark">
+          {showMinistryText ? (
+            <div className="watermark-text-pattern">
+              {Array.from({ length: TELEGRAM_WATERMARK_ROWS }, (_, row) => (
+                <div
+                  key={row}
+                  className={
+                    row % 2
+                      ? "watermark-text-row watermark-text-row-offset"
+                      : "watermark-text-row"
+                  }
+                >
+                  {Array.from(
+                    { length: TELEGRAM_WATERMARK_COLUMNS },
+                    (_, column) => (
+                      <span key={column}>{OFFICIAL_MINISTRY_NAME}</span>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {logoUrl ? (
+            <img
+              className="watermark-logo"
+              src={logoUrl}
+              alt=""
+              decoding="async"
+            />
+          ) : null}
+        </div>
+      </div>
+    </>
   );
 }
 
