@@ -7,6 +7,7 @@ import {
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
 import { ENV } from "../../_core/env";
+import type { User } from "../../_core/user";
 
 const USERS_TABLE_ID = "users";
 const OWNER_SETUP_TABLE_ID = "app_records";
