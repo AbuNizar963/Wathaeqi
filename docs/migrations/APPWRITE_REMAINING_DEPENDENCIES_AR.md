@@ -11,7 +11,7 @@
 - حُذفت وحدات Supabase القديمة ومستهلكاتها ضمن نطاق الخادم القديم (مستودع البيانات، إدارة المؤسسات القديمة، مسارات البرقيات والتخزين والإشعارات، ومحدد التحقق القديم). لم تُنقل بياناتها.
 - أزيل عميل Supabase الخاص بالمتصفح ومتغيرات `VITE_SUPABASE_*`، وأزيلت متغيرات Supabase الخادمية من `server/_core/env.ts` و`.env.example`.
 - أزيلت خطوات Supabase CLI وقاعدة البيانات المحلية من GitHub Actions، وأزيل أمر `test:supabase`.
-- أزيل `@supabase/supabase-js` من `package.json`؛ يجري تحديث `pnpm-lock.yaml` تلقائياً قبل اعتماد اكتمال البناء.
+- أزيل `@supabase/supabase-js` من `package.json`؛ تم تحديث `pnpm-lock.yaml` آلياً بعد حذف SDK؛ ينتظر تأكيد فحوص CI والبناء.
 - أضيف فحص CI يمنع عودة أي مرجع Supabase إلى مجلدات التطبيق النشطة.
 - تبقى ملفات SQL القديمة تحت `supabase/` كأرشيف تاريخي فقط؛ لا يشغّلها التطبيق أو CI ولا تُحذف بيانات المشروع الخارجي.
 
@@ -76,7 +76,7 @@
 | `server/_core/verificationRateLimit.ts` | **أزيلت** وحدة التحديد القديمة مع مسار التحقق الخاص بالبرقيات | لا توجد خدمة تحقق قديمة مركبة في API المالك |
 | `server/features/storage/storageRoutes.ts` | **أزيلت** مسارات تخزين البرقيات والشعارات القديمة؛ بقي مزود Appwrite العام فقط لاستخدام مستقبلي عند اعتماد المرفقات | لا توجد مسارات تخزين Supabase في التطبيق النشط |
 | `server/_core/env.ts` و`.env.example` | **أزيلت جميع متغيرات Supabase** من إعدادات الخادم والمتصفح | إعدادات Appwrite فقط مطلوبة للتشغيل |
-| `package.json` و`pnpm-lock.yaml` | أزيل أمر `test:supabase` واعتماد `@supabase/supabase-js` من `package.json`؛ تحديث `pnpm-lock.yaml` جارٍ عبر GitHub Actions | اعتماد lockfile الجديد ثم تأكيد البناء دون SDK |
+| `package.json` و`pnpm-lock.yaml` | أزيل أمر `test:supabase` واعتماد `@supabase/supabase-js` من `package.json`؛ تحديث `pnpm-lock.yaml` جارٍ عبر GitHub Actions | تم تحديث lockfile عبر GitHub Actions؛ يلزم تأكيد فحوص CI والبناء دون SDK |
 | `supabase/migrations` و`supabase/tests` | تاريخ مخطط المصدر واختباراته | الاحتفاظ بها كمرجع ترحيل/أرشيف حتى اعتماد سياسة الأرشفة؛ لا تحذف تلقائياً |
 
 ## 3. ما هو قائم بالفعل في Appwrite
