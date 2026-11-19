@@ -7,7 +7,8 @@ import {
   getAppwriteTablesDB,
   getAppwriteUsers,
 } from "../../_core/appwrite";
-import { platformOwnerProcedure, router } from "../../_core/ownerTrpc";
+import { authenticatedProcedure, platformOwnerProcedure, router } from "../../_core/ownerTrpc";
+import { isPlatformOwner } from "../../ownerAccess";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 
 type AppwriteRow = Record<string, unknown> & {
@@ -33,7 +34,7 @@ function safeJson(value: unknown): unknown {
 }
 
 const contactsRouter = router({
-  list: platformOwnerProcedure.query(async ({ ctx }) => {
+  list: authenticatedProcedure.query(async ({ ctx }) => {
     const result = await getAppwriteTablesDB().listRows({
       databaseId: getAppwriteDatabaseId(),
       tableId: "contacts",
@@ -52,7 +53,7 @@ const contactsRouter = router({
     });
   }),
 
-  create: platformOwnerProcedure
+  create: authenticatedProcedure
     .input(
       z.object({
         name: z.string().trim().min(2).max(256),
@@ -84,7 +85,7 @@ const contactsRouter = router({
       };
     }),
 
-  update: platformOwnerProcedure
+  update: authenticatedProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),
@@ -129,7 +130,7 @@ const contactsRouter = router({
       };
     }),
 
-  delete: platformOwnerProcedure
+  delete: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .mutation(async ({ ctx, input }) => {
       const tables = getAppwriteTablesDB();
@@ -154,11 +155,15 @@ const contactsRouter = router({
 });
 
 const activityRouter = router({
-  list: platformOwnerProcedure.query(async () => {
+  list: authenticatedProcedure.query(async ({ ctx }) => {
     const result = await getAppwriteTablesDB().listRows({
       databaseId: getAppwriteDatabaseId(),
       tableId: "audit_logs",
-      queries: [Query.orderDesc("createdAt"), Query.limit(100)],
+      queries: [
+        ...(isPlatformOwner(ctx.user) ? [] : [Query.equal("actorUserId", ctx.user.id)]),
+        Query.orderDesc("createdAt"),
+        Query.limit(100),
+      ],
       total: true,
     });
     return result.rows.map(row => {
@@ -178,7 +183,7 @@ const activityRouter = router({
 });
 
 const notificationsRouter = router({
-  list: platformOwnerProcedure.query(async ({ ctx }) => {
+  list: authenticatedProcedure.query(async ({ ctx }) => {
     const result = await getAppwriteTablesDB().listRows({
       databaseId: getAppwriteDatabaseId(),
       tableId: "notifications",
@@ -202,7 +207,7 @@ const notificationsRouter = router({
     });
   }),
 
-  markRead: platformOwnerProcedure
+  markRead: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .mutation(async ({ ctx, input }) => {
       const tables = getAppwriteTablesDB();
@@ -229,7 +234,7 @@ const notificationsRouter = router({
       return { success: true as const };
     }),
 
-  markAllRead: platformOwnerProcedure.mutation(async ({ ctx }) => {
+  markAllRead: authenticatedProcedure.mutation(async ({ ctx }) => {
     const tables = getAppwriteTablesDB();
     const result = await tables.listRows({
       databaseId: getAppwriteDatabaseId(),
