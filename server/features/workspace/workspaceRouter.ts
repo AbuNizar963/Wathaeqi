@@ -177,6 +177,78 @@ const activityRouter = router({
   }),
 });
 
+const notificationsRouter = router({
+  list: platformOwnerProcedure.query(async ({ ctx }) => {
+    const result = await getAppwriteTablesDB().listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "notifications",
+      queries: [
+        Query.equal("userId", ctx.user.id),
+        Query.orderDesc("createdAt"),
+        Query.limit(100),
+      ],
+      total: true,
+    });
+    return result.rows.map(row => {
+      const data = rowData(row as AppwriteRow);
+      return {
+        id: (row as AppwriteRow).$id,
+        type: String(data.type ?? "system"),
+        title: String(data.title ?? "تنبيه"),
+        body: String(data.body ?? ""),
+        readAt: parseOptionalText(data.readAt),
+        createdAt: String(data.createdAt ?? ""),
+      };
+    });
+  }),
+
+  markRead: platformOwnerProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .mutation(async ({ ctx, input }) => {
+      const tables = getAppwriteTablesDB();
+      const row = (await tables.getRow({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "notifications",
+        rowId: input.id,
+      })) as unknown as AppwriteRow;
+      const data = rowData(row);
+      if (Number(data.userId) !== ctx.user.id) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "التنبيه غير موجود" });
+      }
+      if (!data.readAt) {
+        await tables.updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "notifications",
+          rowId: input.id,
+          data: { readAt: new Date().toISOString() },
+        });
+      }
+      return { success: true as const };
+    }),
+
+  markAllRead: platformOwnerProcedure.mutation(async ({ ctx }) => {
+    const tables = getAppwriteTablesDB();
+    const result = await tables.listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: "notifications",
+      queries: [Query.equal("userId", ctx.user.id), Query.limit(100)],
+      total: false,
+    });
+    const unread = result.rows.filter(row => !rowData(row as AppwriteRow).readAt);
+    await Promise.all(
+      unread.map(row =>
+        tables.updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: "notifications",
+          rowId: (row as unknown as AppwriteRow).$id,
+          data: { readAt: new Date().toISOString() },
+        })
+      )
+    );
+    return { updated: unread.length };
+  }),
+});
+
 const administrationRouter = router({
   overview: platformOwnerProcedure.query(async () => {
     const tables = getAppwriteTablesDB();
@@ -699,5 +771,6 @@ const administrationRouter = router({
 export const workspaceRouter = router({
   contacts: contactsRouter,
   activity: activityRouter,
+  notifications: notificationsRouter,
   administration: administrationRouter,
 });
