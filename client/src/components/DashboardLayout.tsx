@@ -478,14 +478,6 @@ function DashboardLayoutContent({
     staleTime: 30_000,
   });
   const isPlatformOwnerAccount = organizationContext.data?.isOwner === true;
-  const canManageUsers =
-    user?.role === "admin" ||
-    [
-      "system_admin",
-      "organization_admin",
-      "regional_admin",
-      "organization_supervisor",
-    ].includes(organizationContext.data?.role ?? "");
   const canViewAuditLogs =
     user?.role === "admin" ||
     organizationContext.data?.isOwner === true ||
