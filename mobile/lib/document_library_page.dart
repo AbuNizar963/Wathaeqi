@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
+import 'package:printing/printing.dart' show PdfPreview;
 
 import 'api.dart';
 import 'document_studio_models.dart';
@@ -27,9 +27,6 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     'administrative': 'إداري',
     'personnel': 'شؤون الموظفين',
     'correspondence': 'مراسلات',
-    'financial': 'مالي',
-    'legal': 'قانوني',
-    'technical': 'تقني',
   };
 
   final _searchController = TextEditingController();
