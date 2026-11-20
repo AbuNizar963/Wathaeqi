@@ -69,9 +69,8 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
       final documents = rows
           .whereType<Map>()
           .map(
-            (item) => OfficialDocument.fromJson(
-              Map<String, dynamic>.from(item),
-            ),
+            (item) =>
+                OfficialDocument.fromJson(Map<String, dynamic>.from(item)),
           )
           .where((document) => document.file != null)
           .toList(growable: false);
@@ -91,18 +90,20 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
 
   List<OfficialDocument> get _filteredDocuments {
     final query = _searchController.text.trim().toLowerCase();
-    return _documents.where((document) {
-      if (_category.isNotEmpty && document.category != _category) {
-        return false;
-      }
-      if (query.isEmpty) return true;
-      final fileName = document.file?.fileName ?? '';
-      return <String>[
-        document.title,
-        document.subject,
-        fileName,
-      ].any((value) => value.toLowerCase().contains(query));
-    }).toList(growable: false);
+    return _documents
+        .where((document) {
+          if (_category.isNotEmpty && document.category != _category) {
+            return false;
+          }
+          if (query.isEmpty) return true;
+          final fileName = document.file?.fileName ?? '';
+          return <String>[
+            document.title,
+            document.subject,
+            fileName,
+          ].any((value) => value.toLowerCase().contains(query));
+        })
+        .toList(growable: false);
   }
 
   Future<void> _uploadFile() async {
@@ -242,9 +243,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                   final title = titleController.text.trim();
                   if (title.isEmpty) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(
-                        content: Text('عنوان الوثيقة مطلوب'),
-                      ),
+                      const SnackBar(content: Text('عنوان الوثيقة مطلوب')),
                     );
                     return;
                   }
@@ -343,9 +342,8 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
 
   void _showMessage(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _formatBytes(int bytes) {
@@ -507,7 +505,9 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                                           : file.mimeType.startsWith('image/')
                                           ? Icons.image_outlined
                                           : Icons.description_outlined,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -647,12 +647,11 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     );
   }
 
-  Widget _statChip(BuildContext context, String label, String value) =>
-      Chip(
-        avatar: const Icon(Icons.insert_drive_file_outlined, size: 16),
-        label: Text('$label: $value'),
-        visualDensity: VisualDensity.compact,
-      );
+  Widget _statChip(BuildContext context, String label, String value) => Chip(
+    avatar: const Icon(Icons.insert_drive_file_outlined, size: 16),
+    label: Text('$label: $value'),
+    visualDensity: VisualDensity.compact,
+  );
 
   Widget _categoryChip(String label, String value) => Padding(
     padding: const EdgeInsetsDirectional.only(end: 6),
