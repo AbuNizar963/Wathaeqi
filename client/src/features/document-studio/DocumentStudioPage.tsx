@@ -4,6 +4,9 @@ import {
   EyeOff,
   FilePlus2,
   FileText,
+  FileUp,
+  PenLine,
+  UploadCloud,
   FolderOpen,
   LayoutTemplate,
   Printer,
@@ -16,6 +19,13 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
@@ -25,6 +35,7 @@ import type {
   DocumentTemplateFieldType,
   OfficialDocument,
 } from "../../../../shared/documentStudio";
+import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
 import {
   buildDocumentWatermarkCss,
@@ -120,6 +131,8 @@ function newTemplateField(index: number): DocumentTemplateField {
 export default function DocumentStudioPage() {
   const [activeTab, setActiveTab] = useState<StudioTab>("documents");
   const [previewMode, setPreviewMode] = useState(false);
+  const [creationDialogOpen, setCreationDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
@@ -518,9 +531,9 @@ export default function DocumentStudioPage() {
                 <Printer className="ml-2 h-4 w-4" />
                 طباعة / PDF
               </Button>
-              <Button onClick={startNewDocument}>
+              <Button onClick={() => setCreationDialogOpen(true)}>
                 <FilePlus2 className="ml-2 h-4 w-4" />
-                وثيقة جديدة
+                إنشاء وثيقة
               </Button>
             </>
           ) : (
@@ -1159,6 +1172,85 @@ export default function DocumentStudioPage() {
           )}
         </main>
       </div>
+
+      <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
+            <DialogDescription className="text-right">
+              اختر طريقة إنشاء الوثيقة. يمكنك الكتابة داخل محرر الوثائق أو استيراد
+              ملف محفوظ لديك.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setCreationDialogOpen(false);
+                startNewDocument();
+              }}
+              className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <PenLine className="size-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold">إنشاء والكتابة في وثيقة</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  افتح صفحة الوثيقة الرسمية واكتب النص ونسّقه مباشرة
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreationDialogOpen(false);
+                setImportDialogOpen(true);
+              }}
+              className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <FileUp className="size-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold">استيراد PDF أو Word أو صورة</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  أرفق ملفاً موجوداً وأنشئ له سجلاً في مكتبة الوثائق
+                </span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreationDialogOpen(false);
+                startNewTemplate();
+              }}
+              className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <LayoutTemplate className="size-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold">إنشاء من نموذج محفوظ</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  ابدأ باستخدام نموذج إداري جاهز أو أنشئ نموذجاً جديداً
+                </span>
+              </span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <UploadDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onUploaded={documentId => {
+          setSelectedDocumentId(documentId);
+          setActiveTab("documents");
+          void utils.documentStudio.listDocuments.invalidate();
+          toast.success("تم استيراد الملف وإضافته إلى الوثائق");
+        }}
+      />
     </div>
   );
 }
