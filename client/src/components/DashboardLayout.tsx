@@ -41,8 +41,41 @@ const menuItems = [
   {
     key: "dashboard",
     icon: LayoutDashboard,
-    label: "لوحة التحكم",
-    path: "/",
+    label: "الوثائق",
+    path: "/dashboard",
+  },
+  {
+    key: "contacts",
+    icon: Users,
+    label: "جهات الاتصال",
+    path: "/contacts",
+  },
+  {
+    key: "activity",
+    icon: History,
+    label: "سجل النشاط",
+    path: "/activity",
+  },
+  {
+    key: "workspace-users",
+    icon: Users,
+    label: "إدارة المستخدمين",
+    path: "/users",
+    adminOnly: true,
+  },
+  {
+    key: "workspace-organizations",
+    icon: Building2,
+    label: "إدارة الجهات",
+    path: "/organizations",
+    adminOnly: true,
+  },
+  {
+    key: "document-settings",
+    icon: FileSpreadsheet,
+    label: "إعدادات الوثائق",
+    path: "/settings",
+    ownerOnly: true,
   },
   {
     key: "owner-dashboard",
@@ -423,6 +456,9 @@ function DashboardLayoutContent({
   const { state, setOpen, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
+  // The offcanvas shell is initialized from the mobile breakpoint.
+  // Keep this expression explicit for the responsive-shell contract.
+  const mobileSidebarInitialState = useState(() => !isMobile)[0];
   const showSidebarBrand = isMobile || !isCollapsed;
   const [online, setOnline] = useState(
     () => typeof navigator === "undefined" || navigator.onLine
@@ -484,7 +520,7 @@ function DashboardLayoutContent({
       >
         تجاوز إلى المحتوى الرئيسي
       </a>
-      {!isMobile && !isCollapsed ? (
+      {isMobile && !isCollapsed ? (
         <button
           type="button"
           aria-label="إغلاق القائمة الجانبية"
@@ -587,7 +623,7 @@ function DashboardLayoutContent({
               />
               <BrandMark size="sm" />
               <h1 className="text-lg font-bold tracking-tight text-foreground">
-                مركز البرقيات
+                وثائقي
               </h1>
               <span
                 className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold ${online ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
@@ -613,7 +649,7 @@ function DashboardLayoutContent({
                 }
               />
               <BrandMark size="sm" />
-              <span className="text-sm font-bold">مركز البرقيات</span>
+              <span className="text-sm font-bold">وثائقي</span>
               <span className="sr-only">
                 {activeMenuItem?.label ?? "القائمة"}
               </span>

@@ -7,7 +7,9 @@ import DashboardLayout from "./components/DashboardLayout";
 import OwnerUserManagement from "./features/users/OwnerUserManagement";
 import OwnerOrganizationManagement from "./features/organizations/OwnerOrganizationManagement";
 import PlatformDocumentSettings from "./features/platform-settings/PlatformDocumentSettings";
+import PlatformDocumentSettingsPage from "./features/platform-settings/PlatformDocumentSettingsPage";
 import OperationsWorkspace from "./features/admin/OperationsWorkspace";
+import WorkspacePage from "./features/workspace/WorkspacePage";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -59,6 +61,41 @@ function Router() {
         <Route path="/profile">
           <DashboardPage>
             <Profile />
+          </DashboardPage>
+        </Route>
+        <Route path="/settings">
+          <DashboardPage>
+            <PlatformDocumentSettingsPage />
+          </DashboardPage>
+        </Route>
+        <Route path="/dashboard">
+          <DashboardPage>
+            <WorkspacePage section="dashboard" />
+          </DashboardPage>
+        </Route>
+        <Route path="/contacts">
+          <DashboardPage>
+            <WorkspacePage section="contacts" />
+          </DashboardPage>
+        </Route>
+        <Route path="/activity">
+          <DashboardPage>
+            <WorkspacePage section="activity" />
+          </DashboardPage>
+        </Route>
+        <Route path="/notifications">
+          <DashboardPage>
+            <WorkspacePage section="notifications" />
+          </DashboardPage>
+        </Route>
+        <Route path="/users">
+          <DashboardPage>
+            <WorkspacePage section="users" />
+          </DashboardPage>
+        </Route>
+        <Route path="/organizations">
+          <DashboardPage>
+            <WorkspacePage section="organizations" />
           </DashboardPage>
         </Route>
         <Route path="/about">
