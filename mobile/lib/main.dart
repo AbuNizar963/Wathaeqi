@@ -13,6 +13,7 @@ import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
 import 'document_studio_page.dart';
+import 'document_library_page.dart';
 import 'document_studio_outbox.dart';
 import 'app_theme.dart';
 import 'advanced_create_telegram_page.dart';
@@ -2131,33 +2132,19 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
                 ListTile(
                   leading: const Icon(Icons.description_outlined),
-                  title: const Text('الوثائق'),
+                  title: const Text('مكتبة الوثائق'),
+                  selected: true,
                   onTap: () => Navigator.pop(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.dashboard_customize_outlined),
-                  title: const Text('القوالب'),
+                  leading: const Icon(Icons.edit_document),
+                  title: const Text('استوديو الوثائق'),
                   onTap: () {
                     Navigator.pop(context);
                     _pushPage(
                       DocumentStudioPage(
                         api: widget.api,
                         outbox: _documentStudioOutbox,
-                        initialTab: DocumentStudioTab.templates,
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.archive_outlined),
-                  title: const Text('الأرشيف'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pushPage(
-                      DocumentStudioPage(
-                        api: widget.api,
-                        outbox: _documentStudioOutbox,
-                        initialTab: DocumentStudioTab.archive,
                       ),
                     );
                   },
@@ -2220,7 +2207,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
       ),
-      body: DocumentStudioPage(api: widget.api, outbox: _documentStudioOutbox),
+      body: DocumentLibraryPage(api: widget.api),
     ),
   );
 }
