@@ -2137,7 +2137,7 @@ class _DashboardPageState extends State<DashboardPage>
                   onTap: () => Navigator.pop(context),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.edit_document),
+                  leading: const Icon(Icons.edit_outlined),
                   title: const Text('استوديو الوثائق'),
                   onTap: () {
                     Navigator.pop(context);
