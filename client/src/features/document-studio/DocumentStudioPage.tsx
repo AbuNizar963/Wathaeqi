@@ -1194,7 +1194,9 @@ export default function DocumentStudioPage() {
                 <PenLine className="size-5" />
               </span>
               <span className="min-w-0">
-                <span className="block font-semibold">إنشاء والكتابة في وثيقة</span>
+                <span className="block font-semibold">
+                  إنشاء والكتابة في وثيقة
+                </span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   افتح صفحة الوثيقة الرسمية واكتب النص ونسّقه مباشرة
                 </span>
@@ -1212,7 +1214,9 @@ export default function DocumentStudioPage() {
                 <FileUp className="size-5" />
               </span>
               <span className="min-w-0">
-                <span className="block font-semibold">استيراد PDF أو Word أو صورة</span>
+                <span className="block font-semibold">
+                  استيراد PDF أو Word أو صورة
+                </span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   أرفق ملفاً موجوداً وأنشئ له سجلاً في مكتبة الوثائق
                 </span>
@@ -1230,7 +1234,9 @@ export default function DocumentStudioPage() {
                 <LayoutTemplate className="size-5" />
               </span>
               <span className="min-w-0">
-                <span className="block font-semibold">اختيار نموذج جاهز</span>
+                <span className="block font-semibold">
+                  اختيار نموذج جاهز
+                </span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   ابدأ باستخدام نموذج إداري جاهز أو أنشئ نموذجاً جديداً
                 </span>
