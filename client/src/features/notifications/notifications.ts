@@ -51,7 +51,7 @@ export async function playTelegramNotificationSound(): Promise<void> {
 function getTelegramNotificationCopy(
   direction: TelegramNotificationDirection
 ): string {
-  return direction === "incoming" ? "وثيقة واردة" : "وثيقة صادرة";
+  return direction === "incoming" ? "برقية واردة" : "برقية صادرة";
 }
 
 function getShortTelegramNumber(serialCode: string): string {
@@ -72,7 +72,7 @@ export async function showLocalTelegramNotification(input: {
   const title = getTelegramNotificationCopy(direction);
   const shortNumber = getShortTelegramNumber(input.serialCode);
   const options: NotificationOptions = {
-    body: `رقم الوثيقة: ${shortNumber}\nالموضوع: ${input.subject}`,
+    body: `رقم البرقية: ${shortNumber}\nالموضوع: ${input.subject}`,
     icon: "/notification-icon.png",
     badge: "/notification-badge.png",
     tag: `telegram-${input.telegramId}`,

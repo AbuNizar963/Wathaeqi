@@ -58,11 +58,11 @@ export type Status = keyof typeof statusLabels;
 export type OrganizationType = keyof typeof organizationTypeLabels;
 
 export const uiLabels = {
-  appName: "وثائقي",
+  appName: "نظام برقيات الشرطة",
   dashboard: "لوحة التحكم",
-  telegram: "وثيقة",
-  telegrams: "الوثائق",
-  createTelegram: "إنشاء وثيقة",
+  telegram: "برقية",
+  telegrams: "البرقيات",
+  createTelegram: "إنشاء برقية",
   reports: "التقارير",
   archive: "الأرشيف",
   settings: "الإعدادات",
@@ -71,7 +71,7 @@ export const uiLabels = {
   organization: "الجهة الشرطية",
   sourceOrganization: "الجهة المرسلة",
   destinationOrganization: "الجهة المستلمة",
-  creator: "منشئ الوثيقة",
+  creator: "منشئ البرقية",
   createdAt: "تاريخ الإنشاء",
   updatedAt: "تاريخ آخر تحديث",
   decision: "القرار",

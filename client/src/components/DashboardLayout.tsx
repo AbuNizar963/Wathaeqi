@@ -1,5 +1,4 @@
 import { useAuth } from "@/features/auth-session/useAuth";
-import OwnerSetupForm from "@/features/auth-session/OwnerSetupForm";
 import {
   Sidebar,
   SidebarContent,
@@ -14,18 +13,18 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  FileText,
-  LayoutDashboard,
-  Contact,
-  FileClock,
-  Bell,
-  Users,
+  Archive,
+  Activity,
   Building2,
+  FileSpreadsheet,
+  History,
+  LayoutDashboard,
   LockKeyhole,
+  MapPinned,
   PanelLeft,
-  Send,
-  Settings2,
+  Plus,
   ShieldCheck,
+  Users,
   WifiOff,
   X,
 } from "lucide-react";
@@ -34,7 +33,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { trpc } from "@/lib/trpc";
 import { BrandMark } from "./BrandMark";
 import HeaderActions from "./HeaderActions";
 
@@ -43,67 +42,66 @@ const menuItems = [
     key: "dashboard",
     icon: LayoutDashboard,
     label: "لوحة التحكم",
-    path: "/dashboard",
-  },
-  {
-    key: "telegrams",
-    icon: Send,
-    label: "البرقيات",
-    path: "/telegrams",
-  },
-  {
-    key: "documents",
-    icon: FileText,
-    label: "الوثائق",
     path: "/",
   },
   {
-    key: "contacts",
-    icon: Contact,
-    label: "جهات الاتصال",
-    path: "/contacts",
+    key: "owner-dashboard",
+    icon: Activity,
+    label: "لوحة قيادة المالك",
+    path: "/owner-dashboard",
+    ownerOnly: true,
   },
   {
-    key: "notifications",
-    icon: Bell,
-    label: "الإشعارات",
-    path: "/notifications",
+    key: "audit-log",
+    icon: History,
+    label: "سجل الإجراءات",
+    path: "/audit-log",
+    auditOnly: true,
   },
   {
-    key: "activity",
-    icon: FileClock,
-    label: "سجل النشاط",
-    path: "/activity",
+    key: "create-telegram",
+    icon: Plus,
+    label: "إنشاء برقية",
+    action: "open-telegram-composer",
   },
   {
-    key: "audit",
-    icon: ShieldCheck,
-    label: "سجل التدقيق",
-    path: "/audit-logs",
+    key: "telegram-excel-tools",
+    icon: FileSpreadsheet,
+    label: "استيراد وتصدير السجل",
+    action: "open-telegram-excel-tools",
   },
   {
-    key: "users",
+    key: "accounts",
     icon: Users,
     label: "إدارة المستخدمين",
-    path: "/users",
+    action: "open-owner-user-management",
+    adminOnly: true,
   },
   {
     key: "organizations",
     icon: Building2,
     label: "إدارة الجهات",
-    path: "/organizations",
+    action: "open-owner-organization-management",
+    adminOnly: true,
   },
   {
-    key: "department-settings",
-    icon: Settings2,
-    label: "إعدادات القسم",
-    path: "/department-settings",
+    key: "locations",
+    icon: MapPinned,
+    label: "خريطة البلاغات والمواقع الجغرافية",
+    tab: "locations",
+  },
+  { key: "units", icon: Users, label: "الوحدات الميدانية", tab: "units" },
+  {
+    key: "resources",
+    icon: Activity,
+    label: "إدارة الموارد",
+    tab: "resources",
   },
   {
-    key: "settings",
-    icon: Settings2,
-    label: "إعدادات الوثائق",
-    path: "/settings",
+    key: "archive",
+    icon: Archive,
+    label: "الأرشيف والسجلات المغلقة",
+    tab: "archive",
   },
 ];
 
@@ -117,20 +115,12 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const isMobile = useIsMobile();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
-  const [sidebarOpen, setSidebarOpen] = useState(() => !isMobile);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { loading, user } = useAuth();
-  const ownerRecoveryRequested =
-    new URLSearchParams(window.location.search).get("owner-recovery") === "1";
-  const ownerSetupStatusQuery = trpc.auth.ownerSetupStatus.useQuery(undefined, {
-    enabled: ownerRecoveryRequested,
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const loginMutation = trpc.auth.login.useMutation({
@@ -145,86 +135,11 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  useEffect(() => {
-    setSidebarOpen(!isMobile);
-  }, [isMobile]);
-
-  // Owner recovery is a public, one-time bootstrap path. Do not make it wait
-  // for the ordinary session lookup; the recovery-status query below is the
-  // authoritative gate for rendering the setup form.
-  if (loading && !ownerRecoveryRequested) {
+  if (loading) {
     return <DashboardLayoutSkeleton />;
   }
 
   if (!user) {
-    if (ownerRecoveryRequested) {
-      if (ownerSetupStatusQuery.isLoading) {
-        return <DashboardLayoutSkeleton />;
-      }
-
-      if (ownerSetupStatusQuery.data?.available === true) {
-        return <OwnerSetupForm />;
-      }
-
-      return (
-        <div
-          className="flex min-h-dvh items-center justify-center px-4 py-8"
-          dir="rtl"
-        >
-          <section
-            className="surface-elevated w-full max-w-lg space-y-4 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
-            role="alert"
-          >
-            <div className="flex flex-col items-center gap-3 text-center">
-              <BrandMark size="lg" />
-              <h1 className="text-xl font-semibold tracking-tight">
-                تعذّر فتح استعادة كلمة مرور المالك
-              </h1>
-              {ownerSetupStatusQuery.isError ? (
-                <>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    لم نتمكن من التحقق من حالة إعداد المالك عبر خدمة Appwrite.
-                    لم يتم تغيير كلمة المرور أو استهلاك رمز الإعداد.
-                  </p>
-                  <p
-                    className="w-full break-words rounded-lg bg-muted p-3 text-xs text-muted-foreground"
-                    dir="ltr"
-                  >
-                    {ownerSetupStatusQuery.error.message}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm leading-6 text-muted-foreground">
-                  خدمة الإعداد أفادت بأن الاستعادة غير متاحة حالياً. لم يتم
-                  تغيير كلمة المرور أو إنشاء حساب جديد. تحقق من إعداد وظيفة
-                  Appwrite وحالة رمز الإعداد قبل المحاولة مجدداً.
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Button
-                type="button"
-                className="w-full"
-                onClick={() => void ownerSetupStatusQuery.refetch()}
-                disabled={ownerSetupStatusQuery.isFetching}
-              >
-                {ownerSetupStatusQuery.isFetching
-                  ? "جارٍ إعادة الفحص..."
-                  : "إعادة المحاولة"}
-              </Button>
-              <Button
-                asChild
-                type="button"
-                variant="outline"
-                className="w-full"
-              >
-                <a href="/">العودة إلى تسجيل الدخول</a>
-              </Button>
-            </div>
-          </section>
-        </div>
-      );
-    }
     return (
       <div className="flex min-h-dvh items-center justify-center px-4">
         <form
@@ -290,14 +205,6 @@ export default function DashboardLayout({
           >
             {loginMutation.isPending ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
           </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            <a
-              href="/?owner-recovery=1"
-              className="text-primary underline underline-offset-4"
-            >
-              استعادة كلمة مرور المالك
-            </a>
-          </p>
           <p className="text-center text-sm text-muted-foreground">
             بتسجيل الدخول، فإنك توافق على{" "}
             <a
@@ -496,9 +403,15 @@ function DashboardLayoutContent({
     enabled: Boolean(user),
     staleTime: 30_000,
   });
-  const isPlatformOwnerAccount =
-    user?.isPlatformOwner === true ||
-    organizationContext.data?.isOwner === true;
+  const isPlatformOwnerAccount = organizationContext.data?.isOwner === true;
+  const canManageUsers =
+    user?.role === "admin" ||
+    [
+      "system_admin",
+      "organization_admin",
+      "regional_admin",
+      "organization_supervisor",
+    ].includes(organizationContext.data?.role ?? "");
   const canViewAuditLogs =
     user?.role === "admin" ||
     organizationContext.data?.isOwner === true ||
@@ -506,13 +419,6 @@ function DashboardLayoutContent({
       ["system_admin", "auditor"].includes(
         organizationContext.data?.role ?? ""
       ));
-  const visibleMenuItems = menuItems.filter(item => {
-    if (["documents", "contacts", "notifications"].includes(item.key)) {
-      return true;
-    }
-    if (item.key === "activity") return canViewAuditLogs;
-    return isPlatformOwnerAccount;
-  });
   const [location, setLocation] = useLocation();
   const { state, setOpen, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -523,30 +429,7 @@ function DashboardLayoutContent({
   );
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = visibleMenuItems.find(item => item.path === location);
-
-  useEffect(() => {
-    if (organizationContext.isLoading) return;
-    const ownerOnlyPaths = [
-      "/dashboard",
-      "/users",
-      "/organizations",
-      "/settings",
-    ];
-    if (!isPlatformOwnerAccount && ownerOnlyPaths.includes(location)) {
-      setLocation("/");
-      return;
-    }
-    if (!canViewAuditLogs && location === "/activity") {
-      setLocation("/");
-    }
-  }, [
-    organizationContext.isLoading,
-    isPlatformOwnerAccount,
-    canViewAuditLogs,
-    location,
-    setLocation,
-  ]);
+  const activeMenuItem = menuItems.find(item => item.path === location);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -601,7 +484,7 @@ function DashboardLayoutContent({
       >
         تجاوز إلى المحتوى الرئيسي
       </a>
-      {isMobile && !isCollapsed ? (
+      {!isMobile && !isCollapsed ? (
         <button
           type="button"
           aria-label="إغلاق القائمة الجانبية"
@@ -637,24 +520,43 @@ function DashboardLayoutContent({
               التنقل الرئيسي
             </p>
             <SidebarMenu className="gap-1.5">
-              {visibleMenuItems.map(item => {
-                const isActive = location === item.path;
-                return (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
-                    >
-                      <item.icon
-                        className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {menuItems
+                .filter(
+                  item =>
+                    (!item.adminOnly || canManageUsers) &&
+                    (!item.ownerOnly || isPlatformOwnerAccount) &&
+                    (!item.auditOnly || canViewAuditLogs)
+                )
+                .map(item => {
+                  const isActive = location === item.path;
+                  return (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => {
+                          if (item.action) {
+                            window.dispatchEvent(new CustomEvent(item.action));
+                          } else if (item.tab) {
+                            window.dispatchEvent(
+                              new CustomEvent("open-operations-workspace", {
+                                detail: { tab: item.tab },
+                              })
+                            );
+                          } else if (item.path) {
+                            setLocation(item.path);
+                          }
+                        }}
+                        tooltip={item.label}
+                        className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
+                      >
+                        <item.icon
+                          className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
+                        />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
@@ -685,7 +587,7 @@ function DashboardLayoutContent({
               />
               <BrandMark size="sm" />
               <h1 className="text-lg font-bold tracking-tight text-foreground">
-                وثائقي
+                مركز البرقيات
               </h1>
               <span
                 className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold ${online ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
@@ -711,7 +613,7 @@ function DashboardLayoutContent({
                 }
               />
               <BrandMark size="sm" />
-              <span className="text-sm font-bold">وثائقي</span>
+              <span className="text-sm font-bold">مركز البرقيات</span>
               <span className="sr-only">
                 {activeMenuItem?.label ?? "القائمة"}
               </span>
