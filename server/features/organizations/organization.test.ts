@@ -265,8 +265,7 @@ describe("organization repository", () => {
       name: "القيادة المركزية المحدثة",
       type: "central",
       parentOrganizationId: null,
-      telegramDestinationOrganizationId:
-        "00000000-0000-4000-8000-000000000011",
+      telegramDestinationOrganizationId: "00000000-0000-4000-8000-000000000011",
     });
 
     expect(mocks.update).toHaveBeenCalledWith(
