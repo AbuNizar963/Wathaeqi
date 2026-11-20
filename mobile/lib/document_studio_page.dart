@@ -1601,7 +1601,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                       fontSize: 14,
                                     ),
                                   ),
-                                  if ((_letterhead['unitName']?.toString() ?? '')
+                                  if ((_letterhead['unitName']?.toString() ??
+                                          '')
                                       .isNotEmpty)
                                     Text(
                                       _letterhead['unitName'].toString(),
@@ -1622,7 +1623,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      _letterhead['unitChiefRank']?.toString() ??
+                                      _letterhead['unitChiefRank']
+                                              ?.toString() ??
                                           '',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -1707,10 +1709,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                         child: Text(
                           'وثائقي',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 9,
-                          ),
+                          style: TextStyle(color: Colors.black54, fontSize: 9),
                         ),
                       ),
                     ],
