@@ -14,9 +14,14 @@ import 'document_studio_models.dart';
 /// The library intentionally focuses on uploaded files; composing documents
 /// and managing templates remain in the document studio.
 class DocumentLibraryPage extends StatefulWidget {
-  const DocumentLibraryPage({super.key, required this.api});
+  const DocumentLibraryPage({
+    super.key,
+    required this.api,
+    this.onCreateDocument,
+  });
 
   final PoliceApi api;
+  final VoidCallback? onCreateDocument;
 
   @override
   State<DocumentLibraryPage> createState() => _DocumentLibraryPageState();
@@ -360,19 +365,30 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                     ],
                   ),
                 ),
-                FilledButton.icon(
-                  onPressed: _uploading ? null : _uploadFile,
-                  icon: _uploading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.upload_file_outlined),
-                  label: Text(_uploading ? 'جارٍ الرفع' : 'رفع وثيقة'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (widget.onCreateDocument != null)
+                      FilledButton.icon(
+                        onPressed: _uploading
+                            ? null
+                            : widget.onCreateDocument,
+                        icon: const Icon(Icons.add_box_outlined),
+                        label: const Text('إنشاء وثيقة'),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: _uploading ? null : _uploadFile,
+                      icon: _uploading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.upload_file_outlined),
+                      label: Text(_uploading ? 'جارٍ الرفع' : 'استيراد ملف'),
+                    ),
+                  ],
                 ),
               ],
             ),
