@@ -1,7 +1,7 @@
 {
   "name": "وثائقي",
   "short_name": "وثائقي",
-  "description": "منصة آمنة لإدارة الوثائق والوثائق وحفظها وتتبع إجراءاتها",
+  "description": "منصة آمنة لإدارة الوثائق الرسمية وحفظها وتتبع إجراءاتها",
   "id": "/",
   "lang": "ar",
   "dir": "rtl",
@@ -10,8 +10,8 @@
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",
-  "background_color": "#10233f",
-  "theme_color": "#10233f",
+  "background_color": "#0b2142",
+  "theme_color": "#0b2142",
   "categories": ["business", "productivity"],
   "icons": [
     {
