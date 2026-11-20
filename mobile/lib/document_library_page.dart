@@ -11,7 +11,7 @@ import 'document_studio_models.dart';
 /// Native mobile counterpart of the web document library.
 ///
 /// The library intentionally focuses on uploaded files; composing documents
-/// and managing templates remain in [DocumentStudioPage].
+/// and managing templates remain in the document studio.
 class DocumentLibraryPage extends StatefulWidget {
   const DocumentLibraryPage({super.key, required this.api});
 
