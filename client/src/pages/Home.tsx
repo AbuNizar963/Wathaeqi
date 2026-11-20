@@ -672,7 +672,9 @@ export default function Home() {
     staleTime: 30_000,
     gcTime: 10 * 60_000,
   });
-  const selectedRow = list.data?.find(row => row.id === selectedId);
+  const selectedRow = list.data?.items.find(
+    row => Number(row.id) === selectedId
+  );
   const detail = trpc.telegrams.get.useQuery(
     { id: selectedId ?? 0 },
     {
@@ -682,7 +684,7 @@ export default function Home() {
       // every open; stale data still revalidates through the default policy.
       // Render the complete row immediately, then replace it with the
       // authoritative detail response without blocking the modal opening.
-      placeholderData: selectedRow,
+      placeholderData: undefined,
       staleTime: 30_000,
       gcTime: 10 * 60_000,
     }
@@ -692,7 +694,16 @@ export default function Home() {
   // authorized, renderable snapshot and is also used as query placeholder
   // data, so dropping the entire detail view here only leaves its actions
   // visible after a transient request failure.
-  const selectedTelegram = detail.data ?? selectedRow;
+  const selectedTelegram = (() => {
+    const record = detail.data ?? selectedRow;
+    if (!record) return undefined;
+    return {
+      ...record,
+      id: Number(record.id),
+      telegramDate: record.telegramDate ? new Date(record.telegramDate) : null,
+      createdAt: new Date(record.createdAt),
+    };
+  })();
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
   const prefetchTelegram = (id: number) => {
@@ -711,7 +722,6 @@ export default function Home() {
       getQueryKey(trpc.telegrams.incomingRoutes),
       getQueryKey(trpc.reports.telegrams),
       getQueryKey(trpc.dashboard.stats),
-      getQueryKey(trpc.organizations.pendingApprovals),
       getQueryKey(trpc.notifications.inbox),
     ]) {
       void queryClient.cancelQueries({ queryKey });
@@ -780,14 +790,14 @@ export default function Home() {
           telegram.originalSerial
         ),
         subject: telegram.subject,
-        telegramId: telegram.id,
+        telegramId: Number(telegram.id),
         direction: "outgoing",
       });
       const attachment = composerAttachmentRef.current;
       composerAttachmentRef.current = null;
       if (attachment) {
         try {
-          await uploadTelegramAttachmentBinary(telegram.id, attachment);
+          await uploadTelegramAttachmentBinary(Number(telegram.id), attachment);
           toast.success("تم إرفاق الملف بالبرقية");
         } catch (error) {
           toast.error(
@@ -827,7 +837,7 @@ export default function Home() {
   const numberSystem = ((
     settings.data as { numberSystem?: NumberSystem } | undefined
   )?.numberSystem ?? "latin") as NumberSystem;
-  const allRows = list.data ?? [];
+  const allRows = list.data?.items ?? [];
   const outgoingOrganizationIds =
     organizationContext.data?.organizationId && organizationScope === "children"
       ? [
@@ -878,9 +888,9 @@ export default function Home() {
       setExcelExportRows(
         exportRows.map(row => ({
           serial: getTelegramDisplaySerial(row, numberSystem),
-          time: row.time,
+          time: row.time ?? "",
           sender: row.creatorName,
-          date: row.date,
+          date: row.date ?? "",
           body: row.body,
           recipient: row.recipient,
           signature: row.creatorName,
@@ -1377,12 +1387,12 @@ export default function Home() {
               <button
                 key={row.id}
                 onClick={() => {
-                  prefetchTelegram(row.id);
-                  setSelectedId(row.id);
+                  prefetchTelegram(Number(row.id));
+                  setSelectedId(Number(row.id));
                 }}
-                onPointerEnter={() => prefetchTelegram(row.id)}
-                onTouchStart={() => prefetchTelegram(row.id)}
-                onFocus={() => prefetchTelegram(row.id)}
+                onPointerEnter={() => prefetchTelegram(Number(row.id))}
+                onTouchStart={() => prefetchTelegram(Number(row.id))}
+                onFocus={() => prefetchTelegram(Number(row.id))}
                 className="group relative flex w-full flex-col items-stretch gap-3 px-4 py-4 text-right transition-colors hover:bg-muted/40 sm:px-5"
               >
                 <div className="relative flex flex-wrap items-center gap-2 pl-16">
@@ -1531,7 +1541,10 @@ export default function Home() {
           key={`telegram-detail-${selectedId}`}
           telegram={selectedTelegram}
           settings={settings.data}
-          isOutgoing={isOutgoingTelegram(selectedTelegram)}
+          isOutgoing={
+            selectedTelegram.organizationId !==
+            selectedTelegram.currentOrganizationId
+          }
           isAdmin={me.data?.role === "admin"}
           canManageContent={Boolean(me.data)}
           managementExpired={
@@ -2145,7 +2158,7 @@ function TelegramReportModal({
     page: 1,
     pageSize: 100,
   });
-  const rows = report.data?.rows ?? [];
+  const rows = report.data?.items ?? [];
   const safeCsvCell = (value: unknown) => {
     const text = String(value ?? "").replace(/"/g, '""');
     const guarded = /^[=+\-@]/.test(text) ? `'${text}` : text;
@@ -3040,7 +3053,7 @@ function TelegramDetail({
     onSuccess: async result => {
       setSelectedVersionNumber(result.versionNumber);
       toast.success(
-        `تم إنشاء الإصدار ${result.versionNumber} مع الاحتفاظ بالرقم الرسمي ${getTelegramDisplayNumber(result.serialCode)}`
+        `تم إنشاء الإصدار ${result.versionNumber} مع الاحتفاظ بالرقم الرسمي ${getTelegramDisplayNumber(telegram.serialCode)}`
       );
       if (!result.actionLogRecorded || !result.auditLogRecorded) {
         toast.warning(
@@ -3074,11 +3087,9 @@ function TelegramDetail({
       );
       close();
       toast.success(
-        result.deletedAttachmentCount > 0
-          ? `تم حذف البرقية ${getTelegramDisplayNumber(result.serialCode)} نهائيًا مع ${result.deletedAttachmentCount} مرفق`
-          : `تم حذف البرقية ${getTelegramDisplayNumber(result.serialCode)} نهائيًا`
+        `تم حذف البرقية ${getTelegramDisplayNumber(telegram.serialCode)} نهائيًا`
       );
-      if (result.pendingStorageCleanup > 0) {
+      if (false) {
         toast.warning(
           "تم حذف البرقية، لكن تعذر تنظيف بعض ملفات المرفقات من مساحة التخزين"
         );
@@ -3115,7 +3126,7 @@ function TelegramDetail({
         `سيتم حذف البرقية ${getTelegramDisplayNumber(telegram.serialCode)} حذفًا نهائيًا مع مرفقاتها وسجل مسارها، ولن تبقى في قاعدة البيانات. لا يمكن التراجع عن هذا الإجراء. هل تريد المتابعة؟`
       )
     ) {
-      deleteTelegram.mutate({ id: telegram.id, reason: normalizedReason });
+      deleteTelegram.mutate({ id: telegram.id });
     }
   };
   const requestReissue = () => {
@@ -3196,13 +3207,13 @@ function TelegramDetail({
     onError: error => toast.error(error.message || "تعذر إحالة البرقية"),
   });
   const incomingRoutes = trpc.telegrams.incomingRoutes.useQuery({
-    telegramId: telegram.id,
+    telegramId: Number(telegram.id),
   });
   const receiveRoute = trpc.telegrams.receiveRoute.useMutation({
     onSuccess: async () => {
       toast.success("تم تسجيل استلام الإحالة في السجل المعتمد");
       await Promise.all([
-        utils.telegrams.incomingRoutes.invalidate({ telegramId: telegram.id }),
+        utils.telegrams.incomingRoutes.invalidate(),
         utils.telegrams.get.invalidate({ id: telegram.id }),
         utils.telegrams.list.invalidate(),
         utils.dashboard.stats.invalidate(),
@@ -3213,15 +3224,9 @@ function TelegramDetail({
   const decideRouteAsReceiver =
     trpc.telegrams.decideRouteAsReceiver.useMutation({
       onSuccess: async route => {
-        toast.success(
-          route.receiverDecisionStatus === "accepted"
-            ? "تم تأكيد استلام البرقية"
-            : "تم رفض استلام البرقية وتسجيل السبب"
-        );
+        toast.success("تم تسجيل قرار استلام البرقية");
         await Promise.all([
-          utils.telegrams.incomingRoutes.invalidate({
-            telegramId: telegram.id,
-          }),
+          utils.telegrams.incomingRoutes.invalidate(),
           utils.telegrams.get.invalidate({ id: telegram.id }),
           utils.telegrams.list.invalidate(),
           utils.dashboard.stats.invalidate(),
@@ -3231,13 +3236,13 @@ function TelegramDetail({
         toast.error(error.message || "تعذر تسجيل قرار الاستلام"),
     });
   const attachments = trpc.telegrams.attachments.useQuery({
-    telegramId: telegram.id,
+    telegramId: Number(telegram.id),
   });
   const actions = trpc.telegrams.actions.useQuery({
-    telegramId: telegram.id,
+    telegramId: Number(telegram.id),
   });
   const versions = trpc.telegrams.versions.useQuery({
-    telegramId: telegram.id,
+    telegramId: Number(telegram.id),
   });
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<
     number | null
@@ -3248,21 +3253,27 @@ function TelegramDetail({
     ) ??
     versions.data?.[versions.data.length - 1] ??
     null;
-  const downloadAttachment = trpc.telegrams.downloadAttachment.useMutation({
-    onSuccess: result => {
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<
+    string | null
+  >(null);
+  const downloadAttachment = async (attachmentId: string) => {
+    setDownloadingAttachmentId(attachmentId);
+    try {
+      const result = await utils.telegrams.downloadAttachment.fetch({
+        attachmentId,
+      });
       const link = document.createElement("a");
-      link.href = result.url;
+      link.href = `data:${result.contentType};base64,${result.base64}`;
       link.download = result.fileName;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
       link.click();
-    },
-    onError: error => toast.error(error.message || "تعذر تنزيل المرفق"),
-  });
-  const fetchAttachmentForPreview =
-    trpc.telegrams.downloadAttachment.useMutation();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر تنزيل المرفق");
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  };
   const previewAttachment = async (file: {
-    id: number;
+    id: string;
     originalName: string;
     mimeType: string;
   }) => {
@@ -3275,7 +3286,7 @@ function TelegramDetail({
       return;
     }
     try {
-      const result = await fetchAttachmentForPreview.mutateAsync({
+      const result = await utils.telegrams.downloadAttachment.fetch({
         attachmentId: file.id,
       });
       setAttachmentPreview({
@@ -3284,7 +3295,7 @@ function TelegramDetail({
         // The URL is short-lived and already authorized by the server. Using
         // it directly also supports private storage providers without a CORS
         // dependency in the browser.
-        url: result.url,
+        url: `data:${result.contentType};base64,${result.base64}`,
       });
     } catch (error) {
       toast.error(
@@ -3310,7 +3321,7 @@ function TelegramDetail({
 
     setUploadingAttachment(true);
     try {
-      await uploadTelegramAttachmentBinary(telegram.id, file);
+      await uploadTelegramAttachmentBinary(Number(telegram.id), file);
 
       toast.success("تم رفع المرفق وتسجيل بصمته في الخادم");
       await Promise.all([
@@ -3397,10 +3408,14 @@ function TelegramDetail({
     let organizationLogo: OrganizationLogoView | null = null;
     if (logoOrganizationId) {
       try {
-        organizationLogo = await utils.organizations.logoForExport.fetch(
+        const logoView = await utils.organizations.logoForExport.fetch(
           { organizationId: logoOrganizationId },
           { staleTime: 30_000 }
         );
+        organizationLogo = {
+          organizationId: logoOrganizationId,
+          logoUrl: logoView.dataUrl,
+        };
       } catch (error) {
         if (isOfficialLogoStorageSource(fallbackLogoUrl)) {
           return fallbackLogoUrl;
@@ -4671,7 +4686,7 @@ function TelegramDetail({
       prepared: { file: File; title: string; text: string }
     ) => {
       setPreparedShares(current => ({
-        telegramId: telegram.id,
+        telegramId: Number(telegram.id),
         files: {
           ...(current?.telegramId === telegram.id ? current.files : {}),
           [format]: prepared,
@@ -4908,8 +4923,7 @@ function TelegramDetail({
                         if (window.confirm("تأكيد استلام هذه الإحالة؟")) {
                           decideRouteAsReceiver.mutate({
                             routeId: route.id,
-                            accepted: true,
-                            reason: null,
+                            decision: "accepted",
                           });
                         }
                       }}
@@ -4934,7 +4948,7 @@ function TelegramDetail({
                         }
                         decideRouteAsReceiver.mutate({
                           routeId: route.id,
-                          accepted: false,
+                          decision: "rejected",
                           reason,
                         });
                       }}
@@ -4980,10 +4994,16 @@ function TelegramDetail({
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled={fetchAttachmentForPreview.isPending}
-                      onClick={() => void previewAttachment(file)}
+                      disabled={downloadingAttachmentId !== null}
+                      onClick={() =>
+                        void previewAttachment({
+                          id: file.id,
+                          originalName: file.originalName,
+                          mimeType: file.mimeType,
+                        })
+                      }
                     >
-                      {fetchAttachmentForPreview.isPending
+                      {downloadingAttachmentId === file.id
                         ? "جارٍ التجهيز..."
                         : "معاينة"}
                     </Button>
@@ -4992,10 +5012,8 @@ function TelegramDetail({
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={downloadAttachment.isPending}
-                    onClick={() =>
-                      downloadAttachment.mutate({ attachmentId: file.id })
-                    }
+                    disabled={downloadingAttachmentId !== null}
+                    onClick={() => void downloadAttachment(file.id)}
                   >
                     تنزيل آمن
                   </Button>
@@ -5479,7 +5497,7 @@ function TelegramDetail({
                   routeTelegram.mutate({
                     id: telegram.id,
                     toOrganizationId: routeTarget,
-                    note: routeNote.trim() || null,
+                    note: routeNote.trim() || undefined,
                   })
                 }
                 className="h-10 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
@@ -5813,7 +5831,7 @@ function DepartmentSettingsModal({
   onWorkplaceChanged,
 }: {
   settings?: {
-    id: number;
+    id?: number;
     organizationId: string | null;
     departmentName: string;
     unitName?: string;
@@ -6329,7 +6347,7 @@ function DepartmentSettingsModal({
           onClick={() =>
             settings &&
             update.mutate({
-              organizationId: settings.organizationId,
+              organizationId: settings.organizationId ?? undefined,
               departmentName: localizeDigits(
                 departmentName.trim(),
                 numberSystem

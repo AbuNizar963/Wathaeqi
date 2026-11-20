@@ -33,6 +33,32 @@ const tabDescriptions: Record<WorkspaceTab, string> = {
 };
 
 const LIVE_REFRESH_INTERVAL_MS = 15_000;
+type LocationRow = {
+  id: string;
+  priority: string;
+  serialCode: string;
+  subject: string;
+  gpsLatitude: string | null;
+  gpsLongitude: string | null;
+};
+type UnitWorkload = {
+  id: string;
+  name: string;
+  type: string;
+  code: string;
+  openCount: number;
+};
+type ArchiveRow = {
+  id: string;
+  serialCode: string;
+  subject: string;
+  recipient: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  closedAt: string | null;
+  creatorName: string;
+};
 
 export default function OperationsWorkspace() {
   const [open, setOpen] = useState(false);
@@ -80,7 +106,7 @@ export default function OperationsWorkspace() {
     setOpen(false);
     setSearch("");
   };
-  const rows = allTelegrams.data ?? [];
+  const rows = allTelegrams.data?.items ?? [];
   const locations = useMemo(
     () =>
       rows.filter(row => row.gpsLatitude !== null && row.gpsLongitude !== null),
@@ -91,7 +117,7 @@ export default function OperationsWorkspace() {
     position: { lat: Number(row.gpsLatitude), lng: Number(row.gpsLongitude) },
     title: `${getTelegramDisplayNumber(row.serialCode)} — ${row.subject}`,
   }));
-  const filteredArchive = (archivedTelegrams.data ?? []).filter(row => {
+  const filteredArchive = (archivedTelegrams.data?.items ?? []).filter(row => {
     const needle = search.trim().toLowerCase();
     return (
       !needle ||
@@ -230,7 +256,7 @@ function LocationsPanel({
   error,
   onRetry,
 }: {
-  locations: Array<any>;
+  locations: LocationRow[];
   markers: MapMarker[];
   loading: boolean;
   error: boolean;
@@ -337,7 +363,7 @@ function UnitsPanel({
   error,
   onRetry,
 }: {
-  units: Array<any>;
+  units: UnitWorkload[];
   currentUnit?: string;
   loading: boolean;
   error: boolean;
@@ -403,7 +429,7 @@ function ResourcesPanel({
   error,
   onRetry,
 }: {
-  units: Array<any>;
+  units: UnitWorkload[];
   openCount: number;
   locationsCount: number;
   loading: boolean;
@@ -488,7 +514,7 @@ function ArchivePanel({
   error,
   onRetry,
 }: {
-  rows: Array<any>;
+  rows: ArchiveRow[];
   search: string;
   setSearch: (value: string) => void;
   loading: boolean;

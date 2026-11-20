@@ -211,6 +211,8 @@ export const reportsCompatRouter = router({
         page: result.page,
         pageSize: result.pageSize,
         hasNext: result.hasNext,
+        rows: result.items,
+        generatedAt: new Date().toISOString(),
       };
     }),
 });
@@ -316,6 +318,9 @@ export const ownerDashboardCompatRouter = router({
           actorName: asNullableString(row.actorName),
           entityType: asString(row.entityType),
           organizationId: asNullableString(row.organizationId),
+          organizationName:
+            organizationNames.get(asString(row.organizationId)) ?? null,
+          entityId: asNullableString(row.entityId),
           createdAt: isoOrNull(row.createdAt),
         })),
         generatedAt: new Date().toISOString(),

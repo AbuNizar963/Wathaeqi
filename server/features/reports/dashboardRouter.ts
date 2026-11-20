@@ -94,6 +94,17 @@ export const dashboardRouter = router({
       pendingRoutes: pendingRoutes.slice(0, 5),
       openTelegrams: telegrams.stats.open,
       urgentTelegrams: telegrams.stats.urgent,
+      total: telegrams.total,
+      today: 0,
+      todayUrgent: telegrams.stats.urgent,
+      todayIncoming: 0,
+      inProgress: telegrams.stats.byStatus.in_progress ?? 0,
+      resolved:
+        (telegrams.stats.byStatus.resolved ?? 0) +
+        (telegrams.stats.byStatus.completed ?? 0),
+      incoming: 0,
+      outgoing: telegrams.total,
+      urgentAwaitingReceipt: pendingRoutes.length,
     };
   }),
 

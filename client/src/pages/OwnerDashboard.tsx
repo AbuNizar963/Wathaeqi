@@ -649,10 +649,13 @@ export default function OwnerDashboardPage() {
                     </div>
                     <time
                       className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground"
-                      dateTime={operation.createdAt}
+                      dateTime={operation.createdAt ?? undefined}
                     >
                       <Clock3 className="h-3.5 w-3.5" />
-                      {formatDate(operation.createdAt, true)}
+                      {formatDate(
+                        operation.createdAt ?? new Date(0).toISOString(),
+                        true
+                      )}
                     </time>
                   </li>
                 ))}
@@ -683,7 +686,7 @@ export default function OwnerDashboardPage() {
 }
 
 type NotificationItem = {
-  id: number;
+  id: string;
   title: string;
   body: string;
   type: string;
@@ -696,7 +699,7 @@ function NotificationPanel({
 }: {
   data?: { items?: NotificationItem[]; unreadCount?: number };
   loading: boolean;
-  onRead: (id: number) => void;
+  onRead: (id: string) => void;
 }) {
   const items = (data?.items ?? []).slice(0, 4);
   return (
@@ -756,7 +759,17 @@ function NotificationPanel({
   );
 }
 
-function PerformanceReport({ summary }: { summary: any }) {
+type OwnerDashboardSummary = {
+  topOrganizations?: Array<{
+    name?: string;
+    organizationName?: string;
+    count?: number;
+  }>;
+  totalOperations?: number;
+  sensitiveOperations?: number;
+  operationsByDay?: Array<{ date: string; count: number }>;
+};
+function PerformanceReport({ summary }: { summary: OwnerDashboardSummary }) {
   const top = summary.topOrganizations ?? [];
   const total = Number(summary.totalOperations ?? 0);
   const sensitive = Number(summary.sensitiveOperations ?? 0);

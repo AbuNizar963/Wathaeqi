@@ -31,7 +31,9 @@ type ManagedUser = {
   unit: string | null;
   role: string;
   membershipRole?: string | null;
-  loginMethod: string | null;
+  loginMethod?: string | null;
+  email?: string | null;
+  bio?: string | null;
 };
 
 type ManagedOrganization = {
@@ -139,27 +141,40 @@ export default function OwnerUserManagement() {
     Record<number, boolean>
   >({});
 
-  const users = trpc.userManagement.list.useQuery(
-    {
-      page: userPage,
-      pageSize: userPageSize,
-      search: userSearch,
-      organizationId:
-        organizationBranchFilter || organizationRootFilter || undefined,
-    },
-    {
-      enabled: open,
-      refetchOnWindowFocus: false,
-    }
-  );
+  const users = trpc.userManagement.list.useQuery(undefined, {
+    enabled: open,
+    refetchOnWindowFocus: false,
+  });
   const organizations = trpc.organizations.all.useQuery(undefined, {
     enabled: open,
     refetchOnWindowFocus: false,
   });
   const utils = trpc.useUtils();
 
-  const managedUsers = (users.data?.items ?? []) as ManagedUser[];
-  const totalUserPages = users.data?.totalPages ?? 1;
+  const managedUsers = useMemo(() => {
+    const query = userSearch.trim().toLocaleLowerCase("ar");
+    const organizationId = organizationBranchFilter || organizationRootFilter;
+    const filtered = (users.data ?? []).filter(
+      user =>
+        (!organizationId || user.organizationId === organizationId) &&
+        matchesUserSearch(user, query)
+    );
+    return filtered.slice(
+      (userPage - 1) * userPageSize,
+      userPage * userPageSize
+    );
+  }, [
+    users.data,
+    userSearch,
+    organizationBranchFilter,
+    organizationRootFilter,
+    userPage,
+    userPageSize,
+  ]);
+  const totalUserPages = Math.max(
+    1,
+    Math.ceil((users.data?.length ?? 0) / userPageSize)
+  );
   const managedOrganizations = (organizations.data ??
     []) as ManagedOrganization[];
   const rootOrganizations = managedOrganizations.filter(
@@ -291,8 +306,14 @@ export default function OwnerUserManagement() {
   const enableUser = trpc.userManagement.enable.useMutation({
     onSuccess: async (_data, variables) => {
       toast.success("تمت إعادة تفعيل الحساب");
-      setEnablePassword(current => ({ ...current, [variables.id]: "" }));
-      setEnablePasswordOpen(current => ({ ...current, [variables.id]: false }));
+      setEnablePassword(current => ({
+        ...current,
+        [Number(variables.id)]: "",
+      }));
+      setEnablePasswordOpen(current => ({
+        ...current,
+        [Number(variables.id)]: false,
+      }));
       await utils.userManagement.list.invalidate();
     },
     onError: error => toast.error(error.message || "تعذر تفعيل الحساب"),
@@ -330,12 +351,19 @@ export default function OwnerUserManagement() {
       organizationId: selectedOrganizationId,
       name: name.trim(),
       username: username.trim().toLowerCase(),
+      email: `${username.trim().toLowerCase()}@wathaeqi.local`,
       password,
       badgeNumber: badgeNumber.trim() || null,
       phone: phone.trim() || null,
       rank: rank.trim() || null,
       unit: unit.trim() || null,
-      role: accountRole,
+      role: "user",
+      membershipRole:
+        accountRole === "auditor" ||
+        accountRole === "reader" ||
+        accountRole === "organization_supervisor"
+          ? "member"
+          : accountRole,
     });
   };
 
@@ -925,8 +953,6 @@ export default function OwnerUserManagement() {
                                                 if (!confirmPassword) return;
                                                 enableUser.mutate({
                                                   id: user.id,
-                                                  password:
-                                                    enablePassword[user.id],
                                                   confirmPassword,
                                                 });
                                               }}
@@ -1011,8 +1037,6 @@ export default function OwnerUserManagement() {
                                           }
                                           deleteUser.mutate({
                                             id: user.id,
-                                            confirmPassword,
-                                            confirmation,
                                           });
                                         }
                                       }}
@@ -1053,8 +1077,8 @@ export default function OwnerUserManagement() {
               <span className="text-xs text-muted-foreground">
                 صفحة <strong className="text-foreground">{userPage}</strong> من{" "}
                 <strong className="text-foreground">{totalUserPages}</strong>
-                {typeof users.data?.total === "number" && (
-                  <> · {users.data.total} حساب</>
+                {typeof users.data?.length === "number" && (
+                  <> · {users.data.length} حساب</>
                 )}
               </span>
               <Button
@@ -1082,7 +1106,6 @@ export default function OwnerUserManagement() {
               onSubmit={event => {
                 event.preventDefault();
                 const requiresConfirmation =
-                  Boolean(editForm.password) ||
                   editForm.role !== editing.membershipRole;
                 const confirmPassword = requiresConfirmation
                   ? window.prompt(
@@ -1092,15 +1115,26 @@ export default function OwnerUserManagement() {
                 if (requiresConfirmation && !confirmPassword) return;
                 updateUser.mutate({
                   id: editing.id,
+                  organizationId:
+                    editing.organizationId ?? selectedOrganizationId,
                   ...editForm,
                   name: editForm.name.trim(),
                   username: editForm.username.trim().toLowerCase(),
+                  email:
+                    editing.email ??
+                    `${editForm.username.trim().toLowerCase()}@wathaeqi.local`,
                   badgeNumber: editForm.badgeNumber.trim() || null,
                   phone: editForm.phone.trim() || null,
                   rank: editForm.rank.trim() || null,
                   unit: editForm.unit.trim() || null,
-                  role: editForm.role,
-                  confirmPassword: confirmPassword ?? undefined,
+                  role: "user",
+                  membershipRole:
+                    editForm.role === "auditor" ||
+                    editForm.role === "reader" ||
+                    editForm.role === "organization_supervisor"
+                      ? "member"
+                      : editForm.role,
+                  bio: editing.bio ?? null,
                 });
               }}
               className="max-h-[calc(100dvh-2rem)] w-full max-w-lg space-y-3 overflow-y-auto rounded-2xl bg-background p-5 shadow-xl"

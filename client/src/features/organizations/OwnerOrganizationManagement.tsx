@@ -29,6 +29,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const typeLabels = organizationTypeLabels;
+type OrganizationApiType =
+  | "department"
+  | "directorate"
+  | "general_command"
+  | "ministry"
+  | "station"
+  | "unit";
 type OrganizationType =
   | "central"
   | "governorate"
@@ -197,15 +204,7 @@ export default function OwnerOrganizationManagement() {
   const utils = trpc.useUtils();
   const create = trpc.organizations.create.useMutation({
     onSuccess: result => {
-      if (result.account) {
-        setCreatedAccount({
-          organizationName: result.organization.name,
-          username: result.account.username,
-          password: result.account.password,
-        });
-      } else {
-        setCreatedAccount(null);
-      }
+      setCreatedAccount(null);
       void utils.organizations.all.invalidate();
       void utils.organizations.allAccounts.invalidate();
     },
@@ -238,7 +237,7 @@ export default function OwnerOrganizationManagement() {
           utils.organizations.accounts.invalidate(),
         ]);
         setSelectedOrganizationId(null);
-        toast.success(`تم حذف الجهة نهائيًا (${result.organizationCode})`);
+        toast.success("تم حذف الجهة نهائيًا");
       },
       onError: error =>
         toast.error(error.message || "تعذر الحذف النهائي للجهة"),
@@ -247,7 +246,11 @@ export default function OwnerOrganizationManagement() {
     trpc.organizations.settings.update.useMutation();
   const provisionAccount = trpc.organizations.provisionAccount.useMutation({
     onSuccess: async result => {
-      setCreatedAccount(result);
+      setCreatedAccount({
+        organizationName: selectedOrganizationId ?? "",
+        username: result.username ?? "",
+        password: "",
+      });
       toast.success("تم إنشاء حساب الجهة المفتوحة");
       await accounts.refetch();
     },
@@ -444,14 +447,27 @@ export default function OwnerOrganizationManagement() {
       toast.error("اختر الجهة المستلمة للبرقيات قبل الحفظ");
       return;
     }
-    const input = {
+    const input: {
+      code: string;
+      name: string;
+      type: OrganizationApiType;
+      parentOrganizationId: string | null;
+      telegramDestinationOrganizationId: string | null;
+    } = {
       code: form.code.trim().toUpperCase(),
       name: form.name.trim(),
-      type: form.type,
+      type: ([
+        "central",
+        "governorate",
+        "region",
+        "police_department",
+        "command",
+      ].includes(form.type)
+        ? "department"
+        : form.type) as OrganizationApiType,
       parentOrganizationId: form.parentOrganizationId || null,
       telegramDestinationOrganizationId:
         form.telegramDestinationOrganizationId || null,
-      allowHierarchyOverride: form.allowHierarchyOverride,
     };
     const settingsInput = {
       departmentName: settingsDraft.departmentName.trim() || form.name.trim(),
@@ -478,28 +494,24 @@ export default function OwnerOrganizationManagement() {
         const result = await update.mutateAsync({
           ...input,
           id: editingId,
-          isActive: form.isActive,
-          accountUsername,
-          accountPassword,
         });
-        organizationId = result.organization.id;
+        organizationId = result.id;
       } else {
         const result = await create.mutateAsync({
           ...input,
-          createAccount: form.createAccount,
         });
-        organizationId = result.organization.id;
+        organizationId = result.id;
         setEditingId(organizationId);
         setSelectedOrganizationId(organizationId);
-        setAccountUsername(result.account?.username ?? "");
+        setAccountUsername("");
         setForm(current => ({
           ...current,
-          code: result.organization.code,
-          name: result.organization.name,
-          type: result.organization.type as OrganizationType,
-          parentOrganizationId: result.organization.parentOrganizationId ?? "",
+          code: result.code,
+          name: result.name,
+          type: result.type as OrganizationType,
+          parentOrganizationId: result.parentOrganizationId ?? "",
           telegramDestinationOrganizationId:
-            result.organization.telegramDestinationOrganizationId ?? "",
+            result.telegramDestinationOrganizationId ?? "",
         }));
       }
       organizationSaved = true;
@@ -919,7 +931,14 @@ export default function OwnerOrganizationManagement() {
                       variant="outline"
                       disabled={provisionAccount.isPending}
                       onClick={() =>
-                        provisionAccount.mutate({ organizationId: editingId })
+                        provisionAccount.mutate({
+                          organizationId: editingId,
+                          name: form.name,
+                          username:
+                            accountUsername || `org_${editingId.slice(0, 8)}`,
+                          email: `${accountUsername || `org_${editingId.slice(0, 8)}`}@invalid.local`,
+                          password: accountPassword || "TemporaryPassword123!",
+                        })
                       }
                     >
                       {provisionAccount.isPending
@@ -1671,7 +1690,6 @@ export default function OwnerOrganizationManagement() {
                           if (confirmed) {
                             deleteOrganization.mutate({
                               id: selectedOrganization.id,
-                              reason: "طلب مالك النظام من إدارة الجهات",
                             });
                           }
                         }}
@@ -1706,10 +1724,8 @@ export default function OwnerOrganizationManagement() {
                             return;
                           }
                           purgeArchivedOrganization.mutate({
-                            id: selectedOrganization.id,
-                            password,
+                            organizationId: selectedOrganization.id,
                             confirmation,
-                            reason: "حذف نهائي لجهة مؤرشفة بطلب مالك النظام",
                           });
                         }}
                       >
@@ -1739,10 +1755,7 @@ export default function OwnerOrganizationManagement() {
                       </p>
                     ) : selectedAccounts.length ? (
                       selectedAccounts.map(account => (
-                        <p
-                          key={account.userId}
-                          className="mt-1 font-mono text-xs"
-                        >
+                        <p key={account.id} className="mt-1 font-mono text-xs">
                           {account.username}
                           {account.mustChangePassword ? " · كلمة مؤقتة" : ""}
                         </p>
@@ -1764,6 +1777,13 @@ export default function OwnerOrganizationManagement() {
                               onClick={() =>
                                 provisionAccount.mutate({
                                   organizationId: selectedOrganization.id,
+                                  name: selectedOrganization.name,
+                                  username:
+                                    accountUsername ||
+                                    `org_${selectedOrganization.id.slice(0, 8)}`,
+                                  email: `${accountUsername || `org_${selectedOrganization.id.slice(0, 8)}`}@invalid.local`,
+                                  password:
+                                    accountPassword || "TemporaryPassword123!",
                                 })
                               }
                             >
