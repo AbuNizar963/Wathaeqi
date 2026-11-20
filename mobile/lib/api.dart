@@ -10,7 +10,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'offline_vault.dart';
 
-/// Keep client-side waits below the Netlify Functions request timeout.
+/// Keep client-side waits below the Appwrite Function request timeout.
 const telegramDocumentRenderTimeout = Duration(seconds: 50);
 
 class NetworkException implements Exception {
@@ -141,7 +141,7 @@ class PoliceApi {
            baseUrl ??
            const String.fromEnvironment(
              'API_BASE_URL',
-             defaultValue: 'https://wathaeqi.netlify.app',
+             defaultValue: 'https://wathaeqi-api.fra.appwrite.run',
            ),
        _httpClient = httpClient ?? _sharedHttpClient,
        _vault = vault ?? OfflineVault();

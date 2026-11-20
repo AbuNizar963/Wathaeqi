@@ -16,7 +16,11 @@ flutter pub get
 flutter run
 ```
 
-عنوان الخادم الافتراضي مضبوط في `mobile/lib/api.dart`. لتغييره أثناء التطوير:
+عنوان Appwrite Function الافتراضي مضبوط في `mobile/lib/api.dart`:
+
+`https://wathaeqi-api.fra.appwrite.run`
+
+لتغييره أثناء التطوير:
 
 ```bash
 flutter run --dart-define=API_BASE_URL=https://your-server.example

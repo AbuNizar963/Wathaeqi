@@ -33,6 +33,14 @@ Future<T> _withOfflineCacheContext<T>(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('uses the published Appwrite Function as the default API', () {
+    final api = PoliceApi();
+
+    expect(api.baseUrl, 'https://wathaeqi-api.fra.appwrite.run');
+    expect(api.baseUrl, isNot(contains('netlify.app')));
+    expect(api.baseUrl, isNot(contains('vercel.app')));
+  });
+
   setUp(() {
     _secureStorageForTest.clear();
     _failSecureStorageReadAll = false;
