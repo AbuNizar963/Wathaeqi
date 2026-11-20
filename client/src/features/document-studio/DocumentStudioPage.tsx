@@ -27,11 +27,11 @@ import type {
 } from "../../../../shared/documentStudio";
 import DocumentEditor from "./DocumentEditor";
 import {
-  buildTelegramWatermarkCss,
-  OFFICIAL_MINISTRY_NAME,
-  TELEGRAM_WATERMARK_COLUMNS,
-  TELEGRAM_WATERMARK_ROWS,
-} from "@/features/telegrams/documents/telegramWatermark";
+  buildDocumentWatermarkCss,
+  DOCUMENT_WATERMARK_COLUMNS,
+  DOCUMENT_WATERMARK_ROWS,
+  OFFICIAL_ORGANIZATION_NAME,
+} from "./documentWatermark";
 
 type StudioTab = "documents" | "templates" | "archive";
 
@@ -1172,7 +1172,7 @@ function DocumentWatermark({
   opacityPercent: number;
   showMinistryText: boolean;
 }) {
-  const watermarkCss = buildTelegramWatermarkCss(opacityPercent / 100);
+  const watermarkCss = buildDocumentWatermarkCss(opacityPercent / 100);
 
   return (
     <>
@@ -1184,7 +1184,7 @@ function DocumentWatermark({
         <div className="page-watermark">
           {showMinistryText ? (
             <div className="watermark-text-pattern">
-              {Array.from({ length: TELEGRAM_WATERMARK_ROWS }, (_, row) => (
+              {Array.from({ length: DOCUMENT_WATERMARK_ROWS }, (_, row) => (
                 <div
                   key={row}
                   className={
@@ -1194,9 +1194,9 @@ function DocumentWatermark({
                   }
                 >
                   {Array.from(
-                    { length: TELEGRAM_WATERMARK_COLUMNS },
+                    { length: DOCUMENT_WATERMARK_COLUMNS },
                     (_, column) => (
-                      <span key={column}>{OFFICIAL_MINISTRY_NAME}</span>
+                      <span key={column}>{OFFICIAL_ORGANIZATION_NAME}</span>
                     )
                   )}
                 </div>

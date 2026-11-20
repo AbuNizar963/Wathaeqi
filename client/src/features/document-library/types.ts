@@ -1,0 +1,64 @@
+export type PagesPerSheet = 1 | 2 | 4;
+
+export type DocumentFileKind = "word" | "pdf" | "image";
+
+export interface SourcePage {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
+export interface PrintOptions {
+  pagesPerSheet: PagesPerSheet;
+  marginMm: number;
+  headerText: string;
+  footerText: string;
+  showPageNumbers: boolean;
+}
+
+export const DOCUMENT_CATEGORIES = [
+  { value: "general", label: "عام" },
+  { value: "administrative", label: "إداري" },
+  { value: "personnel", label: "شؤون الموظفين" },
+  { value: "correspondence", label: "مراسلات" },
+] as const;
+
+export function fileKind(
+  fileName: string,
+  mimeType: string
+): DocumentFileKind | null {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  if (extension === "pdf" || mimeType === "application/pdf") return "pdf";
+  if (extension === "docx") return "word";
+  if (
+    ["png", "jpg", "jpeg", "webp"].includes(extension) ||
+    mimeType.startsWith("image/")
+  ) {
+    return "image";
+  }
+  return null;
+}
+
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 ب";
+  const units = ["ب", "ك.ب", "م.ب", "غ.ب"];
+  const index = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024))
+  );
+  const value = bytes / 1024 ** index;
+  return `${value.toLocaleString("ar", {
+    maximumFractionDigits: value >= 10 || index === 0 ? 0 : 1,
+  })} ${units[index]}`;
+}
+
+export function formatDate(value: string | Date | null | undefined): string {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("ar", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+}

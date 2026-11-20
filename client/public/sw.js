@@ -70,19 +70,19 @@ self.addEventListener("push", event => {
     payload = event.data?.json() ?? {};
   } catch {
     payload = {
-      title: "تنبيه برقيات الشرطة",
-      body: event.data?.text() ?? "لديك إشعار جديد في نظام البرقيات",
+      title: "تنبيه وثائقي",
+      body: event.data?.text() ?? "لديك إشعار جديد في نظام الوثائق",
     };
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "تنبيه برقيات الشرطة", {
-      body: payload.body || "لديك إشعار جديد في نظام البرقيات",
+    self.registration.showNotification(payload.title || "تنبيه وثائقي", {
+      body: payload.body || "لديك إشعار جديد في نظام الوثائق",
       icon: "/notification-icon.png",
       badge: "/notification-badge.png",
       dir: "rtl",
       lang: "ar",
-      tag: payload.tag || "police-telegram",
+      tag: payload.tag || "wathaeqi-document",
       renotify: true,
       silent: false,
       data: { url: payload.url || "/", ...payload.data },

@@ -10,7 +10,7 @@ These instructions apply to every contributor and automated coding agent working
 4. Trace authorization from the public route to the final database/storage operation. A hidden UI control is never authorization.
 5. Prefer the smallest complete patch to existing code. Preserve existing behavior and features unless the change explicitly requires removal. Remove obsolete code cleanly after replacement; never leave dead or commented-out security bypasses.
 6. Validate all untrusted input on the server. Treat client-supplied user IDs, organization IDs, roles, file names, MIME types, URLs, and object keys as untrusted.
-7. Keep privileged credentials server-only. Never log tokens, cookies, passwords, signed URLs, secret values, or sensitive personal/telegram content.
+7. Keep privileged credentials server-only. Never log tokens, cookies, passwords, signed URLs, secret values, or sensitive personal/document content.
 8. Add regression tests for both the allowed path and the denied/abuse path. Include cross-tenant access tests for tenant-owned records and files.
 9. Review the complete diff for accidental deletions, truncated files, one-line/minified replacements, disabled features, debug bypasses, and unrelated changes.
 10. Run the relevant formatter, lint, type checks, unit/integration tests, database tests, and production build. Inspect every GitHub Actions workflow on the exact commit in each affected branch.

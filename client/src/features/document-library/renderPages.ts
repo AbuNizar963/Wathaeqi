@@ -1,0 +1,197 @@
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
+import type { SourcePage } from "./types";
+import { fileKind } from "./types";
+
+const RENDER_SCALE = 2;
+const MAX_PAGES = 300;
+
+async function renderPdfPages(
+  buffer: ArrayBuffer,
+  onProgress?: (done: number, total: number) => void
+): Promise<SourcePage[]> {
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer) });
+  const document = await loadingTask.promise;
+  const pages: SourcePage[] = [];
+  try {
+    const total = Math.min(document.numPages, MAX_PAGES);
+    for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: RENDER_SCALE });
+      const canvas = window.document.createElement("canvas");
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) throw new Error("تعذر تجهيز مساحة رسم الصفحة");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvas, canvasContext: context, viewport }).promise;
+      pages.push({
+        dataUrl: canvas.toDataURL("image/jpeg", 0.9),
+        width: canvas.width,
+        height: canvas.height,
+      });
+      canvas.width = 0;
+      canvas.height = 0;
+      page.cleanup();
+      onProgress?.(pageNumber, total);
+    }
+  } finally {
+    await loadingTask.destroy();
+  }
+  return pages;
+}
+
+async function renderWordPages(
+  buffer: ArrayBuffer,
+  onProgress?: (done: number, total: number) => void
+): Promise<SourcePage[]> {
+  const [{ renderAsync }, html2canvas] = await Promise.all([
+    import("docx-preview"),
+    import("html2canvas").then(module => module.default),
+  ]);
+  const host = window.document.createElement("div");
+  host.setAttribute("dir", "rtl");
+  host.style.cssText = [
+    "position:fixed",
+    "left:-10000px",
+    "top:0",
+    "width:794px",
+    "background:#ffffff",
+    "z-index:-1",
+  ].join(";");
+  window.document.body.appendChild(host);
+  try {
+    await renderAsync(buffer, host, undefined, {
+      className: "docx",
+      inWrapper: true,
+      breakPages: true,
+      ignoreLastRenderedPageBreak: false,
+      renderHeaders: true,
+      renderFooters: true,
+      useBase64URL: true,
+    });
+    await window.document.fonts?.ready;
+    let sections = Array.from(
+      host.querySelectorAll<HTMLElement>("section.docx")
+    );
+    if (sections.length === 0) {
+      sections = Array.from(
+        host.querySelectorAll<HTMLElement>(".docx-wrapper > .docx")
+      );
+    }
+    if (sections.length === 0) sections = [host];
+    const pages: SourcePage[] = [];
+    for (let index = 0; index < sections.length; index += 1) {
+      const section = sections[index];
+      const canvas = await html2canvas(section, {
+        backgroundColor: "#ffffff",
+        scale: RENDER_SCALE,
+        useCORS: true,
+        logging: false,
+        width: section.scrollWidth,
+        height: section.scrollHeight,
+      });
+      pages.push({
+        dataUrl: canvas.toDataURL("image/jpeg", 0.9),
+        width: canvas.width,
+        height: canvas.height,
+      });
+      onProgress?.(index + 1, sections.length);
+    }
+    return pages;
+  } finally {
+    host.remove();
+  }
+}
+
+async function renderImagePage(url: string): Promise<SourcePage[]> {
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  image.decoding = "async";
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("تعذر فتح الصورة"));
+    image.src = url;
+  });
+  const canvas = window.document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) throw new Error("تعذر تجهيز مساحة رسم الصورة");
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0);
+  return [
+    {
+      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+      width: canvas.width,
+      height: canvas.height,
+    },
+  ];
+}
+
+export async function renderDocumentPages(options: {
+  url: string;
+  fileName: string;
+  mimeType: string;
+  onProgress?: (done: number, total: number) => void;
+}): Promise<SourcePage[]> {
+  const kind = fileKind(options.fileName, options.mimeType);
+  if (!kind) throw new Error("صيغة الملف غير مدعومة للمعاينة");
+  if (kind === "image") return renderImagePage(options.url);
+  const response = await fetch(options.url, { credentials: "omit" });
+  if (!response.ok) throw new Error("تعذر تنزيل الملف من التخزين");
+  const buffer = await response.arrayBuffer();
+  if (kind === "pdf") return renderPdfPages(buffer, options.onProgress);
+  return renderWordPages(buffer, options.onProgress);
+}
+
+export async function countDocumentPages(options: {
+  url: string;
+  fileName: string;
+  mimeType: string;
+}): Promise<number> {
+  const kind = fileKind(options.fileName, options.mimeType);
+  if (!kind) return 1;
+  if (kind === "image") return 1;
+  if (kind === "pdf") {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    const response = await fetch(options.url, { credentials: "omit" });
+    if (!response.ok) return 1;
+    const document = await pdfjs.getDocument({
+      data: new Uint8Array(await response.arrayBuffer()),
+    }).promise;
+    const total = Math.max(1, document.numPages);
+    await (
+      document as unknown as { destroy?: () => Promise<void> }
+    ).destroy?.();
+    return total;
+  }
+  const pages = await renderWordPages(
+    await (await fetch(options.url, { credentials: "omit" })).arrayBuffer()
+  );
+  return Math.max(1, pages.length);
+}
+
+export async function countLocalFilePages(file: File): Promise<number> {
+  const kind = fileKind(file.name, file.type);
+  if (!kind || kind === "image") return 1;
+  const buffer = await file.arrayBuffer();
+  if (kind === "pdf") {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    const document = await pdfjs.getDocument({
+      data: new Uint8Array(buffer),
+    }).promise;
+    const total = Math.max(1, document.numPages);
+    await (
+      document as unknown as { destroy?: () => Promise<void> }
+    ).destroy?.();
+    return total;
+  }
+  const pages = await renderWordPages(buffer);
+  return Math.max(1, pages.length);
+}

@@ -9,10 +9,8 @@ import {
 
 describe("audit log presentation", () => {
   it("translates known actions and never exposes an unknown action code", () => {
-    expect(auditActionLabel("telegram.create")).toBe("إنشاء برقية");
-    expect(auditActionLabel("telegram.document.print")).toBe(
-      "طباعة وثيقة برقية"
-    );
+    expect(auditActionLabel("document.upload")).toBe("رفع وثيقة");
+    expect(auditActionLabel("document.print")).toBe("طباعة وثيقة");
     expect(auditActionLabel("organization.purge_archived")).toBe(
       "حذف نهائي لجهة مؤرشفة"
     );
@@ -23,10 +21,10 @@ describe("audit log presentation", () => {
   });
 
   it("uses a readable resource reference and hides non-numeric IDs", () => {
-    expect(auditEntitySummary("telegram", "93")).toBe("البرقية رقم 93");
+    expect(auditEntitySummary("document", "93")).toBe("الوثيقة رقم 93");
     expect(
-      auditEntitySummary("telegram", "550e8400-e29b-41d4-a716-446655440000")
-    ).toBe("البرقية");
+      auditEntitySummary("document", "550e8400-e29b-41d4-a716-446655440000")
+    ).toBe("الوثيقة");
   });
 
   it("translates structured metadata and omits technical IDs and user agents", () => {
@@ -41,7 +39,7 @@ describe("audit log presentation", () => {
     );
 
     expect(fields.map(field => field.label)).toEqual([
-      "رقم البرقية",
+      "رقم الوثيقة",
       "درجة السرية",
       "صيغة الملف",
     ]);

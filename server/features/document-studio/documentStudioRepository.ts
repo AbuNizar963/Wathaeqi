@@ -3,6 +3,7 @@ import type {
   DocumentTemplate,
   DocumentTemplateField,
   OfficialDocument,
+  UploadedDocumentFile,
 } from "../../../shared/documentStudio";
 import {
   decodeOfficialDocumentStorageContent,
@@ -52,6 +53,7 @@ export type DocumentWriteInput = {
   templateId: string | null;
   templateRevision: number | null;
   templateFieldsSnapshot: DocumentTemplateField[];
+  file?: UploadedDocumentFile | null;
 };
 
 function rowData(row: AppwriteRow): Record<string, unknown> {
@@ -110,6 +112,7 @@ function mapDocumentRow(row: AppwriteRow): OfficialDocument {
     serialCode: decoded.serialCode,
     documentDate: decoded.documentDate,
     status: decoded.status,
+    file: decoded.file,
     createdAt,
     updatedAt: rowUpdatedAt(row, data),
     issuedAt: decoded.issuedAt,
@@ -353,6 +356,7 @@ export async function createOfficialDocument(
         serialCode: "",
         documentDate: input.documentDate,
         status: "draft",
+        file: input.file ?? null,
         templateId: input.templateId,
         templateRevision: input.templateRevision,
         issuedAt: null,
@@ -361,6 +365,21 @@ export async function createOfficialDocument(
     },
   });
   return mapDocumentRow(row as AppwriteRow);
+}
+
+export async function deleteOfficialDocument(
+  ownerId: string,
+  documentId: string
+): Promise<OfficialDocument | null> {
+  const row = await getRowOrNull(DOCUMENTS_TABLE_ID, documentId);
+  if (!row || rowData(row).ownerId !== ownerId) return null;
+  const document = mapDocumentRow(row);
+  await getAppwriteTablesDB().deleteRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: DOCUMENTS_TABLE_ID,
+    rowId: documentId,
+  });
+  return document;
 }
 
 export async function updateOfficialDocument(
@@ -409,6 +428,7 @@ export async function updateOfficialDocument(
           serialCode: existing.serialCode,
           documentDate: input.documentDate,
           status: existing.status,
+          file: existing.file,
           templateId: input.templateId,
           templateRevision: input.templateRevision,
           issuedAt: existing.issuedAt,
@@ -467,6 +487,7 @@ export async function issueOfficialDocument(
           serialCode: input.serialCode,
           documentDate: existing.documentDate,
           status: "issued",
+          file: existing.file,
           templateId: existing.templateId,
           templateRevision: existing.templateRevision,
           issuedAt: input.issuedAt,
@@ -522,6 +543,7 @@ export async function archiveOfficialDocument(
           serialCode: existing.serialCode,
           documentDate: existing.documentDate,
           status: "archived",
+          file: existing.file,
           templateId: existing.templateId,
           templateRevision: existing.templateRevision,
           issuedAt: existing.issuedAt,

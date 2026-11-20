@@ -24,12 +24,41 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
-import { TELEGRAM_TIMEZONES } from "@shared/telegrams";
+
+const SETTINGS_TIMEZONES = [
+  "Asia/Damascus",
+  "Asia/Riyadh",
+  "Asia/Amman",
+  "Asia/Baghdad",
+  "Asia/Kuwait",
+  "Asia/Qatar",
+  "Asia/Dubai",
+  "Asia/Muscat",
+  "Africa/Cairo",
+  "Africa/Tunis",
+  "Africa/Algiers",
+  "Africa/Casablanca",
+  "Europe/Istanbul",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/Moscow",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Toronto",
+  "America/Sao_Paulo",
+  "Asia/Kolkata",
+  "Asia/Bangkok",
+  "Asia/Singapore",
+  "Asia/Shanghai",
+] as const;
 
 const MAX_LOGO_BYTES = 2_500_000;
 const MAX_SERIAL_VALUE = 999_999_999;
 
-type Timezone = (typeof TELEGRAM_TIMEZONES)[number];
+type Timezone = (typeof SETTINGS_TIMEZONES)[number];
 
 type SettingsSource = {
   departmentName: string;
@@ -93,7 +122,7 @@ const FORM_KEYS = [
 const SERIAL_PREFIX_PATTERN = /^[A-Za-z0-9-]{1,24}$/;
 
 function isTimezone(value: string): value is Timezone {
-  return (TELEGRAM_TIMEZONES as readonly string[]).includes(value);
+  return (SETTINGS_TIMEZONES as readonly string[]).includes(value);
 }
 
 function timezoneLabel(timezone: string): string {
@@ -109,7 +138,7 @@ function timezoneLabel(timezone: string): string {
   }
 }
 
-const TIMEZONE_OPTIONS = TELEGRAM_TIMEZONES.map(value => ({
+const TIMEZONE_OPTIONS = SETTINGS_TIMEZONES.map(value => ({
   value,
   label: timezoneLabel(value),
 }));
@@ -487,7 +516,7 @@ export default function DepartmentSettingsPage() {
                 <SectionHeader
                   icon={<Building2 className="h-4 w-4" aria-hidden="true" />}
                   title="هوية القسم"
-                  description="تظهر هذه البيانات في ترويسة الوثائق والبرقيات الرسمية."
+                  description="تظهر هذه البيانات في ترويسة الوثائق الرسمية."
                 />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field
@@ -676,7 +705,7 @@ export default function DepartmentSettingsPage() {
                     label="العدّاد الحالي للصادر *"
                     htmlFor="next-outgoing"
                     error={errors.nextOutgoingSerial}
-                    hint="رقم البرقية الصادرة التالية."
+                    hint="رقم الوثيقة الصادرة التالية."
                   >
                     <Input
                       id="next-outgoing"
@@ -696,7 +725,7 @@ export default function DepartmentSettingsPage() {
                     label="العدّاد الحالي للوارد *"
                     htmlFor="next-incoming"
                     error={errors.nextIncomingSerial}
-                    hint="رقم البرقية الواردة التالية."
+                    hint="رقم الوثيقة الواردة التالية."
                   >
                     <Input
                       id="next-incoming"
@@ -725,7 +754,7 @@ export default function DepartmentSettingsPage() {
 
                 {counterDecreased ? (
                   <p className="rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
-                    لا يمكن تقليل العدّاد الحالي لأنه يعيد استخدام أرقام برقيات
+                    لا يمكن تقليل العدّاد الحالي لأنه يعيد استخدام أرقام وثائق
                     صادرة؛ سيرفض الخادم الحفظ. يمكنك زيادة الرقم فقط.
                   </p>
                 ) : counterIncreased ? (
@@ -842,7 +871,7 @@ export default function DepartmentSettingsPage() {
                       إظهار رمز التحقق (QR)
                     </span>
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      إضافة رمز تحقق قابل للمسح في مخرجات الوثائق والبرقيات.
+                      إضافة رمز تحقق قابل للمسح في مخرجات الوثائق.
                     </span>
                   </span>
                   <Switch

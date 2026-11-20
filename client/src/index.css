@@ -496,3 +496,34 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Document print layout glyphs */
+.layout-glyph {
+  display: grid;
+  width: 34px;
+  height: 44px;
+  gap: 2px;
+  padding: 3px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  color: var(--color-primary, #1d4ed8);
+  background: #fff;
+}
+.layout-glyph span {
+  display: block;
+  border: 1px solid currentColor;
+  border-radius: 1px;
+  opacity: 0.55;
+}
+.layout-glyph-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+.layout-glyph-2 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.layout-glyph-4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}

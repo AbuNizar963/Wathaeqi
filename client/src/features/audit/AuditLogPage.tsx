@@ -38,9 +38,6 @@ const PAGE_SIZE = 25;
 
 const ENTITY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "all", label: "الكل" },
-  { value: "telegram", label: "البرقيات" },
-  { value: "telegram_route", label: "إحالات البرقيات" },
-  { value: "telegram_attachment", label: "مرفقات البرقيات" },
   { value: "organization", label: "الجهات" },
   { value: "user", label: "المستخدمون" },
   { value: "department_settings", label: "إعدادات الدوائر" },
@@ -270,7 +267,7 @@ export default function AuditLogPage() {
           <div>
             <h1 className="text-2xl font-bold">سجل التدقيق</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              مراجعة العمليات المسجلة على البرقيات والجهات والمستخدمين
+              مراجعة العمليات المسجلة على الوثائق والجهات والمستخدمين
             </p>
           </div>
         </div>
@@ -319,7 +316,7 @@ export default function AuditLogPage() {
                 setActionInput(event.target.value);
                 setPage(1);
               }}
-              placeholder="مثال: telegram.create"
+              placeholder="مثال: document.upload"
               list="audit-action-options"
               dir="ltr"
               className="text-left"

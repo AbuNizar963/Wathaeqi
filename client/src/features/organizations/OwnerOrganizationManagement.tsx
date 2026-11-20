@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "@/features/notifications/notifications";
+import { toast } from "@/lib/toast";
 import {
   Building2,
   Pencil,
@@ -444,7 +444,7 @@ export default function OwnerOrganizationManagement() {
       (form.type === "police_department" || form.type === "station") &&
       !form.telegramDestinationOrganizationId
     ) {
-      toast.error("اختر الجهة المستلمة للبرقيات قبل الحفظ");
+      toast.error("اختر جهة الإحالة قبل الحفظ");
       return;
     }
     const input: {
@@ -1042,7 +1042,7 @@ export default function OwnerOrganizationManagement() {
                 />
               </div>
               <div className="grid gap-1 text-sm font-medium">
-                <span>الجهة التابع لها (مستلم البرقيات)</span>
+                <span>جهة الإحالة الافتراضية</span>
                 <OrganizationTreePicker
                   options={(organizations.data ?? []).map(item => ({
                     ...item,
@@ -1057,10 +1057,10 @@ export default function OwnerOrganizationManagement() {
                   }
                   placeholder={
                     form.type === "police_department" || form.type === "station"
-                      ? "اختر الجهة التي تستقبل برقيات هذه الجهة"
+                      ? "اختر الجهة التي تُحال إليها وثائق هذه الجهة"
                       : "بدون وجهة تلقائية"
                   }
-                  ariaLabel="اختيار الجهة المستلمة للبرقيات"
+                  ariaLabel="اختيار جهة الإحالة"
                   allowClear={
                     form.type !== "police_department" && form.type !== "station"
                   }
@@ -1069,7 +1069,7 @@ export default function OwnerOrganizationManagement() {
                   className="h-10 text-sm"
                 />
                 <span className="text-xs font-normal text-muted-foreground">
-                  عند إرسال برقية من هذه الجهة ستنتقل تلقائيًا إلى الاختيار هنا.
+                  عند إحالة وثيقة من هذه الجهة ستنتقل تلقائيًا إلى الاختيار هنا.
                 </span>
               </div>
               {editingId && (
@@ -1158,7 +1158,7 @@ export default function OwnerOrganizationManagement() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="grid gap-1 text-xs font-semibold">
-                    اسم الجهة في رأس البرقية
+                    اسم الجهة في ترويسة الوثيقة
                     <Input
                       value={settingsDraft.departmentName}
                       onChange={event =>
@@ -1212,7 +1212,7 @@ export default function OwnerOrganizationManagement() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="grid gap-1 text-xs font-semibold">
-                    بادئة البرقية الصادرة
+                    بادئة الوثائق الصادرة
                     <Input
                       dir="ltr"
                       value={settingsDraft.serialPrefix}
@@ -1233,7 +1233,7 @@ export default function OwnerOrganizationManagement() {
                     />
                   </label>
                   <label className="grid gap-1 text-xs font-semibold">
-                    بادئة البرقية الواردة
+                    بادئة الوثائق الواردة
                     <Input
                       dir="ltr"
                       value={settingsDraft.incomingSerialPrefix}
@@ -1685,7 +1685,7 @@ export default function OwnerOrganizationManagement() {
                         disabled={deleteOrganization.isPending}
                         onClick={() => {
                           const confirmed = window.confirm(
-                            `هل تريد حذف الجهة «${selectedOrganization.name}»؟ سيتم تعطيل حساباتها وإبطال جلساتها، مع الاحتفاظ بسجل التدقيق والسجلات التاريخية. لا يمكن إتمام الحذف إذا كانت للجهة جهات فرعية أو كانت وجهة برقيات مفعلة.`
+                            `هل تريد حذف الجهة «${selectedOrganization.name}»؟ سيتم تعطيل حساباتها وإبطال جلساتها، مع الاحتفاظ بسجل التدقيق والسجلات التاريخية. لا يمكن إتمام الحذف إذا كانت للجهة جهات فرعية أو كانت جهة إحالة مفعّلة.`
                           );
                           if (confirmed) {
                             deleteOrganization.mutate({

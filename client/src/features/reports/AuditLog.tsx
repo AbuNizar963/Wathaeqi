@@ -140,7 +140,7 @@ export default function AuditLogPage() {
               كل خمس ثوانٍ.
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              ستظهر تفاصيل الإجراء والبرقية بلغة واضحة؛ أما بيانات الشبكة
+              ستظهر تفاصيل الإجراء والوثيقة بلغة واضحة؛ أما بيانات الشبكة
               والمعرّفات الفنية فتوجد عند الحاجة ضمن قسم المختصين.
             </p>
           </div>
@@ -227,7 +227,7 @@ export default function AuditLogPage() {
                     resourceId: event.target.value,
                   }))
                 }
-                placeholder="رقم البرقية أو المورد"
+                placeholder="رقم الوثيقة أو المورد"
                 inputMode="numeric"
               />
             </label>

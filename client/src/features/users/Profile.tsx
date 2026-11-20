@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
-import { toast } from "@/features/notifications/notifications";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -148,7 +148,7 @@ export default function Profile() {
             <div>
               <CardTitle>المعلومات الشخصية</CardTitle>
               <CardDescription>
-                تُحفظ التعديلات على حسابك فقط ولا تغيّر سجلات البرقيات السابقة.
+                تُحفظ التعديلات على حسابك فقط ولا تغيّر سجلات الوثائق السابقة.
               </CardDescription>
             </div>
           </div>

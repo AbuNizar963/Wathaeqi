@@ -18,6 +18,7 @@ import {
   createDocumentTemplate,
   createOfficialDocument,
   deactivateDocumentTemplate,
+  deleteOfficialDocument,
   getDocumentTemplate,
   getOfficialDocument,
   issueOfficialDocument,
@@ -26,6 +27,7 @@ import {
   updateDocumentTemplate,
   updateOfficialDocument,
 } from "./documentStudioRepository";
+import { getStorageProvider } from "../../_core/storageProvider";
 
 const editorDocumentSchema = z
   .record(z.string(), z.unknown())
@@ -282,6 +284,95 @@ export const documentStudioRouter = router({
       const document = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!document) throwIfNotFound("الوثيقة غير موجودة");
       return document;
+    }),
+
+  createUploadedDocument: authenticatedProcedure
+    .input(
+      z.object({
+        title: z.string().trim().min(1).max(256),
+        category: z.string().trim().min(1).max(100).default("general"),
+        subject: z.string().trim().max(256).default(""),
+        documentDate: z.string().datetime().optional(),
+        storageKey: z.string().trim().min(1).max(512),
+        fileName: z.string().trim().min(1).max(256),
+        mimeType: z.string().trim().min(1).max(160),
+        sizeBytes: z
+          .number()
+          .int()
+          .positive()
+          .max(40 * 1024 * 1024),
+        pageCount: z.number().int().min(1).max(5000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const expectedPrefix = `documents/${ctx.user.authUserId}/`;
+      if (!input.storageKey.startsWith(expectedPrefix)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "ملف غير تابع لحسابك",
+        });
+      }
+      const info = await getStorageProvider().getObjectInfo(input.storageKey);
+      if (info.size !== input.sizeBytes) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "حجم الملف المسجل لا يطابق الملف المرفوع",
+        });
+      }
+      const membership = await getUserOrganizationMembership(ctx.user.id);
+      return createOfficialDocument(ctx.user.authUserId, {
+        title: input.title,
+        category: input.category,
+        subject: input.subject,
+        content: { type: "doc", content: [{ type: "paragraph" }] },
+        fieldValues: {},
+        documentDate: input.documentDate ?? new Date().toISOString(),
+        organizationId: membership?.isActive ? membership.organizationId : null,
+        templateId: null,
+        templateRevision: null,
+        templateFieldsSnapshot: [],
+        file: {
+          storageKey: input.storageKey,
+          fileName: input.fileName,
+          mimeType: input.mimeType,
+          sizeBytes: input.sizeBytes,
+          pageCount: input.pageCount,
+        },
+      });
+    }),
+
+  getFileUrl: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .query(async ({ ctx, input }) => {
+      const document = await getOfficialDocument(ctx.user.authUserId, input.id);
+      if (!document) throwIfNotFound("الوثيقة غير موجودة");
+      if (!document.file) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "هذه الوثيقة لا تحتوي على ملف مرفوع",
+        });
+      }
+      const url = await getStorageProvider().createSignedUrl(
+        document.file.storageKey,
+        300
+      );
+      return { url, expiresInSeconds: 300 as const };
+    }),
+
+  deleteDocument: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .mutation(async ({ ctx, input }) => {
+      const removed = await deleteOfficialDocument(
+        ctx.user.authUserId,
+        input.id
+      );
+      if (!removed) throwIfNotFound("الوثيقة غير موجودة");
+      if (removed.file) {
+        await getStorageProvider()
+          .remove?.(removed.file.storageKey)
+          .catch(() => undefined);
+      }
+      return { success: true as const };
     }),
 
   createDocument: authenticatedProcedure

@@ -3,19 +3,17 @@ import { z } from "zod";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { getRequestAuditContext } from "../../auditContext";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
-import { resolveTelegramScope } from "../telegrams/telegramAccess";
+import { resolveOrganizationScope } from "../organizations/organizationAccess";
 import {
+  DEPARTMENT_SETTINGS_DEFAULTS,
+  DEPARTMENT_TIMEZONES,
   ensureDepartmentSettings,
   updateDepartmentSettings,
-} from "../telegrams/telegramRepository";
+} from "./departmentSettingsRepository";
 import {
   getOrganization,
   getOrganizationLogoDataUrl,
 } from "../organizations/organizationService";
-import {
-  DEPARTMENT_SETTINGS_DEFAULTS,
-  TELEGRAM_TIMEZONES,
-} from "../../../shared/telegrams";
 
 const settingsInputSchema = z.object({
   departmentName: z.string().trim().min(2).max(255),
@@ -44,7 +42,7 @@ const settingsInputSchema = z.object({
   incomingSerialStart: z.number().int().min(1).max(999999999),
   nextOutgoingSerial: z.number().int().min(1).max(999999999),
   nextIncomingSerial: z.number().int().min(1).max(999999999),
-  timezone: z.enum(TELEGRAM_TIMEZONES),
+  timezone: z.enum(DEPARTMENT_TIMEZONES),
   dateFormat: z.string().trim().min(4).max(32),
   timeFormat: z.enum(["12", "24"]),
   numberSystem: z.enum(["latin", "arabic"]),
@@ -54,7 +52,7 @@ const settingsInputSchema = z.object({
 
 export const departmentSettingsRouter = router({
   get: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     const [settings, organization, logoDataUrl] = await Promise.all([
       ensureDepartmentSettings(scope.organizationId),
       getOrganization(scope.organizationId),
@@ -73,7 +71,7 @@ export const departmentSettingsRouter = router({
   update: authenticatedProcedure
     .input(settingsInputSchema)
     .mutation(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       if (!scope.canAdministrate) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -88,7 +86,7 @@ export const departmentSettingsRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message:
-            "لا يمكن تقليل العدّاد الحالي لأنه يعيد استخدام أرقام برقيات صادرة. يمكنك زيادة الرقم فقط.",
+            "لا يمكن تقليل العدّاد الحالي لأنه يعيد استخدام أرقام وثائق صادرة. يمكنك زيادة الرقم فقط.",
         });
       }
       const saved = await updateDepartmentSettings(

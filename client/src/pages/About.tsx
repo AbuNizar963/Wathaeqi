@@ -24,26 +24,26 @@ const sectionLabelClass =
 const features = [
   {
     icon: ShieldCheck,
-    title: "سلامة السجل",
-    label: "الهوية الرقمية مفعلة",
+    title: "أرشيف وثائقي موحّد",
+    label: "Word وPDF في مكان واحد",
     description:
-      "كل برقية تُربط بحساب منشئها وتوقيتها وسجل التدقيق. الأرشفة الإدارية متاحة للمالك فقط ويُسجل في سجل التدقيق.",
+      "ارفع ملفات Word وPDF والصور، وأضف العنوان والتصنيف والتاريخ، ثم ابحث في المكتبة واسترجع أي وثيقة بسرعة.",
     tone: "text-info bg-info/10",
   },
   {
     icon: CheckCircle2,
-    title: "حماية تشغيلية نشطة",
-    label: "صلاحيات ومسارات موثقة",
+    title: "طباعة بثلاثة توزيعات",
+    label: "صفحة أو صفحتان أو أربع صفحات",
     description:
-      "صلاحيات واضحة ومسارات عمل موثقة مع تسجيل الإجراءات الحساسة في سجل التدقيق.",
+      "اختر عند الطباعة توزيع الصفحات على ورقة A4، مع ترويسة وتذييل وترقيم للأوراق، ثم اطبع أو احفظ PDF.",
     tone: "text-success bg-success/10",
   },
   {
     icon: Fingerprint,
-    title: "هوية موثوقة",
-    label: "تتبع كامل لكل إجراء",
+    title: "تتبّع كامل للإجراءات",
+    label: "سجل تدقيق واضح",
     description:
-      "تُحفظ هوية منشئ البرقية وإجراءات الإدارة لتوفير سجل واضح وقابل للمراجعة.",
+      "كل رفع أو حذف أو تعديل يُربط بالحساب والوقت، ليبقى الأرشيف قابلًا للمراجعة والمساءلة.",
     tone: "text-info bg-info/10",
   },
   {
@@ -79,7 +79,7 @@ export default function About() {
           <p className={sectionLabelClass}>إعدادات النظام</p>
           <h1 className="text-2xl font-bold tracking-tight">حول النظام</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            ميزات النظام التي تحافظ على موثوقية البرقيات وسلامة التشغيل.
+            ميزات النظام التي تحافظ على موثوقية الوثائق وسلامة التشغيل.
           </p>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function About() {
         <CardHeader className="border-b border-border bg-muted/40">
           <CardTitle className="text-card-foreground">ميزات النظام</CardTitle>
           <CardDescription className="text-muted-foreground">
-            حماية موحدة للهوية والسجل والإجراءات التشغيلية.
+            أرشفة وطباعة وإدارة صلاحيات في مساحة عمل واحدة.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">

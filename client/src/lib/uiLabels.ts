@@ -56,27 +56,3 @@ export type Priority = keyof typeof priorityLabels;
 export type Category = keyof typeof categoryLabels;
 export type Status = keyof typeof statusLabels;
 export type OrganizationType = keyof typeof organizationTypeLabels;
-
-export const uiLabels = {
-  appName: "نظام برقيات الشرطة",
-  dashboard: "لوحة التحكم",
-  telegram: "برقية",
-  telegrams: "البرقيات",
-  createTelegram: "إنشاء برقية",
-  reports: "التقارير",
-  archive: "الأرشيف",
-  settings: "الإعدادات",
-  profile: "الملف الشخصي",
-  notifications: "التنبيهات",
-  organization: "الجهة الشرطية",
-  sourceOrganization: "الجهة المرسلة",
-  destinationOrganization: "الجهة المستلمة",
-  creator: "منشئ البرقية",
-  createdAt: "تاريخ الإنشاء",
-  updatedAt: "تاريخ آخر تحديث",
-  decision: "القرار",
-  approval: "الموافقة",
-  rejection: "الرفض",
-  routeRequest: "طلب إحالة",
-  routeApproval: "اعتماد الإحالة",
-} as const;

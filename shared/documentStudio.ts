@@ -58,10 +58,21 @@ export interface OfficialDocument {
   serialCode: string;
   documentDate: string;
   status: "draft" | "issued" | "archived";
+  /** Present when the document was uploaded as a binary file. */
+  file: UploadedDocumentFile | null;
   createdAt: string;
   updatedAt: string;
   issuedAt: string | null;
   archivedAt: string | null;
+}
+
+/** A binary source file attached to an official document (Word, PDF, image). */
+export interface UploadedDocumentFile {
+  storageKey: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  pageCount: number;
 }
 
 const TEMPLATE_CONTENT_FORMAT = "wathaeqi-template-v1";
@@ -69,6 +80,31 @@ const DOCUMENT_CONTENT_FORMAT = "wathaeqi-document-v1";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function decodeUploadedFile(value: unknown): UploadedDocumentFile | null {
+  if (!isRecord(value)) return null;
+  const storageKey =
+    typeof value.storageKey === "string" ? value.storageKey.trim() : "";
+  const fileName =
+    typeof value.fileName === "string" ? value.fileName.trim() : "";
+  const mimeType =
+    typeof value.mimeType === "string" ? value.mimeType.trim() : "";
+  const sizeBytes =
+    typeof value.sizeBytes === "number" && Number.isSafeInteger(value.sizeBytes)
+      ? value.sizeBytes
+      : 0;
+  const pageCount =
+    typeof value.pageCount === "number" && Number.isSafeInteger(value.pageCount)
+      ? value.pageCount
+      : 0;
+  if (!storageKey || !fileName || sizeBytes < 1) return null;
+  return {
+    storageKey,
+    fileName,
+    mimeType: mimeType || "application/octet-stream",
+    sizeBytes,
+    pageCount: Math.max(0, pageCount),
+  };
 }
 
 function parseStoredContent(raw: unknown): unknown {
@@ -186,6 +222,7 @@ export interface DecodedOfficialDocumentContent {
   serialCode: string;
   documentDate: string;
   status: OfficialDocument["status"];
+  file: UploadedDocumentFile | null;
   templateId: string | null;
   templateRevision: number | null;
   issuedAt: string | null;
@@ -209,6 +246,7 @@ export function encodeOfficialDocumentStorageContent(
     | "serialCode"
     | "documentDate"
     | "status"
+    | "file"
     | "templateId"
     | "templateRevision"
     | "issuedAt"
@@ -226,6 +264,7 @@ export function encodeOfficialDocumentStorageContent(
     serialCode: document.serialCode,
     documentDate: document.documentDate,
     status: document.status,
+    file: document.file,
     templateId: document.templateId,
     templateRevision: document.templateRevision,
     issuedAt: document.issuedAt,
@@ -277,6 +316,7 @@ export function decodeOfficialDocumentStorageContent(
           ? parsed.documentDate
           : fallbackDocumentDate,
       status,
+      file: decodeUploadedFile(parsed.file),
       templateId:
         typeof parsed.templateId === "string" ? parsed.templateId : null,
       templateRevision:
@@ -304,6 +344,7 @@ export function decodeOfficialDocumentStorageContent(
     serialCode: "",
     documentDate: fallbackDocumentDate,
     status: "draft",
+    file: null,
     templateId: null,
     templateRevision: null,
     issuedAt: null,

@@ -13,16 +13,13 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Archive,
-  Activity,
   Building2,
   FileSpreadsheet,
+  FileText,
   History,
   LayoutDashboard,
   LockKeyhole,
-  MapPinned,
   PanelLeft,
-  Plus,
   ShieldCheck,
   Users,
   WifiOff,
@@ -39,22 +36,16 @@ import HeaderActions from "./HeaderActions";
 
 const menuItems = [
   {
-    key: "dashboard",
+    key: "library",
     icon: LayoutDashboard,
-    label: "الوثائق",
-    path: "/dashboard",
+    label: "مكتبة الوثائق",
+    path: "/",
   },
   {
-    key: "contacts",
-    icon: Users,
-    label: "جهات الاتصال",
-    path: "/contacts",
-  },
-  {
-    key: "activity",
-    icon: History,
-    label: "سجل النشاط",
-    path: "/activity",
+    key: "studio",
+    icon: FileText,
+    label: "استوديو الوثائق",
+    path: "/studio",
   },
   {
     key: "workspace-users",
@@ -78,63 +69,11 @@ const menuItems = [
     ownerOnly: true,
   },
   {
-    key: "owner-dashboard",
-    icon: Activity,
-    label: "لوحة قيادة المالك",
-    path: "/owner-dashboard",
-    ownerOnly: true,
-  },
-  {
     key: "audit-log",
     icon: History,
     label: "سجل الإجراءات",
     path: "/audit-log",
     auditOnly: true,
-  },
-  {
-    key: "create-telegram",
-    icon: Plus,
-    label: "إنشاء برقية",
-    action: "open-telegram-composer",
-  },
-  {
-    key: "telegram-excel-tools",
-    icon: FileSpreadsheet,
-    label: "استيراد وتصدير السجل",
-    action: "open-telegram-excel-tools",
-  },
-  {
-    key: "accounts",
-    icon: Users,
-    label: "إدارة المستخدمين",
-    action: "open-owner-user-management",
-    adminOnly: true,
-  },
-  {
-    key: "organizations",
-    icon: Building2,
-    label: "إدارة الجهات",
-    action: "open-owner-organization-management",
-    adminOnly: true,
-  },
-  {
-    key: "locations",
-    icon: MapPinned,
-    label: "خريطة البلاغات والمواقع الجغرافية",
-    tab: "locations",
-  },
-  { key: "units", icon: Users, label: "الوحدات الميدانية", tab: "units" },
-  {
-    key: "resources",
-    icon: Activity,
-    label: "إدارة الموارد",
-    tab: "resources",
-  },
-  {
-    key: "archive",
-    icon: Archive,
-    label: "الأرشيف والسجلات المغلقة",
-    tab: "archive",
   },
 ];
 
@@ -570,17 +509,7 @@ function DashboardLayoutContent({
                       <SidebarMenuButton
                         isActive={isActive}
                         onClick={() => {
-                          if (item.action) {
-                            window.dispatchEvent(new CustomEvent(item.action));
-                          } else if (item.tab) {
-                            window.dispatchEvent(
-                              new CustomEvent("open-operations-workspace", {
-                                detail: { tab: item.tab },
-                              })
-                            );
-                          } else if (item.path) {
-                            setLocation(item.path);
-                          }
+                          setLocation(item.path);
                         }}
                         tooltip={item.label}
                         className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"

@@ -8,18 +8,20 @@ import OwnerUserManagement from "./features/users/OwnerUserManagement";
 import OwnerOrganizationManagement from "./features/organizations/OwnerOrganizationManagement";
 import PlatformDocumentSettings from "./features/platform-settings/PlatformDocumentSettings";
 import PlatformDocumentSettingsPage from "./features/platform-settings/PlatformDocumentSettingsPage";
-import OperationsWorkspace from "./features/admin/OperationsWorkspace";
 import WorkspacePage from "./features/workspace/WorkspacePage";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
-const Home = lazy(() => import("./pages/Home"));
-const VerifyTelegram = lazy(() => import("./pages/VerifyTelegram"));
+const DocumentLibraryPage = lazy(
+  () => import("./features/document-library/DocumentLibraryPage")
+);
+const DocumentStudioPage = lazy(
+  () => import("./features/document-studio/DocumentStudioPage")
+);
 const AuditLogPage = lazy(() => import("./features/reports/AuditLog"));
 const Profile = lazy(() => import("./features/users/Profile"));
 const About = lazy(() => import("./pages/About"));
 const Terms = lazy(() => import("./pages/Terms"));
-const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboard"));
 
 function DashboardPage({ children }: { children: React.ReactNode }) {
   return (
@@ -28,7 +30,6 @@ function DashboardPage({ children }: { children: React.ReactNode }) {
       <OwnerUserManagement />
       <OwnerOrganizationManagement />
       <PlatformDocumentSettings />
-      <OperationsWorkspace />
     </>
   );
 }
@@ -47,12 +48,6 @@ function Router() {
       }
     >
       <Switch>
-        <Route path="/verify/:token" component={VerifyTelegram} />
-        <Route path="/owner-dashboard">
-          <DashboardPage>
-            <OwnerDashboardPage />
-          </DashboardPage>
-        </Route>
         <Route path="/audit-log">
           <DashboardPage>
             <AuditLogPage />
@@ -68,24 +63,14 @@ function Router() {
             <PlatformDocumentSettingsPage />
           </DashboardPage>
         </Route>
+        <Route path="/studio">
+          <DashboardPage>
+            <DocumentStudioPage />
+          </DashboardPage>
+        </Route>
         <Route path="/dashboard">
           <DashboardPage>
-            <WorkspacePage section="dashboard" />
-          </DashboardPage>
-        </Route>
-        <Route path="/contacts">
-          <DashboardPage>
-            <WorkspacePage section="contacts" />
-          </DashboardPage>
-        </Route>
-        <Route path="/activity">
-          <DashboardPage>
-            <WorkspacePage section="activity" />
-          </DashboardPage>
-        </Route>
-        <Route path="/notifications">
-          <DashboardPage>
-            <WorkspacePage section="notifications" />
+            <DocumentLibraryPage />
           </DashboardPage>
         </Route>
         <Route path="/users">
@@ -106,7 +91,7 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/">
           <DashboardPage>
-            <Home />
+            <DocumentLibraryPage />
           </DashboardPage>
         </Route>
         <Route path="/404">

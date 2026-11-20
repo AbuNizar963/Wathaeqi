@@ -274,18 +274,10 @@ const ownerPlatformDocumentSettingsRouter = router({
     }),
 });
 
-import { telegramRouter } from "./features/telegrams/telegramRouter";
 import { departmentSettingsRouter } from "./features/settings/departmentSettingsRouter";
 import { organizationRouter } from "./features/organizations/organizationRouter";
 import { userManagementRouter } from "./features/users/userManagementRouter";
-import { notificationRouter } from "./features/notifications/notificationRouter";
 import { auditSearchRouter } from "./features/audit/auditSearchRouter";
-import { dashboardRouter } from "./features/reports/dashboardRouter";
-import {
-  ownerDashboardCompatRouter,
-  reportsCompatRouter,
-  settingsCompatRouter,
-} from "./features/compat/compatRouters";
 
 export const ownerApiRouter = router({
   auth: ownerAuthRouter,
@@ -294,15 +286,9 @@ export const ownerApiRouter = router({
   platformDocumentSettings: ownerPlatformDocumentSettingsRouter,
   documentStudio: documentStudioRouter,
   workspace: workspaceRouter,
-  telegrams: telegramRouter,
   departmentSettings: departmentSettingsRouter,
   userManagement: userManagementRouter,
-  notifications: notificationRouter,
   auditLogs: auditSearchRouter,
-  dashboard: dashboardRouter,
-  settings: settingsCompatRouter,
-  ownerDashboard: ownerDashboardCompatRouter,
-  reports: reportsCompatRouter,
 });
 
 export type OwnerApiRouter = typeof ownerApiRouter;

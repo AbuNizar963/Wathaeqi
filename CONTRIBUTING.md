@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Police Telegrams Platform. Changes should be small, reviewable, tested, and safe for existing data and workflows.
+Thank you for helping improve Wathaeqi Document Platform. Changes should be small, reviewable, tested, and safe for existing data and workflows.
 
 ## Before changing code
 

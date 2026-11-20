@@ -196,7 +196,7 @@ function validateOrganizationForm(input: {
     form.telegramDestinationOrganizationId &&
     !byId.has(form.telegramDestinationOrganizationId)
   ) {
-    return "جهة استقبال البرقيات المحددة غير موجودة.";
+    return "جهة الإحالة المحددة غير موجودة.";
   }
 
   return null;
@@ -293,7 +293,7 @@ function OrganizationLogoDialog({
         <DialogHeader>
           <DialogTitle>شعار الجهة</DialogTitle>
           <DialogDescription>
-            شعار «{organization.name}» يظهر في ترويسة الوثائق والبرقيات.
+            شعار «{organization.name}» يظهر في ترويسة الوثائق.
           </DialogDescription>
         </DialogHeader>
 
@@ -522,7 +522,7 @@ export default function OrganizationsPage() {
           <div>
             <h1 className="text-2xl font-bold">إدارة الجهات</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              الهيكل التنظيمي للجهات وربط الجهات الأم ووجهات استقبال البرقيات
+              الهيكل التنظيمي للجهات وربط الجهات الأم وجهات الإحالة
             </p>
           </div>
         </div>
@@ -639,7 +639,7 @@ export default function OrganizationsPage() {
                   <th className="p-3">اسم الجهة</th>
                   <th className="p-3">النوع</th>
                   <th className="p-3">الجهة الأم</th>
-                  <th className="p-3">وجهة البرقيات</th>
+                  <th className="p-3">جهة الإحالة</th>
                   <th className="p-3">الحالة</th>
                   {isOwner ? <th className="p-3">الإجراءات</th> : null}
                 </tr>
@@ -756,7 +756,7 @@ export default function OrganizationsPage() {
               {editingOrganization ? "تعديل بيانات الجهة" : "إضافة جهة جديدة"}
             </DialogTitle>
             <DialogDescription>
-              يُستخدم رمز الجهة في تسلسل الوثائق والبرقيات، ويجب أن يكون فريداً.
+              يُستخدم رمز الجهة في تسلسل الوثائق، ويجب أن يكون فريداً.
             </DialogDescription>
           </DialogHeader>
 
@@ -833,8 +833,8 @@ export default function OrganizationsPage() {
             </Field>
 
             <Field
-              label="وجهة استقبال البرقيات"
-              hint="الجهة التي تُحال إليها برقيات هذه الجهة افتراضياً."
+              label="جهة الإحالة الافتراضية"
+              hint="الجهة التي تُحال إليها وثائق هذه الجهة افتراضياً."
             >
               <Select
                 value={form.telegramDestinationOrganizationId || NO_DESTINATION}

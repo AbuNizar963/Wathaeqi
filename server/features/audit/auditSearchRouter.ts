@@ -5,7 +5,7 @@ import {
   getAppwriteDatabaseId,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
-import { resolveTelegramScope } from "../telegrams/telegramAccess";
+import { resolveOrganizationScope } from "../organizations/organizationAccess";
 
 const AUDIT_LOG_TABLE = "audit_logs";
 
@@ -53,7 +53,7 @@ export const auditSearchRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       const queries: string[] = [];
       if (!scope.isOwner) {
         queries.push(Query.equal("organizationId", scope.organizationId));

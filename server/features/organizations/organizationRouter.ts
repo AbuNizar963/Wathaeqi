@@ -4,7 +4,7 @@ import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getRequestAuditContext } from "../../auditContext";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
-import { resolveTelegramScope } from "../telegrams/telegramAccess";
+import { resolveOrganizationScope } from "./organizationAccess";
 import {
   buildOrganizationTree,
   getRoutingDirectory,
@@ -23,7 +23,7 @@ import { createManagedUser, listManagedUsers } from "../users/userService";
 import {
   ensureDepartmentSettings,
   updateDepartmentSettings,
-} from "../telegrams/telegramRepository";
+} from "../settings/departmentSettingsRepository";
 
 const organizationInput = z.object({
   name: z.string().trim().min(2).max(255),
@@ -37,7 +37,6 @@ const organizationInput = z.object({
     "unit",
   ]),
   parentOrganizationId: z.string().max(36).nullable(),
-  telegramDestinationOrganizationId: z.string().max(36).nullable(),
 });
 
 const legacySettingsInput = z.object({
@@ -70,7 +69,7 @@ async function requireOwner(ctx: {
 
 export const organizationRouter = router({
   context: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     const organization = await getOrganization(scope.organizationId);
     return {
       organizationId: scope.organizationId,
@@ -78,7 +77,7 @@ export const organizationRouter = router({
       role: scope.role,
       isActive: true,
       isOwner: scope.isOwner,
-      canManageTelegrams: scope.canManage,
+      canManage: scope.canManage,
       canAdministrate: scope.canAdministrate,
     };
   }),
@@ -86,7 +85,7 @@ export const organizationRouter = router({
   list: authenticatedProcedure
     .input(z.object({ includeInactive: z.boolean().default(false) }).optional())
     .query(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       const organizations = await listOrganizations(
         Boolean(input?.includeInactive) && scope.isOwner
       );
@@ -96,7 +95,7 @@ export const organizationRouter = router({
     }),
 
   tree: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     const organizations = await listOrganizations(false);
     const filtered = scope.organizationIds
       ? organizations.filter(item => scope.organizationIds?.includes(item.id))
@@ -105,12 +104,12 @@ export const organizationRouter = router({
   }),
 
   routingTargets: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     return listRoutingTargets(scope.organizationId);
   }),
 
   descendants: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     return listOrganizationDescendants(scope.organizationId, {
       activeOnly: true,
     });
@@ -119,7 +118,7 @@ export const organizationRouter = router({
   get: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       if (!scope.isOwner && !(scope.organizationIds ?? []).includes(input.id)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
@@ -191,7 +190,7 @@ export const organizationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       if (
         !scope.canAdministrate ||
         (!scope.isOwner && scope.organizationId !== input.id)
@@ -228,7 +227,7 @@ export const organizationRouter = router({
         })
     )
     .query(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       const organizationId = (input.id ?? input.organizationId) as string;
       if (
         !scope.isOwner &&
@@ -246,7 +245,7 @@ export const organizationRouter = router({
   logoForExport: authenticatedProcedure
     .input(z.object({ organizationId: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       if (
         !scope.isOwner &&
         !(scope.organizationIds ?? []).includes(input.organizationId)
@@ -259,7 +258,7 @@ export const organizationRouter = router({
     }),
 
   all: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     const organizations = await listOrganizations(scope.isOwner);
     if (scope.isOwner) return organizations;
     const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
@@ -269,7 +268,7 @@ export const organizationRouter = router({
   accounts: authenticatedProcedure
     .input(z.object({ organizationId: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
-      const scope = await resolveTelegramScope(ctx.user);
+      const scope = await resolveOrganizationScope(ctx.user);
       if (
         !scope.isOwner &&
         !(scope.organizationIds ?? []).includes(input.organizationId)
@@ -284,7 +283,7 @@ export const organizationRouter = router({
     }),
 
   allAccounts: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     const users = await listManagedUsers();
     const allowed = scope.organizationIds
       ? new Set(scope.organizationIds)
@@ -411,7 +410,7 @@ export const organizationRouter = router({
   }),
 
   routingDirectory: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
+    const scope = await resolveOrganizationScope(ctx.user);
     const directory = await getRoutingDirectory();
     const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
     return directory.map(entry => ({

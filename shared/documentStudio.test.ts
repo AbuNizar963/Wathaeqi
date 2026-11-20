@@ -117,6 +117,7 @@ describe("Document Studio Appwrite content codecs", () => {
       serialCode: "DOC-0012",
       documentDate: "2026-11-18T00:00:00.000Z",
       status: "issued" as const,
+      file: null,
       templateId: "template-1",
       templateRevision: 3,
       issuedAt: "2026-11-18T11:00:00.000Z",

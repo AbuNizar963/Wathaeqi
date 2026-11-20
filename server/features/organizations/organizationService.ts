@@ -232,7 +232,7 @@ export async function getRoutingDirectory(): Promise<
 
 /**
  * Routing targets allowed for an organization: itself, its parent, its
- * siblings, its descendants and the configured telegram destination.
+ * siblings, its descendants and the configured routing destination.
  */
 export async function listRoutingTargets(
   organizationId: string
@@ -276,7 +276,8 @@ export type OrganizationWriteInput = {
   code: string;
   type: string;
   parentOrganizationId: string | null;
-  telegramDestinationOrganizationId: string | null;
+  /** Legacy routing column kept for existing Appwrite rows; not API input. */
+  telegramDestinationOrganizationId?: string | null;
 };
 
 function validateParentChoice(
@@ -324,7 +325,7 @@ export async function createOrganization(
       type: input.type,
       parentOrganizationId: input.parentOrganizationId,
       telegramDestinationOrganizationId:
-        input.telegramDestinationOrganizationId,
+        input.telegramDestinationOrganizationId ?? null,
       logoKey: null,
       isActive: true,
       deletedAt: null,
@@ -381,8 +382,12 @@ export async function updateOrganization(
       code,
       type: input.type,
       parentOrganizationId: input.parentOrganizationId,
-      telegramDestinationOrganizationId:
-        input.telegramDestinationOrganizationId,
+      ...(input.telegramDestinationOrganizationId === undefined
+        ? {}
+        : {
+            telegramDestinationOrganizationId:
+              input.telegramDestinationOrganizationId,
+          }),
       updatedAt: new Date().toISOString(),
     },
   });

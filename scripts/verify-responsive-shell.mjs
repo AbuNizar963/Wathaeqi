@@ -110,20 +110,20 @@ assert(
 
 assert(
   documentStudio.includes("معاينة الوثيقة") &&
-    documentStudio.includes("OFFICIAL_MINISTRY_NAME") &&
-    documentStudio.includes("buildTelegramWatermarkCss") &&
+    documentStudio.includes("OFFICIAL_ORGANIZATION_NAME") &&
+    documentStudio.includes("buildDocumentWatermarkCss") &&
     documentStudio.includes("editable={!previewMode}"),
   "The document workspace must expose a read-only preview and apply watermark settings."
 );
 
 assert(
   [
-    "الوثائق",
-    "جهات الاتصال",
-    "سجل النشاط",
+    "مكتبة الوثائق",
+    "استوديو الوثائق",
     "إدارة المستخدمين",
     "إدارة الجهات",
     "إعدادات الوثائق",
+    "سجل الإجراءات",
   ].every(label => dashboardLayout.includes(`label: "${label}"`)),
   "The sidebar must expose the full Wathaeqi workspace navigation."
 );
@@ -131,23 +131,20 @@ assert(
 assert(
   [
     "/dashboard",
-    "/contacts",
-    "/activity",
-    "/notifications",
+    "/studio",
     "/users",
     "/organizations",
+    "/settings",
+    "/audit-log",
   ].every(path => appRoutes.includes(`path="${path}"`)),
   "Every restored workspace navigation item must resolve to a registered route."
 );
 
 assert(
-  workspacePage.includes("trpc.workspace.contacts.list.useQuery") &&
-    workspacePage.includes("trpc.workspace.contacts.create.useMutation") &&
-    workspacePage.includes("trpc.workspace.contacts.update.useMutation") &&
-    workspacePage.includes("trpc.workspace.contacts.delete.useMutation") &&
-    workspacePage.includes("trpc.workspace.activity.list.useQuery") &&
+  workspacePage.includes('section === "users"') &&
+    workspacePage.includes('section === "organizations"') &&
     workspacePage.includes("trpc.workspace.administration.overview.useQuery"),
-  "Restored workspace pages must be connected to working Appwrite-backed API operations."
+  "The users and organizations workspace pages must be connected to Appwrite-backed API operations."
 );
 
 assert(
@@ -156,7 +153,7 @@ assert(
     workspaceRouter.includes('tableId: "organizations"') &&
     workspaceRouter.includes('tableId: "users"') &&
     workspaceRouter.includes("ctx.user.authUserId"),
-  "Workspace API reads and writes must use the existing Appwrite tables and scope contact data to the signed-in owner."
+  "Workspace API reads and writes must use the existing Appwrite tables and scope data to the signed-in owner."
 );
 
 console.log("Responsive shell and restored workspace checks passed.");

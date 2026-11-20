@@ -13,7 +13,7 @@ export function DashboardLayoutSkeleton() {
         <BrandMark size="lg" />
         <div className="space-y-2">
           <h1 className="text-xl font-bold tracking-tight">
-            نظام برقيات الشرطة
+            وثائقي — نظام الوثائق
           </h1>
           <p className="text-sm text-muted-foreground">
             جارٍ التحقق من جلسة الدخول وتجهيز لوحة التحكم…

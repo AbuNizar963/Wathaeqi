@@ -9,19 +9,12 @@ export const auditActionLabels: Record<string, string> = {
   "platform.document_settings.update": "تحديث إعدادات الوثائق",
   "attachment.upload": "رفع مرفق",
   "attachment.download": "تنزيل مرفق",
-  "telegram.update": "تعديل برقية",
-  "telegram.delete": "حذف برقية",
-  "telegram.route": "إحالة برقية",
-  "telegram.route.receive": "تأكيد استلام إحالة",
-  "telegram.status.transition": "تغيير حالة برقية",
-  "telegram.create": "إنشاء برقية",
-  "telegram.document.print": "طباعة وثيقة برقية",
-  "telegram.document.download": "تنزيل أو مشاركة وثيقة برقية",
-  "telegram.export.rows": "تجهيز تصدير سجل البرقيات",
-  "telegram.export.workbook": "تصدير سجل البرقيات إلى Excel",
-  "telegram.import.excel": "استيراد برقيات من Excel",
-  "telegram.broadcast": "توزيع برقية على جهات",
-  "telegram.broadcast.atomic_failure": "تعذّر توزيع البرقية",
+  "document.upload": "رفع وثيقة",
+  "document.create": "إنشاء وثيقة",
+  "document.update": "تعديل وثيقة",
+  "document.delete": "حذف وثيقة",
+  "document.print": "طباعة وثيقة",
+  "document.download": "تنزيل أو مشاركة وثيقة",
   "user.create": "إنشاء حساب مستخدم",
   "user.update": "تعديل بيانات مستخدم",
   "user.disable": "تعطيل حساب مستخدم",
@@ -32,10 +25,10 @@ export const auditActionLabels: Record<string, string> = {
 };
 
 const entityLabels: Record<string, string> = {
-  telegram: "البرقية",
-  telegram_attachment: "مرفق البرقية",
-  telegram_collection: "مجموعة البرقيات",
-  telegram_route: "إحالة البرقية",
+  document: "الوثيقة",
+  document_attachment: "مرفق الوثيقة",
+  document_collection: "مجموعة الوثائق",
+  document_route: "إحالة الوثيقة",
   organization: "الجهة",
   user: "حساب المستخدم",
   settings: "الإعدادات",
@@ -44,7 +37,7 @@ const entityLabels: Record<string, string> = {
 };
 
 const fieldLabels: Record<string, string> = {
-  serialNumber: "رقم البرقية",
+  serialNumber: "رقم الوثيقة",
   serialCode: "الرقم المرجعي",
   originalSerial: "الرقم السابق",
   subject: "الموضوع",
@@ -77,7 +70,7 @@ const fieldLabels: Record<string, string> = {
   rollbackGuaranteed: "تم التراجع عن العملية بالكامل",
   failure: "ملخص التعذّر",
   occurredAt: "وقت تنفيذ العملية",
-  telegramId: "رقم البرقية المرتبطة",
+  telegramId: "رقم الوثيقة المرتبطة",
   toOrganizationName: "الجهة المحال إليها",
   fromOrganizationName: "الجهة المحيلة",
   fileName: "اسم الملف",
@@ -196,10 +189,7 @@ function isTechnicalField(key: string, value: unknown): boolean {
     return true;
   }
   return (
-    normalized.endsWith("id") &&
-    key !== "telegramId" &&
-    typeof value === "string" &&
-    value.length > 24
+    normalized.endsWith("id") && typeof value === "string" && value.length > 24
   );
 }
 
