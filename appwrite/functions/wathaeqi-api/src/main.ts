@@ -81,7 +81,10 @@ function getRequestBody(req: AppwriteFunctionRequest): {
   }
 
   if (req.bodyText !== undefined) {
-    return { body: Buffer.from(req.bodyText).toString("base64"), isBase64Encoded: true };
+    return {
+      body: Buffer.from(req.bodyText).toString("base64"),
+      isBase64Encoded: true,
+    };
   }
 
   if (req.bodyJson !== undefined) {
@@ -244,24 +247,24 @@ export default async function main({
       }),
       {
         status: 200,
-        headers: new Headers([...corsHeaders.entries(), ["Content-Type", "application/json"]]),
+        headers: new Headers([
+          ...corsHeaders.entries(),
+          ["Content-Type", "application/json"],
+        ]),
       }
     );
   }
 
   try {
     expressHandler ??= serverless(createApp({ productionStatic: false }));
-    const result = await expressHandler(
-      toLambdaEvent(req),
-      {
-        functionName: "wathaeqi-api",
-        functionVersion: "$LATEST",
-        invokedFunctionArn: "appwrite:function:wathaeqi-api",
-        memoryLimitInMB: "512",
-        awsRequestId: randomUUID(),
-        getRemainingTimeInMillis: () => 55_000,
-      } as never
-    );
+    const result = await expressHandler(toLambdaEvent(req), {
+      functionName: "wathaeqi-api",
+      functionVersion: "$LATEST",
+      invokedFunctionArn: "appwrite:function:wathaeqi-api",
+      memoryLimitInMB: "512",
+      awsRequestId: randomUUID(),
+      getRemainingTimeInMillis: () => 55_000,
+    } as never);
     const response = toWebResponse(result as LambdaResponse);
     for (const [name, value] of corsHeaders.entries()) {
       if (name.toLowerCase() === "set-cookie") {
@@ -275,12 +278,15 @@ export default async function main({
   } catch (caught) {
     error("Wathaeqi owner API request failed", caught);
     log("Request path:", url.pathname);
-    return new Response(JSON.stringify({ error: "API request could not be completed" }), {
-      status: 500,
-      headers: new Headers([
-        ...corsHeaders.entries(),
-        ["Content-Type", "application/json"],
-      ]),
-    });
+    return new Response(
+      JSON.stringify({ error: "API request could not be completed" }),
+      {
+        status: 500,
+        headers: new Headers([
+          ...corsHeaders.entries(),
+          ["Content-Type", "application/json"],
+        ]),
+      }
+    );
   }
 }
