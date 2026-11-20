@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
+import { ENV } from "../../_core/env";
 import { resolveTelegramScope } from "../telegrams/telegramAccess";
 import {
   countUnreadNotifications,
@@ -11,6 +12,42 @@ import {
 } from "./notificationService";
 
 export const notificationRouter = router({
+  config: authenticatedProcedure.query(() => ({
+    enabled: Boolean(ENV.vapidPublicKey),
+    publicKey: ENV.vapidPublicKey || null,
+  })),
+
+  subscribe: authenticatedProcedure
+    .input(
+      z.object({
+        endpoint: z.string().url().max(2048),
+        keys: z.object({
+          p256dh: z.string().min(16).max(256),
+          auth: z.string().min(8).max(256),
+        }),
+        userAgent: z.string().max(512).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      await registerMobilePushToken({
+        userId: ctx.user.id,
+        organizationId: scope.organizationId,
+        token: input.endpoint,
+        platform: "web",
+      });
+      return { subscribed: true as const };
+    }),
+
+  unsubscribe: authenticatedProcedure
+    .input(z.object({ endpoint: z.string().url().max(2048) }))
+    .mutation(async ({ ctx, input }) => ({
+      subscribed: !(await unregisterMobilePushToken(
+        ctx.user.id,
+        input.endpoint
+      )),
+    })),
+
   list: authenticatedProcedure
     .input(
       z

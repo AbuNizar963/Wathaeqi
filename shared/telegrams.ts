@@ -305,6 +305,11 @@ export type TelegramRecord = {
   createdAt: string;
   updatedAt: string;
   senderOrganizationName?: string | null;
+  currentOrganizationName?: string | null;
+  approvalStatus?: TelegramRouteApprovalStatus;
+  receiverDecisionStatus?: TelegramReceiverDecision;
+  time?: string;
+  date?: string;
 };
 
 export type TelegramListFilters = {
@@ -427,6 +432,9 @@ export type TelegramVersionRecord = {
   changeReason: string;
   snapshot: Record<string, unknown>;
   createdAt: string;
+  logoUrl?: string | null;
+  time?: string;
+  date?: string;
 };
 
 export type TelegramActionRecord = {

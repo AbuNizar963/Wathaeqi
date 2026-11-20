@@ -1069,6 +1069,7 @@ export const telegramRouter = router({
         });
         return {
           versionNumber,
+          serialCode: telegram.serialCode,
           actionLogRecorded: true,
           auditLogRecorded: true,
         };
@@ -1077,10 +1078,12 @@ export const telegramRouter = router({
       }
     }),
 
-  incomingRoutes: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveTelegramScope(ctx.user);
-    return listIncomingRoutes(scope.organizationId);
-  }),
+  incomingRoutes: authenticatedProcedure
+    .input(z.object({ telegramId: idSchema }).optional())
+    .query(async ({ ctx }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      return listIncomingRoutes(scope.organizationId);
+    }),
 
   route: authenticatedProcedure
     .input(

@@ -103,6 +103,7 @@ export const auditSearchRouter = router({
         page: input.page,
         pageSize: input.pageSize,
         hasNext: input.page * input.pageSize < result.total,
+        totalPages: Math.max(1, Math.ceil(result.total / input.pageSize)),
       };
     }),
 });

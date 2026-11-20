@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/features/auth-session/useAuth";
 import { BrandMark } from "@/components/BrandMark";
 

@@ -4,34 +4,31 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashboardLayout from "./components/DashboardLayout";
+import OwnerUserManagement from "./features/users/OwnerUserManagement";
+import OwnerOrganizationManagement from "./features/organizations/OwnerOrganizationManagement";
+import PlatformDocumentSettings from "./features/platform-settings/PlatformDocumentSettings";
+import OperationsWorkspace from "./features/admin/OperationsWorkspace";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
-const DocumentStudioPage = lazy(
-  () => import("./features/document-studio/DocumentStudioPage")
-);
+const Home = lazy(() => import("./pages/Home"));
+const VerifyTelegram = lazy(() => import("./pages/VerifyTelegram"));
+const AuditLogPage = lazy(() => import("./features/reports/AuditLog"));
 const Profile = lazy(() => import("./features/users/Profile"));
-const WorkspacePage = lazy(() => import("./features/workspace/WorkspacePage"));
-const DashboardPage = lazy(() => import("./features/dashboard/DashboardPage"));
-const TelegramsPage = lazy(() => import("./features/telegrams/TelegramsPage"));
-const TelegramDetailPage = lazy(
-  () => import("./features/telegrams/TelegramDetailPage")
-);
-const AuditLogPage = lazy(() => import("./features/audit/AuditLogPage"));
-const OrganizationsPage = lazy(
-  () => import("./features/organizations/OrganizationsPage")
-);
-const UsersPage = lazy(() => import("./features/users/UsersPage"));
-const DepartmentSettingsPage = lazy(
-  () => import("./features/settings/DepartmentSettingsPage")
-);
-const PlatformDocumentSettingsPage = lazy(
-  () => import("./features/platform-settings/PlatformDocumentSettingsPage")
-);
 const About = lazy(() => import("./pages/About"));
 const Terms = lazy(() => import("./pages/Terms"));
-function Shell({ children }: { children: React.ReactNode }) {
-  return <DashboardLayout>{children}</DashboardLayout>;
+const OwnerDashboardPage = lazy(() => import("./pages/OwnerDashboard"));
+
+function DashboardPage({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <DashboardLayout>{children}</DashboardLayout>
+      <OwnerUserManagement />
+      <OwnerOrganizationManagement />
+      <PlatformDocumentSettings />
+      <OperationsWorkspace />
+    </>
+  );
 }
 
 function Router() {
@@ -48,88 +45,42 @@ function Router() {
       }
     >
       <Switch>
-        <Route path="/dashboard">
-          <Shell>
-            <DashboardPage />
-          </Shell>
+        <Route path="/verify/:token" component={VerifyTelegram} />
+        <Route path="/owner-dashboard">
+          <DashboardPage>
+            <OwnerDashboardPage />
+          </DashboardPage>
         </Route>
-        <Route path="/telegrams">
-          <Shell>
-            <TelegramsPage />
-          </Shell>
-        </Route>
-        <Route path="/telegrams/:id">
-          {params => (
-            <Shell>
-              <TelegramDetailPage id={params.id} />
-            </Shell>
-          )}
-        </Route>
-        <Route path="/audit-logs">
-          <Shell>
+        <Route path="/audit-log">
+          <DashboardPage>
             <AuditLogPage />
-          </Shell>
-        </Route>
-        <Route path="/contacts">
-          <Shell>
-            <WorkspacePage section="contacts" />
-          </Shell>
-        </Route>
-        <Route path="/notifications">
-          <Shell>
-            <WorkspacePage section="notifications" />
-          </Shell>
-        </Route>
-        <Route path="/activity">
-          <Shell>
-            <WorkspacePage section="activity" />
-          </Shell>
-        </Route>
-        <Route path="/users">
-          <Shell>
-            <UsersPage />
-          </Shell>
-        </Route>
-        <Route path="/organizations">
-          <Shell>
-            <OrganizationsPage />
-          </Shell>
-        </Route>
-        <Route path="/department-settings">
-          <Shell>
-            <DepartmentSettingsPage />
-          </Shell>
-        </Route>
-        <Route path="/settings">
-          <Shell>
-            <PlatformDocumentSettingsPage />
-          </Shell>
+          </DashboardPage>
         </Route>
         <Route path="/profile">
-          <Shell>
+          <DashboardPage>
             <Profile />
-          </Shell>
+          </DashboardPage>
         </Route>
         <Route path="/about">
-          <Shell>
+          <DashboardPage>
             <About />
-          </Shell>
+          </DashboardPage>
         </Route>
         <Route path="/terms" component={Terms} />
         <Route path="/">
-          <Shell>
-            <DocumentStudioPage />
-          </Shell>
+          <DashboardPage>
+            <Home />
+          </DashboardPage>
         </Route>
         <Route path="/404">
-          <Shell>
+          <DashboardPage>
             <NotFound />
-          </Shell>
+          </DashboardPage>
         </Route>
         <Route>
-          <Shell>
+          <DashboardPage>
             <NotFound />
-          </Shell>
+          </DashboardPage>
         </Route>
       </Switch>
     </Suspense>
