@@ -510,7 +510,6 @@ class _OrganizationFormDialogState extends State<_OrganizationFormDialog> {
   late final TextEditingController _name;
   late String _type;
   late String _parentId;
-  late String _destinationId;
   late bool _active;
   late bool _overrideHierarchy;
   late bool _createAccount;
@@ -534,14 +533,6 @@ class _OrganizationFormDialogState extends State<_OrganizationFormDialog> {
               parentId != organization?['id']?.toString(),
         )
         ? parentId
-        : '';
-    final destinationId =
-        organization?['telegramDestinationOrganizationId']?.toString() ?? '';
-    _destinationId =
-        widget.organizations.any(
-          (item) => item['id']?.toString() == destinationId,
-        )
-        ? destinationId
         : '';
     _active = organization?['isActive'] != false;
     _overrideHierarchy = false;
@@ -569,9 +560,6 @@ class _OrganizationFormDialogState extends State<_OrganizationFormDialog> {
       'name': _name.text.trim(),
       'type': _type,
       'parentOrganizationId': _parentId.isEmpty ? null : _parentId,
-      'telegramDestinationOrganizationId': _destinationId.isEmpty
-          ? null
-          : _destinationId,
       'allowHierarchyOverride': widget.isOwner && _overrideHierarchy,
     };
     if (_editing) {
@@ -652,33 +640,6 @@ class _OrganizationFormDialogState extends State<_OrganizationFormDialog> {
                     ],
                     onChanged: (value) {
                       if (value != null) setState(() => _parentId = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _destinationId,
-                    decoration: const InputDecoration(
-                      labelText: 'جهة استلام البرقيات (اختياري)',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: '',
-                        child: Text('استخدم الجهة الأب الافتراضية'),
-                      ),
-                      ...widget.organizations.map(
-                        (item) => DropdownMenuItem(
-                          value: '${item['id']}',
-                          child: Text(
-                            '${item['name']} (${item['code']})',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _destinationId = value);
-                      }
                     },
                   ),
                   if (_editing) ...[

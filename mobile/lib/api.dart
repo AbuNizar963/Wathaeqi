@@ -63,6 +63,32 @@ class ApiMutationEvent {
   bool affectsTelegram(int id) => telegramId == id;
 }
 
+dynamic _withoutPrivateDocumentStorageFields(dynamic value) {
+  const privateKeys = {
+    'storageKey',
+    'signedUrl',
+    'uploadUrl',
+    'downloadUrl',
+    'uploadJwt',
+  };
+  if (value is List) {
+    return value.map(_withoutPrivateDocumentStorageFields).toList();
+  }
+  if (value is Map) {
+    return Map<String, dynamic>.fromEntries(
+      value.entries
+          .where((entry) => !privateKeys.contains('${entry.key}'))
+          .map(
+            (entry) => MapEntry(
+              '${entry.key}',
+              _withoutPrivateDocumentStorageFields(entry.value),
+            ),
+          ),
+    );
+  }
+  return value;
+}
+
 class _OrganizationLogoCacheEntry {
   const _OrganizationLogoCacheEntry(this.bytes, this.cachedAt);
 
@@ -70,9 +96,27 @@ class _OrganizationLogoCacheEntry {
   final DateTime cachedAt;
 }
 
+/// Public result for an upload that the server has already linked to a document.
+class UploadedDocumentResult {
+  const UploadedDocumentResult({
+    required this.id,
+    required this.fileName,
+    required this.mimeType,
+    required this.sizeBytes,
+  });
+
+  final String id;
+  final String fileName;
+  final String mimeType;
+  final int sizeBytes;
+}
+
 class PoliceApi {
   static const _offlineCacheKeyRegistry = 'offline_cache_key_registry_v1';
   static const _maxOfflineCacheKeys = 128;
+  static const maxDocumentUploadBytes = 25 * 1024 * 1024;
+  static const _documentUploadTimeout = Duration(seconds: 35);
+  static const _documentPdfTimeout = Duration(seconds: 50);
   static const _telegramOutboxKey = 'telegram_outbox_v1';
   static const _telegramOutboxEpochKey = 'telegram_outbox_epoch_v1';
 
@@ -208,15 +252,182 @@ class PoliceApi {
       final includesDocumentData =
           procedure.startsWith('telegrams.') ||
           procedure.startsWith('documentStudio.');
+      final isUploadedDocument =
+          procedure == 'documentStudio.createUploadedDocument';
+      final eventInput = isUploadedDocument
+          ? _withoutPrivateDocumentStorageFields(input ?? const {})
+                as Map<String, dynamic>
+          : input;
+      final eventResult = isUploadedDocument
+          ? _withoutPrivateDocumentStorageFields(value)
+          : value;
       _mutationEvents.add(
         ApiMutationEvent(
           procedure: procedure,
-          input: includesDocumentData ? input : null,
-          result: includesDocumentData ? value : null,
+          input: includesDocumentData ? eventInput : null,
+          result: includesDocumentData ? eventResult : null,
         ),
       );
     }
     return value;
+  }
+
+  /// Uploads a file and creates its document record in the same server request.
+  Future<UploadedDocumentResult> uploadDocumentFile({
+    required String fileName,
+    required Uint8List bytes,
+    required String title,
+    required String category,
+    String subject = '',
+    DateTime? documentDate,
+    int pageCount = 0,
+  }) async {
+    final normalizedName = fileName.split(RegExp(r'[/\\]')).last.trim();
+    final extension = normalizedName.split('.').last.toLowerCase();
+    const mimeTypes = <String, String>{
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'pdf': 'application/pdf',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'webp': 'image/webp',
+    };
+    final mimeType = mimeTypes[extension];
+    if (normalizedName.isEmpty ||
+        normalizedName.length > 256 ||
+        mimeType == null ||
+        bytes.isEmpty ||
+        bytes.length > maxDocumentUploadBytes) {
+      throw const FormatException('نوع الملف أو حجمه غير مدعوم');
+    }
+
+    final baseUri = Uri.parse(baseUrl);
+    if (!baseUri.isScheme('https') &&
+        !{'localhost', '127.0.0.1', '::1'}.contains(baseUri.host)) {
+      throw const FormatException('يجب استخدام اتصال HTTPS لرفع الوثائق');
+    }
+    final uri = baseUri.resolve('/api/documents/upload');
+    final cookie = await _storage.read(key: 'session_cookie');
+    if (cookie == null || cookie.trim().isEmpty) {
+      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
+    }
+
+    final request = http.Request('POST', uri)
+      ..followRedirects = false
+      ..headers.addAll({
+        'cookie': cookie,
+        'content-type': 'application/octet-stream',
+        'accept': 'application/json',
+        'x-file-name': Uri.encodeComponent(normalizedName),
+        'x-document-metadata': base64Url
+            .encode(
+              utf8.encode(
+                jsonEncode({
+                  'title': title,
+                  'category': category,
+                  'subject': subject,
+                  'documentDate': (documentDate ?? DateTime.now())
+                      .toUtc()
+                      .toIso8601String(),
+                  'pageCount': pageCount,
+                }),
+              ),
+            )
+            .replaceAll('=', ''),
+      })
+      ..bodyBytes = bytes;
+    late final http.Response response;
+    try {
+      final streamed = await _httpClient
+          .send(request)
+          .timeout(_documentUploadTimeout);
+      response = await http.Response.fromStream(streamed)
+          .timeout(_documentUploadTimeout);
+    } on TimeoutException {
+      throw const NetworkException('انتهت مهلة رفع الملف؛ أعد المحاولة');
+    } on IOException {
+      throw const NetworkException();
+    } on http.ClientException {
+      throw const NetworkException();
+    }
+    if (response.statusCode != 201) {
+      throw ApiException(response.statusCode, _message(response.body));
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map ||
+        decoded['id'] is! String ||
+        !RegExp(r'^[A-Za-z0-9._-]{1,36}$').hasMatch(decoded['id'] as String) ||
+        decoded['file'] is! Map) {
+      throw const FormatException('استجابة رفع الوثيقة غير صالحة');
+    }
+    final file = Map<String, dynamic>.from(decoded['file'] as Map);
+    if (file.containsKey('storageKey') ||
+        file.containsKey('signedUrl') ||
+        file['fileName'] != normalizedName ||
+        file['mimeType'] != mimeType ||
+        file['sizeBytes'] != bytes.length) {
+      throw const FormatException('بيانات الملف المعاد من الخادم غير صالحة');
+    }
+    return UploadedDocumentResult(
+      id: decoded['id'] as String,
+      fileName: file['fileName'] as String,
+      mimeType: file['mimeType'] as String,
+      sizeBytes: file['sizeBytes'] as int,
+    );
+  }
+
+  /// Returns an authorized print-ready PDF without caching bytes or URLs.
+  /// The server enforces document ownership and accepts only supported input.
+  Future<Uint8List> fetchDocumentPrintPdf(String documentId) async {
+    if (!RegExp(r'^[A-Za-z0-9._-]{1,36}$').hasMatch(documentId)) {
+      throw const FormatException('معرّف الوثيقة غير صالح');
+    }
+    final baseUri = Uri.parse(baseUrl);
+    if (!baseUri.isScheme('https') &&
+        !{'localhost', '127.0.0.1', '::1'}.contains(baseUri.host)) {
+      throw const FormatException('يجب استخدام اتصال HTTPS لطباعة الوثائق');
+    }
+    final uri = baseUri.resolve(
+      '/api/documents/${Uri.encodeComponent(documentId)}/print-pdf',
+    );
+    final cookie = await _storage.read(key: 'session_cookie');
+    if (cookie == null || cookie.trim().isEmpty) {
+      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
+    }
+
+    final request = http.Request('POST', uri)
+      ..followRedirects = false
+      ..headers.addAll({'cookie': cookie, 'accept': 'application/pdf'});
+    late final http.Response response;
+    try {
+      final streamed = await _httpClient
+          .send(request)
+          .timeout(_documentPdfTimeout);
+      response = await http.Response.fromStream(streamed)
+          .timeout(_documentPdfTimeout);
+    } on TimeoutException {
+      throw const NetworkException('انتهت مهلة تجهيز الوثيقة للطباعة');
+    } on IOException {
+      throw const NetworkException();
+    } on http.ClientException {
+      throw const NetworkException();
+    }
+    if (response.statusCode != 200) {
+      throw ApiException(response.statusCode, _message(response.body));
+    }
+    final contentType = (response.headers['content-type'] ?? '')
+        .split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    final bytes = response.bodyBytes;
+    if (contentType != 'application/pdf' ||
+        bytes.length < 5 ||
+        bytes.length > maxDocumentUploadBytes ||
+        String.fromCharCodes(bytes.take(5)) != '%PDF-') {
+      throw const ApiException(502, 'أعاد الخادم ملف PDF غير صالح للطباعة');
+    }
+    return Uint8List.fromList(bytes);
   }
 
   /// Renders an official telegram through the authenticated server-side

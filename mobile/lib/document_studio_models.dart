@@ -172,6 +172,7 @@ class OfficialDocument {
     this.templateId,
     this.templateRevision,
     this.templateFieldsSnapshot = const [],
+    this.file,
     this.issuedAt,
     this.archivedAt,
   });
@@ -182,6 +183,7 @@ class OfficialDocument {
   final String? templateId;
   final int? templateRevision;
   final List<DocumentTemplateField> templateFieldsSnapshot;
+  final UploadedDocumentFile? file;
   final String title;
   final String category;
   final String subject;
@@ -215,6 +217,11 @@ class OfficialDocument {
                   ),
                 )
                 .toList(growable: false),
+        file: json['file'] is Map
+            ? UploadedDocumentFile.fromJson(
+                Map<String, dynamic>.from(json['file'] as Map),
+              )
+            : null,
         title: json['title'] as String? ?? '',
         category: json['category'] as String? ?? 'general',
         subject: json['subject'] as String? ?? '',
@@ -248,6 +255,7 @@ class OfficialDocument {
       'templateFieldsSnapshot': templateFieldsSnapshot
           .map((item) => item.toJson())
           .toList(),
+    if (file != null) 'file': file!.toJson(),
     'title': title,
     'category': category,
     'subject': subject,
@@ -261,5 +269,38 @@ class OfficialDocument {
     'updatedAt': updatedAt.toUtc().toIso8601String(),
     if (issuedAt != null) 'issuedAt': issuedAt!.toUtc().toIso8601String(),
     if (archivedAt != null) 'archivedAt': archivedAt!.toUtc().toIso8601String(),
+  };
+}
+
+/// Public metadata for an uploaded document file.
+///
+/// Storage keys and signed URLs are deliberately not represented here, so
+/// serializing a document for the offline cache cannot persist either value.
+class UploadedDocumentFile {
+  const UploadedDocumentFile({
+    required this.fileName,
+    required this.mimeType,
+    required this.sizeBytes,
+    required this.pageCount,
+  });
+
+  final String fileName;
+  final String mimeType;
+  final int sizeBytes;
+  final int pageCount;
+
+  factory UploadedDocumentFile.fromJson(Map<String, dynamic> json) =>
+      UploadedDocumentFile(
+        fileName: json['fileName'] as String? ?? '',
+        mimeType: json['mimeType'] as String? ?? '',
+        sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+        pageCount: (json['pageCount'] as num?)?.toInt() ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'fileName': fileName,
+    'mimeType': mimeType,
+    'sizeBytes': sizeBytes,
+    'pageCount': pageCount,
   };
 }

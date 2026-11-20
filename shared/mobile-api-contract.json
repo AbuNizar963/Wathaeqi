@@ -71,6 +71,7 @@
     "auth.ownerSetupStatus",
     "documentStudio.archiveDocument",
     "documentStudio.createDocument",
+    "documentStudio.createUploadedDocument",
     "documentStudio.createTemplate",
     "documentStudio.deactivateTemplate",
     "documentStudio.getDocument",

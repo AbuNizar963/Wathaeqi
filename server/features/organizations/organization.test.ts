@@ -242,7 +242,8 @@ describe("organization repository", () => {
         name: "القيادة المركزية المحدثة",
         type: "central",
         parentOrganizationId: null,
-        telegramDestinationOrganizationId: null,
+        telegramDestinationOrganizationId:
+          "00000000-0000-4000-8000-000000000011",
         isActive: true,
         createdAt: "2026-10-01T00:00:00.000Z",
         updatedAt: "2026-10-09T00:00:00.000Z",
@@ -257,7 +258,6 @@ describe("organization repository", () => {
         name: "القيادة المركزية المحدثة",
         type: "central",
         parentOrganizationId: null,
-        telegramDestinationOrganizationId: null,
         isActive: true,
       })
     ).resolves.toMatchObject({
@@ -265,10 +265,15 @@ describe("organization repository", () => {
       name: "القيادة المركزية المحدثة",
       type: "central",
       parentOrganizationId: null,
+      telegramDestinationOrganizationId:
+        "00000000-0000-4000-8000-000000000011",
     });
 
     expect(mocks.update).toHaveBeenCalledWith(
       expect.objectContaining({ parentOrganizationId: null })
+    );
+    expect(mocks.update.mock.calls[0]?.[0]).not.toHaveProperty(
+      "telegramDestinationOrganizationId"
     );
   });
 

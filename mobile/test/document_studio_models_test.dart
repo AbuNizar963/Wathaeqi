@@ -83,6 +83,12 @@ void main() {
           status: 'draft',
           createdAt: DateTime.utc(2026, 11, 18, 10),
           updatedAt: DateTime.utc(2026, 11, 18, 11),
+          file: const UploadedDocumentFile(
+            fileName: 'report.pdf',
+            mimeType: 'application/pdf',
+            sizeBytes: 1024,
+            pageCount: 0,
+          ),
         );
 
         final restored = OfficialDocument.fromJson(document.toJson());
@@ -98,6 +104,10 @@ void main() {
         expect(restored.serialCode, 'DOC-0012');
         expect(restored.documentDate, document.documentDate);
         expect(restored.expectedUpdatedAt, '2026-11-18T11:00:00.000Z');
+        expect(restored.file?.fileName, 'report.pdf');
+        expect(restored.file?.pageCount, 0);
+        expect(document.toJson().toString(), isNot(contains('storageKey')));
+        expect(document.toJson().toString(), isNot(contains('signedUrl')));
       },
     );
   });

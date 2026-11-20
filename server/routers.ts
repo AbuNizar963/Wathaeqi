@@ -1192,7 +1192,11 @@ export const appRouter = router({
         z.object({
           id: z.string().uuid(),
           parentOrganizationId: z.string().uuid().nullable(),
-          telegramDestinationOrganizationId: z.string().uuid().nullable(),
+          telegramDestinationOrganizationId: z
+            .string()
+            .uuid()
+            .nullable()
+            .optional(),
           code: z
             .string()
             .trim()

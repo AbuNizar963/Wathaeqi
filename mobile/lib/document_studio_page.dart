@@ -1,12 +1,17 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
 import 'document_studio_outbox.dart';
+import 'document_print_layout.dart';
 import 'document_studio_quill_codec.dart';
 
 enum DocumentStudioTab { documents, templates, archive }
@@ -260,6 +265,108 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _uploadDocumentFile() async {
+    final selection = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['docx', 'pdf', 'png', 'jpg', 'jpeg', 'webp'],
+      withData: true,
+      allowMultiple: false,
+    );
+    if (selection == null || selection.files.isEmpty) return;
+    final picked = selection.files.single;
+    final bytes = picked.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      _showMessage('تعذر قراءة الملف المحدد من الجهاز');
+      return;
+    }
+    if (bytes.length > PoliceApi.maxDocumentUploadBytes) {
+      _showMessage('الحد الأقصى لحجم الملف 25 ميغابايت');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final title = picked.name.replaceFirst(RegExp(r'\.[^.]+$'), '').trim();
+      await widget.api.uploadDocumentFile(
+        fileName: picked.name,
+        bytes: Uint8List.fromList(bytes),
+        title: title.isEmpty ? 'وثيقة مرفوعة' : title,
+        category: 'general',
+        subject: '',
+        documentDate: DateTime.now(),
+      );
+      await _load();
+      _showMessage('تم رفع الملف وإضافته إلى مكتبة الوثائق');
+    } catch (error) {
+      _showMessage('تعذر رفع الوثيقة أو تسجيلها: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<int?> _choosePagesPerSheet() => showDialog<int>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('تخطيط الطباعة على ورقة A4'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final choice in const <(int, String)>[
+            (1, 'صفحة واحدة على كل ورقة'),
+            (2, 'صفحتان على كل ورقة'),
+            (4, 'أربع صفحات على كل ورقة'),
+          ])
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: Text(choice.$2),
+              onTap: () => Navigator.pop(dialogContext, choice.$1),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('إلغاء'),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _printDocumentFile(OfficialDocument document) async {
+    final file = document.file;
+    if (file == null) {
+      _showMessage('لا يوجد ملف مرفق بهذه الوثيقة');
+      return;
+    }
+    if (!{
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    }.contains(file.mimeType)) {
+      _showMessage('الطباعة متعددة الصفحات متاحة حالياً لملفات PDF وDOCX');
+      return;
+    }
+    final pagesPerSheet = await _choosePagesPerSheet();
+    if (pagesPerSheet == null) return;
+
+    setState(() => _saving = true);
+    try {
+      final sourcePdf = await widget.api.fetchDocumentPrintPdf(document.id);
+      final laidOutPdf = await DocumentPrintLayout.createA4Pdf(
+        sourcePdf: sourcePdf,
+        pagesPerSheet: pagesPerSheet,
+      );
+      await Printing.layoutPdf(
+        name: document.title,
+        format: PdfPageFormat.a4,
+        onLayout: (_) async => laidOutPdf,
+      );
+    } catch (error) {
+      _showMessage('تعذرت تهيئة الملف للطباعة: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _syncLocalChanges() async {
@@ -747,6 +854,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 [
                   if (document.serialCode.isNotEmpty) document.serialCode,
                   document.subject,
+                  if (document.file != null) document.file!.fileName,
                   _formatDate(document.updatedAt),
                 ].where((value) => value.isNotEmpty).join(' · '),
                 maxLines: 2,
@@ -918,6 +1026,28 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ),
         ],
         const SizedBox(height: 12),
+        if (_selectedDocument?.file case final file?)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.attach_file_outlined),
+              title: Text(
+                file.fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '${(file.sizeBytes / (1024 * 1024)).toStringAsFixed(2)} م.ب'
+                '${file.pageCount > 0 ? ' · ${file.pageCount} صفحة' : ''}',
+              ),
+              trailing: IconButton(
+                tooltip: 'طباعة بخيارات A4',
+                onPressed: _saving
+                    ? null
+                    : () => _printDocumentFile(_selectedDocument!),
+                icon: const Icon(Icons.print_outlined),
+              ),
+            ),
+          ),
         _buildA4Editor(controller: _documentEditor, editable: canEdit),
         const SizedBox(height: 12),
         Wrap(
@@ -1561,10 +1691,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     if (_selectedDocument == null) ...[
                       Align(
                         alignment: AlignmentDirectional.centerEnd,
-                        child: FilledButton.icon(
-                          onPressed: _startNewDocument,
-                          icon: const Icon(Icons.add),
-                          label: const Text('وثيقة جديدة'),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: _startNewDocument,
+                              icon: const Icon(Icons.add),
+                              label: const Text('وثيقة جديدة'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: _saving ? null : _uploadDocumentFile,
+                              icon: const Icon(Icons.upload_file_outlined),
+                              label: const Text('رفع ملف'),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 10),

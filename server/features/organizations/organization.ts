@@ -569,11 +569,13 @@ export async function updateOrganization(input: {
       allowHierarchyOverride: input.allowHierarchyOverride,
     }
   );
-  await validateTelegramDestination(
-    input.telegramDestinationOrganizationId ?? null,
-    input.type,
-    input.id
-  );
+  if (input.telegramDestinationOrganizationId !== undefined) {
+    await validateTelegramDestination(
+      input.telegramDestinationOrganizationId,
+      input.type,
+      input.id
+    );
+  }
   if (input.id === (await getPrimaryOrganization()).id && !input.isActive) {
     throw new Error("لا يمكن تعطيل المركز الرئيسي");
   }
@@ -581,8 +583,12 @@ export async function updateOrganization(input: {
     .from("organizations")
     .update({
       parentOrganizationId: input.parentOrganizationId ?? null,
-      telegramDestinationOrganizationId:
-        input.telegramDestinationOrganizationId ?? null,
+      ...(input.telegramDestinationOrganizationId === undefined
+        ? {}
+        : {
+            telegramDestinationOrganizationId:
+              input.telegramDestinationOrganizationId,
+          }),
       code: input.code.trim().toUpperCase(),
       name: input.name.trim(),
       type: input.type,

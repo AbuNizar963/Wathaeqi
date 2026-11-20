@@ -115,6 +115,146 @@ void main() {
     },
   );
 
+  test('document upload links metadata in one request without exposing storage credentials', () async {
+    const sessionCookie = 'sid=document-session';
+    final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
+    _secureStorageForTest['session_cookie'] = sessionCookie;
+    final requests = <http.BaseRequest>[];
+    final client = MockClient((request) async {
+      requests.add(request);
+      expect(request.headers['cookie'], sessionCookie);
+      if (request.url.path == '/api/documents/upload') {
+        expect(request.method, 'POST');
+        expect(request.headers['content-type'], 'application/octet-stream');
+        expect(request.headers['x-file-name'], 'report.pdf');
+        final encodedMetadata = request.headers['x-document-metadata']!;
+        final metadata = jsonDecode(
+          utf8.decode(base64Url.decode(base64Url.normalize(encodedMetadata))),
+        );
+        expect(metadata, containsPair('title', 'تقرير'));
+        expect(metadata, containsPair('category', 'general'));
+        expect(request.bodyBytes, bytes);
+        return http.Response(
+          jsonEncode({
+            'id': 'document-1',
+            'file': {
+              'fileName': 'report.pdf',
+              'mimeType': 'application/pdf',
+              'sizeBytes': bytes.length,
+              'pageCount': 0,
+            },
+          }),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      fail('document upload must not submit a second storage-key mutation');
+    });
+    addTearDown(client.close);
+    final api = PoliceApi(
+      baseUrl: 'https://police.example.test',
+      httpClient: client,
+    );
+    final events = <ApiMutationEvent>[];
+    final subscription = api.mutationEvents.listen(events.add);
+    addTearDown(subscription.cancel);
+
+    final result = await api.uploadDocumentFile(
+      fileName: 'report.pdf',
+      bytes: bytes,
+      title: 'تقرير',
+      category: 'general',
+    );
+
+    expect(requests, hasLength(1));
+    expect(result.id, 'document-1');
+    expect(result.toString(), isNot(contains('storageKey')));
+    expect(events, isEmpty);
+    expect(
+      _secureStorageForTest.keys.where((key) => key.startsWith('offline_')),
+      isEmpty,
+    );
+    expect(_secureStorageForTest['session_cookie'], sessionCookie);
+  });
+
+  test('document print PDF requires an authenticated same-host request and validates bytes', () async {
+    const sessionCookie = 'sid=print-session';
+    final pdfBytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
+    _secureStorageForTest['session_cookie'] = sessionCookie;
+    var requestCount = 0;
+    final client = MockClient((request) async {
+      requestCount++;
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/documents/document-1/print-pdf');
+      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['accept'], 'application/pdf');
+      expect(request.followRedirects, isFalse);
+      return http.Response.bytes(
+        pdfBytes,
+        200,
+        headers: {'content-type': 'application/pdf'},
+      );
+    });
+    addTearDown(client.close);
+    final api = PoliceApi(
+      baseUrl: 'https://police.example.test',
+      httpClient: client,
+    );
+
+    expect(await api.fetchDocumentPrintPdf('document-1'), pdfBytes);
+    await expectLater(
+      api.fetchDocumentPrintPdf('../other'),
+      throwsA(isA<FormatException>()),
+    );
+    expect(requestCount, 1);
+    expect(
+      _secureStorageForTest.keys.where((key) => key.startsWith('offline_')),
+      isEmpty,
+    );
+  });
+
+  test(
+    'document upload refuses missing sessions and non-HTTPS hosts',
+    () async {
+      var requestStarted = false;
+      final client = MockClient((request) async {
+        requestStarted = true;
+        return http.Response('unexpected request', 500);
+      });
+      addTearDown(client.close);
+      final secureApi = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+      final plainHttpApi = PoliceApi(
+        baseUrl: 'http://police.example.test',
+        httpClient: client,
+      );
+      final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
+
+      await expectLater(
+        secureApi.uploadDocumentFile(
+          fileName: 'report.pdf',
+          bytes: bytes,
+          title: 'تقرير',
+          category: 'general',
+        ),
+        throwsA(isA<ApiException>()),
+      );
+      _secureStorageForTest['session_cookie'] = 'sid=valid';
+      await expectLater(
+        plainHttpApi.uploadDocumentFile(
+          fileName: 'report.pdf',
+          bytes: bytes,
+          title: 'تقرير',
+          category: 'general',
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      expect(requestStarted, isFalse);
+    },
+  );
+
   test(
     'critical platform document reads ignore stale cached settings',
     () async {
