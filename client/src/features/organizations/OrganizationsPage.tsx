@@ -577,7 +577,7 @@ export default function OrganizationsPage() {
             <Badge variant="secondary">{organizations.length}</Badge>
             <Badge variant="outline">{activeCount} نشطة</Badge>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
             {isOwner ? (
               <label className="flex items-center gap-2 text-sm">
                 <Switch
@@ -588,7 +588,7 @@ export default function OrganizationsPage() {
                 إظهار المعطّلة
               </label>
             ) : null}
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full min-w-48 sm:w-64">
               <Search
                 className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"

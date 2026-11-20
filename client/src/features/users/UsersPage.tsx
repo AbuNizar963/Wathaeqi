@@ -566,7 +566,7 @@ export default function UsersPage() {
                       <th className="p-3">الرقم العسكري</th>
                       <th className="p-3">الحالة</th>
                       <th className="p-3">آخر دخول</th>
-                      <th className="p-3">الإجراءات</th>
+                      <th className="min-w-32 p-3">الإجراءات</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -631,8 +631,8 @@ export default function UsersPage() {
                         <td className="p-3 text-xs text-muted-foreground">
                           {formatDateTime(user.lastSignedIn)}
                         </td>
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
+                        <td className="min-w-32 p-3">
+                          <div className="flex flex-nowrap items-center gap-1">
                             <Button
                               size="sm"
                               variant="ghost"

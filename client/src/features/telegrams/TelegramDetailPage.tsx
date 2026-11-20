@@ -393,7 +393,7 @@ export default function TelegramDetailPage({ id }: { id: string }) {
       </Card>
 
       {canAct && telegram.nextStatuses.length > 0 ? (
-        <Card className="flex flex-wrap items-center gap-2 p-4 print:hidden">
+        <Card className="flex flex-row flex-wrap items-center justify-start gap-2 p-4 print:hidden">
           <span className="text-sm font-medium">إجراءات الحالة:</span>
           {telegram.nextStatuses.map(status => (
             <Button
