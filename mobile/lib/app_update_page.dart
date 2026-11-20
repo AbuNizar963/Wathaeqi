@@ -85,7 +85,7 @@ class _AppUpdatePageState extends State<AppUpdatePage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
                 child: Image.asset(
-                  'assets/police-telegrams-icon.png',
+                  'assets/wathaeqi-app-icon.png',
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => const Icon(
                     Icons.local_police_rounded,

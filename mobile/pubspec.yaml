@@ -40,7 +40,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/police-telegrams-icon.png
+    - assets/wathaeqi-app-icon.png
     - assets/fonts/aref-ruqaa-regular.ttf
     - assets/licenses/ArefRuqaa-OFL.txt
   fonts:

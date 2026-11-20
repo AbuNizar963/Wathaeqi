@@ -432,7 +432,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       child: ClipOval(
                         child: Image.asset(
-                          'assets/police-telegrams-icon.png',
+                          'assets/wathaeqi-app-icon.png',
                           width: 78,
                           height: 78,
                           fit: BoxFit.cover,
@@ -1789,7 +1789,7 @@ class _DashboardPageState extends State<DashboardPage>
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.asset(
-                'assets/police-telegrams-icon.png',
+                'assets/wathaeqi-app-icon.png',
                 width: 36,
                 height: 36,
                 fit: BoxFit.contain,
@@ -2073,7 +2073,7 @@ class _DashboardPageState extends State<DashboardPage>
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.asset(
-                          'assets/police-telegrams-icon.png',
+                          'assets/wathaeqi-app-icon.png',
                           width: 38,
                           height: 38,
                           fit: BoxFit.cover,
