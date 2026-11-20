@@ -1126,7 +1126,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ),
             ),
           ),
-        _buildA4Editor(controller: _documentEditor, editable: canEdit),
+        if (_selectedDocument?.file == null)
+          _buildA4Editor(controller: _documentEditor, editable: canEdit),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
