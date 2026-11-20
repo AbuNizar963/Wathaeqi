@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -155,7 +156,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: ui.TextDirection.rtl,
           child: AlertDialog(
             title: const Text('إضافة وثيقة إلى المكتبة'),
             content: SingleChildScrollView(
@@ -271,7 +272,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
       context: context,
       builder: (dialogContext) => Dialog.fullscreen(
         child: Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: ui.TextDirection.rtl,
           child: Scaffold(
             appBar: AppBar(
               title: Text(
@@ -333,7 +334,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     );
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: ui.TextDirection.rtl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
