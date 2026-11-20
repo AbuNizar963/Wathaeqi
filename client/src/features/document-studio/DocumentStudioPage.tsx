@@ -34,6 +34,7 @@ import type {
   DocumentTemplateFieldType,
   OfficialDocument,
 } from "../../../../shared/documentStudio";
+import FilePreview from "../document-library/FilePreview";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
 import {
@@ -187,6 +188,13 @@ export default function DocumentStudioPage() {
   const selectedTemplate = useMemo(
     () => templates.find(item => item.id === selectedTemplateId) ?? null,
     [selectedTemplateId, templates]
+  );
+  const importedFileUrlQuery = trpc.documentStudio.getFileUrl.useQuery(
+    { id: selectedDocument?.id ?? "" },
+    {
+      enabled: Boolean(selectedDocument?.file),
+      staleTime: 120_000,
+    }
   );
   const documentOrganizationId =
     selectedDocument?.organizationId ??
@@ -1123,7 +1131,32 @@ export default function DocumentStudioPage() {
                 </section>
               ) : null}
 
-              <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
+              {selectedDocument?.file ? (
+                <section className="space-y-3 rounded-lg border p-3">
+                  <div>
+                    <h3 className="font-semibold">الملف المستورد</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {selectedDocument.file.fileName} · الأصل محفوظ دون تغيير
+                    </p>
+                  </div>
+                  {importedFileUrlQuery.isLoading ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      جارٍ تجهيز معاينة الملف...
+                    </p>
+                  ) : importedFileUrlQuery.data?.url ? (
+                    <FilePreview
+                      url={importedFileUrlQuery.data.url}
+                      fileName={selectedDocument.file.fileName}
+                      mimeType={selectedDocument.file.mimeType}
+                    />
+                  ) : (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      تعذر تجهيز معاينة الملف. أعد فتح الوثيقة.
+                    </p>
+                  )}
+                </section>
+              ) : (
+                <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
                 <DocumentWatermark
                   logoUrl={logoUrl}
                   opacityPercent={
@@ -1167,6 +1200,7 @@ export default function DocumentStudioPage() {
                   وثائقي
                 </footer>
               </div>
+              )}
             </Card>
           )}
         </main>
