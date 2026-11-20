@@ -21,10 +21,15 @@ const queryClient = new QueryClient({
   },
 });
 
+const configuredAppwriteApiUrl = import.meta.env.VITE_APPWRITE_API_URL?.trim();
+const trpcEndpoint = configuredAppwriteApiUrl
+  ? `${configuredAppwriteApiUrl.replace(/\/+$/, "")}/api/trpc`
+  : "/api/trpc";
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: trpcEndpoint,
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
