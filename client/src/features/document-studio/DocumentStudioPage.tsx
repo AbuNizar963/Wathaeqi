@@ -1190,7 +1190,9 @@ export default function DocumentStudioPage() {
               }}
               className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span
+                className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+              >
                 <PenLine className="size-5" />
               </span>
               <span className="min-w-0">
@@ -1210,7 +1212,9 @@ export default function DocumentStudioPage() {
               }}
               className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span
+                className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+              >
                 <FileUp className="size-5" />
               </span>
               <span className="min-w-0">
@@ -1230,7 +1234,9 @@ export default function DocumentStudioPage() {
               }}
               className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span
+                className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+              >
                 <LayoutTemplate className="size-5" />
               </span>
               <span className="min-w-0">
