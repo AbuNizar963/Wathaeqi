@@ -6,7 +6,6 @@ import {
   FileText,
   FileUp,
   PenLine,
-  UploadCloud,
   FolderOpen,
   LayoutTemplate,
   Printer,
@@ -1223,7 +1222,7 @@ export default function DocumentStudioPage() {
               type="button"
               onClick={() => {
                 setCreationDialogOpen(false);
-                startNewTemplate();
+                setActiveTab("templates");
               }}
               className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
@@ -1231,7 +1230,7 @@ export default function DocumentStudioPage() {
                 <LayoutTemplate className="size-5" />
               </span>
               <span className="min-w-0">
-                <span className="block font-semibold">إنشاء من نموذج محفوظ</span>
+                <span className="block font-semibold">اختيار نموذج جاهز</span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   ابدأ باستخدام نموذج إداري جاهز أو أنشئ نموذجاً جديداً
                 </span>
