@@ -1753,18 +1753,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: List<Widget>.generate(
                     7,
-                    (_) => Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List<Widget>.generate(
-                        3,
-                        (_) => const Text(
-                          'وثائقي',
-                          maxLines: 1,
-                          style: TextStyle(
-                            color: Color(0xFF0F172A),
-                            fontSize: 21,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
+                    (row) => Transform.translate(
+                      offset: Offset(row.isOdd ? 28 : 0, 0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: List<Widget>.generate(
+                          3,
+                          (_) => const Text(
+                            'وثائقي',
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Color(0xFF0F172A),
+                              fontSize: 21,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                            ),
                           ),
                         ),
                       ),
@@ -1774,14 +1777,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ),
             if (logoUrl != null && logoUrl.isNotEmpty)
               Center(
-                child: Opacity(
-                  opacity: 0.55,
-                  child: Image.network(
-                    logoUrl,
-                    width: 190,
-                    height: 190,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                child: FractionallySizedBox(
+                  widthFactor: 0.34,
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Opacity(
+                      opacity: 0.55,
+                      child: Image.network(
+                        logoUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
+                    ),
                   ),
                 ),
               ),
