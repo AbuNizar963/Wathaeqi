@@ -274,7 +274,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       withData: true,
       allowMultiple: false,
     );
-    if (selection == null || selection.files.isEmpty) return;
+    if (selection == null || selection.files.isEmpty || !mounted) return;
     final picked = selection.files.single;
     final bytes = picked.bytes;
     if (bytes == null || bytes.isEmpty) {
@@ -289,7 +289,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     setState(() => _saving = true);
     try {
       final title = picked.name.replaceFirst(RegExp(r'\.[^.]+$'), '').trim();
-      await widget.api.uploadDocumentFile(
+      final uploaded = await widget.api.uploadDocumentFile(
         fileName: picked.name,
         bytes: Uint8List.fromList(bytes),
         title: title.isEmpty ? 'وثيقة مرفوعة' : title,
@@ -298,11 +298,66 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         documentDate: DateTime.now(),
       );
       await _load();
-      _showMessage('تم رفع الملف وإضافته إلى مكتبة الوثائق');
+      for (final document in _documents) {
+        if (document.id == uploaded.id) {
+          _selectDocument(document);
+          break;
+        }
+      }
+      _showMessage('تم استيراد الملف وفتح الوثيقة');
     } catch (error) {
-      _showMessage('تعذر رفع الوثيقة أو تسجيلها: $error');
+      _showMessage('تعذر استيراد الوثيقة: $error');
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _showCreateDocumentOptions() async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إنشاء وثيقة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('إنشاء والكتابة في وثيقة'),
+              subtitle: const Text('افتح المحرر واكتب وثيقتك مباشرة'),
+              onTap: () => Navigator.pop(dialogContext, 'write'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_open_outlined),
+              title: const Text('استيراد PDF أو Word أو صورة'),
+              subtitle: const Text('إرفاق ملف موجود وإنشاء سجل للوثيقة'),
+              onTap: () => Navigator.pop(dialogContext, 'import'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard_customize_outlined),
+              title: const Text('اختيار نموذج جاهز'),
+              subtitle: const Text('استخدم نموذجاً محفوظاً للبدء'),
+              onTap: () => Navigator.pop(dialogContext, 'template'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 'write') {
+      _startNewDocument();
+    } else if (choice == 'import') {
+      await _uploadDocumentFile();
+    } else if (choice == 'template') {
+      setState(() {
+        _selectedTemplate = null;
+        _tab = DocumentStudioTab.templates;
+      });
     }
   }
 
@@ -1565,9 +1620,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             constraints: const BoxConstraints(minHeight: 420),
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
             color: Colors.white,
-            child: QuillEditor.basic(
-              controller: controller,
-              config: const QuillEditorConfig(padding: EdgeInsets.zero),
+            child: Stack(
+              children: [
+                Positioned.fill(child: _buildSecurityWatermark()),
+                QuillEditor.basic(
+                  controller: controller,
+                  config: const QuillEditorConfig(padding: EdgeInsets.zero),
+                ),
+              ],
             ),
           ),
           const Padding(
@@ -1579,6 +1639,58 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSecurityWatermark() {
+    final logoUrl = _letterhead['logoUrl']?.toString().trim();
+    return IgnorePointer(
+      child: Opacity(
+        opacity: 0.12,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Transform.rotate(
+              angle: -0.49,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List<Widget>.generate(
+                  7,
+                  (row) => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: List<Widget>.generate(
+                      3,
+                      (_) => const Text(
+                        'وثائقي',
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: Color(0xFF0F172A),
+                          fontSize: 21,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (logoUrl != null && logoUrl.isNotEmpty)
+              Center(
+                child: Opacity(
+                  opacity: 0.55,
+                  child: Image.network(
+                    logoUrl,
+                    width: 190,
+                    height: 190,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1696,14 +1808,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                           runSpacing: 8,
                           children: [
                             FilledButton.icon(
-                              onPressed: _startNewDocument,
+                              onPressed: _saving ? null : _showCreateDocumentOptions,
                               icon: const Icon(Icons.add),
-                              label: const Text('وثيقة جديدة'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: _saving ? null : _uploadDocumentFile,
-                              icon: const Icon(Icons.upload_file_outlined),
-                              label: const Text('رفع ملف'),
+                              label: const Text('إنشاء وثيقة'),
                             ),
                           ],
                         ),
