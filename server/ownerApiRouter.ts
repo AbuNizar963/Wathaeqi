@@ -1,6 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import { Account } from "node-appwrite";
 import { z } from "zod";
 import { publicUser } from "./_core/auth";
 import {
@@ -14,7 +13,6 @@ import {
   setAppwriteSessionCookie,
   updateAppwriteUserProfile,
 } from "./_core/appwriteAuth";
-import { getAppwriteSessionClient } from "./_core/appwrite";
 import {
   clearSuccessfulLoginRateLimit,
   enforceLoginRateLimit,
@@ -25,6 +23,7 @@ import {
   isInitialOwnerSetupAvailable,
 } from "./features/auth/ownerBootstrap";
 import {
+  authenticatedProcedure,
   platformOwnerProcedure,
   publicProcedure,
   router,
@@ -37,6 +36,7 @@ import {
 } from "./features/platform-settings/platformDocumentSettingsRepository";
 import { isPlatformOwner } from "./ownerAccess";
 import { documentStudioRouter } from "./features/document-studio/documentStudioRouter";
+import { workspaceRouter } from "./features/workspace/workspaceRouter";
 import {
   getOrganizationById,
   getUserOrganizationMembership,
@@ -46,19 +46,12 @@ import {
   MAX_WATERMARK_OPACITY_PERCENT,
 } from "../shared/features/platform-settings/platformDocumentSettings";
 
-async function authenticateOwnerForLogin(username: string, password: string) {
+async function authenticatePlatformUserForLogin(
+  username: string,
+  password: string
+) {
   try {
     const authenticated = await authenticateAppwriteUser(username, password);
-    if (!authenticated || !isPlatformOwner(authenticated.user)) {
-      if (authenticated?.session.secret) {
-        await new Account(
-          getAppwriteSessionClient(authenticated.session.secret)
-        )
-          .deleteSession({ sessionId: "current" })
-          .catch(() => undefined);
-      }
-      return null;
-    }
     return authenticated;
   } catch (error) {
     if (error instanceof AppwritePasswordResetRequiredError) {
@@ -72,9 +65,7 @@ async function authenticateOwnerForLogin(username: string, password: string) {
 }
 
 const ownerAuthRouter = router({
-  me: publicProcedure.query(({ ctx }) =>
-    ctx.user && isPlatformOwner(ctx.user) ? ctx.user : null
-  ),
+  me: publicProcedure.query(({ ctx }) => ctx.user ?? null),
 
   ownerSetupStatus: publicProcedure.query(async () => ({
     available: await isInitialOwnerSetupAvailable(),
@@ -143,7 +134,7 @@ const ownerAuthRouter = router({
         ctx.res,
         input.username
       );
-      const authenticated = await authenticateOwnerForLogin(
+      const authenticated = await authenticatePlatformUserForLogin(
         input.username.trim(),
         input.password
       );
@@ -177,9 +168,9 @@ const ownerAuthRouter = router({
 });
 
 const ownerProfileRouter = router({
-  get: platformOwnerProcedure.query(({ ctx }) => ctx.user),
+  get: authenticatedProcedure.query(({ ctx }) => ctx.user),
 
-  update: platformOwnerProcedure
+  update: authenticatedProcedure
     .input(
       z.object({
         name: z
@@ -206,7 +197,7 @@ const ownerProfileRouter = router({
       return publicUser(updated);
     }),
 
-  changePassword: platformOwnerProcedure
+  changePassword: authenticatedProcedure
     .input(
       z.object({
         currentPassword: z.string().min(1).max(256),
@@ -244,7 +235,7 @@ const ownerProfileRouter = router({
       return { success: true };
     }),
 
-  dismissTemporaryPasswordChange: platformOwnerProcedure.mutation(
+  dismissTemporaryPasswordChange: authenticatedProcedure.mutation(
     async ({ ctx }) => {
       await dismissAppwritePasswordChange(ctx.user.id);
       return { success: true };
@@ -253,7 +244,7 @@ const ownerProfileRouter = router({
 });
 
 const ownerPlatformDocumentSettingsRouter = router({
-  get: platformOwnerProcedure.query(() => getPlatformDocumentSettings()),
+  get: authenticatedProcedure.query(() => getPlatformDocumentSettings()),
 
   update: platformOwnerProcedure
     .input(
@@ -283,31 +274,35 @@ const ownerPlatformDocumentSettingsRouter = router({
     }),
 });
 
-const ownerOrganizationsRouter = router({
-  context: platformOwnerProcedure.query(async ({ ctx }) => {
-    const membership = await getUserOrganizationMembership(ctx.user.id);
-    const organizationId =
-      membership?.organizationId ?? ctx.user.organizationId ?? null;
-    const organization = organizationId
-      ? await getOrganizationById(organizationId)
-      : null;
-
-    return {
-      organizationId,
-      organizationName: organization?.name ?? "وثائقي",
-      role: membership?.role ?? "system_admin",
-      isActive: membership?.isActive ?? true,
-      isOwner: true,
-    };
-  }),
-});
+import { telegramRouter } from "./features/telegrams/telegramRouter";
+import { departmentSettingsRouter } from "./features/settings/departmentSettingsRouter";
+import { organizationRouter } from "./features/organizations/organizationRouter";
+import { userManagementRouter } from "./features/users/userManagementRouter";
+import { notificationRouter } from "./features/notifications/notificationRouter";
+import { auditSearchRouter } from "./features/audit/auditSearchRouter";
+import { dashboardRouter } from "./features/reports/dashboardRouter";
+import {
+  ownerDashboardCompatRouter,
+  reportsCompatRouter,
+  settingsCompatRouter,
+} from "./features/compat/compatRouters";
 
 export const ownerApiRouter = router({
   auth: ownerAuthRouter,
   profile: ownerProfileRouter,
-  organizations: ownerOrganizationsRouter,
+  organizations: organizationRouter,
   platformDocumentSettings: ownerPlatformDocumentSettingsRouter,
   documentStudio: documentStudioRouter,
+  workspace: workspaceRouter,
+  telegrams: telegramRouter,
+  departmentSettings: departmentSettingsRouter,
+  userManagement: userManagementRouter,
+  notifications: notificationRouter,
+  auditLogs: auditSearchRouter,
+  dashboard: dashboardRouter,
+  settings: settingsCompatRouter,
+  ownerDashboard: ownerDashboardCompatRouter,
+  reports: reportsCompatRouter,
 });
 
 export type OwnerApiRouter = typeof ownerApiRouter;

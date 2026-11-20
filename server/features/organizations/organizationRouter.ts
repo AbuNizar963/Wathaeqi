@@ -1,0 +1,257 @@
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
+import { isPlatformOwner } from "../../ownerAccess";
+import { getRequestAuditContext } from "../../auditContext";
+import { writeAuditLog } from "../audit/appwriteAuditRepository";
+import { resolveTelegramScope } from "../telegrams/telegramAccess";
+import {
+  buildOrganizationTree,
+  getRoutingDirectory,
+  createOrganization,
+  getOrganization,
+  getOrganizationLogoDataUrl,
+  getOrganizationLogoUrl,
+  listOrganizations,
+  listOrganizationDescendants,
+  listRoutingTargets,
+  saveOrganizationLogo,
+  setOrganizationActive,
+  updateOrganization,
+} from "./organizationService";
+
+const organizationInput = z.object({
+  name: z.string().trim().min(2).max(255),
+  code: z.string().trim().min(1).max(32),
+  type: z.enum([
+    "ministry",
+    "general_command",
+    "directorate",
+    "department",
+    "station",
+    "unit",
+  ]),
+  parentOrganizationId: z.string().max(36).nullable(),
+  telegramDestinationOrganizationId: z.string().max(36).nullable(),
+});
+
+async function requireOwner(ctx: {
+  user: Parameters<typeof isPlatformOwner>[0];
+}) {
+  if (!isPlatformOwner(ctx.user)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "هذه العملية متاحة لمالك المنصة فقط.",
+    });
+  }
+}
+
+export const organizationRouter = router({
+  context: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    const organization = await getOrganization(scope.organizationId);
+    return {
+      organizationId: scope.organizationId,
+      organizationName: organization?.name ?? "وثائقي",
+      role: scope.role,
+      isActive: true,
+      isOwner: scope.isOwner,
+      canManageTelegrams: scope.canManage,
+      canAdministrate: scope.canAdministrate,
+    };
+  }),
+
+  list: authenticatedProcedure
+    .input(z.object({ includeInactive: z.boolean().default(false) }).optional())
+    .query(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      const organizations = await listOrganizations(
+        Boolean(input?.includeInactive) && scope.isOwner
+      );
+      if (scope.isOwner) return organizations;
+      const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
+      return organizations.filter(item => allowed.has(item.id));
+    }),
+
+  tree: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    const organizations = await listOrganizations(false);
+    const filtered = scope.organizationIds
+      ? organizations.filter(item => scope.organizationIds?.includes(item.id))
+      : organizations;
+    return buildOrganizationTree(filtered);
+  }),
+
+  routingTargets: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    return listRoutingTargets(scope.organizationId);
+  }),
+
+  descendants: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    return listOrganizationDescendants(scope.organizationId, {
+      activeOnly: true,
+    });
+  }),
+
+  get: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .query(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      if (!scope.isOwner && !(scope.organizationIds ?? []).includes(input.id)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      }
+      const organization = await getOrganization(input.id);
+      if (!organization) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      }
+      return organization;
+    }),
+
+  create: authenticatedProcedure
+    .input(organizationInput)
+    .mutation(async ({ ctx, input }) => {
+      await requireOwner(ctx);
+      const created = await createOrganization(input);
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? "مالك المنصة",
+        action: "organization.create",
+        entityType: "organization",
+        entityId: created.id,
+        organizationId: created.id,
+        afterState: created,
+      }).catch(() => undefined);
+      return created;
+    }),
+
+  update: authenticatedProcedure
+    .input(organizationInput.extend({ id: z.string().min(1).max(36) }))
+    .mutation(async ({ ctx, input }) => {
+      await requireOwner(ctx);
+      const before = await getOrganization(input.id);
+      const updated = await updateOrganization(input.id, input);
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? "مالك المنصة",
+        action: "organization.update",
+        entityType: "organization",
+        entityId: updated.id,
+        organizationId: updated.id,
+        beforeState: before,
+        afterState: updated,
+      }).catch(() => undefined);
+      return updated;
+    }),
+
+  setActive: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36), isActive: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireOwner(ctx);
+      if (input.id === ctx.user.organizationId && !input.isActive) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "لا يمكن تعطيل جهة حسابك الحالي.",
+        });
+      }
+      await setOrganizationActive(input.id, input.isActive);
+      return { success: true as const };
+    }),
+
+  uploadLogo: authenticatedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1).max(36),
+        contentType: z.enum(["image/png", "image/jpeg"]),
+        base64: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      if (
+        !scope.canAdministrate ||
+        (!scope.isOwner && scope.organizationId !== input.id)
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "رفع شعار الجهة متاح لمدير الجهة فقط.",
+        });
+      }
+      const bytes = Buffer.from(input.base64, "base64");
+      if (bytes.length === 0 || bytes.length > 2_500_000) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "حجم الشعار يجب أن يكون بين 1 بايت و2.5 ميغابايت.",
+        });
+      }
+      const logoKey = await saveOrganizationLogo(
+        input.id,
+        bytes,
+        input.contentType
+      );
+      return { logoKey };
+    }),
+
+  logo: authenticatedProcedure
+    .input(
+      z
+        .object({
+          id: z.string().min(1).max(36).optional(),
+          organizationId: z.string().min(1).max(36).optional(),
+        })
+        .refine(value => Boolean(value.id ?? value.organizationId), {
+          message: "معرّف الجهة مطلوب",
+        })
+    )
+    .query(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      const organizationId = (input.id ?? input.organizationId) as string;
+      if (
+        !scope.isOwner &&
+        !(scope.organizationIds ?? []).includes(organizationId)
+      ) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      }
+      const [dataUrl, logoUrl] = await Promise.all([
+        getOrganizationLogoDataUrl(organizationId),
+        getOrganizationLogoUrl(organizationId),
+      ]);
+      return { organizationId, dataUrl, logoUrl };
+    }),
+
+  logoForExport: authenticatedProcedure
+    .input(z.object({ organizationId: z.string().min(1).max(36) }))
+    .query(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      if (
+        !scope.isOwner &&
+        !(scope.organizationIds ?? []).includes(input.organizationId)
+      ) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      }
+      return {
+        dataUrl: await getOrganizationLogoDataUrl(input.organizationId),
+      };
+    }),
+
+  all: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    const organizations = await listOrganizations(scope.isOwner);
+    if (scope.isOwner) return organizations;
+    const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
+    return organizations.filter(item => allowed.has(item.id));
+  }),
+
+  routingDirectory: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    const directory = await getRoutingDirectory();
+    const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
+    return directory.map(entry => ({
+      ...entry,
+      isSelectable: entry.id !== scope.organizationId && allowed.has(entry.id),
+      label: entry.path,
+    }));
+  }),
+});

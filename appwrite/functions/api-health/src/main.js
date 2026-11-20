@@ -6,11 +6,10 @@
  */
 export default async ({ req, res, log, error }) => {
   if (req.method !== "GET") {
-    return res.json(
-      { ok: false, error: "Method not allowed" },
-      405,
-      { allow: "GET", "cache-control": "no-store" }
-    );
+    return res.json({ ok: false, error: "Method not allowed" }, 405, {
+      allow: "GET",
+      "cache-control": "no-store",
+    });
   }
 
   try {
@@ -26,19 +25,17 @@ export default async ({ req, res, log, error }) => {
           apiRuntime: "available",
           authentication: "migration-pending",
           records: "migration-pending",
-          storage: "migration-pending"
+          storage: "migration-pending",
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       200,
       { "cache-control": "no-store, max-age=0" }
     );
   } catch (cause) {
     error("Wathaeqi health endpoint failed");
-    return res.json(
-      { ok: false, error: "Health endpoint unavailable" },
-      503,
-      { "cache-control": "no-store" }
-    );
+    return res.json({ ok: false, error: "Health endpoint unavailable" }, 503, {
+      "cache-control": "no-store",
+    });
   }
 };

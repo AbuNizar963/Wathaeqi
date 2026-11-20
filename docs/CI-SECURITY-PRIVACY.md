@@ -24,7 +24,6 @@ This configuration reduces outbound disclosure by the added scanners. It is not 
 
 For environments requiring zero outbound connections from the build runner, use a controlled self-hosted runner with preloaded and verified tool binaries, cached advisory databases, and internal package mirrors. GitHub-hosted runners cannot provide a zero-network guarantee.
 
-
 ## OSV-Scanner exception: SheetJS CDN release
 
 The project pins `xlsx@0.20.2` from the official `cdn.sheetjs.com` tarball, with the package integrity recorded in `pnpm-lock.yaml`. The GitHub-reviewed advisories describe the prototype-pollution issue as affecting versions before 0.19.3 and the ReDoS issue as affecting versions before 0.20.2. OSV currently reports the CDN-pinned 0.20.2 package against npm advisory metadata without applying those fixed-version boundaries (see [OSV-Scanner issue #3073](https://github.com/google/osv-scanner/issues/3073)).

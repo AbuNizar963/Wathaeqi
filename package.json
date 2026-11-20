@@ -15,7 +15,9 @@
     "check:responsive-shell": "node scripts/verify-responsive-shell.mjs",
     "lint": "prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" package.json",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "appwrite:schema:check": "tsx scripts/appwrite-schema.ts --check",
+    "appwrite:schema:apply": "tsx scripts/appwrite-schema.ts --apply"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1153.0",

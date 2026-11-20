@@ -14,12 +14,14 @@ This is a repository-local review workflow that maps project risks to OWASP guid
 ## Required references
 
 Read the relevant parts of:
+
 - AGENTS.md
 - docs/security/SECURE_ENGINEERING_STANDARD.md
 - docs/OWASP_SECURITY_CHECKLIST_AR.md
 - .agents/skills/vibe-security/SKILL.md
 
 Use current official references when applicable:
+
 - OWASP Top 10:2025 — https://top10.owasp.org/2025/
 - OWASP ASVS 5.0.0 — https://asvs.owasp.org/
 - OWASP API Security Top 10 — https://owasp.org/www-project-api-security/
@@ -45,6 +47,7 @@ Use current official references when applicable:
 Report findings in descending severity: Critical, High, Medium, Low, Informational.
 
 For each finding include:
+
 - Exact file, function/route, and line range.
 - Applicable OWASP category or ASVS requirement identifier where one is actually mapped.
 - Preconditions and concrete attack path.

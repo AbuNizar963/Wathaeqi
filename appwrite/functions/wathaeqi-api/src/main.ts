@@ -1,5 +1,8 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import type { Request as ExpressRequest, Response as ExpressResponse } from "express";
+import type {
+  Request as ExpressRequest,
+  Response as ExpressResponse,
+} from "express";
 import { createContext } from "../../../../server/_core/context";
 import { ownerApiRouter } from "../../../../server/ownerApiRouter";
 import { ENV } from "../../../../server/_core/env";
@@ -48,7 +51,7 @@ function createResponseHeaders(
 function createCorsHeaders(origin: string | undefined): Headers {
   const headers = new Headers({
     "Cache-Control": "no-store",
-    "Vary": "Origin",
+    Vary: "Origin",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": [
@@ -95,9 +98,7 @@ function createExpressRequest(
   } as unknown as ExpressRequest;
 }
 
-function createExpressResponse(
-  headers: Headers
-): ExpressResponse {
+function createExpressResponse(headers: Headers): ExpressResponse {
   return {
     setHeader(name: string, value: string | number | readonly string[]) {
       if (Array.isArray(value)) {
@@ -133,11 +134,10 @@ export default async function main({
   );
 
   if (origin && !allowedOrigins.has(origin)) {
-    return res.json(
-      { error: "Origin is not allowed" },
-      403,
-      { "Cache-Control": "no-store", Vary: "Origin" }
-    );
+    return res.json({ error: "Origin is not allowed" }, 403, {
+      "Cache-Control": "no-store",
+      Vary: "Origin",
+    });
   }
 
   if (req.method === "OPTIONS") {
@@ -164,11 +164,9 @@ export default async function main({
   }
 
   if (!url.pathname.startsWith("/api/trpc/") && url.pathname !== "/api/trpc") {
-    return res.json(
-      { error: "Not found" },
-      404,
-      { "Cache-Control": "no-store" }
-    );
+    return res.json({ error: "Not found" }, 404, {
+      "Cache-Control": "no-store",
+    });
   }
 
   try {

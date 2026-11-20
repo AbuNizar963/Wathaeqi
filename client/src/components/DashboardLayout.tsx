@@ -15,8 +15,15 @@ import {
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   FileText,
+  LayoutDashboard,
+  Contact,
+  FileClock,
+  Bell,
+  Users,
+  Building2,
   LockKeyhole,
   PanelLeft,
+  Send,
   Settings2,
   ShieldCheck,
   WifiOff,
@@ -33,10 +40,64 @@ import HeaderActions from "./HeaderActions";
 
 const menuItems = [
   {
+    key: "dashboard",
+    icon: LayoutDashboard,
+    label: "لوحة التحكم",
+    path: "/dashboard",
+  },
+  {
+    key: "telegrams",
+    icon: Send,
+    label: "البرقيات",
+    path: "/telegrams",
+  },
+  {
     key: "documents",
     icon: FileText,
     label: "الوثائق",
     path: "/",
+  },
+  {
+    key: "contacts",
+    icon: Contact,
+    label: "جهات الاتصال",
+    path: "/contacts",
+  },
+  {
+    key: "notifications",
+    icon: Bell,
+    label: "الإشعارات",
+    path: "/notifications",
+  },
+  {
+    key: "activity",
+    icon: FileClock,
+    label: "سجل النشاط",
+    path: "/activity",
+  },
+  {
+    key: "audit",
+    icon: ShieldCheck,
+    label: "سجل التدقيق",
+    path: "/audit-logs",
+  },
+  {
+    key: "users",
+    icon: Users,
+    label: "إدارة المستخدمين",
+    path: "/users",
+  },
+  {
+    key: "organizations",
+    icon: Building2,
+    label: "إدارة الجهات",
+    path: "/organizations",
+  },
+  {
+    key: "department-settings",
+    icon: Settings2,
+    label: "إعدادات القسم",
+    path: "/department-settings",
   },
   {
     key: "settings",
@@ -435,15 +496,9 @@ function DashboardLayoutContent({
     enabled: Boolean(user),
     staleTime: 30_000,
   });
-  const isPlatformOwnerAccount = organizationContext.data?.isOwner === true;
-  const canManageUsers =
-    user?.role === "admin" ||
-    [
-      "system_admin",
-      "organization_admin",
-      "regional_admin",
-      "organization_supervisor",
-    ].includes(organizationContext.data?.role ?? "");
+  const isPlatformOwnerAccount =
+    user?.isPlatformOwner === true ||
+    organizationContext.data?.isOwner === true;
   const canViewAuditLogs =
     user?.role === "admin" ||
     organizationContext.data?.isOwner === true ||
@@ -451,6 +506,13 @@ function DashboardLayoutContent({
       ["system_admin", "auditor"].includes(
         organizationContext.data?.role ?? ""
       ));
+  const visibleMenuItems = menuItems.filter(item => {
+    if (["documents", "contacts", "notifications"].includes(item.key)) {
+      return true;
+    }
+    if (item.key === "activity") return canViewAuditLogs;
+    return isPlatformOwnerAccount;
+  });
   const [location, setLocation] = useLocation();
   const { state, setOpen, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -461,7 +523,30 @@ function DashboardLayoutContent({
   );
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = visibleMenuItems.find(item => item.path === location);
+
+  useEffect(() => {
+    if (organizationContext.isLoading) return;
+    const ownerOnlyPaths = [
+      "/dashboard",
+      "/users",
+      "/organizations",
+      "/settings",
+    ];
+    if (!isPlatformOwnerAccount && ownerOnlyPaths.includes(location)) {
+      setLocation("/");
+      return;
+    }
+    if (!canViewAuditLogs && location === "/activity") {
+      setLocation("/");
+    }
+  }, [
+    organizationContext.isLoading,
+    isPlatformOwnerAccount,
+    canViewAuditLogs,
+    location,
+    setLocation,
+  ]);
 
   useEffect(() => {
     if (isCollapsed) {
@@ -552,7 +637,7 @@ function DashboardLayoutContent({
               التنقل الرئيسي
             </p>
             <SidebarMenu className="gap-1.5">
-              {menuItems.map(item => {
+              {visibleMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.key}>

@@ -230,13 +230,19 @@ describe("document studio authorization and API", () => {
     expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(ownerId);
   });
 
-  it("denies non-owners document access", async () => {
-    const caller = documentStudioRouter.createCaller(nonOwnerContext());
+  it("allows authenticated organization users to access their own document workspace", async () => {
+    const userContext = nonOwnerContext();
+    if (userContext.user) {
+      userContext.user.authUserId = "organization-user-8";
+    }
+    const caller = documentStudioRouter.createCaller(userContext);
 
-    await expect(caller.listDocuments()).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
-    expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
+    const result = await caller.listDocuments();
+
+    expect(result).toEqual([document]);
+    expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(
+      "organization-user-8"
+    );
   });
 
   it("uses session owner for template writes", async () => {

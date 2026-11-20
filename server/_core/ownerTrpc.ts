@@ -10,7 +10,6 @@ const t = initTRPC.context<TrpcContext>().create({
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
-
 const requireUser = t.middleware(async ({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({
@@ -27,7 +26,9 @@ const requireUser = t.middleware(async ({ ctx, next }) => {
   });
 });
 
-export const platformOwnerProcedure = t.procedure.use(requireUser).use(
+export const authenticatedProcedure = t.procedure.use(requireUser);
+
+export const platformOwnerProcedure = authenticatedProcedure.use(
   t.middleware(async ({ ctx, next }) => {
     if (!ctx.user || !isPlatformOwner(ctx.user)) {
       throw new TRPCError({

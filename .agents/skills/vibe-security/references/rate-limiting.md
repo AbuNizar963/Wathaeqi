@@ -32,27 +32,25 @@ If rate limit counters live in a Supabase public table, users can reset their ow
 - Use per-user usage quotas with hard limits, not just soft warnings
 - Monitor for anomalous usage patterns (sudden spikes, requests at odd hours)
 
-
-
 > **Trusted proxy warning:** Do not copy the example's raw `X-Forwarded-For` lookup into production without configuring and trusting the exact reverse-proxy chain. Clients can forge forwarding headers when the edge does not overwrite them. Derive the client address only from platform metadata or a correctly configured trusted proxy, and always combine IP limits with authenticated per-account limits where appropriate.
 
 ## Implementation Pattern
 
 ```typescript
 // Example: rate limiting with Upstash Redis
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, '1 m'), // 10 requests per minute
+  limiter: Ratelimit.slidingWindow(10, "1 m"), // 10 requests per minute
 });
 
 export async function POST(request: Request) {
-  const ip = request.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  const ip = request.headers.get("x-forwarded-for") ?? "127.0.0.1";
   const { success } = await ratelimit.limit(ip);
   if (!success) {
-    return new Response('Too many requests', { status: 429 });
+    return new Response("Too many requests", { status: 429 });
   }
   // ... handle request
 }

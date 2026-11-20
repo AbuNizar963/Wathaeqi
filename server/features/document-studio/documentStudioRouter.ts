@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { platformOwnerProcedure, router } from "../../_core/ownerTrpc";
+import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { getRequestAuditContext } from "../../auditContext";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
@@ -162,7 +162,7 @@ async function resolveTemplateSnapshot(
 }
 
 export const documentStudioRouter = router({
-  getLetterheadSettings: platformOwnerProcedure
+  getLetterheadSettings: authenticatedProcedure
     .input(
       z.object({
         organizationId: z.string().min(1).max(36).optional(),
@@ -202,11 +202,11 @@ export const documentStudioRouter = router({
         timezone: settings.timezone,
       };
     }),
-  listTemplates: platformOwnerProcedure.query(({ ctx }) =>
+  listTemplates: authenticatedProcedure.query(({ ctx }) =>
     listDocumentTemplates(ctx.user.authUserId)
   ),
 
-  getTemplate: platformOwnerProcedure
+  getTemplate: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const template = await getDocumentTemplate(ctx.user.authUserId, input.id);
@@ -214,7 +214,7 @@ export const documentStudioRouter = router({
       return template;
     }),
 
-  createTemplate: platformOwnerProcedure
+  createTemplate: authenticatedProcedure
     .input(templateWriteSchema)
     .mutation(async ({ ctx, input }) =>
       createDocumentTemplate(ctx.user.authUserId, {
@@ -223,7 +223,7 @@ export const documentStudioRouter = router({
       })
     ),
 
-  updateTemplate: platformOwnerProcedure
+  updateTemplate: authenticatedProcedure
     .input(
       templateWriteSchema.extend({
         id: z.string().min(1).max(36),
@@ -251,7 +251,7 @@ export const documentStudioRouter = router({
       }
     }),
 
-  deactivateTemplate: platformOwnerProcedure
+  deactivateTemplate: authenticatedProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),
@@ -272,11 +272,11 @@ export const documentStudioRouter = router({
       }
     }),
 
-  listDocuments: platformOwnerProcedure.query(({ ctx }) =>
+  listDocuments: authenticatedProcedure.query(({ ctx }) =>
     listOfficialDocuments(ctx.user.authUserId)
   ),
 
-  getDocument: platformOwnerProcedure
+  getDocument: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const document = await getOfficialDocument(ctx.user.authUserId, input.id);
@@ -284,7 +284,7 @@ export const documentStudioRouter = router({
       return document;
     }),
 
-  createDocument: platformOwnerProcedure
+  createDocument: authenticatedProcedure
     .input(documentWriteSchema)
     .mutation(async ({ ctx, input }) => {
       const snapshot = await resolveTemplateSnapshot(
@@ -306,7 +306,7 @@ export const documentStudioRouter = router({
       });
     }),
 
-  updateDocument: platformOwnerProcedure
+  updateDocument: authenticatedProcedure
     .input(
       documentWriteSchema.extend({
         id: z.string().min(1).max(36),
@@ -373,7 +373,7 @@ export const documentStudioRouter = router({
       }
     }),
 
-  archiveDocument: platformOwnerProcedure
+  archiveDocument: authenticatedProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),
@@ -414,7 +414,7 @@ export const documentStudioRouter = router({
       }
     }),
 
-  issueDocument: platformOwnerProcedure
+  issueDocument: authenticatedProcedure
     .input(
       z.object({
         id: z.string().min(1).max(36),

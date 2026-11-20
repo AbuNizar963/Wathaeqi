@@ -62,6 +62,7 @@ These instructions apply to every contributor and automated coding agent working
 ## OWASP verification baseline
 
 Use the current OWASP Top 10 and OWASP ASVS as review references. At minimum, assess:
+
 - Broken Access Control (including BOLA/IDOR and tenant isolation)
 - Cryptographic Failures and secret exposure
 - Injection (SQL/NoSQL/command/template/HTML)

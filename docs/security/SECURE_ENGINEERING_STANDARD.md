@@ -1,6 +1,7 @@
 # Secure Engineering Standard
 
 This standard applies to both maintained branches:
+
 - `main`: web client, Node.js/TypeScript server, and shared database/security code.
 - `flutter-mobile-app`: Flutter/Dart mobile client plus the server/database code maintained on that branch.
 
@@ -38,6 +39,7 @@ AI-generated code is untrusted until reviewed and verified. Never allow an AI su
 ## 3. OWASP control areas
 
 Use the current applicable OWASP guidance, including:
+
 - OWASP Application Security Verification Standard (ASVS) for web/server controls.
 - OWASP Top 10 for web application risk categories.
 - OWASP API Security Top 10 for API authorization and abuse cases.
@@ -45,6 +47,7 @@ Use the current applicable OWASP guidance, including:
 - OWASP Cheat Sheet Series for implementation-level guidance.
 
 ### Identity, authentication, and sessions
+
 - Verify identity server-side; use secure, HttpOnly, appropriately SameSite cookies and production-appropriate Secure settings.
 - Use short-lived access credentials where feasible, rotation/revocation for sensitive events, and server-side invalidation where strict revocation is required.
 - Protect password reset/change, logout, MFA, account recovery, and session refresh against replay and enumeration.
@@ -52,6 +55,7 @@ Use the current applicable OWASP guidance, including:
 - Never use user-editable profile metadata as an authorization claim.
 
 ### Authorization and multi-tenancy
+
 - Enforce object-level authorization for every read, write, export, download, delete, and background action.
 - Derive organization scope from the authenticated server-side user/membership, not from request parameters alone.
 - Test horizontal and vertical privilege escalation, cross-tenant IDs, stale memberships, and race conditions.
@@ -59,6 +63,7 @@ Use the current applicable OWASP guidance, including:
 - Review views, RPCs, triggers, and SECURITY DEFINER functions for privilege escalation and unintended public execution.
 
 ### Input, output, and API security
+
 - Validate all untrusted input with strict schemas, allowlists, bounds, and canonicalization.
 - Prevent SQL/NoSQL injection, command injection, XSS, CSRF, SSRF, path traversal, open redirects, mass assignment, and unsafe deserialization.
 - Apply request size limits, pagination limits, timeouts, rate limits, and safe error responses.
@@ -66,6 +71,7 @@ Use the current applicable OWASP guidance, including:
 - Use idempotency and replay protection for sensitive or retryable actions.
 
 ### Files, storage, and imports/exports
+
 - Validate actual file signatures/content, allowed type, filename, size, and expected metadata on the server; do not trust extension or Content-Type alone.
 - Use private buckets by default, short-lived signed URLs, organization-scoped object keys, and authorization at both upload initiation and finalization/download.
 - Enforce HTTPS for production upload/download URLs. Reject unexpected schemes and untrusted hosts.
@@ -74,6 +80,7 @@ Use the current applicable OWASP guidance, including:
 - Test malformed files, MIME/signature mismatch, oversized files, duplicate/replayed finalization, and cross-organization access.
 
 ### Appwrite Auth, TablesDB, and Storage
+
 - Keep Appwrite API keys server-side and grant only the scopes required by the service.
 - Enforce authenticated identity, platform-owner role, and row ownership on every read/write path; authentication alone is not authorization.
 - Review TablesDB permissions and indexes, and test negative access cases for every protected table.
@@ -82,6 +89,7 @@ Use the current applicable OWASP guidance, including:
 - Pin dependencies and commit lockfiles. Run isolated Appwrite repository tests and access-control checks for schema/function changes.
 
 ### Flutter/mobile security
+
 - Keep secrets out of the app bundle; assume client binaries and local storage can be inspected or modified.
 - Store sensitive local values using platform-backed secure storage; do not treat obfuscation as encryption.
 - Protect app-lock PINs with rate limiting/backoff and secure comparison/storage. App lock is a local privacy control, not a replacement for server authentication.
@@ -90,6 +98,7 @@ Use the current applicable OWASP guidance, including:
 - Avoid logging tokens, PINs, message contents, attachment URLs, or personal data.
 
 ### CI/CD and supply chain
+
 - Use least-privilege GitHub Actions permissions; pin third-party actions to reviewed immutable commit SHAs where practical.
 - Never expose release/signing secrets to pull-request code. Separate secret-free PR verification from trusted release workflows.
 - Keep CodeQL, secret scanning, dependency review, tests, and platform builds enabled on the branches they protect.
@@ -99,20 +108,21 @@ Use the current applicable OWASP guidance, including:
 
 ## 4. Required verification by change type
 
-| Change area | Minimum evidence |
-| --- | --- |
-| Server/API/auth/session | Type check, focused regression tests, full server test suite, API authorization tests |
-| Tenant/RLS/schema/RPC | Appwrite TablesDB schema review, repository tests, owner-scope negative tests, permission review |
-| Upload/storage/export | Signature/size tests, URL scheme tests, replay/finalization tests, cross-tenant access tests |
-| Flutter/mobile | Dart format check, flutter analyze, flutter test, Android debug build; platform release build when release configuration changes |
-| Dependencies/workflows | Lockfile consistency, dependency review, workflow permission/trigger review, successful Actions |
-| Web UI | Lint/format, type check, tests, production build, authorization verified independently of UI |
+| Change area             | Minimum evidence                                                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Server/API/auth/session | Type check, focused regression tests, full server test suite, API authorization tests                                            |
+| Tenant/RLS/schema/RPC   | Appwrite TablesDB schema review, repository tests, owner-scope negative tests, permission review                                 |
+| Upload/storage/export   | Signature/size tests, URL scheme tests, replay/finalization tests, cross-tenant access tests                                     |
+| Flutter/mobile          | Dart format check, flutter analyze, flutter test, Android debug build; platform release build when release configuration changes |
+| Dependencies/workflows  | Lockfile consistency, dependency review, workflow permission/trigger review, successful Actions                                  |
+| Web UI                  | Lint/format, type check, tests, production build, authorization verified independently of UI                                     |
 
 A check that did not run is **not passed**. A cancelled, skipped, pending, or inconclusive check is not a successful verification.
 
 ## 5. Pull request security review template
 
 Before requesting review, record:
+
 - Assets and trust boundaries affected.
 - Threats/abuse cases considered.
 - Authorization and tenant-scope enforcement points.

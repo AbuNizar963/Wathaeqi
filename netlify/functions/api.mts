@@ -20,8 +20,9 @@ function getMultiValueQueryParameters(
 async function toLambdaEvent(request: Request): Promise<LambdaEvent> {
   const url = new URL(request.url);
   const headers = Object.fromEntries(request.headers.entries());
-  const multiValueQueryStringParameters =
-    getMultiValueQueryParameters(url.searchParams);
+  const multiValueQueryStringParameters = getMultiValueQueryParameters(
+    url.searchParams
+  );
   const queryStringParameters = Object.fromEntries(
     Object.entries(multiValueQueryStringParameters).map(([key, values]) => [
       key,
@@ -91,9 +92,14 @@ function toWebResponse(result: Awaited<ReturnType<ApiHandler>>): Response {
   const multiValueHeaders = result.multiValueHeaders ?? {};
 
   for (const [name, value] of Object.entries(result.headers ?? {})) {
-    if (!(name.toLowerCase() in Object.fromEntries(
-      Object.keys(multiValueHeaders).map(key => [key.toLowerCase(), true])
-    ))) {
+    if (
+      !(
+        name.toLowerCase() in
+        Object.fromEntries(
+          Object.keys(multiValueHeaders).map(key => [key.toLowerCase(), true])
+        )
+      )
+    ) {
       headers.set(name, String(value));
     }
   }

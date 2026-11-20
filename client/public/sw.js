@@ -49,7 +49,7 @@ self.addEventListener("activate", event => {
             .filter(
               key =>
                 (key.startsWith("police-telegrams-shell-") ||
-                key.startsWith("wathaeqi-shell-")) &&
+                  key.startsWith("wathaeqi-shell-")) &&
                 key !== CACHE_NAME
             )
             .map(key => caches.delete(key))

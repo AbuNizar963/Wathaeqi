@@ -56,7 +56,6 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-
       - name: Build Appwrite owner API function
         run: pnpm build:appwrite-api
 
