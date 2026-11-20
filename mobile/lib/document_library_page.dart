@@ -371,9 +371,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                   children: [
                     if (widget.onCreateDocument != null)
                       FilledButton.icon(
-                        onPressed: _uploading
-                            ? null
-                            : widget.onCreateDocument,
+                        onPressed: _uploading ? null : widget.onCreateDocument,
                         icon: const Icon(Icons.add_box_outlined),
                         label: const Text('إنشاء وثيقة'),
                       ),
