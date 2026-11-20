@@ -42,6 +42,7 @@ const optionalText = (max: number) => z.string().trim().max(max).optional();
 
 /** Mobile settings screen sends a partial payload, so every field is optional. */
 const settingsPatchSchema = z.object({
+  organizationId: z.string().trim().min(1).max(36).optional(),
   departmentName: z.string().trim().min(2).max(255).optional(),
   unitName: optionalText(255),
   unitChiefRank: optionalText(120),
@@ -96,13 +97,23 @@ export const settingsCompatRouter = router({
     .input(settingsPatchSchema)
     .mutation(async ({ ctx, input }) => {
       const scope = await resolveTelegramScope(ctx.user);
+      const organizationId = input.organizationId ?? scope.organizationId;
+      if (
+        !scope.isOwner &&
+        !(scope.organizationIds ?? []).includes(organizationId)
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا تملك صلاحية تعديل إعدادات هذه الجهة.",
+        });
+      }
       if (!scope.canAdministrate) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "تعديل إعدادات القسم متاح لمدير الجهة فقط.",
         });
       }
-      const current = await ensureDepartmentSettings(scope.organizationId);
+      const current = await ensureDepartmentSettings(organizationId);
       if (
         (input.nextOutgoingSerial !== undefined &&
           input.nextOutgoingSerial < current.nextOutgoingSerial) ||
@@ -116,7 +127,7 @@ export const settingsCompatRouter = router({
         });
       }
       await updateDepartmentSettings(
-        scope.organizationId,
+        organizationId,
         {
           departmentName: input.departmentName ?? current.departmentName,
           unitName: input.unitName ?? current.unitName,
@@ -146,7 +157,7 @@ export const settingsCompatRouter = router({
         },
         ctx.user.id
       );
-      return settingsPayload(scope.organizationId);
+      return settingsPayload(organizationId);
     }),
 });
 

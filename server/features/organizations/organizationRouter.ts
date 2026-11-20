@@ -19,6 +19,11 @@ import {
   setOrganizationActive,
   updateOrganization,
 } from "./organizationService";
+import { createManagedUser, listManagedUsers } from "../users/userService";
+import {
+  ensureDepartmentSettings,
+  updateDepartmentSettings,
+} from "../telegrams/telegramRepository";
 
 const organizationInput = z.object({
   name: z.string().trim().min(2).max(255),
@@ -33,6 +38,23 @@ const organizationInput = z.object({
   ]),
   parentOrganizationId: z.string().max(36).nullable(),
   telegramDestinationOrganizationId: z.string().max(36).nullable(),
+});
+
+const legacySettingsInput = z.object({
+  organizationId: z.string().min(1).max(36),
+  departmentName: z.string().trim().min(2).max(255),
+  unitName: z.string().trim().max(255),
+  unitChiefRank: z.string().trim().max(120),
+  unitChiefName: z.string().trim().max(255),
+  serialPrefix: z.string().trim().min(1).max(24),
+  incomingSerialPrefix: z.string().trim().min(1).max(24),
+  serialStart: z.number().int().min(1).max(999999999),
+  incomingSerialStart: z.number().int().min(1).max(999999999),
+  timezone: z.string().trim().min(3).max(64),
+  dateFormat: z.string().trim().min(4).max(32),
+  timeFormat: z.enum(["12", "24"]),
+  numberSystem: z.enum(["latin", "arabic"]),
+  logoUrl: z.string().max(1024).nullable(),
 });
 
 async function requireOwner(ctx: {
@@ -242,6 +264,150 @@ export const organizationRouter = router({
     if (scope.isOwner) return organizations;
     const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
     return organizations.filter(item => allowed.has(item.id));
+  }),
+
+  accounts: authenticatedProcedure
+    .input(z.object({ organizationId: z.string().min(1).max(36) }))
+    .query(async ({ ctx, input }) => {
+      const scope = await resolveTelegramScope(ctx.user);
+      if (
+        !scope.isOwner &&
+        !(scope.organizationIds ?? []).includes(input.organizationId)
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا تملك صلاحية عرض حسابات هذه الجهة",
+        });
+      }
+      const users = await listManagedUsers();
+      return users.filter(user => user.organizationId === input.organizationId);
+    }),
+
+  allAccounts: authenticatedProcedure.query(async ({ ctx }) => {
+    const scope = await resolveTelegramScope(ctx.user);
+    const users = await listManagedUsers();
+    const allowed = scope.organizationIds
+      ? new Set(scope.organizationIds)
+      : null;
+    return users.filter(user => !allowed || allowed.has(user.organizationId));
+  }),
+
+  provisionAccount: authenticatedProcedure
+    .input(
+      z.object({
+        organizationId: z.string().min(1).max(36),
+        name: z.string().trim().min(2).max(255),
+        username: z
+          .string()
+          .trim()
+          .min(3)
+          .max(64)
+          .regex(/^[A-Za-z0-9._-]+$/),
+        email: z.string().trim().email().max(320),
+        password: z.string().min(10).max(128),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      requireOwner(ctx);
+      return createManagedUser({
+        ...input,
+        role: "user",
+        membershipRole: "member",
+        rank: null,
+        badgeNumber: null,
+        phone: null,
+        unit: null,
+        mustChangePassword: true,
+      });
+    }),
+
+  delete: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .mutation(async ({ ctx, input }) => {
+      requireOwner(ctx);
+      const organization = await getOrganization(input.id);
+      if (!organization)
+        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
+      await setOrganizationActive(input.id, false);
+      return { success: true as const };
+    }),
+
+  purgeArchived: authenticatedProcedure
+    .input(
+      z.object({
+        organizationId: z.string().min(1).max(36),
+        confirmation: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx }) => {
+      requireOwner(ctx);
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message:
+          "الحذف النهائي للجهات غير مدعوم بأمان في مخزن Appwrite الحالي؛ استخدم التعطيل والأرشفة.",
+      });
+    }),
+
+  selectWorkplace: authenticatedProcedure
+    .input(z.object({ organizationId: z.string().min(1).max(36) }))
+    .mutation(
+      async (
+        _opts
+      ): Promise<{ organizationId: string; organizationName: string }> => {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message:
+            "تبديل جهة العمل غير مدعوم؛ جهة العمل الحالية تُحدد من عضوية Appwrite النشطة.",
+        });
+      }
+    ),
+
+  settings: router({
+    get: authenticatedProcedure
+      .input(z.object({ organizationId: z.string().min(1).max(36) }))
+      .query(async ({ ctx, input }) => {
+        requireOwner(ctx);
+        const organization = await getOrganization(input.organizationId);
+        if (!organization)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "الجهة غير موجودة",
+          });
+        return {
+          ...(await ensureDepartmentSettings(input.organizationId)),
+          organizationId: input.organizationId,
+          organizationName: organization.name,
+          settingsExists: true,
+        };
+      }),
+    update: authenticatedProcedure
+      .input(legacySettingsInput)
+      .mutation(async ({ ctx, input }) => {
+        requireOwner(ctx);
+        const organization = await getOrganization(input.organizationId);
+        if (!organization)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "الجهة غير موجودة",
+          });
+        const current = await ensureDepartmentSettings(input.organizationId);
+        await updateDepartmentSettings(
+          input.organizationId,
+          {
+            ...current,
+            ...input,
+            serialPrefix: input.serialPrefix.toUpperCase(),
+            incomingSerialPrefix: input.incomingSerialPrefix.toUpperCase(),
+          },
+          ctx.user.id
+        );
+        return {
+          ...(await ensureDepartmentSettings(input.organizationId)),
+          organizationId: input.organizationId,
+          organizationName: organization.name,
+          settingsExists: true,
+        };
+      }),
   }),
 
   routingDirectory: authenticatedProcedure.query(async ({ ctx }) => {
