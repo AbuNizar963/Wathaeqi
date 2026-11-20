@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
   Archive,
   FileImage,
@@ -61,6 +62,7 @@ function FileGlyph({
 }
 
 export default function DocumentLibraryPage() {
+  const [, navigate] = useLocation();
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
@@ -126,10 +128,20 @@ export default function DocumentLibraryPage() {
             صفحات في الورقة.
           </p>
         </div>
-        <Button onClick={() => setUploadOpen(true)} className="gap-2">
-          <Plus className="size-4" />
-          رفع وثيقة
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => navigate("/studio?create=1")} className="gap-2">
+            <Plus className="size-4" />
+            إنشاء وثيقة
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setUploadOpen(true)}
+            className="gap-2"
+          >
+            <UploadCloud className="size-4" />
+            استيراد ملف
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
