@@ -47,6 +47,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   String? _loadError;
   bool _canIssueDocuments = false;
   Map<String, dynamic> _letterhead = {};
+  Map<String, dynamic> _platformDocumentSettings = {
+    'showMinistryWatermarkText': true,
+    'watermarkOpacityPercent': 12,
+    'headerDividerColor': '#b49a55',
+  };
 
   final _titleController = TextEditingController();
   final _subjectController = TextEditingController();
@@ -219,6 +224,23 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         // The editor remains usable with the cached or minimal letterhead.
       }
 
+      Map<String, dynamic> platformDocumentSettings = {
+        'showMinistryWatermarkText': true,
+        'watermarkOpacityPercent': 12,
+        'headerDividerColor': '#b49a55',
+      };
+      try {
+        final rawSettings = await widget.api.call(
+          'platformDocumentSettings.get',
+          allowOfflineCache: false,
+        );
+        if (rawSettings is Map) {
+          platformDocumentSettings = Map<String, dynamic>.from(rawSettings);
+        }
+      } catch (_) {
+        // Keep the same safe defaults when system settings are unavailable.
+      }
+
       if (!mounted) return;
       final selectedId = _selectedDocument?.id;
       final matchingSelection = selectedId == null
@@ -246,6 +268,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               'organization_admin',
             ].contains(context['role']?.toString());
         _letterhead = letterhead;
+        _platformDocumentSettings = platformDocumentSettings;
         _loading = false;
       });
     } catch (error) {
@@ -1531,7 +1554,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
-                bottom: BorderSide(color: Colors.blueGrey.shade100),
+                bottom: BorderSide(
+                  color: _documentHeaderDividerColor(),
+                  width: 2,
+                ),
               ),
             ),
             child: Row(
@@ -1643,39 +1669,55 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Color _documentHeaderDividerColor() {
+    final value = _platformDocumentSettings['headerDividerColor']
+        ?.toString()
+        .replaceFirst('#', '');
+    final parsed = int.tryParse(value ?? '', radix: 16);
+    return Color(0xFF000000 | (parsed ?? 0xFFB49A55));
+  }
+
   Widget _buildSecurityWatermark() {
     final logoUrl = _letterhead['logoUrl']?.toString().trim();
+    final rawOpacity =
+        _platformDocumentSettings['watermarkOpacityPercent'];
+    final opacity = ((rawOpacity is num ? rawOpacity.toDouble() : 12) / 100)
+        .clamp(0.0, 0.6)
+        .toDouble();
+    final showSecurityText =
+        _platformDocumentSettings['showMinistryWatermarkText'] != false;
     return IgnorePointer(
       child: Opacity(
-        opacity: 0.12,
+        opacity: opacity,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Transform.rotate(
-              angle: -0.49,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List<Widget>.generate(
-                  7,
-                  (row) => Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: List<Widget>.generate(
-                      3,
-                      (_) => const Text(
-                        'وثائقي',
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: Color(0xFF0F172A),
-                          fontSize: 21,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
+            if (showSecurityText)
+              Transform.rotate(
+                angle: -0.49,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: List<Widget>.generate(
+                    7,
+                    (_) => Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: List<Widget>.generate(
+                        3,
+                        (_) => const Text(
+                          'وثائقي',
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: Color(0xFF0F172A),
+                            fontSize: 21,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
             if (logoUrl != null && logoUrl.isNotEmpty)
               Center(
                 child: Opacity(
