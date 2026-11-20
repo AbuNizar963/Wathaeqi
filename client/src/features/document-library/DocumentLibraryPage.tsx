@@ -129,7 +129,10 @@ export default function DocumentLibraryPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => navigate("/studio?create=1")} className="gap-2">
+          <Button
+            onClick={() => navigate("/studio?create=1")}
+            className="gap-2"
+          >
             <Plus className="size-4" />
             إنشاء وثيقة
           </Button>
