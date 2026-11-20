@@ -66,8 +66,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('إعداد الوثائق الرسمية'), findsOneWidget);
-    expect(find.text('وثيقة جديدة'), findsOneWidget);
+    expect(find.text('إنشاء وثيقة'), findsOneWidget);
     expect(find.text('لا توجد وثائق بعد'), findsOneWidget);
+
+    await tester.tap(find.text('إنشاء وثيقة'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('إنشاء والكتابة في وثيقة'), findsOneWidget);
+    expect(find.text('استيراد PDF أو Word أو صورة'), findsOneWidget);
+    expect(find.text('اختيار نموذج جاهز'), findsOneWidget);
+
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
     expect(find.text('الوثائق'), findsOneWidget);
     expect(find.text('القوالب'), findsOneWidget);
     expect(find.text('الأرشيف'), findsOneWidget);
