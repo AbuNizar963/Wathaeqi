@@ -57,7 +57,6 @@ const ORGANIZATION_TYPE_LABELS: Record<OrganizationType, string> = {
 };
 
 const NO_PARENT = "__no_parent__";
-const NO_DESTINATION = "__no_destination__";
 const MAX_LOGO_BYTES = 2_500_000;
 
 type OrganizationRecord = {
@@ -66,7 +65,6 @@ type OrganizationRecord = {
   code: string;
   type: string;
   parentOrganizationId: string | null;
-  telegramDestinationOrganizationId: string | null;
   logoKey: string | null;
   isActive: boolean;
   deletedAt: string | null;
@@ -79,7 +77,6 @@ type OrganizationForm = {
   code: string;
   type: OrganizationType;
   parentOrganizationId: string;
-  telegramDestinationOrganizationId: string;
 };
 
 type OrganizationRow = {
@@ -92,7 +89,6 @@ const EMPTY_FORM: OrganizationForm = {
   code: "",
   type: "department",
   parentOrganizationId: "",
-  telegramDestinationOrganizationId: "",
 };
 
 function isOrganizationType(value: string): value is OrganizationType {
@@ -190,13 +186,6 @@ function validateOrganizationForm(input: {
     ) {
       return "لا يمكن اختيار الجهة نفسها أو إحدى الجهات التابعة لها كجهة أم.";
     }
-  }
-
-  if (
-    form.telegramDestinationOrganizationId &&
-    !byId.has(form.telegramDestinationOrganizationId)
-  ) {
-    return "جهة الإحالة المحددة غير موجودة.";
   }
 
   return null;
@@ -452,8 +441,6 @@ export default function OrganizationsPage() {
         ? organization.type
         : "department",
       parentOrganizationId: organization.parentOrganizationId ?? "",
-      telegramDestinationOrganizationId:
-        organization.telegramDestinationOrganizationId ?? "",
     });
     setIsDialogOpen(true);
   };
@@ -474,8 +461,6 @@ export default function OrganizationsPage() {
       code: form.code.trim().toUpperCase(),
       type: form.type,
       parentOrganizationId: form.parentOrganizationId || null,
-      telegramDestinationOrganizationId:
-        form.telegramDestinationOrganizationId || null,
     };
     if (editingOrganization) {
       updateOrganization.mutate({ id: editingOrganization.id, ...payload });
@@ -502,14 +487,6 @@ export default function OrganizationsPage() {
     );
   }, [editingOrganization, organizations]);
 
-  const destinationOptions = useMemo(
-    () =>
-      editingOrganization
-        ? organizations.filter(item => item.id !== editingOrganization.id)
-        : organizations,
-    [editingOrganization, organizations]
-  );
-
   const activeCount = organizations.filter(item => item.isActive).length;
 
   return (
@@ -522,7 +499,7 @@ export default function OrganizationsPage() {
           <div>
             <h1 className="text-2xl font-bold">إدارة الجهات</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              الهيكل التنظيمي للجهات وربط الجهات الأم وجهات الإحالة
+              الهيكل التنظيمي للجهات وربط الجهات الأم والفروع
             </p>
           </div>
         </div>
@@ -639,7 +616,6 @@ export default function OrganizationsPage() {
                   <th className="p-3">اسم الجهة</th>
                   <th className="p-3">النوع</th>
                   <th className="p-3">الجهة الأم</th>
-                  <th className="p-3">جهة الإحالة</th>
                   <th className="p-3">الحالة</th>
                   {isOwner ? <th className="p-3">الإجراءات</th> : null}
                 </tr>
@@ -676,13 +652,6 @@ export default function OrganizationsPage() {
                       {organization.parentOrganizationId
                         ? (parentNames.get(organization.parentOrganizationId) ??
                           "—")
-                        : "—"}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {organization.telegramDestinationOrganizationId
-                        ? (parentNames.get(
-                            organization.telegramDestinationOrganizationId
-                          ) ?? "—")
                         : "—"}
                     </td>
                     <td className="p-3">
@@ -823,36 +792,6 @@ export default function OrganizationsPage() {
                 <SelectContent>
                   <SelectItem value={NO_PARENT}>بدون جهة أم</SelectItem>
                   {parentOptions.map(option => (
-                    <SelectItem key={option.id} value={option.id}>
-                      {option.name}
-                      {option.isActive ? "" : " (معطّلة)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-
-            <Field
-              label="جهة الإحالة الافتراضية"
-              hint="الجهة التي تُحال إليها وثائق هذه الجهة افتراضياً."
-            >
-              <Select
-                value={form.telegramDestinationOrganizationId || NO_DESTINATION}
-                onValueChange={value =>
-                  updateForm({
-                    telegramDestinationOrganizationId:
-                      value === NO_DESTINATION ? "" : value,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="بدون وجهة محددة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_DESTINATION}>
-                    بدون وجهة محددة
-                  </SelectItem>
-                  {destinationOptions.map(option => (
                     <SelectItem key={option.id} value={option.id}>
                       {option.name}
                       {option.isActive ? "" : " (معطّلة)"}

@@ -121,7 +121,6 @@ export default function OwnerOrganizationManagement() {
     name: string;
     type: OrganizationType;
     parentOrganizationId: string;
-    telegramDestinationOrganizationId: string;
     isActive: boolean;
     allowHierarchyOverride: boolean;
     createAccount: boolean;
@@ -130,7 +129,6 @@ export default function OwnerOrganizationManagement() {
     name: "",
     type: "governorate" as OrganizationType,
     parentOrganizationId: "",
-    telegramDestinationOrganizationId: "",
     isActive: true,
     allowHierarchyOverride: false,
     createAccount: true,
@@ -314,7 +312,6 @@ export default function OwnerOrganizationManagement() {
       name: "",
       type: "governorate",
       parentOrganizationId: "",
-      telegramDestinationOrganizationId: "",
       isActive: true,
       allowHierarchyOverride: false,
       createAccount: true,
@@ -355,8 +352,6 @@ export default function OwnerOrganizationManagement() {
       name: item.name,
       type: item.type as OrganizationType,
       parentOrganizationId: item.parentOrganizationId ?? "",
-      telegramDestinationOrganizationId:
-        item.telegramDestinationOrganizationId ?? "",
       isActive: item.isActive,
       allowHierarchyOverride: Boolean(
         parent && !canOrganizationHaveParent(item.type, parent.type)
@@ -404,15 +399,6 @@ export default function OwnerOrganizationManagement() {
       ),
     [defaultParents, eligibleParents, form.allowHierarchyOverride]
   );
-  const selectableDestinationIds = useMemo(
-    () =>
-      new Set(
-        (organizations.data ?? [])
-          .filter(item => item.isActive && item.id !== editingId)
-          .map(item => item.id)
-      ),
-    [editingId, organizations.data]
-  );
   const settingsLoadedForEditor =
     !canEditOrganizationSettings ||
     !editingId ||
@@ -440,19 +426,11 @@ export default function OwnerOrganizationManagement() {
       toast.error("اختر الجهة الأب من الهيكل التنظيمي قبل الحفظ");
       return;
     }
-    if (
-      (form.type === "police_department" || form.type === "station") &&
-      !form.telegramDestinationOrganizationId
-    ) {
-      toast.error("اختر جهة الإحالة قبل الحفظ");
-      return;
-    }
     const input: {
       code: string;
       name: string;
       type: OrganizationApiType;
       parentOrganizationId: string | null;
-      telegramDestinationOrganizationId: string | null;
     } = {
       code: form.code.trim().toUpperCase(),
       name: form.name.trim(),
@@ -466,8 +444,6 @@ export default function OwnerOrganizationManagement() {
         ? "department"
         : form.type) as OrganizationApiType,
       parentOrganizationId: form.parentOrganizationId || null,
-      telegramDestinationOrganizationId:
-        form.telegramDestinationOrganizationId || null,
     };
     const settingsInput = {
       departmentName: settingsDraft.departmentName.trim() || form.name.trim(),
@@ -510,8 +486,6 @@ export default function OwnerOrganizationManagement() {
           name: result.name,
           type: result.type as OrganizationType,
           parentOrganizationId: result.parentOrganizationId ?? "",
-          telegramDestinationOrganizationId:
-            result.telegramDestinationOrganizationId ?? "",
         }));
       }
       organizationSaved = true;
@@ -1040,37 +1014,6 @@ export default function OwnerOrganizationManagement() {
                   emptyMessage="لا توجد جهة أب متاحة لهذا المستوى حاليًا."
                   className="h-10 text-sm"
                 />
-              </div>
-              <div className="grid gap-1 text-sm font-medium">
-                <span>جهة الإحالة الافتراضية</span>
-                <OrganizationTreePicker
-                  options={(organizations.data ?? []).map(item => ({
-                    ...item,
-                    isSelectable: selectableDestinationIds.has(item.id),
-                  }))}
-                  value={form.telegramDestinationOrganizationId}
-                  onValueChange={telegramDestinationOrganizationId =>
-                    setForm(current => ({
-                      ...current,
-                      telegramDestinationOrganizationId,
-                    }))
-                  }
-                  placeholder={
-                    form.type === "police_department" || form.type === "station"
-                      ? "اختر الجهة التي تُحال إليها وثائق هذه الجهة"
-                      : "بدون وجهة تلقائية"
-                  }
-                  ariaLabel="اختيار جهة الإحالة"
-                  allowClear={
-                    form.type !== "police_department" && form.type !== "station"
-                  }
-                  clearLabel="إزالة الوجهة التلقائية"
-                  emptyMessage="لا توجد جهة مفعّلة يمكن اختيارها كوجهة."
-                  className="h-10 text-sm"
-                />
-                <span className="text-xs font-normal text-muted-foreground">
-                  عند إحالة وثيقة من هذه الجهة ستنتقل تلقائيًا إلى الاختيار هنا.
-                </span>
               </div>
               {editingId && (
                 <label className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium">

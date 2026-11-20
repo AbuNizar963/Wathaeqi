@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { zipSync } from "fflate";
 import type { TrpcContext } from "../../_core/context";
 
 const mocks = vi.hoisted(() => {
@@ -31,6 +32,13 @@ const documentOrganizationMocks = vi.hoisted(() => ({
   allocateDocumentOrganizationSerialNumber: vi.fn(),
 }));
 
+const storageMocks = vi.hoisted(() => ({
+  getObjectInfo: vi.fn(),
+  download: vi.fn(),
+  createSignedUrl: vi.fn(),
+  remove: vi.fn(),
+}));
+
 vi.mock("./documentOrganizationRepository", () => documentOrganizationMocks);
 
 vi.mock("../organizations/appwriteOwnerOrganizationRepository", () => ({
@@ -40,6 +48,10 @@ vi.mock("../organizations/appwriteOwnerOrganizationRepository", () => ({
 
 vi.mock("../audit/appwriteAuditRepository", () => ({
   writeAuditLog: dbMocks.writeAuditLog,
+}));
+
+vi.mock("../../_core/storageProvider", () => ({
+  getStorageProvider: () => storageMocks,
 }));
 
 import { documentStudioRouter } from "./documentStudioRouter";
@@ -110,6 +122,7 @@ const document = {
   serialCode: "",
   documentDate: timestamp,
   status: "draft" as const,
+  file: null,
   templateId: null,
   templateRevision: null,
   createdAt: timestamp,
@@ -117,6 +130,15 @@ const document = {
   issuedAt: null,
   archivedAt: null,
 };
+
+const uploadBytes = Buffer.from(
+  zipSync({
+    "[Content_Types].xml": Buffer.from("<Types/>", "utf8"),
+    "word/document.xml": Buffer.from("<document/>", "utf8"),
+  })
+);
+const uploadedFileName = "report.docx";
+const uploadedStorageKey = `documents/${ownerId}/550e8400-e29b-41d4-a716-446655440001-${uploadedFileName}`;
 
 const templateInput = {
   title: "كتاب تكليف",
@@ -163,6 +185,16 @@ describe("document studio authorization and API", () => {
       documentOrganizationMocks.allocateDocumentOrganizationSerialNumber;
     allocateSerialNumber.mockResolvedValue(12);
     dbMocks.writeAuditLog.mockResolvedValue(undefined);
+    storageMocks.getObjectInfo.mockResolvedValue({
+      size: uploadBytes.length,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+    storageMocks.download.mockResolvedValue({
+      body: uploadBytes,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
     mocks.listDocumentTemplates.mockResolvedValue([template]);
     mocks.getDocumentTemplate.mockResolvedValue(template);
     mocks.createDocumentTemplate.mockResolvedValue(template);
@@ -243,6 +275,111 @@ describe("document studio authorization and API", () => {
     expect(mocks.listOfficialDocuments).toHaveBeenCalledWith(
       "organization-user-8"
     );
+  });
+
+  it("revalidates uploaded DOCX ownership and bytes and hides storage keys", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+    const attachedDocument = {
+      ...document,
+      file: {
+        storageKey: uploadedStorageKey,
+        fileName: uploadedFileName,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sizeBytes: uploadBytes.length,
+        pageCount: 0,
+      },
+    };
+    mocks.createOfficialDocument.mockResolvedValueOnce(attachedDocument);
+
+    const result = await caller.createUploadedDocument({
+      title: "ملف مرفوع",
+      storageKey: uploadedStorageKey,
+      fileName: uploadedFileName,
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      sizeBytes: uploadBytes.length,
+      pageCount: 0,
+    });
+
+    expect(storageMocks.getObjectInfo).toHaveBeenCalledWith(uploadedStorageKey);
+    expect(storageMocks.download).toHaveBeenCalledWith(uploadedStorageKey);
+    expect(mocks.createOfficialDocument).toHaveBeenCalledWith(
+      ownerId,
+      expect.objectContaining({
+        file: expect.objectContaining({ pageCount: 0 }),
+      })
+    );
+    expect(result.file).toMatchObject({
+      fileName: uploadedFileName,
+      pageCount: 0,
+    });
+    expect(result.file).not.toHaveProperty("storageKey");
+  });
+
+  it("rejects another owner's storage key before accessing Storage", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+
+    await expect(
+      caller.createUploadedDocument({
+        title: "ملف مرفوع",
+        storageKey: `documents/another-owner/550e8400-e29b-41d4-a716-446655440001-${uploadedFileName}`,
+        fileName: uploadedFileName,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sizeBytes: uploadBytes.length,
+        pageCount: 1,
+      })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(storageMocks.getObjectInfo).not.toHaveBeenCalled();
+  });
+
+  it("rejects Appwrite metadata whose MIME does not match the file extension", async () => {
+    storageMocks.getObjectInfo.mockResolvedValueOnce({
+      size: uploadBytes.length,
+      contentType: "application/octet-stream",
+    });
+    const caller = documentStudioRouter.createCaller(context());
+
+    await expect(
+      caller.createUploadedDocument({
+        title: "ملف مرفوع",
+        storageKey: uploadedStorageKey,
+        fileName: uploadedFileName,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sizeBytes: uploadBytes.length,
+        pageCount: 1,
+      })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(storageMocks.download).not.toHaveBeenCalled();
+    expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
+  });
+
+  it("rejects corrupt uploaded bytes even when metadata matches", async () => {
+    const corruptBytes = Buffer.from("not a DOCX");
+    storageMocks.getObjectInfo.mockResolvedValueOnce({
+      size: corruptBytes.length,
+      contentType: "application/octet-stream",
+    });
+    storageMocks.download.mockResolvedValueOnce({
+      body: corruptBytes,
+      contentType: "application/octet-stream",
+    });
+    const caller = documentStudioRouter.createCaller(context());
+
+    await expect(
+      caller.createUploadedDocument({
+        title: "ملف مرفوع",
+        storageKey: uploadedStorageKey,
+        fileName: uploadedFileName,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sizeBytes: corruptBytes.length,
+        pageCount: 1,
+      })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
   it("uses session owner for template writes", async () => {

@@ -334,13 +334,14 @@ export async function getOfficialDocument(
 
 export async function createOfficialDocument(
   ownerId: string,
-  input: DocumentWriteInput
+  input: DocumentWriteInput,
+  documentId = ID.unique()
 ): Promise<OfficialDocument> {
   const now = new Date().toISOString();
   const row = await getAppwriteTablesDB().createRow({
     databaseId: getAppwriteDatabaseId(),
     tableId: DOCUMENTS_TABLE_ID,
-    rowId: ID.unique(),
+    rowId: documentId,
     data: {
       ownerId,
       title: input.title,

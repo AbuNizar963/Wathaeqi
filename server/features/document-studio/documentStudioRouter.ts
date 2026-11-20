@@ -11,7 +11,11 @@ import {
 } from "./documentOrganizationRepository";
 import { localizeDigits, normalizeNumberSystem } from "@shared/numberSystem";
 import { validateTemplateFieldValues } from "../../../shared/documentStudio";
-import type { DocumentTemplateField } from "../../../shared/documentStudio";
+import type {
+  DocumentTemplateField,
+  OfficialDocument,
+  UploadedDocumentFile,
+} from "../../../shared/documentStudio";
 import {
   DocumentStudioConflictError,
   archiveOfficialDocument,
@@ -28,6 +32,12 @@ import {
   updateOfficialDocument,
 } from "./documentStudioRepository";
 import { getStorageProvider } from "../../_core/storageProvider";
+import {
+  getAllowedDocumentMimeType,
+  isValidDocumentFile,
+  isSafeDocumentStorageKey,
+  MAX_DOCUMENT_UPLOAD_BYTES,
+} from "./documentUploadValidation";
 
 const editorDocumentSchema = z
   .record(z.string(), z.unknown())
@@ -98,6 +108,17 @@ const documentWriteSchema = z.object({
 
 function throwIfNotFound(message: string): never {
   throw new TRPCError({ code: "NOT_FOUND", message });
+}
+
+type ClientDocument = Omit<OfficialDocument, "file"> & {
+  file: Omit<UploadedDocumentFile, "storageKey"> | null;
+};
+
+function toClientDocument(document: OfficialDocument): ClientDocument {
+  const { file, ...rest } = document;
+  if (!file) return { ...rest, file: null };
+  const { storageKey: _storageKey, ...publicFile } = file;
+  return { ...rest, file: publicFile };
 }
 
 function throwConflict(error: unknown): never {
@@ -274,8 +295,8 @@ export const documentStudioRouter = router({
       }
     }),
 
-  listDocuments: authenticatedProcedure.query(({ ctx }) =>
-    listOfficialDocuments(ctx.user.authUserId)
+  listDocuments: authenticatedProcedure.query(async ({ ctx }) =>
+    (await listOfficialDocuments(ctx.user.authUserId)).map(toClientDocument)
   ),
 
   getDocument: authenticatedProcedure
@@ -283,7 +304,7 @@ export const documentStudioRouter = router({
     .query(async ({ ctx, input }) => {
       const document = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!document) throwIfNotFound("الوثيقة غير موجودة");
-      return document;
+      return toClientDocument(document);
     }),
 
   createUploadedDocument: authenticatedProcedure
@@ -296,31 +317,49 @@ export const documentStudioRouter = router({
         storageKey: z.string().trim().min(1).max(512),
         fileName: z.string().trim().min(1).max(256),
         mimeType: z.string().trim().min(1).max(160),
-        sizeBytes: z
-          .number()
-          .int()
-          .positive()
-          .max(40 * 1024 * 1024),
-        pageCount: z.number().int().min(1).max(5000),
+        sizeBytes: z.number().int().positive().max(MAX_DOCUMENT_UPLOAD_BYTES),
+        pageCount: z.number().int().min(0).max(5000),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const expectedPrefix = `documents/${ctx.user.authUserId}/`;
-      if (!input.storageKey.startsWith(expectedPrefix)) {
+      if (
+        !isSafeDocumentStorageKey(
+          input.storageKey,
+          ctx.user.authUserId,
+          input.fileName
+        ) ||
+        getAllowedDocumentMimeType(input.fileName) !== input.mimeType
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "ملف غير تابع لحسابك",
+          message: "بيانات الملف أو ملكيته غير صالحة",
         });
       }
-      const info = await getStorageProvider().getObjectInfo(input.storageKey);
-      if (info.size !== input.sizeBytes) {
+      const storage = getStorageProvider();
+      const info = await storage.getObjectInfo(input.storageKey);
+      if (
+        !Number.isSafeInteger(info.size) ||
+        info.size !== input.sizeBytes ||
+        info.size > MAX_DOCUMENT_UPLOAD_BYTES ||
+        info.contentType !== input.mimeType
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "حجم الملف المسجل لا يطابق الملف المرفوع",
         });
       }
+      const stored = await storage.download(input.storageKey);
+      if (
+        stored.body.length !== input.sizeBytes ||
+        !(await isValidDocumentFile(stored.body, input.fileName))
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "محتوى الملف لا يطابق بياناته أو أنه تالف",
+        });
+      }
       const membership = await getUserOrganizationMembership(ctx.user.id);
-      return createOfficialDocument(ctx.user.authUserId, {
+      const created = await createOfficialDocument(ctx.user.authUserId, {
         title: input.title,
         category: input.category,
         subject: input.subject,
@@ -339,6 +378,7 @@ export const documentStudioRouter = router({
           pageCount: input.pageCount,
         },
       });
+      return toClientDocument(created);
     }),
 
   getFileUrl: authenticatedProcedure
@@ -458,7 +498,7 @@ export const documentStudioRouter = router({
           }
         );
         if (!saved) throwIfNotFound("الوثيقة غير موجودة");
-        return saved;
+        return toClientDocument(saved);
       } catch (error) {
         throwConflict(error);
       }
@@ -499,7 +539,7 @@ export const documentStudioRouter = router({
             console.error("Document archive audit log failed", error);
           }
         }
-        return saved;
+        return toClientDocument(saved);
       } catch (error) {
         throwConflict(error);
       }
@@ -515,7 +555,7 @@ export const documentStudioRouter = router({
     .mutation(async ({ ctx, input }) => {
       const existing = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!existing) throwIfNotFound("الوثيقة غير موجودة");
-      if (existing.status === "issued") return existing;
+      if (existing.status === "issued") return toClientDocument(existing);
       if (existing.status !== "draft") {
         throw new TRPCError({
           code: "CONFLICT",
@@ -606,7 +646,7 @@ export const documentStudioRouter = router({
             console.error("Document issuance audit log failed", error);
           }
         }
-        return saved;
+        return toClientDocument(saved);
       } catch (error) {
         throwConflict(error);
       }

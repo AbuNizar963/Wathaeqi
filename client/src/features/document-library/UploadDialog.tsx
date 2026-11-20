@@ -11,18 +11,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { trpc } from "@/lib/trpc";
 import { countLocalFilePages } from "./renderPages";
 import { DOCUMENT_CATEGORIES, fileKind, formatBytes } from "./types";
 
-type UploadedFile = {
-  storageKey: string;
-  fileName: string;
-  mimeType: string;
-  sizeBytes: number;
-};
-
 const ACCEPTED = ".docx,.pdf,.png,.jpg,.jpeg,.webp";
+
+function encodeMetadataHeader(value: Record<string, unknown>): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = "";
+  bytes.forEach(byte => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
 
 export default function UploadDialog({
   open,
@@ -35,7 +39,7 @@ export default function UploadDialog({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [pageCount, setPageCount] = useState(1);
+  const [pageCount, setPageCount] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("general");
@@ -47,13 +51,10 @@ export default function UploadDialog({
   const [progress, setProgress] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const createDocument =
-    trpc.documentStudio.createUploadedDocument.useMutation();
-
   useEffect(() => {
     if (!open) {
       setFile(null);
-      setPageCount(1);
+      setPageCount(0);
       setTitle("");
       setCategory("general");
       setSubject("");
@@ -83,7 +84,7 @@ export default function UploadDialog({
       const count = await countLocalFilePages(selected);
       setPageCount(count);
     } catch {
-      setPageCount(1);
+      setPageCount(0);
       setError("تم اختيار الملف، لكن تعذر تحليل عدد صفحاته. يمكنك المتابعة.");
     } finally {
       setAnalyzing(false);
@@ -102,27 +103,26 @@ export default function UploadDialog({
         headers: {
           "Content-Type": "application/octet-stream",
           "x-file-name": encodeURIComponent(file.name),
+          "x-document-metadata": encodeMetadataHeader({
+            title: title.trim(),
+            category,
+            subject: subject.trim(),
+            documentDate: new Date(
+              `${documentDate}T12:00:00.000Z`
+            ).toISOString(),
+            pageCount,
+          }),
         },
         body: file,
       });
-      const uploaded = (await response.json().catch(() => null)) as
-        (UploadedFile & { error?: string }) | null;
-      if (!response.ok || !uploaded?.storageKey) {
+      const uploaded = (await response.json().catch(() => null)) as {
+        id?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !uploaded?.id) {
         throw new Error(uploaded?.error || "تعذر رفع الملف");
       }
-      setProgress("جارٍ تسجيل الوثيقة في الأرشيف…");
-      const created = await createDocument.mutateAsync({
-        title: title.trim(),
-        category,
-        subject: subject.trim(),
-        documentDate: new Date(`${documentDate}T12:00:00.000Z`).toISOString(),
-        storageKey: uploaded.storageKey,
-        fileName: uploaded.fileName,
-        mimeType: uploaded.mimeType,
-        sizeBytes: uploaded.sizeBytes,
-        pageCount: Math.max(1, pageCount),
-      });
-      onUploaded(created.id);
+      onUploaded(uploaded.id);
       onOpenChange(false);
     } catch (uploadError) {
       setError(
@@ -140,8 +140,8 @@ export default function UploadDialog({
         <DialogHeader>
           <DialogTitle className="text-right">رفع وثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            ارفع ملف Word أو PDF أو صورة، وأدخل بيانات الوثيقة. يتم احتساب
-            الصفحات تلقائيًا وتجهيز خيارات الطباعة.
+            ارفع ملف Word أو PDF أو صورة، وأدخل بيانات الوثيقة. يظهر عدد الصفحات
+            عند توفر تحليل موثوق، وإلا يبقى غير معروف.
           </DialogDescription>
         </DialogHeader>
 
@@ -186,7 +186,9 @@ export default function UploadDialog({
                   {formatBytes(file.size)} ·{" "}
                   {analyzing
                     ? "جارٍ تحليل الصفحات…"
-                    : `${pageCount.toLocaleString("ar")} صفحة`}
+                    : pageCount > 0
+                      ? `${pageCount.toLocaleString("ar")} صفحة`
+                      : "عدد الصفحات غير معروف"}
                 </span>
               </>
             ) : (
