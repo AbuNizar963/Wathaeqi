@@ -2207,7 +2207,16 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
       ),
-      body: DocumentLibraryPage(api: widget.api),
+      body: DocumentLibraryPage(
+        api: widget.api,
+        onCreateDocument: () => _pushPage(
+          DocumentStudioPage(
+            api: widget.api,
+            outbox: _documentStudioOutbox,
+            initialTab: DocumentStudioTab.documents,
+          ),
+        ),
+      ),
     ),
   );
 }
