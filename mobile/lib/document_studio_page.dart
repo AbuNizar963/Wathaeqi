@@ -1679,8 +1679,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Widget _buildSecurityWatermark() {
     final logoUrl = _letterhead['logoUrl']?.toString().trim();
-    final rawOpacity =
-        _platformDocumentSettings['watermarkOpacityPercent'];
+    final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
     final opacity = ((rawOpacity is num ? rawOpacity.toDouble() : 12) / 100)
         .clamp(0.0, 0.6)
         .toDouble();
