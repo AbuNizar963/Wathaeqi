@@ -134,6 +134,12 @@ export default function DocumentStudioPage() {
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("create") === "1") {
+      setCreationDialogOpen(true);
+    }
+  }, []);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
