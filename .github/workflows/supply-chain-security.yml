@@ -61,9 +61,31 @@ jobs:
       - name: Download advisory database and scan offline
         env:
           OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY: ${{ runner.temp }}/osv-database
+        shell: bash
         run: |
           set -euo pipefail
-          "$(go env GOPATH)/bin/osv-scanner" --offline --download-offline-databases ./
+          scanner="$(go env GOPATH)/bin/osv-scanner"
+          cache_dir="$OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"
+
+          # OSV's advisory archive can occasionally fail mid-stream (HTTP/2
+          # INTERNAL_ERROR). Retry transient feed failures from a clean cache;
+          # never convert a failed security scan into a successful job.
+          for attempt in 1 2 3; do
+            if "$scanner" --offline --download-offline-databases ./; then
+              exit 0
+            else
+              scan_status=$?
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::OSV advisory database download/scan failed after 3 attempts."
+              exit "$scan_status"
+            fi
+
+            echo "::warning::OSV advisory feed attempt $attempt failed (exit $scan_status); retrying after a clean cache."
+            rm -rf "$cache_dir"
+            sleep "$((attempt * 15))"
+          done
 
   trivy:
     name: Scan repository for vulnerabilities and misconfigurations
