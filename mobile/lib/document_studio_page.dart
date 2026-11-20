@@ -1808,7 +1808,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                           runSpacing: 8,
                           children: [
                             FilledButton.icon(
-                              onPressed: _saving ? null : _showCreateDocumentOptions,
+                              onPressed: _saving
+                                  ? null
+                                  : _showCreateDocumentOptions,
                               icon: const Icon(Icons.add),
                               label: const Text('إنشاء وثيقة'),
                             ),
