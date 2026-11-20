@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
+import { appwriteApiUrl } from "@/lib/appwriteApi";
 import App from "./App";
 import { initializeAnalytics } from "./analytics";
 import "./index.css";
@@ -21,10 +22,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const configuredAppwriteApiUrl = import.meta.env.VITE_APPWRITE_API_URL?.trim();
-const trpcEndpoint = configuredAppwriteApiUrl
-  ? `${configuredAppwriteApiUrl.replace(/\/+$/, "")}/api/trpc`
-  : "/api/trpc";
+const trpcEndpoint = appwriteApiUrl("/api/trpc");
 
 const trpcClient = trpc.createClient({
   links: [

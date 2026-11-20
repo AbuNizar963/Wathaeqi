@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { appwriteApiUrl } from "@/lib/appwriteApi";
 import { countLocalFilePages } from "./renderPages";
 import { DOCUMENT_CATEGORIES, fileKind, formatBytes } from "./types";
 
@@ -97,9 +98,9 @@ export default function UploadDialog({
     setError(null);
     try {
       setProgress("جارٍ رفع الملف إلى التخزين الآمن…");
-      const response = await fetch("/api/documents/upload", {
+      const response = await fetch(appwriteApiUrl("/api/documents/upload"), {
         method: "POST",
-        credentials: "same-origin",
+        credentials: "include",
         headers: {
           "Content-Type": "application/octet-stream",
           "x-file-name": encodeURIComponent(file.name),
