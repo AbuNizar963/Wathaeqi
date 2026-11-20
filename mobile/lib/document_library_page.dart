@@ -35,7 +35,6 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
   String? _error;
   bool _loading = true;
   bool _uploading = false;
-  String? _busyDocumentId;
 
   @override
   void initState() {
@@ -295,48 +294,6 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     );
   }
 
-  Future<void> _delete(OfficialDocument document) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: AlertDialog(
-          title: const Text('حذف الوثيقة'),
-          content: Text('هل تريد حذف «${document.title}» نهائيًا من المكتبة؟'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(dialogContext).colorScheme.error,
-              ),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('حذف نهائي'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    setState(() => _busyDocumentId = document.id);
-    try {
-      await widget.api.call(
-        'documentStudio.deleteDocument',
-        mutation: true,
-        input: {'id': document.id},
-      );
-      await _load();
-      if (mounted) _showMessage('تم حذف الوثيقة');
-    } catch (error) {
-      if (mounted) _showMessage('تعذر حذف الوثيقة: $error');
-    } finally {
-      if (mounted) setState(() => _busyDocumentId = null);
-    }
-  }
-
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -481,7 +438,6 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                       itemBuilder: (context, index) {
                         final document = filtered[index];
                         final file = document.file!;
-                        final busy = _busyDocumentId == document.id;
                         return Card(
                           margin: const EdgeInsets.only(bottom: 10),
                           child: InkWell(
@@ -593,43 +549,11 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                                       ],
                                     ),
                                   ),
-                                  PopupMenuButton<String>(
-                                    enabled: !busy,
-                                    onSelected: (value) {
-                                      if (value == 'preview') {
-                                        _preview(document);
-                                      } else if (value == 'print') {
-                                        _preview(document);
-                                      } else if (value == 'delete') {
-                                        _delete(document);
-                                      }
-                                    },
-                                    itemBuilder: (context) => const [
-                                      PopupMenuItem(
-                                        value: 'preview',
-                                        child: Text('معاينة'),
-                                      ),
-                                      PopupMenuItem(
-                                        value: 'print',
-                                        child: Text('طباعة / PDF'),
-                                      ),
-                                      PopupMenuItem(
-                                        value: 'delete',
-                                        child: Text('حذف الوثيقة'),
-                                      ),
-                                    ],
+                                  IconButton(
+                                    tooltip: 'معاينة وطباعة الوثيقة',
+                                    onPressed: () => _preview(document),
+                                    icon: const Icon(Icons.visibility_outlined),
                                   ),
-                                  if (busy)
-                                    const Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    ),
                                 ],
                               ),
                             ),
