@@ -1389,12 +1389,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ),
             ),
             _statusChip(document.status),
-            const SizedBox(width: 6),
-            IconButton(
-              tooltip: 'تعديل الوثيقة',
-              onPressed: () => setState(() => _previewMode = false),
-              icon: const Icon(Icons.edit_outlined),
-            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -1458,6 +1452,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               onPressed: _saving || !canUsePdfActions
                   ? null
                   : () => _printDocumentFile(document),
+            ),
+            _documentPreviewAction(
+              icon: Icons.edit_outlined,
+              label: 'تعديل الوثيقة',
+              onPressed: _saving
+                  ? null
+                  : () => setState(() => _previewMode = false),
             ),
           ],
         ),
