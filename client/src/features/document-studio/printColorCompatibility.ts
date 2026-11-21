@@ -1,4 +1,3 @@
-const UNSUPPORTED_COLOR_FUNCTION = "oklch";
 const SAFE_COLOR_FALLBACK = "rgb(100, 116, 139)";
 
 /**
@@ -18,11 +17,13 @@ export function replaceUnsupportedColorFunctions(
     const start = match.index;
     let depth = 1;
     let end = matcher.lastIndex;
+
     while (end < value.length && depth > 0) {
       if (value[end] === "(") depth += 1;
       if (value[end] === ")") depth -= 1;
       end += 1;
     }
+
     if (depth !== 0) break;
 
     const token = value.slice(start, end);
@@ -59,11 +60,14 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
   const context = canvas.getContext("2d");
   const resolveColor = (colorFunction: string): string => {
     if (!context) return SAFE_COLOR_FALLBACK;
+
     context.fillStyle = "#000000";
     try {
       context.fillStyle = colorFunction;
       const resolved = context.fillStyle;
-      return /oklch\s*\(/i.test(resolved) ? SAFE_COLOR_FALLBACK : resolved;
+      return /oklch\s*\(/i.test(resolved)
+        ? SAFE_COLOR_FALLBACK
+        : resolved;
     } catch {
       return SAFE_COLOR_FALLBACK;
     }
@@ -76,11 +80,9 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
   const visitRules = (rules: CSSRuleList): void => {
     for (const rule of Array.from(rules)) {
       if ("style" in rule) {
-        sanitizeDeclaration(
-          (rule as CSSStyleRule).style,
-          resolveColor
-        );
+        sanitizeDeclaration((rule as CSSStyleRule).style, resolveColor);
       }
+
       if ("cssRules" in rule) {
         try {
           visitRules((rule as CSSGroupingRule).cssRules);
