@@ -238,7 +238,8 @@ export function createApp(
             scope.organizationId !== organizationId
           ) {
             res.status(403).json({
-              error: "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط",
+              error:
+                "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط",
             });
             return;
           }
