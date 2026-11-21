@@ -86,6 +86,24 @@ function formatArabicDate(value: string): string {
   }).format(date);
 }
 
+function formatHijriDate(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+  try {
+    return new Intl.DateTimeFormat(
+      "ar-SA-u-ca-islamic-umalqura",
+      options
+    ).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("ar-SA-u-ca-islamic", options).format(date);
+  }
+}
+
 function dateInputValue(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime()))
@@ -236,7 +254,14 @@ export default function DocumentStudioPage() {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
     return source.filter(item =>
-      [item.title, item.subject, item.serialCode, item.category]
+      [
+        item.title,
+        item.subject,
+        item.serialCode,
+        item.category,
+        item.documentDate,
+        ...Object.values(item.fieldValues ?? {}),
+      ]
         .join(" ")
         .toLocaleLowerCase()
         .includes(normalizedSearch)
@@ -1395,6 +1420,9 @@ export default function DocumentStudioPage() {
                         selectedDocument?.serialCode || "يخصص عند الإصدار"
                       }
                       date={formatArabicDate(makeDocumentDate(documentDate))}
+                      hijriDate={formatHijriDate(
+                        makeDocumentDate(documentDate)
+                      )}
                     />
                     <div className="pt-6">
                       {documentSubject ? (
@@ -1660,6 +1688,7 @@ function DocumentLetterhead({
   headerSettings,
   serial,
   date,
+  hijriDate,
 }: {
   organizationName: string;
   unitName: string;
@@ -1670,6 +1699,7 @@ function DocumentLetterhead({
   headerSettings?: PlatformDocumentSettings;
   serial?: string;
   date?: string;
+  hijriDate?: string;
 }) {
   const title = headerSettings?.headerTitle.trim() || organizationName;
   const subtitle = headerSettings?.headerSubtitle.trim() || unitName;
@@ -1733,6 +1763,11 @@ function DocumentLetterhead({
         {date ? (
           <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
             <strong>التاريخ:</strong> {date}
+          </p>
+        ) : null}
+        {hijriDate ? (
+          <p className="whitespace-nowrap text-[12pt] font-semibold [transform:scaleX(0.86)] [transform-origin:left_center]">
+            <strong>الموافق هجريًا:</strong> {hijriDate}
           </p>
         ) : null}
         {rank ? (
