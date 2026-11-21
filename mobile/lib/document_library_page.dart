@@ -280,7 +280,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     Future<void> downloadPdf() async {
       try {
         final bytes = await loadPdf();
-        final path = await FilePicker.platform.saveFile(
+        final path = await FilePicker.saveFile(
           dialogTitle: 'حفظ نسخة PDF',
           fileName: '${document.title}.pdf',
           bytes: bytes,
