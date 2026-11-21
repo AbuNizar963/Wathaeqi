@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'closable_dialog_title.dart';
 import 'telegram_outbox.dart';
 import './features/reports/telegram_report_labels.dart';
 import 'telegram_display.dart';
@@ -185,11 +186,14 @@ class _TelegramEditDialogState extends State<TelegramEditDialog> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: AlertDialog(
-      title: Text(
-        'تعديل بيانات البرقية',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.w900,
+      title: closableDialogTitle(
+        context,
+        Text(
+          'تعديل بيانات البرقية',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.primary,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
       content: SizedBox(
