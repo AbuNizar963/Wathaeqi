@@ -9,6 +9,14 @@ import type { PlatformDocumentSettings } from "@shared/features/platform-setting
 
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
+const ZOOM_CONTROLS_CLASS_NAME =
+  "document-studio-no-print absolute left-2 top-2 z-20 flex items-center gap-1 rounded-lg border bg-white/95 p-1 shadow-sm";
+const ZOOM_BUTTON_CLASS_NAME =
+  "h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40";
+const ZOOM_PERCENT_CLASS_NAME =
+  "min-w-12 text-center text-xs tabular-nums text-slate-700";
+const ZOOM_RESET_CLASS_NAME =
+  "rounded-md px-2 py-1 text-xs font-medium hover:bg-slate-100";
 
 type ResponsiveA4PreviewProps = {
   children: ReactNode;
@@ -117,21 +125,21 @@ export default function ResponsiveA4Preview({
       onTouchCancel={handleTouchEnd}
     >
       <div
-        className="document-studio-no-print absolute left-2 top-2 z-20 flex items-center gap-1 rounded-lg border bg-white/95 p-1 shadow-sm"
+        className={ZOOM_CONTROLS_CLASS_NAME}
         role="group"
         aria-label="تكبير معاينة الورقة"
         dir="ltr"
       >
         <button
           type="button"
-          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
+          className={ZOOM_BUTTON_CLASS_NAME}
           aria-label="تصغير المعاينة"
           disabled={zoom <= 0.75}
           onClick={() => setZoom(current => clampZoom(current - 0.15))}
         >
           −
         </button>
-        <span className="min-w-12 text-center text-xs tabular-nums text-slate-700">
+        <span className={ZOOM_PERCENT_CLASS_NAME}>
           {Math.round(zoom * 100)}%
         </span>
         <button
@@ -145,7 +153,7 @@ export default function ResponsiveA4Preview({
         </button>
         <button
           type="button"
-          className="rounded-md px-2 py-1 text-xs font-medium hover:bg-slate-100"
+          className={ZOOM_RESET_CLASS_NAME}
           aria-label="إعادة ضبط التكبير"
           onClick={() => setZoom(1)}
         >

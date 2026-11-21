@@ -1389,7 +1389,9 @@ export default function DocumentStudioPage() {
                       logoUrl={logoUrl}
                       dividerColor={dividerColor}
                       headerSettings={platformDocumentSettings.data}
-                      serial={selectedDocument?.serialCode || "يخصص عند الإصدار"}
+                      serial={
+                        selectedDocument?.serialCode || "يخصص عند الإصدار"
+                      }
                       date={formatArabicDate(makeDocumentDate(documentDate))}
                     />
                     <div className="pt-6">
