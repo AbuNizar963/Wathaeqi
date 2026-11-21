@@ -52,13 +52,18 @@ export default function ResponsiveA4Preview({
     observer.observe(page);
 
     return () => observer.disconnect();
-  }, [children]);
+  }, []);
 
   return (
     <div
       ref={viewportRef}
       className="document-paper-viewport document-a4-preview-viewport"
-      style={{ height: layout.height }}
+      style={{
+        position: "relative",
+        width: "100%",
+        height: layout.height,
+        overflow: "hidden",
+      }}
     >
       <div
         ref={node => {
