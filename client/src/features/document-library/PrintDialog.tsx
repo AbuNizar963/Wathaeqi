@@ -73,7 +73,7 @@ export default function PrintDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          {kind === "pdf" || kind === "word" ? (
+          {kind === "pdf" || kind === "word" || kind === "image" ? (
             <FilePreview url={url} fileName={fileName} mimeType={mimeType} />
           ) : (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
