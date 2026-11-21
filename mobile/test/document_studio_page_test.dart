@@ -102,7 +102,10 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('وثيقة تجريبية'));
-    await tester.pumpAndSettle();
+    // PDF preview rendering may keep an indeterminate progress animation
+    // alive; advance a bounded amount of virtual time instead of settling it.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
 
     expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsOneWidget);
     expect(find.text('تنزيل PDF'), findsOneWidget);
