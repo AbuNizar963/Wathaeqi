@@ -141,6 +141,7 @@ function newTemplateField(index: number): DocumentTemplateField {
 export default function DocumentStudioPage() {
   const [activeTab, setActiveTab] = useState<StudioTab>("documents");
   const [previewMode, setPreviewMode] = useState(false);
+  const [isCreatingDocument, setIsCreatingDocument] = useState(false);
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importPrintOpen, setImportPrintOpen] = useState(false);
@@ -378,6 +379,7 @@ export default function DocumentStudioPage() {
     });
 
   function startNewDocument() {
+    setIsCreatingDocument(true);
     setSelectedDocumentId(null);
     setSelectedTemplateId(null);
     setSelectedTemplateRevision(null);
@@ -393,6 +395,7 @@ export default function DocumentStudioPage() {
   }
 
   function useTemplate(template: DocumentTemplate) {
+    setIsCreatingDocument(true);
     setSelectedDocumentId(null);
     setSelectedTemplateId(template.id);
     setSelectedTemplateRevision(template.revision);
@@ -767,6 +770,7 @@ export default function DocumentStudioPage() {
                       key={document.id}
                       type="button"
                       onClick={() => {
+                        setIsCreatingDocument(false);
                         setSelectedDocumentId(document.id);
                         setPreviewMode(true);
                       }}
@@ -1032,7 +1036,7 @@ export default function DocumentStudioPage() {
                   </div>
               </ResponsiveA4Preview>
             </Card>
-          ) : (
+          ) : selectedDocument || isCreatingDocument ? (
             <Card className="space-y-4 p-3 sm:p-4">
               <div className="flex flex-wrap items-center justify-between gap-2 document-studio-no-print">
                 <div>
@@ -1374,7 +1378,7 @@ export default function DocumentStudioPage() {
                 </div>
               ) : null}
             </Card>
-          )}
+          ) : null}
         </main>
       </div>
 
