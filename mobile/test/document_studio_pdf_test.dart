@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/document_studio_pdf.dart';
 
@@ -38,5 +40,10 @@ void main() {
 
     expect(bytes.length, greaterThan(1000));
     expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    final pdfSource = latin1.decode(bytes);
+    final pageCount = RegExp(r'/Type\\s*/Page\\b')
+        .allMatches(pdfSource)
+        .length;
+    expect(pageCount, greaterThan(1));
   });
 }
