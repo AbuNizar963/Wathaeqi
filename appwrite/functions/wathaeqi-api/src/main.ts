@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import serverless from "serverless-http";
 import { createApp } from "../../../../server/app";
 import { ENV } from "../../../../server/_core/env";
+import { serverlessOptions } from "../../../../server/_core/serverlessOptions";
 
 type AppwriteFunctionRequest = {
   method: string;
@@ -257,7 +258,10 @@ export default async function main({
   }
 
   try {
-    expressHandler ??= serverless(createApp({ productionStatic: false }));
+    expressHandler ??= serverless(
+      createApp({ productionStatic: false }),
+      serverlessOptions
+    );
     const result = await expressHandler(toLambdaEvent(req), {
       functionName: "wathaeqi-api",
       functionVersion: "$LATEST",
@@ -274,7 +278,12 @@ export default async function main({
         response.headers.set(name, value);
       }
     }
-    response.headers.set("Cache-Control", "no-store");
+    response.headers.set(
+      "Cache-Control",
+      response.headers.get("Cache-Control")?.includes("private")
+        ? "private, no-store"
+        : "no-store"
+    );
     return response;
   } catch (caught) {
     error("Wathaeqi owner API request failed", caught);

@@ -151,6 +151,13 @@ export function createApp(
     next();
   });
 
+  // Set this before the API rate limiter and authentication so denials are
+  // private as well as successful responses.
+  app.use("/api/documents/:documentId/file", (_req, res, next) => {
+    res.setHeader("Cache-Control", "private, no-store");
+    next();
+  });
+
   app.use(
     "/api",
     createRateLimit({
@@ -452,6 +459,97 @@ export function createApp(
         return;
       }
       res.status(400).json({ error: "تعذر قراءة بيانات الملف" });
+    }
+  );
+
+  app.get(
+    "/api/documents/:documentId/file",
+    createRateLimit({
+      windowMs: 60_000,
+      maxRequests: 30,
+      message: "طلبات تنزيل كثيرة؛ أعد المحاولة بعد قليل",
+    }),
+    requireActiveAppwriteUser,
+    async (req, res) => {
+      const user = res.locals.appwriteUser as NonNullable<
+        Awaited<ReturnType<typeof getAppwriteAuthenticatedUserFromRequest>>
+      >;
+      const documentId = req.params.documentId;
+      if (
+        typeof documentId !== "string" ||
+        !/^[A-Za-z0-9._-]{1,36}$/.test(documentId)
+      ) {
+        res.status(400).json({ error: "معرّف الوثيقة غير صالح" });
+        return;
+      }
+
+      let document: Awaited<ReturnType<typeof getOfficialDocument>>;
+      try {
+        document = await getOfficialDocument(user.authUserId, documentId);
+        if (document && document.organizationId !== null) {
+          const membership = await getUserOrganizationMembership(user.id);
+          if (
+            !membership?.isActive ||
+            membership.organizationId !== document.organizationId
+          ) {
+            res.status(404).json({ error: "الوثيقة غير موجودة" });
+            return;
+          }
+        }
+      } catch {
+        res.status(502).json({ error: "تعذر التحقق من صلاحية الوثيقة" });
+        return;
+      }
+      if (!document || !document.file) {
+        res.status(404).json({ error: "الملف غير موجود" });
+        return;
+      }
+
+      const file = document.file;
+      const mimeType = getAllowedDocumentMimeType(file.fileName);
+      if (
+        !mimeType ||
+        file.mimeType !== mimeType ||
+        !Number.isSafeInteger(file.sizeBytes) ||
+        file.sizeBytes < 1 ||
+        file.sizeBytes > MAX_DOCUMENT_UPLOAD_BYTES ||
+        !isSafeDocumentStorageKey(
+          file.storageKey,
+          user.authUserId,
+          file.fileName
+        )
+      ) {
+        res.status(415).json({ error: "بيانات الملف غير صالحة" });
+        return;
+      }
+
+      let body: Buffer;
+      try {
+        const storage = getStorageProvider();
+        const info = await storage.getObjectInfo(file.storageKey);
+        if (!Number.isSafeInteger(info.size) || info.size !== file.sizeBytes) {
+          res.status(409).json({ error: "بيانات الملف المخزن غير متطابقة" });
+          return;
+        }
+        body = (await storage.download(file.storageKey)).body;
+      } catch {
+        res.status(502).json({ error: "تعذر قراءة الملف من مساحة التخزين" });
+        return;
+      }
+      if (
+        !Buffer.isBuffer(body) ||
+        body.length !== file.sizeBytes ||
+        !(await isValidDocumentFile(body, file.fileName))
+      ) {
+        res.status(415).json({ error: "الملف تالف أو غير صالح" });
+        return;
+      }
+
+      res.status(200);
+      res.setHeader("Content-Type", mimeType);
+      res.setHeader("Content-Disposition", "attachment");
+      res.setHeader("Content-Length", String(body.length));
+      res.end(body);
     }
   );
 
