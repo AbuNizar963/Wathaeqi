@@ -17,9 +17,11 @@ class DocumentLibraryPage extends StatefulWidget {
   const DocumentLibraryPage({
     super.key,
     required this.api,
+    this.onEditDocument,
   });
 
   final PoliceApi api;
+  final ValueChanged<OfficialDocument>? onEditDocument;
 
   @override
   State<DocumentLibraryPage> createState() => _DocumentLibraryPageState();
@@ -372,6 +374,15 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                       icon: const Icon(Icons.share_outlined, size: 18),
                       label: const Text('مشاركة PDF'),
                     ),
+                    if (widget.onEditDocument != null)
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(previewContext).pop();
+                          widget.onEditDocument!(document);
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text('تعديل'),
+                      ),
                   ],
                 ),
               ),
