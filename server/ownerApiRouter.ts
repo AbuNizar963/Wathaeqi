@@ -45,6 +45,11 @@ import {
   HEX_COLOR_PATTERN,
   MAX_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
+  MAX_PAGE_MARGIN_MM,
+  MIN_DIVIDER_WIDTH_PT,
+  MAX_DIVIDER_WIDTH_PT,
+  MIN_FRAME_WIDTH_PT,
+  MAX_FRAME_WIDTH_PT,
   MAX_WATERMARK_OPACITY_PERCENT,
   MIN_HEADER_LOGO_SIZE,
 } from "../shared/features/platform-settings/platformDocumentSettings";
@@ -259,6 +264,11 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(0)
           .max(MAX_WATERMARK_OPACITY_PERCENT),
         headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
+        headerDividerStyle: z.enum(["solid", "double", "dashed", "dotted"]),
+        headerDividerWidthPt: z
+          .number()
+          .min(MIN_DIVIDER_WIDTH_PT)
+          .max(MAX_DIVIDER_WIDTH_PT),
         watermarkText: z.string().trim().min(1).max(255),
         headerTitle: z.string().trim().max(255),
         headerSubtitle: z.string().trim().max(255),
@@ -282,6 +292,16 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(0)
           .max(MAX_HEADER_PADDING_MM),
         headerAlignment: z.enum(["spread", "center", "right"]),
+        pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+        pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+        pageMarginBottomMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+        pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+        frameStyle: z.enum(["none", "single", "double", "ornate"]),
+        frameColor: z.string().regex(HEX_COLOR_PATTERN),
+        frameWidthPt: z
+          .number()
+          .min(MIN_FRAME_WIDTH_PT)
+          .max(MAX_FRAME_WIDTH_PT),
         showVerificationQr: z.boolean(),
       })
     )

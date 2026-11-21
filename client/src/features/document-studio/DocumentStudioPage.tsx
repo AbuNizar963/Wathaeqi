@@ -990,7 +990,7 @@ export default function DocumentStudioPage() {
                 )}
               </section>
 
-              <ResponsiveA4Preview>
+              <ResponsiveA4Preview settings={platformDocumentSettings.data}>
                 <DocumentWatermark
                   logoUrl={logoUrl}
                   watermarkText={
@@ -1278,7 +1278,10 @@ export default function DocumentStudioPage() {
                   )}
                 </section>
               ) : (
-                <ResponsiveA4Preview pageRef={documentPageRef}>
+                <ResponsiveA4Preview
+                  pageRef={documentPageRef}
+                  settings={platformDocumentSettings.data}
+                >
                   <DocumentWatermark
                     logoUrl={logoUrl}
                     watermarkText={
@@ -1597,6 +1600,11 @@ function DocumentLetterhead({
       className="grid items-start gap-[2px] border-b-[3px]"
       style={{
         borderColor: dividerColor,
+        borderBottomStyle:
+          headerSettings?.headerDividerStyle === "double"
+            ? "double"
+            : (headerSettings?.headerDividerStyle ?? "solid"),
+        borderBottomWidth: `${headerSettings?.headerDividerWidthPt ?? 2.25}pt`,
         paddingTop: `${headerSettings?.headerTopPaddingMm ?? 0}mm`,
         paddingInline: `${headerSettings?.headerHorizontalPaddingMm ?? 0}mm`,
         paddingBottom: `${headerSettings?.headerBottomPaddingMm ?? 6}mm`,

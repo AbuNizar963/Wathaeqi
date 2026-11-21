@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
@@ -6,6 +7,7 @@ const A4_PREVIEW_MIN_HEIGHT = 1123;
 type ResponsiveA4PreviewProps = {
   children: ReactNode;
   pageRef?: { current: HTMLDivElement | null };
+  settings?: PlatformDocumentSettings;
 };
 
 /**
@@ -16,6 +18,7 @@ type ResponsiveA4PreviewProps = {
 export default function ResponsiveA4Preview({
   children,
   pageRef,
+  settings,
 }: ResponsiveA4PreviewProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const internalPageRef = useRef<HTMLDivElement>(null);
@@ -79,6 +82,16 @@ export default function ResponsiveA4Preview({
           left: "50%",
           transform: `translateX(-50%) scale(${layout.scale})`,
           transformOrigin: "top center",
+          padding: `${settings?.pageMarginTopMm ?? 10}mm ${settings?.pageMarginRightMm ?? 10}mm ${settings?.pageMarginBottomMm ?? 10}mm ${settings?.pageMarginLeftMm ?? 10}mm`,
+          boxSizing: "border-box",
+          border:
+            settings?.frameStyle === "none"
+              ? "none"
+              : `${settings?.frameWidthPt ?? 1}pt ${settings?.frameStyle === "double" ? "double" : settings?.frameStyle === "ornate" ? "double" : "solid"} ${settings?.frameColor ?? "#b49a55"}`,
+          boxShadow:
+            settings?.frameStyle === "ornate"
+              ? `inset 0 0 0 3px #fff, inset 0 0 0 4px ${settings.frameColor}`
+              : undefined,
         }}
       >
         {children}

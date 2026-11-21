@@ -4,6 +4,11 @@ import {
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
+  MAX_PAGE_MARGIN_MM,
+  MIN_DIVIDER_WIDTH_PT,
+  MAX_DIVIDER_WIDTH_PT,
+  MIN_FRAME_WIDTH_PT,
+  MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -25,6 +30,14 @@ export async function loadDocumentSettingsForExport(
       settings.watermarkOpacityPercent > MAX_WATERMARK_OPACITY_PERCENT ||
       typeof settings.headerDividerColor !== "string" ||
       !HEX_COLOR_PATTERN.test(settings.headerDividerColor) ||
+      !["solid", "double", "dashed", "dotted"].includes(settings.headerDividerStyle) ||
+      settings.headerDividerWidthPt < MIN_DIVIDER_WIDTH_PT ||
+      settings.headerDividerWidthPt > MAX_DIVIDER_WIDTH_PT ||
+      !HEX_COLOR_PATTERN.test(settings.frameColor) ||
+      !["none", "single", "double", "ornate"].includes(settings.frameStyle) ||
+      settings.frameWidthPt < MIN_FRAME_WIDTH_PT ||
+      settings.frameWidthPt > MAX_FRAME_WIDTH_PT ||
+      ![settings.pageMarginTopMm, settings.pageMarginRightMm, settings.pageMarginBottomMm, settings.pageMarginLeftMm].every(value => Number.isInteger(value) && value >= 0 && value <= MAX_PAGE_MARGIN_MM) ||
       typeof settings.watermarkText !== "string" ||
       settings.watermarkText.trim().length === 0 ||
       typeof settings.headerTitle !== "string" ||

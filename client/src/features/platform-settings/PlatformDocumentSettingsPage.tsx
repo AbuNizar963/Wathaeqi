@@ -13,6 +13,11 @@ import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MAX_PAGE_MARGIN_MM,
+  MIN_DIVIDER_WIDTH_PT,
+  MAX_DIVIDER_WIDTH_PT,
+  MIN_FRAME_WIDTH_PT,
+  MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -24,6 +29,8 @@ function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
     watermarkText: settings.watermarkText,
     watermarkOpacityPercent: settings.watermarkOpacityPercent,
     headerDividerColor: settings.headerDividerColor,
+    headerDividerStyle: settings.headerDividerStyle,
+    headerDividerWidthPt: settings.headerDividerWidthPt,
     headerTitle: settings.headerTitle,
     headerSubtitle: settings.headerSubtitle,
     headerChiefRank: settings.headerChiefRank,
@@ -34,6 +41,13 @@ function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
     headerHorizontalPaddingMm: settings.headerHorizontalPaddingMm,
     headerBottomPaddingMm: settings.headerBottomPaddingMm,
     headerAlignment: settings.headerAlignment,
+    pageMarginTopMm: settings.pageMarginTopMm,
+    pageMarginRightMm: settings.pageMarginRightMm,
+    pageMarginBottomMm: settings.pageMarginBottomMm,
+    pageMarginLeftMm: settings.pageMarginLeftMm,
+    frameStyle: settings.frameStyle,
+    frameColor: settings.frameColor,
+    frameWidthPt: settings.frameWidthPt,
     showVerificationQr: settings.showVerificationQr,
   };
 }
@@ -117,7 +131,9 @@ export default function PlatformDocumentSettingsPage() {
     }
   };
 
-  const colorIsValid = HEX_COLOR_PATTERN.test(values.headerDividerColor);
+  const colorIsValid =
+    HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
+    HEX_COLOR_PATTERN.test(values.frameColor);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
@@ -316,6 +332,150 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
+            <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+              <div>
+                <h2 className="font-semibold">صفحة الوثيقة والإطار</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  اضبط المساحات الآمنة حول المحتوى واختر إطارًا رسميًا واضحًا
+                  للطباعة والمعاينة.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    ["pageMarginTopMm", "الهامش العلوي"],
+                    ["pageMarginRightMm", "الهامش الأيمن"],
+                    ["pageMarginBottomMm", "الهامش السفلي"],
+                    ["pageMarginLeftMm", "الهامش الأيسر"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key} className="space-y-1 text-sm">
+                    <span className="flex justify-between">
+                      <span>{label}</span>
+                      <output>{values[key]} مم</output>
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={MAX_PAGE_MARGIN_MM}
+                      step={1}
+                      value={values[key]}
+                      onChange={event =>
+                        updateValue(key, Number(event.target.value))
+                      }
+                      className="w-full accent-primary"
+                    />
+                  </label>
+                ))}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-sm">
+                  <span className="block">شكل الإطار</span>
+                  <select
+                    value={values.frameStyle}
+                    onChange={event =>
+                      updateValue(
+                        "frameStyle",
+                        event.target.value as SettingsForm["frameStyle"]
+                      )
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  >
+                    <option value="none">بدون إطار</option>
+                    <option value="single">إطار مفرد</option>
+                    <option value="double">إطار مزدوج</option>
+                    <option value="ornate">إطار زخرفي احترافي</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="block">لون الإطار</span>
+                  <input
+                    type="color"
+                    value={values.frameColor}
+                    onChange={event =>
+                      updateValue("frameColor", event.target.value)
+                    }
+                    className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
+                  />
+                </label>
+              </div>
+              <label className="block space-y-1 text-sm">
+                <span className="flex justify-between">
+                  <span>سماكة الإطار</span>
+                  <output>{values.frameWidthPt} نقطة</output>
+                </span>
+                <input
+                  type="range"
+                  min={MIN_FRAME_WIDTH_PT}
+                  max={MAX_FRAME_WIDTH_PT}
+                  step={0.5}
+                  value={values.frameWidthPt}
+                  onChange={event =>
+                    updateValue("frameWidthPt", Number(event.target.value))
+                  }
+                  className="w-full accent-primary"
+                />
+              </label>
+            </section>
+            <section className="space-y-4 rounded-xl border p-4">
+              <div>
+                <h2 className="font-semibold">الفاصل بين الرأس والمحتوى</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  اختر نمطًا رسميًا ولونًا وسماكة متوازنة للفاصل.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-sm">
+                  <span className="block">نمط الفاصل</span>
+                  <select
+                    value={values.headerDividerStyle}
+                    onChange={event =>
+                      updateValue(
+                        "headerDividerStyle",
+                        event.target.value as SettingsForm["headerDividerStyle"]
+                      )
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  >
+                    <option value="solid">متصل</option>
+                    <option value="double">مزدوج</option>
+                    <option value="dashed">متقطع</option>
+                    <option value="dotted">منقط</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="block">لون الفاصل</span>
+                  <input
+                    type="color"
+                    value={values.headerDividerColor}
+                    onChange={event =>
+                      updateValue("headerDividerColor", event.target.value)
+                    }
+                    className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
+                  />
+                </label>
+              </div>
+              <label className="block space-y-1 text-sm">
+                <span className="flex justify-between">
+                  <span>سماكة الفاصل</span>
+                  <output>{values.headerDividerWidthPt} نقطة</output>
+                </span>
+                <input
+                  type="range"
+                  min={MIN_DIVIDER_WIDTH_PT}
+                  max={MAX_DIVIDER_WIDTH_PT}
+                  step={0.25}
+                  value={values.headerDividerWidthPt}
+                  onChange={event =>
+                    updateValue(
+                      "headerDividerWidthPt",
+                      Number(event.target.value)
+                    )
+                  }
+                  className="w-full accent-primary"
+                />
+              </label>
+            </section>
             <section className="space-y-4">
               <h2 className="font-semibold">تحرير رأس الصفحة</h2>
               <p className="text-xs text-muted-foreground">
