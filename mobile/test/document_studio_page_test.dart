@@ -104,7 +104,7 @@ void main() {
     await tester.tap(find.text('وثيقة تجريبية'));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const ValueKey('document-a4-paper')), findsOneWidget);
+    expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsOneWidget);
     expect(find.text('تنزيل PDF'), findsOneWidget);
     expect(find.text('مشاركة PDF'), findsOneWidget);
     expect(find.text('طباعة'), findsOneWidget);
