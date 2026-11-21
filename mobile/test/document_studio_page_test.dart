@@ -108,13 +108,33 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
 
-    expect(
-      find.byKey(const ValueKey('document-a4-pdf-preview')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('document-a4-paper')), findsOneWidget);
+    expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsNothing);
     expect(find.text('تنزيل PDF'), findsOneWidget);
     expect(find.text('مشاركة PDF'), findsOneWidget);
     expect(find.text('طباعة'), findsOneWidget);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'تنزيل PDF'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'مشاركة PDF'),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'طباعة'))
+          .onPressed,
+      isNull,
+    );
     expect(find.byTooltip('تعديل الوثيقة'), findsOneWidget);
 
     await tester.tap(find.byTooltip('تعديل الوثيقة'));
