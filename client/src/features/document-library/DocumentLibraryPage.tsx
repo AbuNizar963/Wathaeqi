@@ -313,10 +313,12 @@ export default function DocumentLibraryPage() {
         aria-label="إنشاء وثيقة"
         title="إنشاء وثيقة"
         onClick={() => navigate("/studio?create=1")}
-        className="fixed bottom-6 left-6 z-40 flex size-16 items-center justify-center
-          rounded-full bg-blue-500 text-white shadow-xl shadow-blue-950/20
-          transition hover:bg-blue-600 focus-visible:outline-none
-          focus-visible:ring-4 focus-visible:ring-blue-300"
+        className={[
+          "fixed bottom-6 left-6 z-40 flex size-16 items-center justify-center",
+          "rounded-full bg-blue-500 text-white shadow-xl shadow-blue-950/20",
+          "transition hover:bg-blue-600 focus-visible:outline-none",
+          "focus-visible:ring-4 focus-visible:ring-blue-300",
+        ].join(" ")}
       >
         <Plus className="size-7" />
       </button>
