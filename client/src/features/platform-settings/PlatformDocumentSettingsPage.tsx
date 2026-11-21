@@ -480,7 +480,7 @@ export default function PlatformDocumentSettingsPage() {
                           className="text-[5pt] font-normal leading-none text-slate-500"
                           style={{ fontFamily: '"Aref Ruqaa", serif' }}
                         >
-                          {values.watermarkText || "وثائقي"}
+                          {values.watermarkText || "وزارة الداخلية"}
                         </span>
                       ))}
                     </div>
