@@ -64,6 +64,12 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     onclone: clonedDocument => {
       sanitizeUnsupportedPrintColors(clonedDocument);
       clonedDocument
+        .querySelectorAll<HTMLElement>(".document-a4-preview-viewport")
+        .forEach(viewport => {
+          viewport.style.height = "auto";
+          viewport.style.overflow = "visible";
+        });
+      clonedDocument
         .querySelectorAll<HTMLElement>(".batch-print-source")
         .forEach(source => {
           source.style.visibility = "visible";
