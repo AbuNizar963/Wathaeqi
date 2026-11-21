@@ -137,6 +137,8 @@ void main() {
     );
     expect(find.text('تعديل الوثيقة'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('تعديل الوثيقة'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('تعديل الوثيقة'));
     await tester.pumpAndSettle();
     expect(find.text('تحرير الوثيقة'), findsOneWidget);
