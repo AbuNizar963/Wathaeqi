@@ -45,7 +45,7 @@ void main() {
     final pdfText = latin1.decode(bytes);
     final renderedPages =
         RegExp(r'/Type /Page\b').allMatches(pdfText).length;
-      expect(renderedPages, greaterThan(1));
+    expect(renderedPages, greaterThan(1));
     },
   );
 }
