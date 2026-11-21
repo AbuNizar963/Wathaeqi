@@ -1006,36 +1006,37 @@ export default function DocumentStudioPage() {
               </section>
 
               <ResponsiveA4Preview>
-                  <DocumentWatermark
-                    logoUrl={logoUrl}
-                    watermarkText={platformDocumentSettings.data?.watermarkText ?? "وثائقي"}
-                    opacityPercent={
-                      platformDocumentSettings.data?.watermarkOpacityPercent ??
-                      12
-                    }
-                    showMinistryText={
-                      platformDocumentSettings.data
-                        ?.showMinistryWatermarkText ?? true
-                    }
+                <DocumentWatermark
+                  logoUrl={logoUrl}
+                  watermarkText={
+                    platformDocumentSettings.data?.watermarkText ?? "وثائقي"
+                  }
+                  opacityPercent={
+                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
+                  }
+                  showMinistryText={
+                    platformDocumentSettings.data?.showMinistryWatermarkText ??
+                    true
+                  }
+                />
+                <DocumentLetterhead
+                  organizationName={organizationName}
+                  unitName={settings?.unitName ?? ""}
+                  chiefRank={settings?.unitChiefRank ?? ""}
+                  chiefName={settings?.unitChiefName ?? ""}
+                  logoUrl={logoUrl}
+                  dividerColor={dividerColor}
+                  headerSettings={platformDocumentSettings.data}
+                />
+                <div className="py-6">
+                  <DocumentEditor
+                    content={templateContent}
+                    onChange={handleTemplateContentChange}
+                    editable={!previewMode}
+                    containerClassName="rounded-none border-0 shadow-none"
+                    placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
                   />
-                  <DocumentLetterhead
-                    organizationName={organizationName}
-                    unitName={settings?.unitName ?? ""}
-                    chiefRank={settings?.unitChiefRank ?? ""}
-                    chiefName={settings?.unitChiefName ?? ""}
-                    logoUrl={logoUrl}
-                    dividerColor={dividerColor}
-                    headerSettings={platformDocumentSettings.data}
-                  />
-                  <div className="py-6">
-                    <DocumentEditor
-                      content={templateContent}
-                      onChange={handleTemplateContentChange}
-                      editable={!previewMode}
-                      containerClassName="rounded-none border-0 shadow-none"
-                      placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
-                    />
-                  </div>
+                </div>
               </ResponsiveA4Preview>
             </Card>
           ) : selectedDocument || isCreatingDocument ? (
@@ -1288,47 +1289,47 @@ export default function DocumentStudioPage() {
                 </section>
               ) : (
                 <ResponsiveA4Preview pageRef={documentPageRef}>
-                    <DocumentWatermark
-                      logoUrl={logoUrl}
-                      watermarkText={platformDocumentSettings.data?.watermarkText ?? "وثائقي"}
-                      opacityPercent={
-                        platformDocumentSettings.data
-                          ?.watermarkOpacityPercent ?? 12
-                      }
-                      showMinistryText={
-                        platformDocumentSettings.data
-                          ?.showMinistryWatermarkText ?? true
-                      }
+                  <DocumentWatermark
+                    logoUrl={logoUrl}
+                    watermarkText={
+                      platformDocumentSettings.data?.watermarkText ?? "وثائقي"
+                    }
+                    opacityPercent={
+                      platformDocumentSettings.data?.watermarkOpacityPercent ??
+                      12
+                    }
+                    showMinistryText={
+                      platformDocumentSettings.data
+                        ?.showMinistryWatermarkText ?? true
+                    }
+                  />
+                  <DocumentLetterhead
+                    organizationName={organizationName}
+                    unitName={settings?.unitName ?? ""}
+                    chiefRank={settings?.unitChiefRank ?? ""}
+                    chiefName={settings?.unitChiefName ?? ""}
+                    logoUrl={logoUrl}
+                    dividerColor={dividerColor}
+                    headerSettings={platformDocumentSettings.data}
+                    serial={selectedDocument?.serialCode || "يخصص عند الإصدار"}
+                    date={formatArabicDate(makeDocumentDate(documentDate))}
+                  />
+                  <div className="pt-6">
+                    {documentSubject ? (
+                      <p className="mb-4 text-right font-semibold">
+                        الموضوع: {documentSubject}
+                      </p>
+                    ) : null}
+                    <DocumentEditor
+                      content={documentContent}
+                      onChange={handleDocumentContentChange}
+                      editable={canEditDocument && !previewMode}
+                      containerClassName="rounded-none border-0 shadow-none"
                     />
-                    <DocumentLetterhead
-                      organizationName={organizationName}
-                      unitName={settings?.unitName ?? ""}
-                      chiefRank={settings?.unitChiefRank ?? ""}
-                      chiefName={settings?.unitChiefName ?? ""}
-                      logoUrl={logoUrl}
-                      dividerColor={dividerColor}
-                      headerSettings={platformDocumentSettings.data}
-                      serial={
-                        selectedDocument?.serialCode || "يخصص عند الإصدار"
-                      }
-                      date={formatArabicDate(makeDocumentDate(documentDate))}
-                    />
-                    <div className="pt-6">
-                      {documentSubject ? (
-                        <p className="mb-4 text-right font-semibold">
-                          الموضوع: {documentSubject}
-                        </p>
-                      ) : null}
-                      <DocumentEditor
-                        content={documentContent}
-                        onChange={handleDocumentContentChange}
-                        editable={canEditDocument && !previewMode}
-                        containerClassName="rounded-none border-0 shadow-none"
-                      />
-                    </div>
-                    <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
-                      وثائقي
-                    </footer>
+                  </div>
+                  <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
+                    وثائقي
+                  </footer>
                 </ResponsiveA4Preview>
               )}
               {previewMode && selectedDocument ? (
@@ -1393,7 +1394,10 @@ export default function DocumentStudioPage() {
         pageElement={documentPageRef.current}
       />
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
-        <DialogContent className="w-[calc(100%-1rem)] max-h-[min(90dvh,42rem)] max-w-lg overflow-y-auto p-4 sm:p-6" dir="rtl">
+        <DialogContent
+          className="w-[calc(100%-1rem)] max-h-[min(90dvh,42rem)] max-w-lg overflow-y-auto p-4 sm:p-6"
+          dir="rtl"
+        >
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
@@ -1610,7 +1614,11 @@ function DocumentLetterhead({
   const logoSize = headerSettings?.headerLogoSize ?? 120;
   const alignment = headerSettings?.headerAlignment ?? "spread";
   const textAlign =
-    alignment === "center" ? "center" : alignment === "right" ? "right" : undefined;
+    alignment === "center"
+      ? "center"
+      : alignment === "right"
+        ? "right"
+        : undefined;
 
   return (
     <header
