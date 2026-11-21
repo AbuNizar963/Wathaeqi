@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import 'api.dart';
 import 'document_studio_models.dart';
 import 'document_file_support.dart';
+import 'document_print_layout.dart';
 
 /// Native mobile counterpart of the web document library.
 ///
@@ -277,10 +278,29 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     final file = document.file;
     if (file == null) return;
     final isWord = file.mimeType == DocumentFileSupport.docxMime;
+    final pagesPerSheet = ValueNotifier<int>(1);
+    Uint8List? printableBytes;
+    int? printableLayout;
     Future<Uint8List> loadBytes() => widget.api.fetchDocumentFileBytes(
       documentId: document.id,
       mimeType: file.mimeType,
     );
+    Future<Uint8List> loadPrintableBytes() async {
+      final selectedLayout = pagesPerSheet.value;
+      if (isWord || selectedLayout == 1) return loadBytes();
+      if (printableBytes != null && printableLayout == selectedLayout) {
+        return printableBytes!;
+      }
+      final original = await loadBytes();
+      printableBytes = await DocumentPrintLayout.createA4Pdf(
+        sourcePdf: original,
+        pagesPerSheet: selectedLayout,
+        dpi: 180,
+      );
+      printableLayout = selectedLayout;
+      return printableBytes!;
+    }
+
     Future<void> downloadFile() async {
       try {
         final bytes = await loadBytes();
@@ -303,7 +323,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
         return;
       }
       try {
-        final bytes = await loadBytes();
+        final bytes = await loadPrintableBytes();
         await Printing.layoutPdf(
           name: document.title,
           onLayout: (_) async => bytes,
@@ -386,13 +406,17 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                             ),
                           ),
                         )
-                      : PdfPreview(
-                          pdfFileName: file.fileName,
-                          canChangePageFormat: false,
-                          canChangeOrientation: false,
-                          allowPrinting: false,
-                          allowSharing: false,
-                          build: (_) => loadBytes(),
+                      : ValueListenableBuilder<int>(
+                          valueListenable: pagesPerSheet,
+                          builder: (context, selectedLayout, _) => PdfPreview(
+                            key: ValueKey('pdf-preview-$selectedLayout'),
+                            pdfFileName: file.fileName,
+                            canChangePageFormat: false,
+                            canChangeOrientation: false,
+                            allowPrinting: false,
+                            allowSharing: false,
+                            build: (_) => loadPrintableBytes(),
+                          ),
                         ),
                 ),
                 ConstrainedBox(
@@ -401,6 +425,39 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                     child: Column(
                       children: [
+                        ValueListenableBuilder<int>(
+                          valueListenable: pagesPerSheet,
+                          builder: (context, selectedLayout, _) =>
+                              DropdownButtonFormField<int>(
+                                initialValue: selectedLayout,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'عدد الصفحات في الورقة',
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                ),
+                                items: [1, 2, 4, 6, 8]
+                                    .map(
+                                      (value) => DropdownMenuItem<int>(
+                                        value: value,
+                                        child: Text(
+                                          '$value ${value == 1 ? 'صفحة' : 'صفحات'} في الورقة',
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: isWord
+                                    ? null
+                                    : (value) {
+                                        if (value != null) {
+                                          printableBytes = null;
+                                          printableLayout = null;
+                                          pagesPerSheet.value = value;
+                                        }
+                                      },
+                              ),
+                        ),
+                        const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
                           child: Text(
@@ -522,6 +579,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
         ),
       ),
     );
+    pagesPerSheet.dispose();
   }
 
   Widget _documentAction({

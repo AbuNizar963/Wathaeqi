@@ -54,6 +54,18 @@ void main() {
       },
     );
 
+    test('six-up and eight-up preserve order', () {
+      expect(DocumentPrintLayout.pageGroups(pageCount: 13, pagesPerSheet: 6), [
+        <int>[0, 1, 2, 3, 4, 5],
+        <int>[6, 7, 8, 9, 10, 11],
+        <int>[12],
+      ]);
+      expect(DocumentPrintLayout.pageGroups(pageCount: 9, pagesPerSheet: 8), [
+        <int>[0, 1, 2, 3, 4, 5, 6, 7],
+        <int>[8],
+      ]);
+    });
+
     test('a single source page produces a valid partial sheet', () {
       expect(DocumentPrintLayout.pageGroups(pageCount: 1, pagesPerSheet: 4), [
         <int>[0],

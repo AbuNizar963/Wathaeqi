@@ -4,7 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
-/// Builds a print-ready A4 PDF with one, two, or four source pages per sheet.
+/// Builds a print-ready A4 PDF with one, two, four, six, or eight source pages per sheet.
 ///
 /// Source pages are rasterized and placed in reading order without cropping.
 /// Raster images are processed one sheet at a time to bound transient memory.
@@ -20,7 +20,7 @@ class DocumentPrintLayout {
   /// Groups zero-based source page indices into ordered output sheets.
   ///
   /// [pageCount] must be from 1 through [maxSourcePages], and [pagesPerSheet]
-  /// must be 1, 2, or 4.
+  /// must be 1, 2, 4, 6, or 8.
   static List<List<int>> pageGroups({
     required int pageCount,
     required int pagesPerSheet,
@@ -32,11 +32,11 @@ class DocumentPrintLayout {
         'must be between 1 and $maxSourcePages',
       );
     }
-    if (pagesPerSheet != 1 && pagesPerSheet != 2 && pagesPerSheet != 4) {
+    if (![1, 2, 4, 6, 8].contains(pagesPerSheet)) {
       throw ArgumentError.value(
         pagesPerSheet,
         'pagesPerSheet',
-        'must be 1, 2, or 4',
+        'must be 1, 2, 4, 6, or 8',
       );
     }
 
@@ -74,11 +74,11 @@ class DocumentPrintLayout {
         'must be finite and from 72 to 600',
       );
     }
-    if (pagesPerSheet != 1 && pagesPerSheet != 2 && pagesPerSheet != 4) {
+    if (![1, 2, 4, 6, 8].contains(pagesPerSheet)) {
       throw ArgumentError.value(
         pagesPerSheet,
         'pagesPerSheet',
-        'must be 1, 2, or 4',
+        'must be 1, 2, 4, 6, or 8',
       );
     }
 
@@ -122,8 +122,8 @@ class DocumentPrintLayout {
     List<Uint8List> pageImages,
     int pagesPerSheet,
   ) {
-    final columnCount = pagesPerSheet == 4 ? 2 : 1;
-    final rowCount = pagesPerSheet == 1 ? 1 : 2;
+    final columnCount = pagesPerSheet == 1 || pagesPerSheet == 2 ? 1 : 2;
+    final rowCount = (pagesPerSheet / columnCount).ceil();
     final rows = <pw.Widget>[];
 
     for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
