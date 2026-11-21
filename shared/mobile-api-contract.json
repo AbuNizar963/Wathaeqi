@@ -28,8 +28,6 @@
     "organizations.logoForExport",
     "organizations.routingDirectory",
     "organizations.routingTargets",
-    "organizations.settings.get",
-    "organizations.settings.update",
     "organizations.update",
     "ownerDashboard.summary",
     "platformDocumentSettings.get",
