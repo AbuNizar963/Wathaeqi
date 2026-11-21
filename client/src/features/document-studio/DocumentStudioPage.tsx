@@ -811,7 +811,6 @@ export default function DocumentStudioPage() {
           )}
         </aside>
 
-
         <main className="min-w-0 space-y-3">
           {activeTab === "templates" ? (
             <Card className="space-y-4 p-4">
