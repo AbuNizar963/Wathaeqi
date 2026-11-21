@@ -202,13 +202,17 @@ export function createApp(
         return;
       }
       if (body.length > 2_500_000) {
-        res.status(413).json({ error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت" });
+        res.status(413).json({
+          error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت",
+        });
         return;
       }
 
       const isPng =
         body.length >= 8 &&
-        body.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+        body
+          .subarray(0, 8)
+          .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
       const isJpeg =
         body.length >= 3 &&
         body[0] === 0xff &&
@@ -231,7 +235,9 @@ export function createApp(
           !scope.canAdministrate ||
           (!scope.isOwner && scope.organizationId !== organizationId)
         ) {
-          res.status(403).json({ error: "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط" });
+          res.status(403).json({
+            error: "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط",
+          });
           return;
         }
 
@@ -242,7 +248,9 @@ export function createApp(
         );
         const url = await getOrganizationLogoUrl(organizationId);
         if (!url) {
-          res.status(502).json({ error: "تم حفظ الشعار لكن تعذر إنشاء رابط المعاينة" });
+          res.status(502).json({
+            error: "تم حفظ الشعار لكن تعذر إنشاء رابط المعاينة",
+          });
           return;
         }
         res.status(200).json({ key, url });
