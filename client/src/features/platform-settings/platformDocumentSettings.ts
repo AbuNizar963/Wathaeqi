@@ -1,6 +1,9 @@
 import {
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MAX_HEADER_LOGO_SIZE,
+  MIN_HEADER_LOGO_SIZE,
+  MAX_HEADER_PADDING_MM,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -21,7 +24,27 @@ export async function loadDocumentSettingsForExport(
       settings.watermarkOpacityPercent < 0 ||
       settings.watermarkOpacityPercent > MAX_WATERMARK_OPACITY_PERCENT ||
       typeof settings.headerDividerColor !== "string" ||
-      !HEX_COLOR_PATTERN.test(settings.headerDividerColor)
+      !HEX_COLOR_PATTERN.test(settings.headerDividerColor) ||
+      typeof settings.watermarkText !== "string" ||
+      settings.watermarkText.trim().length === 0 ||
+      typeof settings.headerTitle !== "string" ||
+      typeof settings.headerSubtitle !== "string" ||
+      typeof settings.headerChiefRank !== "string" ||
+      typeof settings.headerChiefName !== "string" ||
+      typeof settings.headerShowLogo !== "boolean" ||
+      !Number.isInteger(settings.headerLogoSize) ||
+      settings.headerLogoSize < MIN_HEADER_LOGO_SIZE ||
+      settings.headerLogoSize > MAX_HEADER_LOGO_SIZE ||
+      !Number.isInteger(settings.headerTopPaddingMm) ||
+      settings.headerTopPaddingMm < 0 ||
+      settings.headerTopPaddingMm > MAX_HEADER_PADDING_MM ||
+      !Number.isInteger(settings.headerHorizontalPaddingMm) ||
+      settings.headerHorizontalPaddingMm < 0 ||
+      settings.headerHorizontalPaddingMm > MAX_HEADER_PADDING_MM ||
+      !Number.isInteger(settings.headerBottomPaddingMm) ||
+      settings.headerBottomPaddingMm < 0 ||
+      settings.headerBottomPaddingMm > MAX_HEADER_PADDING_MM ||
+      !["spread", "center", "right"].includes(settings.headerAlignment)
     ) {
       throw new Error(DOCUMENT_SETTINGS_LOAD_ERROR);
     }
