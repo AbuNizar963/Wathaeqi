@@ -69,7 +69,7 @@ function DrawerContent({
         <DrawerPrimitive.Close
           aria-label="إغلاق النافذة"
           title="إغلاق النافذة"
-          className="absolute left-3 top-3 z-10 inline-flex size-9 items-center justify-center rounded-md border bg-background/90 text-muted-foreground shadow-sm transition hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          className="absolute start-3 top-3 z-10 inline-flex size-9 items-center justify-center rounded-md border bg-background/90 text-muted-foreground shadow-sm transition hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           <XIcon className="size-4" aria-hidden="true" />
         </DrawerPrimitive.Close>
