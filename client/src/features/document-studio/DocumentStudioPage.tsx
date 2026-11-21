@@ -141,6 +141,15 @@ export default function DocumentStudioPage() {
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const documentId = params.get("document");
+    if (documentId) {
+      setSelectedDocumentId(documentId);
+      setPreviewMode(true);
+    }
+  }, []);
+
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     null
   );
