@@ -21,6 +21,7 @@ import {
   updatePlatformDocumentSettings,
 } from "./platformDocumentSettingsRepository";
 
+// prettier-ignore
 const platformDocumentSettingsInput = z.object({
   showMinistryWatermarkText: z.boolean(),
   watermarkText: z.string().trim().min(1).max(255),
