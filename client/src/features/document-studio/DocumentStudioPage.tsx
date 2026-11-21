@@ -1658,12 +1658,16 @@ function DocumentLetterhead({
           aria-label="فاصل أسود وأخضر مع ثلاث نجوم حمراء"
         >
           <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--black" />
-          <span
+          <svg
             className="document-tricolor-stars-divider__stars"
+            viewBox="0 0 58 18"
             aria-hidden="true"
+            focusable="false"
           >
-            ★ ★ ★
-          </span>
+            <path d="M8.5 1.2 10.4 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6L.8 6.4 6.6 6l1.9-4.8Z" />
+            <path d="M29 1.2 30.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L29 1.2Z" />
+            <path d="M49.5 1.2 51.4 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4 1.9-4.8Z" />
+          </svg>
           <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--green" />
         </div>
       ) : null}

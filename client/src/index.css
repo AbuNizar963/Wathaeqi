@@ -572,31 +572,31 @@
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.38rem;
   width: 100%;
   min-height: 0.8rem;
   margin-top: 0.2rem;
   direction: ltr;
 }
 .document-tricolor-stars-divider__line {
-  height: 0.22rem;
+  height: 0.25rem;
   flex: 1 1 0;
-  border-radius: 999px;
+  clip-path: polygon(0 42%, 100% 0, 100% 100%, 0 58%);
 }
 .document-tricolor-stars-divider__line--black {
-  background: #111827;
+  background: #000000;
 }
+
 .document-tricolor-stars-divider__line--green {
-  background: #159447;
+  background: #04993d;
+  clip-path: polygon(0 0, 100% 42%, 100% 58%, 0 100%);
 }
 .document-tricolor-stars-divider__stars {
-  color: #d5232f;
-  font-size: 0.9rem;
-  font-weight: 900;
-  letter-spacing: 0.08rem;
-  line-height: 1;
-  white-space: nowrap;
-  text-shadow: 0 0 0.02rem #8f101b;
+  width: 2.7rem;
+  height: 0.82rem;
+  flex: 0 0 2.7rem;
+  fill: #c91111;
+  overflow: visible;
 }
 .document-a4-page {
   box-sizing: border-box;
