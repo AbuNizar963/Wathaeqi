@@ -43,10 +43,10 @@ import {
 } from "./features/organizations/appwriteOwnerOrganizationRepository";
 import {
   HEX_COLOR_PATTERN,
-  MAX_WATERMARK_OPACITY_PERCENT,
   MAX_HEADER_LOGO_SIZE,
-  MIN_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
+  MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_HEADER_LOGO_SIZE,
 } from "../shared/features/platform-settings/platformDocumentSettings";
 
 async function authenticatePlatformUserForLogin(
