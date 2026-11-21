@@ -579,7 +579,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             _platformDocumentSettings['headerAlignment'] ?? 'spread',
       };
       return DocumentStudioPdf.build(
-        content: document.content,
+        content: DocumentStudioQuillCodec.normalizeLegacyText(document.content),
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
@@ -798,8 +798,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   void _replaceDocumentEditor(Map<String, dynamic> content) {
     _documentEditor.removeListener(_onDocumentEditorChanged);
     _documentEditor.dispose();
-    _documentContent = content;
-    _documentEditor = _makeEditor(content);
+    _documentContent = DocumentStudioQuillCodec.normalizeLegacyText(content);
+    _documentEditor = _makeEditor(_documentContent);
     _documentEditor.addListener(_onDocumentEditorChanged);
     setState(() {});
   }
@@ -807,9 +807,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   void _replaceTemplateEditor(Map<String, dynamic> content) {
     _templateEditor.removeListener(_onTemplateEditorChanged);
     _templateEditor.dispose();
-    _templateContent = content;
+    _templateContent = DocumentStudioQuillCodec.normalizeLegacyText(content);
     _templateContentDirty = false;
-    _templateEditor = _makeEditor(content);
+    _templateEditor = _makeEditor(_templateContent);
     _templateEditor.addListener(_onTemplateEditorChanged);
     setState(() {});
   }
@@ -864,7 +864,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = document.documentDate;
     _titleController.text = document.title;
     _subjectController.text = document.subject;
-    _templateBaseContent = document.content;
+    _templateBaseContent = DocumentStudioQuillCodec.normalizeLegacyText(
+      document.content,
+    );
     _resetFieldControllers(
       document.templateFieldsSnapshot,
       document.fieldValues,
@@ -887,7 +889,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = DateTime.now();
     _titleController.text = template.title;
     _subjectController.clear();
-    _templateBaseContent = template.content;
+    _templateBaseContent = DocumentStudioQuillCodec.normalizeLegacyText(
+      template.content,
+    );
     _resetFieldControllers(template.fields, {});
     _replaceDocumentEditor(template.content);
     setState(() => _tab = DocumentStudioTab.documents);
@@ -1110,7 +1114,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           : _templateDescriptionController.text.trim(),
       'content': _templateContentDirty
           ? _templateContent
-          : (_selectedTemplate?.content ?? _templateContent),
+          : DocumentStudioQuillCodec.normalizeLegacyText(
+              _selectedTemplate?.content ?? _templateContent,
+            ),
       'fields': _templateFields.map((field) => field.toJson()).toList(),
     };
     try {
