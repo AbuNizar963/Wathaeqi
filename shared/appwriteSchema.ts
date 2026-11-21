@@ -527,7 +527,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 255,
         required: false,
-        default: "وثائقي",
+        default: "وزارة الداخلية",
       },
       {
         key: "headerTitle",
