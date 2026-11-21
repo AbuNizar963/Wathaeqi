@@ -615,41 +615,40 @@ export default function DocumentStudioPage() {
             <>
               {!previewMode ? (
                 <>
-                <Button
-                  variant="outline"
-                  disabled={Boolean(
-                    selectedDocument?.file && !importedFileUrlQuery.data?.url
-                  )}
-                  onClick={() => {
-                    if (selectedDocument?.file) setImportPrintOpen(true);
-                    else window.print();
-                  }}
-                >
-                  <Printer className="ml-2 h-4 w-4" />
-                  طباعة / PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={
-                    !selectedDocument ||
-                    Boolean(
-                      selectedDocument.file && !importedFileUrlQuery.data?.url
-                    )
-                  }
-                  onClick={downloadSelectedDocument}
-                >
-                  <Download className="ml-2 h-4 w-4" />
-                  تنزيل
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!selectedDocument}
-                  onClick={() => void shareSelectedDocument()}
-                >
-                  <Share2 className="ml-2 h-4 w-4" />
-                  مشاركة رابط
-                </Button>
-  
+                  <Button
+                    variant="outline"
+                    disabled={Boolean(
+                      selectedDocument?.file && !importedFileUrlQuery.data?.url
+                    )}
+                    onClick={() => {
+                      if (selectedDocument?.file) setImportPrintOpen(true);
+                      else window.print();
+                    }}
+                  >
+                    <Printer className="ml-2 h-4 w-4" />
+                    طباعة / PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={
+                      !selectedDocument ||
+                      Boolean(
+                        selectedDocument.file && !importedFileUrlQuery.data?.url
+                      )
+                    }
+                    onClick={downloadSelectedDocument}
+                  >
+                    <Download className="ml-2 h-4 w-4" />
+                    تنزيل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={!selectedDocument}
+                    onClick={() => void shareSelectedDocument()}
+                  >
+                    <Share2 className="ml-2 h-4 w-4" />
+                    مشاركة رابط
+                  </Button>
                 </>
               ) : null}
               <Button onClick={() => setCreationDialogOpen(true)}>
