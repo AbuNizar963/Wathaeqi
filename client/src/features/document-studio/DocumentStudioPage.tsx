@@ -646,7 +646,7 @@ export default function DocumentStudioPage() {
                   onClick={() => void shareSelectedDocument()}
                 >
                   <Share2 className="ml-2 h-4 w-4" />
-                  مشاركة
+                  مشاركة رابط
                 </Button>
   
                 </>
@@ -1341,7 +1341,7 @@ export default function DocumentStudioPage() {
                     onClick={() => void shareSelectedDocument()}
                   >
                     <Share2 className="h-5 w-5" />
-                    <span className="text-xs">مشاركة</span>
+                    <span className="text-xs">مشاركة رابط</span>
                   </Button>
                   <Button
                     type="button"
