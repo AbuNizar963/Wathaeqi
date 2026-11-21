@@ -107,8 +107,11 @@ class _PlatformDocumentSettingsPageState
     final color = result['headerDividerColor'];
     return result['showMinistryWatermarkText'] is bool &&
         result['showVerificationQr'] is bool &&
-        opacity is int && opacity >= 0 && opacity <= 60 &&
-        color is String && RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(color);
+        opacity is int &&
+        opacity >= 0 &&
+        opacity <= 60 &&
+        color is String &&
+        RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(color);
   }
 
   Future<void> _load() async {
@@ -134,14 +137,17 @@ class _PlatformDocumentSettingsPageState
         _showVerificationQr = result['showVerificationQr'] as bool;
         _watermarkOpacityPercent = opacity.toDouble();
         _headerDividerColor = color.toLowerCase();
-        _headerDividerStyle = result['headerDividerStyle']?.toString() ?? 'double';
-        _headerDividerWidthPt = (result['headerDividerWidthPt'] as num? ?? 2.25).toDouble();
+        _headerDividerStyle =
+            result['headerDividerStyle']?.toString() ?? 'double';
+        _headerDividerWidthPt = (result['headerDividerWidthPt'] as num? ?? 2.25)
+            .toDouble();
         _frameStyle = result['frameStyle']?.toString() ?? 'single';
         _frameColor = result['frameColor']?.toString() ?? _defaultColor;
         _frameWidthPt = (result['frameWidthPt'] as num? ?? 1).toDouble();
         _marginTopMm = (result['pageMarginTopMm'] as num? ?? 10).toDouble();
         _marginRightMm = (result['pageMarginRightMm'] as num? ?? 10).toDouble();
-        _marginBottomMm = (result['pageMarginBottomMm'] as num? ?? 10).toDouble();
+        _marginBottomMm = (result['pageMarginBottomMm'] as num? ?? 10)
+            .toDouble();
         _marginLeftMm = (result['pageMarginLeftMm'] as num? ?? 10).toDouble();
         _colorController.text = _headerDividerColor;
         _settingsConfirmed = true;
@@ -336,7 +342,33 @@ class _PlatformDocumentSettingsPageState
     }
   }
 
-  Widget _settingsSlider(String label, double value, double min, double max, String suffix, ValueChanged<double> onChanged) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), Text('${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2)}$suffix')]), Slider.adaptive(value: value.clamp(min, max), min: min, max: max, onChanged: _saving ? null : onChanged)]);
+  Widget _settingsSlider(
+    String label,
+    double value,
+    double min,
+    double max,
+    String suffix,
+    ValueChanged<double> onChanged,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2)}$suffix',
+          ),
+        ],
+      ),
+      Slider.adaptive(
+        value: value.clamp(min, max),
+        min: min,
+        max: max,
+        onChanged: _saving ? null : onChanged,
+      ),
+    ],
+  );
   Widget _buildOrganizationLogoCard() {
     final colors = Theme.of(context).colorScheme;
     final selectedOrganization = _organizations.where((organization) {
@@ -680,13 +712,146 @@ class _PlatformDocumentSettingsPageState
                           },
                         ),
                         const SizedBox(height: 8),
-                        Text('تنسيق الصفحة والإطار', style: TextStyle(fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.primary)),
-                        DropdownButtonFormField<String>(initialValue: _frameStyle, decoration: const InputDecoration(labelText: 'شكل الإطار'), items: const [DropdownMenuItem(value: 'none', child: Text('بدون إطار')), DropdownMenuItem(value: 'single', child: Text('مفرد')), DropdownMenuItem(value: 'double', child: Text('مزدوج')), DropdownMenuItem(value: 'ornate', child: Text('زخرفي احترافي'))], onChanged: _saving ? null : (v) { if (v != null) setState(() => _frameStyle = v); }),
-                        TextField(enabled: !_saving, textDirection: TextDirection.ltr, decoration: const InputDecoration(labelText: 'لون الإطار #RRGGBB'), controller: TextEditingController(text: _frameColor), onChanged: (v) { if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) setState(() => _frameColor = v.toLowerCase()); }),
-                        _settingsSlider('سماكة الإطار', _frameWidthPt, .5, 4, ' نقطة', (v) => setState(() => _frameWidthPt = v)),
-                        DropdownButtonFormField<String>(initialValue: _headerDividerStyle, decoration: const InputDecoration(labelText: 'نمط الفاصل بين الرأس والمحتوى'), items: const [DropdownMenuItem(value: 'solid', child: Text('متصل')), DropdownMenuItem(value: 'double', child: Text('مزدوج')), DropdownMenuItem(value: 'dashed', child: Text('متقطع')), DropdownMenuItem(value: 'dotted', child: Text('منقط')), DropdownMenuItem(value: 'tricolor-stars', child: Text('أسود وأخضر مع ثلاث نجوم'))], onChanged: _saving ? null : (v) { if (v != null) setState(() => _headerDividerStyle = v); }),
-                        _settingsSlider('سماكة الفاصل', _headerDividerWidthPt, .5, 6, ' نقطة', (v) => setState(() => _headerDividerWidthPt = v)),
-                        for (final item in <({String label, double value, void Function(double) onChanged})>[(label: 'الهامش العلوي', value: _marginTopMm, onChanged: (v) => setState(() => _marginTopMm = v)), (label: 'الهامش الأيمن', value: _marginRightMm, onChanged: (v) => setState(() => _marginRightMm = v)), (label: 'الهامش السفلي', value: _marginBottomMm, onChanged: (v) => setState(() => _marginBottomMm = v)), (label: 'الهامش الأيسر', value: _marginLeftMm, onChanged: (v) => setState(() => _marginLeftMm = v))]) _settingsSlider(item.label, item.value, 0, 35, ' مم', item.onChanged),
+                        Text(
+                          'تنسيق الصفحة والإطار',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _frameStyle,
+                          decoration: const InputDecoration(
+                            labelText: 'شكل الإطار',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'none',
+                              child: Text('بدون إطار'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'single',
+                              child: Text('مفرد'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'double',
+                              child: Text('مزدوج'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'ornate',
+                              child: Text('زخرفي احترافي'),
+                            ),
+                          ],
+                          onChanged: _saving
+                              ? null
+                              : (v) {
+                                  if (v != null)
+                                    setState(() => _frameStyle = v);
+                                },
+                        ),
+                        TextField(
+                          enabled: !_saving,
+                          textDirection: TextDirection.ltr,
+                          decoration: const InputDecoration(
+                            labelText: 'لون الإطار #RRGGBB',
+                          ),
+                          controller: TextEditingController(text: _frameColor),
+                          onChanged: (v) {
+                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v))
+                              setState(() => _frameColor = v.toLowerCase());
+                          },
+                        ),
+                        _settingsSlider(
+                          'سماكة الإطار',
+                          _frameWidthPt,
+                          .5,
+                          4,
+                          ' نقطة',
+                          (v) => setState(() => _frameWidthPt = v),
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _headerDividerStyle,
+                          decoration: const InputDecoration(
+                            labelText: 'نمط الفاصل بين الرأس والمحتوى',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'solid',
+                              child: Text('متصل'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'double',
+                              child: Text('مزدوج'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'dashed',
+                              child: Text('متقطع'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'dotted',
+                              child: Text('منقط'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'tricolor-stars',
+                              child: Text('أسود وأخضر مع ثلاث نجوم'),
+                            ),
+                          ],
+                          onChanged: _saving
+                              ? null
+                              : (v) {
+                                  if (v != null)
+                                    setState(() => _headerDividerStyle = v);
+                                },
+                        ),
+                        _settingsSlider(
+                          'سماكة الفاصل',
+                          _headerDividerWidthPt,
+                          .5,
+                          6,
+                          ' نقطة',
+                          (v) => setState(() => _headerDividerWidthPt = v),
+                        ),
+                        for (final item
+                            in <
+                              ({
+                                String label,
+                                double value,
+                                void Function(double) onChanged,
+                              })
+                            >[
+                              (
+                                label: 'الهامش العلوي',
+                                value: _marginTopMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginTopMm = v),
+                              ),
+                              (
+                                label: 'الهامش الأيمن',
+                                value: _marginRightMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginRightMm = v),
+                              ),
+                              (
+                                label: 'الهامش السفلي',
+                                value: _marginBottomMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginBottomMm = v),
+                              ),
+                              (
+                                label: 'الهامش الأيسر',
+                                value: _marginLeftMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginLeftMm = v),
+                              ),
+                            ])
+                          _settingsSlider(
+                            item.label,
+                            item.value,
+                            0,
+                            35,
+                            ' مم',
+                            item.onChanged,
+                          ),
                         const SizedBox(height: 8),
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,
