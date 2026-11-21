@@ -1240,8 +1240,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final items = _documents
         .where(
           (document) =>
-              document.status == (archived ? 'archived' : 'draft') ||
-              (!archived && document.status == 'issued'),
+              !document.isLegacyStarterDraft &&
+              (document.status == (archived ? 'archived' : 'draft') ||
+                  (!archived && document.status == 'issued')),
         )
         .toList();
     if (items.isEmpty) {
