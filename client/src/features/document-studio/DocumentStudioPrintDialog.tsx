@@ -19,6 +19,7 @@ import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 const COPY_COUNTS = [1, 2, 4] as const;
+let printCaptureSequence = 0;
 
 function copyCountLabel(value: (typeof COPY_COUNTS)[number]): string {
   if (value === 1) return "نسخة واحدة";
@@ -44,7 +45,11 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   }
 
   const { default: html2canvas } = await import("html2canvas");
-  const canvas = await html2canvas(element, {
+  const captureId = "document-print-" + (++printCaptureSequence);
+  element.dataset.printCaptureId = captureId;
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(element, {
     backgroundColor: "#ffffff",
     allowTaint: false,
     useCORS: true,
@@ -58,8 +63,18 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     scrollY: 0,
     onclone: clonedDocument => {
       sanitizeUnsupportedPrintColors(clonedDocument);
-      const clonedPage =
-        clonedDocument.querySelector<HTMLElement>(".document-a4-page");
+      clonedDocument
+        .querySelectorAll<HTMLElement>(".batch-print-source")
+        .forEach(source => {
+          source.style.visibility = "visible";
+          source.style.position = "static";
+          source.style.left = "0";
+          source.style.top = "0";
+          source.style.zIndex = "auto";
+        });
+      const clonedPage = clonedDocument.querySelector<HTMLElement>(
+        '[data-print-capture-id="' + captureId + '"]'
+      );
       if (clonedPage) {
         clonedPage.style.minHeight = `${height}px`;
         clonedPage.style.transform = "none";
@@ -90,7 +105,10 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
           copy.style.display = "block";
         });
     },
-  });
+    });
+  } finally {
+    delete element.dataset.printCaptureId;
+  }
 
   const scale = canvas.width / width;
   const pageHeight = (width * 297) / 210;
@@ -143,11 +161,13 @@ export default function DocumentStudioPrintDialog({
   onOpenChange,
   title,
   pageElement,
+  pageElements,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   pageElement: HTMLElement | null;
+  pageElements?: HTMLElement[];
 }) {
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
   const [copiesPerPage, setCopiesPerPage] = useState<
@@ -168,13 +188,17 @@ export default function DocumentStudioPrintDialog({
     setLoading(true);
     setError(null);
     try {
-      if (!pageElement || !pageElement.isConnected) {
-        throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
+      const elements = (pageElements?.length
+        ? pageElements
+        : pageElement
+          ? [pageElement]
+          : []
+      ).filter(element => element.isConnected);
+      if (elements.length === 0) {
+        throw new Error("تعذر العثور على صفحات الوثائق المحددة للطباعة");
       }
-      const pages = duplicatePages(
-        await renderA4Pages(pageElement),
-        copiesPerPage
-      );
+      const pageGroups = await Promise.all(elements.map(renderA4Pages));
+      const pages = duplicatePages(pageGroups.flat(), copiesPerPage);
       const html = buildPrintHtml(pages, {
         pagesPerSheet,
         marginMm: 8,
