@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
+import 'closable_dialog_title.dart';
 import 'document_studio_outbox.dart';
 import 'document_studio_pdf.dart';
 import 'document_studio_print_layout.dart';
@@ -19,20 +20,6 @@ import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
-
-Widget _buildClosableDialogTitle(BuildContext context, String title) {
-  return Row(
-    children: [
-      Expanded(child: Text(title)),
-      IconButton(
-        tooltip: 'إغلاق النافذة',
-        visualDensity: VisualDensity.compact,
-        icon: const Icon(Icons.close),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-    ],
-  );
-}
 
 enum DocumentStudioTab { documents, templates, archive }
 
@@ -409,7 +396,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final choice = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: _buildClosableDialogTitle(dialogContext, 'إنشاء وثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('إنشاء وثيقة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -458,7 +445,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: _buildClosableDialogTitle(dialogContext, 'إعداد الطباعة'),
+        title: closableDialogTitle(dialogContext, const Text('إعداد الطباعة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -855,7 +842,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: _buildClosableDialogTitle(dialogContext, 'إصدار الوثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('إصدار الوثيقة')),
         content: const Text(
           'سيتم تخصيص رقم صادر نهائي للوثيقة. لا يمكن تغيير الرقم بعد الإصدار.',
         ),
@@ -895,7 +882,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: _buildClosableDialogTitle(dialogContext, 'أرشفة الوثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('أرشفة الوثيقة')),
         content: const Text('سيتم نقل الوثيقة إلى الأرشيف دون حذفها.'),
         actions: [
           TextButton(
@@ -1052,7 +1039,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: _buildClosableDialogTitle(dialogContext, 'إيقاف النموذج'),
+        title: closableDialogTitle(dialogContext, const Text('إيقاف النموذج')),
         content: const Text(
           'سيُخفى النموذج عن الاستخدام الجديد مع الاحتفاظ بالوثائق المرتبطة به.',
         ),
@@ -2050,7 +2037,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         context: context,
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            title: _buildClosableDialogTitle(dialogContext, 'إعدادات الوثيقة الرسمية'),
+            title: closableDialogTitle(dialogContext, const Text('إعدادات الوثيقة الرسمية')),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
