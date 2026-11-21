@@ -11,10 +11,14 @@ class _DocumentStudioTestApi extends PoliceApi {
   _DocumentStudioTestApi({
     this.includeOrganization = true,
     this.includeDocument = false,
+    this.documentContent,
+    this.templateContent,
   });
 
   final bool includeOrganization;
   final bool includeDocument;
+  final Map<String, dynamic>? documentContent;
+  final Map<String, dynamic>? templateContent;
   final calls = <String, Map<String, dynamic>?>{};
 
   @override
@@ -35,12 +39,14 @@ class _DocumentStudioTestApi extends PoliceApi {
                   'title': 'وثيقة تجريبية',
                   'category': 'general',
                   'subject': 'اختبار المعاينة',
-                  'content': {
-                    'type': 'doc',
-                    'content': [
-                      {'type': 'paragraph'},
-                    ],
-                  },
+                  'content':
+                      documentContent ??
+                      {
+                        'type': 'doc',
+                        'content': [
+                          {'type': 'paragraph'},
+                        ],
+                      },
                   'fieldValues': <String, dynamic>{},
                   'serialNumber': 0,
                   'serialCode': '',
@@ -51,7 +57,23 @@ class _DocumentStudioTestApi extends PoliceApi {
                 },
               ]
             : <dynamic>[],
-      'documentStudio.listTemplates' => <dynamic>[],
+      'documentStudio.listTemplates' =>
+        templateContent == null
+            ? <dynamic>[]
+            : <dynamic>[
+                {
+                  'id': 'template-test',
+                  'ownerId': 'owner-test',
+                  'title': 'نموذج تجريبي',
+                  'category': 'general',
+                  'content': templateContent,
+                  'fields': <dynamic>[],
+                  'revision': 3,
+                  'isActive': true,
+                  'createdAt': '2026-11-21T00:00:00.000Z',
+                  'updatedAt': '2026-11-21T00:00:00.000Z',
+                },
+              ],
       'organizations.context' => {
         if (includeOrganization) 'organizationId': 'org-test',
         'role': 'organization_admin',
@@ -84,7 +106,131 @@ class _DocumentStudioTestOutbox extends DocumentStudioOutbox {
       const DocumentOutboxSyncResult(synced: 0, remaining: 0);
 }
 
+class _RecordingDocumentOutbox extends _DocumentStudioTestOutbox {
+  _RecordingDocumentOutbox({required super.api});
+
+  Map<String, dynamic>? savedInput;
+
+  @override
+  Future<Map<String, dynamic>> updateDocument(
+    Map<String, dynamic> input,
+  ) async {
+    savedInput = Map<String, dynamic>.from(input);
+    return {
+      ...input,
+      'ownerId': 'owner-test',
+      'serialNumber': 0,
+      'serialCode': '',
+      'status': 'draft',
+      'createdAt': '2026-11-21T00:00:00.000Z',
+      'updatedAt': '2026-11-21T00:00:00.000Z',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateTemplate(
+    Map<String, dynamic> input,
+  ) async {
+    savedInput = Map<String, dynamic>.from(input);
+    return {
+      ...input,
+      'ownerId': 'owner-test',
+      'revision': 4,
+      'isActive': true,
+      'createdAt': '2026-11-21T00:00:00.000Z',
+      'updatedAt': '2026-11-21T00:00:00.000Z',
+    };
+  }
+}
+
 void main() {
+  testWidgets('saving a legacy-text draft without editing preserves its text', (
+    tester,
+  ) async {
+    final api = _DocumentStudioTestApi(
+      includeDocument: true,
+      documentContent: {'type': 'legacy-text', 'text': 'نص محفوظ\nسطر ثانٍ'},
+    );
+    final outbox = _RecordingDocumentOutbox(api: api);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          FlutterQuillLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ar')],
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: DocumentStudioPage(api: api, outbox: outbox),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('وثيقة تجريبية'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('تعديل الوثيقة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تعديل الوثيقة'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('حفظ الوثيقة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ الوثيقة'));
+    await tester.pumpAndSettle();
+
+    final content = outbox.savedInput?['content'] as Map?;
+    expect(content?['type'], 'doc');
+    expect(content.toString(), contains('نص محفوظ'));
+    expect(content.toString(), contains('سطر ثانٍ'));
+    expect(outbox.savedInput?['expectedUpdatedAt'], '2026-11-21T00:00:00.000Z');
+  });
+
+  testWidgets('saving a legacy-text template preserves its text and revision', (
+    tester,
+  ) async {
+    final api = _DocumentStudioTestApi(
+      templateContent: {'type': 'legacy-text', 'text': 'قالب محفوظ\nسطر ثانٍ'},
+    );
+    final outbox = _RecordingDocumentOutbox(api: api);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          FlutterQuillLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ar')],
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: DocumentStudioPage(
+              api: api,
+              outbox: outbox,
+              initialTab: DocumentStudioTab.templates,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('نموذج تجريبي'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('حفظ النموذج'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('حفظ النموذج'));
+    await tester.pumpAndSettle();
+
+    final content = outbox.savedInput?['content'] as Map?;
+    expect(content?['type'], 'doc');
+    expect(content.toString(), contains('قالب محفوظ'));
+    expect(content.toString(), contains('سطر ثانٍ'));
+    expect(outbox.savedInput?['expectedRevision'], 3);
+  });
+
   testWidgets('opening a saved document shows its preview first', (
     tester,
   ) async {
