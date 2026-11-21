@@ -66,6 +66,45 @@ export interface OfficialDocument {
   archivedAt: string | null;
 }
 
+const LEGACY_STARTER_DRAFT_HTML =
+  "<h2>بسم الله الرحمن الرحيم</h2><p>العدد: ....................</p><p>التاريخ: .... / .... / ........</p><p><strong>إلى /</strong> ................................................</p><p><strong>الموضوع /</strong> ............................................</p><p>تحية طيبة...</p><p>يرجى التفضل بالاطلاع واتخاذ ما يلزم بشأن الموضوع أعلاه، مع التقدير.</p><p>وتفضلوا بقبول فائق الاحترام.</p><p><strong>التوقيع:</strong> ............................</p>";
+
+/**
+ * Identifies the legacy starter drafts that were provisioned as examples.
+ * These records remain stored for audit/data preservation, but are not user
+ * documents and must not appear in the document workspace.
+ */
+type LegacyStarterDraftCandidate = Pick<
+  OfficialDocument,
+  | "title"
+  | "category"
+  | "status"
+  | "serialNumber"
+  | "serialCode"
+  | "templateId"
+  | "templateRevision"
+  | "content"
+> & {
+  file: unknown;
+};
+
+export function isLegacyStarterDraft(
+  document: LegacyStarterDraftCandidate
+): boolean {
+  return (
+    document.title === "كتاب رسمي جديد" &&
+    document.category === "مسودة" &&
+    document.status === "draft" &&
+    document.serialNumber === 0 &&
+    document.serialCode === "" &&
+    document.file === null &&
+    document.templateId === null &&
+    document.templateRevision === null &&
+    document.content.type === "legacy-html" &&
+    document.content.html === LEGACY_STARTER_DRAFT_HTML
+  );
+}
+
 /** A binary source file attached to an official document (Word, PDF, image). */
 export interface UploadedDocumentFile {
   storageKey: string;

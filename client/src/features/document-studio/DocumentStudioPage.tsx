@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { isLegacyStarterDraft } from "../../../../shared/documentStudio";
 import type {
   DocumentTemplate,
   DocumentTemplateField,
@@ -219,10 +220,14 @@ export default function DocumentStudioPage() {
   const platformDocumentSettings = trpc.platformDocumentSettings.get.useQuery();
 
   const documents = documentsQuery.data ?? [];
+  const userDocuments = useMemo(
+    () => documents.filter(document => !isLegacyStarterDraft(document)),
+    [documents]
+  );
   const templates = templatesQuery.data ?? [];
   const selectedDocument = useMemo(
-    () => documents.find(item => item.id === selectedDocumentId) ?? null,
-    [documents, selectedDocumentId]
+    () => userDocuments.find(item => item.id === selectedDocumentId) ?? null,
+    [userDocuments, selectedDocumentId]
   );
   const selectedTemplate = useMemo(
     () => templates.find(item => item.id === selectedTemplateId) ?? null,
@@ -253,8 +258,8 @@ export default function DocumentStudioPage() {
   const visibleDocuments = useMemo(() => {
     const source =
       activeTab === "archive"
-        ? documents.filter(item => item.status === "archived")
-        : documents.filter(item => item.status !== "archived");
+        ? userDocuments.filter(item => item.status === "archived")
+        : userDocuments.filter(item => item.status !== "archived");
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
     return source.filter(item =>
@@ -263,7 +268,7 @@ export default function DocumentStudioPage() {
         .toLocaleLowerCase()
         .includes(normalizedSearch)
     );
-  }, [activeTab, documents, search]);
+  }, [activeTab, userDocuments, search]);
 
   const visibleTemplates = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -569,6 +574,7 @@ export default function DocumentStudioPage() {
   const canEditDocument =
     activeTab !== "archive" &&
     (!selectedDocument || selectedDocument.status === "draft");
+  const isNewDocumentWorkspace = isCreatingDocument && !selectedDocument;
   const canIssueDocuments =
     Boolean(letterheadSettings.data) &&
     (organizationContext.data?.isOwner === true ||
@@ -651,14 +657,24 @@ export default function DocumentStudioPage() {
                   </Button>
                 </>
               ) : null}
-              <Button
-                onClick={() => setCreationDialogOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={creationDialogOpen}
-              >
-                <FilePlus2 className="ml-2 h-4 w-4" />
-                إنشاء وثيقة
-              </Button>
+              {isNewDocumentWorkspace ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreatingDocument(false)}
+                >
+                  <FolderOpen className="ml-2 h-4 w-4" />
+                  العودة إلى الوثائق
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setCreationDialogOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={creationDialogOpen}
+                >
+                  <FilePlus2 className="ml-2 h-4 w-4" />
+                  إنشاء وثيقة
+                </Button>
+              )}
             </>
           ) : (
             <Button onClick={startNewTemplate}>
@@ -671,11 +687,15 @@ export default function DocumentStudioPage() {
 
       <div
         className={`grid grid-cols-1 gap-4 ${
-          previewMode ? "xl:grid-cols-1" : "xl:grid-cols-[300px_minmax(0,1fr)]"
+          previewMode || isNewDocumentWorkspace
+            ? "xl:grid-cols-1"
+            : "xl:grid-cols-[300px_minmax(0,1fr)]"
         }`}
       >
         <aside
-          className={`document-studio-no-print space-y-3 ${previewMode ? "hidden" : ""}`}
+          className={`document-studio-no-print space-y-3 ${
+            previewMode || isNewDocumentWorkspace ? "hidden" : ""
+          }`}
         >
           <Card className="p-3">
             <div className="relative">
