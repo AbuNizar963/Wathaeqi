@@ -117,12 +117,21 @@ export function extractDocumentText(value: unknown): string {
       .replace(/<\/(p|div|h[1-6]|li|tr)>/giu, "\n")
       .replace(/<br\s*\/?\s*>/giu, "\n")
       .replace(/<[^>]*>/gu, "")
-      .replace(/&nbsp;/gu, " ")
-      .replace(/&amp;/gu, "&")
-      .replace(/&lt;/gu, "<")
-      .replace(/&gt;/gu, ">")
-      .replace(/&quot;/gu, '"')
-      .replace(/&#39;/gu, "'")
+      .replace(/&(?:nbsp|amp|quot|apos|#39);/giu, entity => {
+        switch (entity.toLowerCase()) {
+          case "&nbsp;":
+            return " ";
+          case "&amp;":
+            return "&";
+          case "&quot;":
+            return '"';
+          case "&apos;":
+          case "&#39;":
+            return "'";
+          default:
+            return entity;
+        }
+      })
       .trim();
   }
   if (value.type === "text" && typeof value.text === "string") {
