@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// A responsive A4 editor sheet. Content can grow beyond one page without
-/// being clipped; the decorative watermark represents the first A4 sheet.
+/// A responsive A4 editor sheet with a 10 mm content inset and a full-page
+/// security watermark repeated on every physical A4 sheet.
 class DocumentPaper extends StatelessWidget {
   const DocumentPaper({
     super.key,
@@ -116,7 +116,10 @@ class DocumentPaper extends StatelessWidget {
               ),
               ConstrainedBox(
                 constraints: BoxConstraints(minHeight: pageHeight),
-                child: child,
+                child: Padding(
+                  padding: EdgeInsets.all(pageWidth * 10 / a4Width),
+                  child: child,
+                ),
               ),
             ],
           ),
