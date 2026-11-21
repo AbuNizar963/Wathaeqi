@@ -139,6 +139,11 @@ export default function DocumentStudioPage() {
   const [importPrintOpen, setImportPrintOpen] = useState(false);
   const [nativePrintOpen, setNativePrintOpen] = useState(false);
   const documentPageRef = useRef<HTMLDivElement>(null);
+  const batchPrintRefs = useRef(new Map<string, HTMLDivElement>());
+  const [selectedPrintDocumentIds, setSelectedPrintDocumentIds] = useState<
+    string[]
+  >([]);
+  const [batchPrintDialogOpen, setBatchPrintDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -267,6 +272,27 @@ export default function DocumentStudioPage() {
         .includes(normalizedSearch)
     );
   }, [activeTab, userDocuments, search]);
+
+  const selectedPrintDocuments = useMemo(
+    () =>
+      userDocuments.filter(
+        document =>
+          selectedPrintDocumentIds.includes(document.id) && !document.file
+      ),
+    [userDocuments, selectedPrintDocumentIds]
+  );
+  const batchPrintPageElements = selectedPrintDocuments
+    .map(document => batchPrintRefs.current.get(document.id))
+    .filter((element): element is HTMLDivElement => Boolean(element));
+
+  function togglePrintDocument(id: string, checked: boolean) {
+    setSelectedPrintDocumentIds(current => {
+      if (checked) {
+        return current.includes(id) ? current : [...current, id];
+      }
+      return current.filter(selectedId => selectedId !== id);
+    });
+  }
 
   const visibleTemplates = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -801,6 +827,31 @@ export default function DocumentStudioPage() {
                 </h2>
                 <Badge variant="secondary">{visibleDocuments.length}</Badge>
               </div>
+              {selectedPrintDocuments.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/40 p-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setBatchPrintDialogOpen(true)}
+                    disabled={
+                      batchPrintPageElements.length !==
+                      selectedPrintDocuments.length
+                    }
+                  >
+                    <Printer className="ml-2 h-4 w-4" />
+                    طباعة المحدد ({selectedPrintDocuments.length})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedPrintDocumentIds([])}
+                  >
+                    إلغاء التحديد
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    يمكن تحديد الوثائق المنشأة داخل النظام؛ الملفات المرفوعة تُطبع منفردة.
+                  </span>
+                </div>
+              ) : null}
               {documentsQuery.isLoading ? (
                 <p className="py-4 text-center text-sm text-muted-foreground">
                   جارٍ تحميل الوثائق...
@@ -815,31 +866,50 @@ export default function DocumentStudioPage() {
               ) : (
                 <div className="max-h-[70vh] space-y-2 overflow-y-auto">
                   {visibleDocuments.map(document => (
-                    <button
+                    <div
                       key={document.id}
-                      type="button"
-                      onClick={() => {
-                        setIsCreatingDocument(false);
-                        setSelectedDocumentId(document.id);
-                        setPreviewMode(true);
-                      }}
-                      className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                      className="flex items-start gap-2"
                     >
-                      <span className="block truncate font-medium">
-                        {document.title}
-                      </span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">
-                        {document.subject || document.category}
-                      </span>
-                      <span className="mt-2 flex items-center justify-between gap-2">
-                        <Badge variant="outline">
-                          {statusLabel(document.status)}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground">
-                          {formatArabicDate(document.updatedAt)}
+                      <input
+                        type="checkbox"
+                        className="mt-4 size-4 shrink-0 accent-primary"
+                        checked={selectedPrintDocumentIds.includes(document.id)}
+                        disabled={Boolean(document.file)}
+                        aria-label={"تحديد " + document.title + " للطباعة"}
+                        title={
+                          document.file
+                            ? "الملفات المرفوعة تُطبع منفردة"
+                            : "تحديد الوثيقة للطباعة المجمعة"
+                        }
+                        onChange={event =>
+                          togglePrintDocument(document.id, event.target.checked)
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCreatingDocument(false);
+                          setSelectedDocumentId(document.id);
+                          setPreviewMode(true);
+                        }}
+                        className={`min-w-0 w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                      >
+                        <span className="block truncate font-medium">
+                          {document.title}
                         </span>
-                      </span>
-                    </button>
+                        <span className="mt-1 block truncate text-xs text-muted-foreground">
+                          {document.subject || document.category}
+                        </span>
+                        <span className="mt-2 flex items-center justify-between gap-2">
+                          <Badge variant="outline">
+                            {statusLabel(document.status)}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatArabicDate(document.updatedAt)}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1504,6 +1574,114 @@ export default function DocumentStudioPage() {
         title={(selectedDocument?.title ?? documentTitle) || "وثيقة جديدة"}
         pageElement={documentPageRef.current}
       />
+      <DocumentStudioPrintDialog
+        open={batchPrintDialogOpen}
+        onOpenChange={setBatchPrintDialogOpen}
+        title={"طباعة " + selectedPrintDocuments.length + " وثائق"}
+        pageElement={null}
+        pageElements={batchPrintPageElements}
+      />
+      {selectedPrintDocuments.length > 0 ? (
+        <div
+          className="batch-print-source"
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: 794,
+            visibility: "hidden",
+            zIndex: -1,
+            pointerEvents: "none",
+          }}
+        >
+          {selectedPrintDocuments.map(document => {
+            const pageSettings = platformDocumentSettings.data;
+            return (
+              <div
+                key={document.id}
+                ref={element => {
+                  if (element) batchPrintRefs.current.set(document.id, element);
+                  else batchPrintRefs.current.delete(document.id);
+                }}
+                className="document-a4-page"
+                dir="rtl"
+                style={{
+                  width: 794,
+                  minWidth: 794,
+                  maxWidth: "none",
+                  minHeight: 1123,
+                  position: "relative",
+                  padding:
+                    (pageSettings?.pageMarginTopMm ?? 10) +
+                    "mm " +
+                    (pageSettings?.pageMarginRightMm ?? 10) +
+                    "mm " +
+                    (pageSettings?.pageMarginBottomMm ?? 10) +
+                    "mm " +
+                    (pageSettings?.pageMarginLeftMm ?? 10) +
+                    "mm",
+                  boxSizing: "border-box",
+                  border:
+                    pageSettings?.frameStyle === "none"
+                      ? "none"
+                      : (pageSettings?.frameWidthPt ?? 1) +
+                        "pt " +
+                        (pageSettings?.frameStyle === "double" ||
+                        pageSettings?.frameStyle === "ornate"
+                          ? "double"
+                          : "solid") +
+                        " " +
+                        (pageSettings?.frameColor ?? "#b49a55"),
+                  boxShadow:
+                    pageSettings?.frameStyle === "ornate"
+                      ? "inset 0 0 0 3px #fff, inset 0 0 0 4px " +
+                        (pageSettings.frameColor ?? "#b49a55")
+                      : undefined,
+                }}
+              >
+                <DocumentWatermark
+                  logoUrl={logoUrl}
+                  watermarkText={pageSettings?.watermarkText ?? "وثائقي"}
+                  opacityPercent={pageSettings?.watermarkOpacityPercent ?? 12}
+                  showMinistryText={
+                    pageSettings?.showMinistryWatermarkText ?? true
+                  }
+                />
+                <DocumentLetterhead
+                  organizationName={organizationName}
+                  unitName={settings?.unitName ?? ""}
+                  chiefRank={settings?.unitChiefRank ?? ""}
+                  chiefName={settings?.unitChiefName ?? ""}
+                  logoUrl={logoUrl}
+                  dividerColor={dividerColor}
+                  headerSettings={pageSettings}
+                  serial={document.serialCode || "غير مرقم"}
+                  date={formatArabicDate(
+                    makeDocumentDate(dateInputValue(document.documentDate))
+                  )}
+                  hijriDate={formatHijriDate(
+                    makeDocumentDate(dateInputValue(document.documentDate))
+                  )}
+                />
+                <div className="pt-6">
+                  {document.subject ? (
+                    <p className="mb-4 text-right font-semibold">
+                      الموضوع: {document.subject}
+                    </p>
+                  ) : null}
+                  <RichDocumentEditor
+                    content={document.content}
+                    onChange={() => undefined}
+                    editable={false}
+                    containerClassName="rounded-none border-0 shadow-none"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
         <DialogContent
           className="w-[calc(100%-1rem)] max-h-[min(90dvh,42rem)] max-w-lg overflow-y-auto p-4 sm:p-6"
