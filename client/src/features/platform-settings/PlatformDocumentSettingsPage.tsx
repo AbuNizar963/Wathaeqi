@@ -115,7 +115,7 @@ export default function PlatformDocumentSettingsPage() {
               <label className="flex items-center justify-between gap-3">
                 <span>
                   <span className="block font-semibold">
-                    العلامة المائية النصية
+                    العلامة الأمنية النصية
                   </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     إظهار اسم الجهة الرسمي بشكل متكرر خلف محتوى الوثيقة
@@ -332,33 +332,64 @@ export default function PlatformDocumentSettingsPage() {
             </p>
             <div className="relative min-h-[360px] overflow-hidden rounded-xl border bg-white p-5 text-slate-900 shadow-sm">
               <div
-                className="relative z-10 border-b-2 pb-4 text-center"
-                style={{ borderColor: values.headerDividerColor }}
+                className="relative z-10 grid items-start gap-[2px] border-b-[3px] pb-3"
+                style={{
+                  borderColor: values.headerDividerColor,
+                  paddingTop: `${values.headerTopPaddingMm}mm`,
+                  paddingInline: `${values.headerHorizontalPaddingMm}mm`,
+                  paddingBottom: `${values.headerBottomPaddingMm}mm`,
+                  gridTemplateColumns: `minmax(0,1fr) ${Math.max(24, values.headerLogoSize * 0.55)}px minmax(0,1fr)`,
+                }}
+                dir="rtl"
               >
-                <p className="text-base font-bold">{values.headerTitle || "وثائقي"}</p>
-                <p className="mt-1 text-xs text-slate-600">{values.headerSubtitle || "الوثائق الرسمية"}</p>
-                {values.headerChiefRank || values.headerChiefName ? (
-                  <p className="mt-2 text-xs text-slate-600">
-                    {values.headerChiefRank} {values.headerChiefName}
-                  </p>
-                ) : null}
+                <div className="min-w-0 text-right">
+                  <p className="truncate text-sm font-bold">{values.headerTitle || "وثائقي"}</p>
+                  <p className="truncate text-xs font-bold">{values.headerSubtitle || "الوثائق الرسمية"}</p>
+                </div>
+                <div className="flex items-center justify-center">
+                  {values.headerShowLogo ? (
+                    <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed text-[9px] text-slate-500">
+                      الشعار
+                    </div>
+                  ) : null}
+                </div>
+                <div className="min-w-0 text-left text-xs font-bold">
+                  <p>الرقم: —</p>
+                  <p>التاريخ: —</p>
+                  {values.headerChiefRank ? <p>{values.headerChiefRank}</p> : null}
+                  {values.headerChiefName ? <p>{values.headerChiefName}</p> : null}
+                </div>
               </div>
               {values.showMinistryWatermarkText ? (
                 <div
-                  className="pointer-events-none absolute inset-0 grid place-items-center"
+                  className="pointer-events-none absolute inset-[2.4mm_3.2mm_3mm] flex flex-col items-center justify-between overflow-hidden"
                   style={{ opacity: values.watermarkOpacityPercent / 100 }}
                   aria-hidden="true"
                 >
-                  <span className="whitespace-nowrap text-sm font-normal text-slate-500">
-                    {values.watermarkText || "وثائقي"}
-                  </span>
+                  {Array.from({ length: 33 }, (_, row) => (
+                    <div
+                      key={row}
+                      className={`flex w-max flex-none whitespace-nowrap ${row % 2 ? "-translate-x-[10.3mm]" : ""}`}
+                      style={{ gap: "6.16mm" }}
+                    >
+                      {Array.from({ length: 13 }, (_, column) => (
+                        <span
+                          key={column}
+                          className="text-[5pt] font-normal leading-none text-slate-500"
+                          style={{ fontFamily: '"Aref Ruqaa", serif' }}
+                        >
+                          {values.watermarkText || "وثائقي"}
+                        </span>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               ) : null}
               <div className="relative z-10 space-y-4 pt-8 text-sm leading-8">
                 <p className="text-left">الرقم: —</p>
                 <p className="font-semibold">الموضوع: نموذج معاينة الوثيقة</p>
                 <p>
-                  يظهر محتوى الوثيقة هنا، وتبقى العلامة المائية خلف النص دون
+                  يظهر محتوى الوثيقة هنا، وتبقى العلامة الأمنية خلف النص دون
                   التأثير على وضوح القراءة.
                 </p>
               </div>
