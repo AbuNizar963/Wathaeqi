@@ -10,7 +10,7 @@ class DocumentPaper extends StatelessWidget {
     required this.child,
     required this.showWatermarkText,
     required this.watermarkOpacity,
-    this.watermarkText = 'وثائقي',
+    this.watermarkText = 'وزارة الداخلية',
     this.logoUrl,
   });
 
