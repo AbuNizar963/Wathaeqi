@@ -6,15 +6,18 @@ Widget closableDialogTitle(
   Widget title, {
   String tooltip = 'إغلاق النافذة',
 }) {
-  return Row(
-    children: [
-      Expanded(child: title),
-      IconButton(
-        tooltip: tooltip,
-        visualDensity: VisualDensity.compact,
-        icon: const Icon(Icons.close),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-    ],
+  return Directionality(
+    textDirection: TextDirection.rtl,
+    child: Row(
+      children: [
+        Expanded(child: title),
+        IconButton(
+          tooltip: tooltip,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+      ],
+    ),
   );
 }
