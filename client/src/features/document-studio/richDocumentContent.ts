@@ -115,7 +115,9 @@ export function extractDocumentText(value: unknown): string {
   if (value.type === "legacy-html" && typeof value.html === "string") {
     if (typeof DOMParser === "undefined") return "";
     const parsed = new DOMParser().parseFromString(value.html, "text/html");
-    parsed.querySelectorAll("script, style").forEach(element => element.remove());
+    parsed
+      .querySelectorAll("script, style")
+      .forEach(element => element.remove());
     return parsed.body.textContent?.trim() ?? "";
   }
   if (value.type === "text" && typeof value.text === "string") {
