@@ -1,6 +1,6 @@
 export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   showMinistryWatermarkText: true,
-  watermarkText: "وثائقي",
+  watermarkText: "وزارة الداخلية",
   watermarkOpacityPercent: 12,
   headerDividerColor: "#b49a55",
   headerTitle: "",
