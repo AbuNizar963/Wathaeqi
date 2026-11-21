@@ -179,4 +179,40 @@ describe("template substitutions", () => {
     expect(contentForSave(applied, values, false)).toEqual(applied);
     expect(contentForSave(applied, values, false)).toBe(applied);
   });
+
+  it("substitutes Arabic Word-style placeholder keys", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "إلى {{الجهة_المرسل_إليها}} بتاريخ {{التاريخ}}",
+            },
+          ],
+        },
+      ],
+    };
+    expect(
+      applyFieldValues(doc, {
+        الجهة_المرسل_إليها: "مديرية الشرطة",
+        التاريخ: "2026-11-22",
+      })
+    ).toEqual({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "إلى مديرية الشرطة بتاريخ 2026-11-22",
+            },
+          ],
+        },
+      ],
+    });
+  });
 });

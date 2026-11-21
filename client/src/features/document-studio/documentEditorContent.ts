@@ -97,7 +97,7 @@ export function applyFieldValues(
       typeof node.text === "string"
     ) {
       const text = node.text.replace(
-        /\{\{([a-z][a-z0-9_]{0,63})\}\}/g,
+        /\{\{\s*([\p{L}][\p{L}\p{N}_]{0,63})\s*\}\}/gu,
         (placeholder, key: string) =>
           Object.hasOwn(values, key) ? values[key]! : placeholder
       );

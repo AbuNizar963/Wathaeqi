@@ -43,6 +43,7 @@ import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
+import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
 import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import { downloadDocumentFile, shareDocument } from "./documentActions";
@@ -167,6 +168,8 @@ export default function DocumentStudioPage() {
   const [templateFields, setTemplateFields] = useState<DocumentTemplateField[]>(
     []
   );
+  const templateImportInputRef = useRef<HTMLInputElement>(null);
+  const [importingTemplate, setImportingTemplate] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -468,6 +471,42 @@ export default function DocumentStudioPage() {
     setTemplateDescription("");
     setTemplateContent(EMPTY_DOCUMENT_CONTENT);
     setTemplateFields([]);
+  }
+
+  async function importTemplateFromWord(file: File | null) {
+    if (!file) return;
+    setImportingTemplate(true);
+    try {
+      const imported = await importDocxTemplate(file);
+      setEditingTemplateId(null);
+      setEditingTemplateRevision(1);
+      setTemplateTitle(current =>
+        current.trim()
+          ? current
+          : imported.sourceFileName.replace(/\.docx$/iu, "")
+      );
+      setTemplateContent(imported.content);
+      setTemplateFields(imported.fields);
+      setTemplateDescription(current =>
+        current.trim()
+          ? current
+          : `تم الاستيراد من ملف Word: ${imported.sourceFileName}`
+      );
+      toast.success(
+        imported.fields.length
+          ? `تم استيراد Word واكتشاف ${imported.fields.length} حقلاً متغيراً`
+          : "تم استيراد Word؛ لم تُكتشف متغيرات تلقائية"
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "تعذر استيراد ملف Word"
+      );
+    } finally {
+      setImportingTemplate(false);
+      if (templateImportInputRef.current) {
+        templateImportInputRef.current.value = "";
+      }
+    }
   }
 
   function selectTemplate(template: DocumentTemplate) {
@@ -796,6 +835,29 @@ export default function DocumentStudioPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <input
+                    ref={templateImportInputRef}
+                    type="file"
+                    accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    className="hidden"
+                    onChange={event =>
+                      void importTemplateFromWord(
+                        event.target.files?.[0] ?? null
+                      )
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={importingTemplate}
+                    onClick={() => templateImportInputRef.current?.click()}
+                  >
+                    <FileUp className="ml-2 h-4 w-4" />
+                    {importingTemplate
+                      ? "جارٍ الاستيراد…"
+                      : "استيراد Word كنموذج"}
+                  </Button>
                   {editingTemplate ? (
                     <Button
                       variant="outline"
@@ -908,11 +970,11 @@ export default function DocumentStudioPage() {
                             updateTemplateField(index, {
                               key: event.target.value
                                 .toLowerCase()
-                                .replace(/[^a-z0-9_]/g, "_"),
+                                .replace(/[^\p{L}\p{N}_]/gu, "_"),
                             })
                           }
-                          placeholder="employee_name"
-                          dir="ltr"
+                          placeholder="اسم_الموظف أو employee_name"
+                          dir="auto"
                         />
                         <select
                           value={field.type}
