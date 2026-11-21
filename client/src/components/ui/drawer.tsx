@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
+import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -65,6 +66,13 @@ function DrawerContent({
       >
         <div className="bg-muted mx-auto mt-4 hidden h-2 w-[100px] shrink-0 rounded-full group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
+        <DrawerPrimitive.Close
+          aria-label="إغلاق النافذة"
+          title="إغلاق النافذة"
+          className="absolute left-3 top-3 z-10 inline-flex size-9 items-center justify-center rounded-md border bg-background/90 text-muted-foreground shadow-sm transition hover:bg-accent hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <XIcon className="size-4" aria-hidden="true" />
+        </DrawerPrimitive.Close>
       </DrawerPrimitive.Content>
     </DrawerPortal>
   );
