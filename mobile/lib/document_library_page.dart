@@ -369,12 +369,6 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    if (widget.onCreateDocument != null)
-                      FilledButton.icon(
-                        onPressed: _uploading ? null : widget.onCreateDocument,
-                        icon: const Icon(Icons.add_box_outlined),
-                        label: const Text('إنشاء وثيقة'),
-                      ),
                     OutlinedButton.icon(
                       onPressed: _uploading ? null : _uploadFile,
                       icon: _uploading
