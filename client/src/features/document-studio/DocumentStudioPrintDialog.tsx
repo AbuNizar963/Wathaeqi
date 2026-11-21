@@ -20,6 +20,12 @@ import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 const COPY_COUNTS = [1, 2, 4] as const;
 
+function copyCountLabel(value: (typeof COPY_COUNTS)[number]): string {
+  if (value === 1) return "نسخة واحدة";
+  if (value === 2) return "نسختان";
+  return "أربع نسخ";
+}
+
 async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const width = element.clientWidth;
   const editorOverflow = Array.from(
@@ -204,7 +210,8 @@ export default function DocumentStudioPrintDialog({
         <DialogHeader>
           <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4. وضع صفحتين يطبع أفقيًا جنبًا إلى جنب.
+            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4.
+            وضع صفحتين يطبع أفقيًا جنبًا إلى جنب.
           </DialogDescription>
         </DialogHeader>
         <fieldset className="rounded-lg border bg-muted/30 p-3">
@@ -233,11 +240,7 @@ export default function DocumentStudioPrintDialog({
                 >
                   {value}
                   <span className="mt-1 block text-[11px] font-normal">
-                    {value === 1
-                      ? "نسخة واحدة"
-                      : value === 2
-                        ? "نسختان"
-                        : "أربع نسخ"}
+                    {copyCountLabel(value)}
                   </span>
                 </button>
               );

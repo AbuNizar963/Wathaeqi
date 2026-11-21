@@ -180,7 +180,7 @@ describe("template substitutions", () => {
     expect(contentForSave(applied, values, false)).toBe(applied);
   });
 
-  it("substitutes dynamic fields inside imported Word tables", () => {
+  it("substitutes fields inside Word tables", () => {
     const doc = {
       type: "doc",
       content: [
@@ -207,7 +207,9 @@ describe("template substitutions", () => {
         },
       ],
     };
-    expect(applyFieldValues(doc, { الموضوع: "طلب رسمي" })).toEqual({
+    expect(
+      applyFieldValues(doc, { الموضوع: "طلب رسمي" })
+    ).toEqual({
       type: "doc",
       content: [
         {
