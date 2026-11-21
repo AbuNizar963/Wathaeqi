@@ -44,6 +44,9 @@ import {
 import {
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MAX_HEADER_LOGO_SIZE,
+  MIN_HEADER_LOGO_SIZE,
+  MAX_HEADER_PADDING_MM,
 } from "../shared/features/platform-settings/platformDocumentSettings";
 
 async function authenticatePlatformUserForLogin(
@@ -256,6 +259,33 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(0)
           .max(MAX_WATERMARK_OPACITY_PERCENT),
         headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
+        watermarkText: z.string().trim().min(1).max(255),
+        headerTitle: z.string().trim().max(255),
+        headerSubtitle: z.string().trim().max(255),
+        headerChiefRank: z.string().trim().max(120),
+        headerChiefName: z.string().trim().max(255),
+        headerShowLogo: z.boolean(),
+        headerLogoSize: z
+          .number()
+          .int()
+          .min(MIN_HEADER_LOGO_SIZE)
+          .max(MAX_HEADER_LOGO_SIZE),
+        headerTopPaddingMm: z
+          .number()
+          .int()
+          .min(0)
+          .max(MAX_HEADER_PADDING_MM),
+        headerHorizontalPaddingMm: z
+          .number()
+          .int()
+          .min(0)
+          .max(MAX_HEADER_PADDING_MM),
+        headerBottomPaddingMm: z
+          .number()
+          .int()
+          .min(0)
+          .max(MAX_HEADER_PADDING_MM),
+        headerAlignment: z.enum(["spread", "center", "right"]),
         showVerificationQr: z.boolean(),
       })
     )
