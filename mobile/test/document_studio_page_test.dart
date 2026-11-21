@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/api.dart';
 import 'package:police_telegrams/document_studio_outbox.dart';
 import 'package:police_telegrams/document_studio_page.dart';
+import 'package:police_telegrams/document_paper.dart';
 
 class _DocumentStudioTestApi extends PoliceApi {
   _DocumentStudioTestApi({
@@ -60,6 +61,13 @@ class _DocumentStudioTestApi extends PoliceApi {
         'departmentName': 'الجهة التجريبية',
         'unitName': 'الشؤون الإدارية',
       },
+      'platformDocumentSettings.get' => {
+        'watermarkText': 'عبارة أمنية تجريبية',
+        'showMinistryWatermarkText': true,
+        'watermarkOpacityPercent': 14,
+        'headerTitle': 'عنوان تجريبي للرأس',
+        'headerSubtitle': 'وحدة تجريبية',
+      },
       _ => throw StateError('Unexpected API call: $procedure'),
     };
   }
@@ -109,6 +117,11 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     expect(find.byKey(const ValueKey('document-a4-paper')), findsOneWidget);
+    expect(
+      tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkText,
+      'عبارة أمنية تجريبية',
+    );
+    expect(find.text('عنوان تجريبي للرأس'), findsOneWidget);
     expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsNothing);
     expect(find.text('تنزيل PDF'), findsOneWidget);
     expect(find.text('مشاركة PDF'), findsOneWidget);

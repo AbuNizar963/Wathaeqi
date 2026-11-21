@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
+import 'closable_dialog_title.dart';
 import 'document_studio_outbox.dart';
 import 'document_studio_pdf.dart';
 import 'document_studio_print_layout.dart';
@@ -56,11 +58,23 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   bool _previewMode = false;
   String? _loadError;
   bool _canIssueDocuments = false;
+  bool _isPlatformOwner = false;
   Map<String, dynamic> _letterhead = {};
   Map<String, dynamic> _platformDocumentSettings = {
     'showMinistryWatermarkText': true,
+    'watermarkText': 'وزارة الداخلية',
     'watermarkOpacityPercent': 12,
     'headerDividerColor': '#b49a55',
+    'headerTitle': '',
+    'headerSubtitle': '',
+    'headerChiefRank': '',
+    'headerChiefName': '',
+    'headerShowLogo': true,
+    'headerLogoSize': 120,
+    'headerTopPaddingMm': 0,
+    'headerHorizontalPaddingMm': 0,
+    'headerBottomPaddingMm': 6,
+    'headerAlignment': 'spread',
   };
 
   final _titleController = TextEditingController();
@@ -254,8 +268,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
       Map<String, dynamic> platformDocumentSettings = {
         'showMinistryWatermarkText': true,
+        'watermarkText': 'وزارة الداخلية',
         'watermarkOpacityPercent': 12,
         'headerDividerColor': '#b49a55',
+        'headerTitle': '',
+        'headerSubtitle': '',
+        'headerChiefRank': '',
+        'headerChiefName': '',
+        'headerShowLogo': true,
+        'headerLogoSize': 120,
+        'headerTopPaddingMm': 0,
+        'headerHorizontalPaddingMm': 0,
+        'headerBottomPaddingMm': 6,
+        'headerAlignment': 'spread',
       };
       try {
         final rawSettings = await widget.api.call(
@@ -263,7 +288,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           allowOfflineCache: false,
         );
         if (rawSettings is Map) {
-          platformDocumentSettings = Map<String, dynamic>.from(rawSettings);
+          platformDocumentSettings = {
+            ...platformDocumentSettings,
+            ...Map<String, dynamic>.from(rawSettings),
+          };
         }
       } catch (_) {
         // Keep the same safe defaults when system settings are unavailable.
@@ -289,8 +317,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           _editingTemplateId = null;
           _creatingTemplate = false;
         }
+        _isPlatformOwner = context['isOwner'] == true;
         _canIssueDocuments =
-            context['isOwner'] == true ||
+            _isPlatformOwner ||
             const [
               'system_admin',
               'organization_admin',
@@ -367,7 +396,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final choice = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إنشاء وثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('إنشاء وثيقة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -416,7 +445,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إعداد الطباعة'),
+        title: closableDialogTitle(dialogContext, const Text('إعداد الطباعة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -486,14 +515,46 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ? rawOpacity.toDouble()
               : double.tryParse('$rawOpacity') ?? 12) /
           100;
+      final configuredLetterhead = {
+        ..._letterhead,
+        'departmentName': _headerSetting(
+          'headerTitle',
+          _letterhead['departmentName']?.toString() ?? 'وثائقي',
+        ),
+        'unitName': _headerSetting(
+          'headerSubtitle',
+          _letterhead['unitName']?.toString() ?? '',
+        ),
+        'unitChiefRank': _headerSetting(
+          'headerChiefRank',
+          _letterhead['unitChiefRank']?.toString() ?? '',
+        ),
+        'unitChiefName': _headerSetting(
+          'headerChiefName',
+          _letterhead['unitChiefName']?.toString() ?? '',
+        ),
+        'headerShowLogo': _platformDocumentSettings['headerShowLogo'] != false,
+        'headerLogoSize': _platformDocumentSettings['headerLogoSize'] ?? 120,
+        'headerTopPaddingMm':
+            _platformDocumentSettings['headerTopPaddingMm'] ?? 0,
+        'headerHorizontalPaddingMm':
+            _platformDocumentSettings['headerHorizontalPaddingMm'] ?? 0,
+        'headerBottomPaddingMm':
+            _platformDocumentSettings['headerBottomPaddingMm'] ?? 6,
+        'headerAlignment':
+            _platformDocumentSettings['headerAlignment'] ?? 'spread',
+      };
       return DocumentStudioPdf.build(
         content: document.content,
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
         documentDate: document.documentDate,
-        letterhead: _letterhead,
+        letterhead: configuredLetterhead,
         dividerColor: _documentHeaderDividerColor().toARGB32(),
+        watermarkText:
+            _platformDocumentSettings['watermarkText']?.toString() ??
+            'وزارة الداخلية',
         showWatermarkText:
             _platformDocumentSettings['showMinistryWatermarkText'] != false,
         watermarkOpacity: opacity,
@@ -782,7 +843,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إصدار الوثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('إصدار الوثيقة')),
         content: const Text(
           'سيتم تخصيص رقم صادر نهائي للوثيقة. لا يمكن تغيير الرقم بعد الإصدار.',
         ),
@@ -822,7 +883,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('أرشفة الوثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('أرشفة الوثيقة')),
         content: const Text('سيتم نقل الوثيقة إلى الأرشيف دون حذفها.'),
         actions: [
           TextButton(
@@ -979,7 +1040,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إيقاف النموذج'),
+        title: closableDialogTitle(dialogContext, const Text('إيقاف النموذج')),
         content: const Text(
           'سيُخفى النموذج عن الاستخدام الجديد مع الاحتفاظ بالوثائق المرتبطة به.',
         ),
@@ -1942,6 +2003,272 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Future<void> _editDocumentSettings() async {
+    if (!_isPlatformOwner) return;
+
+    final values = Map<String, dynamic>.from(_platformDocumentSettings);
+    final watermarkController = TextEditingController(
+      text: values['watermarkText']?.toString() ?? 'وزارة الداخلية',
+    );
+    final titleController = TextEditingController(
+      text: values['headerTitle']?.toString() ?? '',
+    );
+    final subtitleController = TextEditingController(
+      text: values['headerSubtitle']?.toString() ?? '',
+    );
+    final rankController = TextEditingController(
+      text: values['headerChiefRank']?.toString() ?? '',
+    );
+    final nameController = TextEditingController(
+      text: values['headerChiefName']?.toString() ?? '',
+    );
+    var showWatermark = values['showMinistryWatermarkText'] != false;
+    var showLogo = values['headerShowLogo'] != false;
+    var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
+    var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
+    var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
+    var horizontalPadding = (values['headerHorizontalPaddingMm'] as num? ?? 0)
+        .toDouble();
+    var bottomPadding = (values['headerBottomPaddingMm'] as num? ?? 6)
+        .toDouble();
+    var alignment = values['headerAlignment']?.toString() ?? 'spread';
+
+    try {
+      final updated = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: closableDialogTitle(
+              dialogContext,
+              const Text('إعدادات الوثيقة الرسمية'),
+            ),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'العلامة الأمنية',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار العلامة الأمنية'),
+                      value: showWatermark,
+                      onChanged: (value) =>
+                          setDialogState(() => showWatermark = value),
+                    ),
+                    TextField(
+                      controller: watermarkController,
+                      maxLength: 255,
+                      decoration: const InputDecoration(
+                        labelText: 'نص العلامة الأمنية',
+                        hintText: 'وزارة الداخلية',
+                      ),
+                    ),
+                    _documentSettingSlider(
+                      label: 'شفافية العلامة الأمنية',
+                      value: opacity,
+                      min: 0,
+                      max: 60,
+                      suffix: '%',
+                      onChanged: (value) =>
+                          setDialogState(() => opacity = value),
+                    ),
+                    const Divider(height: 28),
+                    const Text(
+                      'رأس الصفحة',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الرئيسي',
+                      ),
+                    ),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الفرعي / الوحدة',
+                      ),
+                    ),
+                    TextField(
+                      controller: rankController,
+                      decoration: const InputDecoration(
+                        labelText: 'رتبة / صفة المسؤول',
+                      ),
+                    ),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم المسؤول',
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار شعار الجهة'),
+                      value: showLogo,
+                      onChanged: (value) =>
+                          setDialogState(() => showLogo = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'حجم الشعار',
+                      value: logoSize,
+                      min: 32,
+                      max: 128,
+                      suffix: ' px',
+                      onChanged: (value) =>
+                          setDialogState(() => logoSize = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش العلوي',
+                      value: topPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => topPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش الأفقي',
+                      value: horizontalPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => horizontalPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش السفلي',
+                      value: bottomPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => bottomPadding = value),
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: alignment,
+                      decoration: const InputDecoration(
+                        labelText: 'محاذاة الرأس',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'spread',
+                          child: Text('توزيع متوازن'),
+                        ),
+                        DropdownMenuItem(value: 'center', child: Text('توسيط')),
+                        DropdownMenuItem(
+                          value: 'right',
+                          child: Text('إلى اليمين'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() => alignment = value);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, {
+                  ...values,
+                  'showMinistryWatermarkText': showWatermark,
+                  'watermarkText': watermarkController.text.trim().isEmpty
+                      ? 'وزارة الداخلية'
+                      : watermarkController.text.trim(),
+                  'watermarkOpacityPercent': opacity.round(),
+                  'headerTitle': titleController.text.trim(),
+                  'headerSubtitle': subtitleController.text.trim(),
+                  'headerChiefRank': rankController.text.trim(),
+                  'headerChiefName': nameController.text.trim(),
+                  'headerShowLogo': showLogo,
+                  'headerLogoSize': logoSize.round(),
+                  'headerTopPaddingMm': topPadding.round(),
+                  'headerHorizontalPaddingMm': horizontalPadding.round(),
+                  'headerBottomPaddingMm': bottomPadding.round(),
+                  'headerAlignment': alignment,
+                }),
+                child: const Text('حفظ الإعدادات'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (updated == null || !mounted) return;
+      await widget.api.call(
+        'platformDocumentSettings.update',
+        input: updated,
+        mutation: true,
+      );
+      if (!mounted) return;
+      setState(() => _platformDocumentSettings = updated);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حفظ إعدادات الوثيقة')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر حفظ الإعدادات: $error')));
+    } finally {
+      watermarkController.dispose();
+      titleController.dispose();
+      subtitleController.dispose();
+      rankController.dispose();
+      nameController.dispose();
+    }
+  }
+
+  Widget _documentSettingSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required String suffix,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text('${value.round()}$suffix'),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: (max - min).round(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  String _headerSetting(String key, String fallback) {
+    final value = _platformDocumentSettings[key]?.toString().trim();
+    return value == null || value.isEmpty ? fallback : value;
+  }
+
+  double _headerMillimeters(String key, double fallback) {
+    final value = _platformDocumentSettings[key];
+    final parsed = value is num ? value.toDouble() : double.tryParse('$value');
+    return (parsed ?? fallback).clamp(0, 30).toDouble();
+  }
+
   Widget _buildA4Editor({
     required QuillController controller,
     required bool editable,
@@ -1953,6 +2280,35 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             ? rawOpacity.toDouble()
             : double.tryParse('$rawOpacity') ?? 12) /
         100;
+    const pixelsPerMillimeter = 794 / 210;
+    final headerTitle = _headerSetting(
+      'headerTitle',
+      _letterhead['departmentName']?.toString() ?? 'وثائقي',
+    );
+    final headerSubtitle = _headerSetting(
+      'headerSubtitle',
+      _letterhead['unitName']?.toString() ?? '',
+    );
+    final chiefRank = _headerSetting(
+      'headerChiefRank',
+      _letterhead['unitChiefRank']?.toString() ?? '',
+    );
+    final chiefName = _headerSetting(
+      'headerChiefName',
+      _letterhead['unitChiefName']?.toString() ?? '',
+    );
+    final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
+    final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
+    final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
+        .clamp(32.0, 128.0)
+        .toDouble();
+    final headerAlignment =
+        _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
+    final blockAlignment = switch (headerAlignment) {
+      'center' => TextAlign.center,
+      'right' => TextAlign.right,
+      _ => null,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1972,95 +2328,151 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   _platformDocumentSettings['showMinistryWatermarkText'] !=
                   false,
               watermarkOpacity: opacity,
+              watermarkText:
+                  _platformDocumentSettings['watermarkText']?.toString() ??
+                  'وزارة الداخلية',
               logoUrl: _letterhead['logoUrl']?.toString(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                    padding: EdgeInsets.fromLTRB(
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerTopPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerBottomPaddingMm', 6) *
+                          pixelsPerMillimeter,
+                    ),
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
                           color: _documentHeaderDividerColor(),
-                          width: 2,
+                          width: 3,
                         ),
                       ),
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      textDirection: ui.TextDirection.rtl,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_letterhead['logoUrl'] is String &&
-                            (_letterhead['logoUrl'] as String).isNotEmpty)
-                          Image.network(
-                            _letterhead['logoUrl'] as String,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) =>
-                                const SizedBox(width: 52, height: 52),
-                          ),
-                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Transform.scale(
+                                scaleX: 0.86,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  headerTitle,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.right,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                              if (headerSubtitle.isNotEmpty)
+                                Transform.scale(
+                                  scaleX: 0.86,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    headerSubtitle,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign:
+                                        blockAlignment ?? TextAlign.right,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: logoSize,
+                          child:
+                              showLogo &&
+                                  (_letterhead['logoUrl']
+                                          ?.toString()
+                                          .isNotEmpty ??
+                                      false)
+                              ? Image.network(
+                                  _letterhead['logoUrl'].toString(),
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => SizedBox(
+                                    width: logoSize,
+                                    height: logoSize,
+                                  ),
+                                )
+                              : SizedBox(width: logoSize, height: logoSize),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                _letterhead['departmentName']?.toString() ??
-                                    'وثائقي',
+                                'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
                               ),
-                              if ((_letterhead['unitName']?.toString() ?? '')
-                                  .isNotEmpty)
-                                Text(
-                                  _letterhead['unitName'].toString(),
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if ((_letterhead['unitChiefName']?.toString() ?? '')
-                            .isNotEmpty)
-                          Column(
-                            children: [
                               Text(
-                                _letterhead['unitChiefRank']?.toString() ?? '',
-                                style: const TextStyle(color: Colors.black87),
-                              ),
-                              Text(
-                                _letterhead['unitChiefName'].toString(),
+                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
                                 style: const TextStyle(
                                   color: Colors.black,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
                               ),
+                              if (chiefRank.isNotEmpty)
+                                Text(
+                                  chiefRank,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              if (chiefName.isNotEmpty)
+                                Text(
+                                  chiefName,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
                             ],
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -2069,7 +2481,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 8,
+                      vertical: 12,
                     ),
                     child: Text(
                       _subjectController.text.isEmpty
@@ -2083,7 +2495,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   ),
                   Container(
                     constraints: BoxConstraints(
-                      minHeight: math.max(96, pageHeight - 250),
+                      minHeight: math.max(96, pageHeight - 350),
                     ),
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                     child: QuillEditor.basic(
@@ -2179,6 +2591,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   );
                 },
               ),
+              if (_isPlatformOwner)
+                IconButton(
+                  tooltip: 'إعدادات الوثيقة',
+                  onPressed: _editDocumentSettings,
+                  icon: const Icon(Icons.tune),
+                ),
               IconButton(
                 tooltip: 'تحديث',
                 onPressed: _refresh,

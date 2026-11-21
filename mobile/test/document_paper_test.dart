@@ -18,6 +18,7 @@ void main() {
               child: DocumentPaper(
                 showWatermarkText: true,
                 watermarkOpacity: 0.12,
+                watermarkText: 'عبارة أمنية مخصصة',
                 child: SizedBox(height: 700),
               ),
             ),
@@ -42,6 +43,10 @@ void main() {
     expect(
       find.byKey(const ValueKey('document-a4-page-breaks')),
       findsOneWidget,
+    );
+    expect(
+      tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkText,
+      'عبارة أمنية مخصصة',
     );
   });
 }

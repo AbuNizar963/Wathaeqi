@@ -2,14 +2,15 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// A responsive A4 editor sheet. Content can grow beyond one page without
-/// being clipped; the decorative watermark represents the first A4 sheet.
+/// A responsive A4 editor sheet with a 10 mm content inset and a full-page
+/// security watermark repeated on every physical A4 sheet.
 class DocumentPaper extends StatelessWidget {
   const DocumentPaper({
     super.key,
     required this.child,
     required this.showWatermarkText,
     required this.watermarkOpacity,
+    this.watermarkText = 'وزارة الداخلية',
     this.logoUrl,
   });
 
@@ -21,6 +22,7 @@ class DocumentPaper extends StatelessWidget {
   final Widget child;
   final bool showWatermarkText;
   final double watermarkOpacity;
+  final String watermarkText;
   final String? logoUrl;
 
   @override
@@ -81,11 +83,13 @@ class DocumentPaper extends StatelessWidget {
                                   fit: StackFit.expand,
                                   children: [
                                     if (showWatermarkText)
-                                      const CustomPaint(
-                                        key: ValueKey(
+                                      CustomPaint(
+                                        key: const ValueKey(
                                           'document-watermark-pattern',
                                         ),
-                                        painter: _DocumentWatermarkPainter(),
+                                        painter: _DocumentWatermarkPainter(
+                                          watermarkText,
+                                        ),
                                       ),
                                     if (logo != null && logo.isNotEmpty)
                                       Center(
@@ -112,7 +116,10 @@ class DocumentPaper extends StatelessWidget {
               ),
               ConstrainedBox(
                 constraints: BoxConstraints(minHeight: pageHeight),
-                child: child,
+                child: Padding(
+                  padding: EdgeInsets.all(pageWidth * 10 / a4Width),
+                  child: child,
+                ),
               ),
             ],
           ),
@@ -152,14 +159,16 @@ class _DocumentPageBreakPainter extends CustomPainter {
 /// Reference mosaic: 33 horizontal staggered rows and 13 columns, Aref Ruqaa
 /// 11 pt at A4 scale, 6.16 mm horizontal gap and ~3 mm page inset.
 class _DocumentWatermarkPainter extends CustomPainter {
-  const _DocumentWatermarkPainter();
+  const _DocumentWatermarkPainter(this.watermarkText);
+
+  final String watermarkText;
 
   @override
   void paint(Canvas canvas, Size size) {
     final mm = size.width / DocumentPaper.a4Width;
     final label = TextPainter(
       text: TextSpan(
-        text: 'وثائقي',
+        text: watermarkText,
         style: TextStyle(
           color: const Color(0xFF73777D),
           fontFamily: 'Aref Ruqaa',
@@ -209,5 +218,6 @@ class _DocumentWatermarkPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DocumentWatermarkPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DocumentWatermarkPainter oldDelegate) =>
+      oldDelegate.watermarkText != watermarkText;
 }
