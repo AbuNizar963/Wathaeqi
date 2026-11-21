@@ -61,28 +61,13 @@ class DocumentStudioPdf {
     final borderColor = PdfColor.fromInt(dividerColor);
     final pageMargin = (key, fallback) {
       final value = letterhead[key];
-      return (value is num ? value.toDouble() : fallback)
-              .clamp(0.0, 35.0)
-              .toDouble() *
-          PdfPageFormat.mm;
+      return (value is num ? value.toDouble() : fallback).clamp(0.0, 35.0).toDouble() * PdfPageFormat.mm;
     };
     final frameStyle = _clean(letterhead['frameStyle']) ?? 'single';
-    final frameColor =
-        _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
-    final frameWidth =
-        ((letterhead['frameWidthPt'] is num
-                    ? (letterhead['frameWidthPt'] as num).toDouble()
-                    : 1.0)
-                .clamp(0.5, 4.0))
-            .toDouble();
-    final dividerWidth =
-        ((letterhead['headerDividerWidthPt'] is num
-                    ? (letterhead['headerDividerWidthPt'] as num).toDouble()
-                    : 2.25)
-                .clamp(0.5, 6.0))
-            .toDouble();
-    final isTricolorStars =
-        _clean(letterhead['headerDividerStyle']) == 'tricolor-stars';
+    final frameColor = _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
+    final frameWidth = ((letterhead['frameWidthPt'] is num ? (letterhead['frameWidthPt'] as num).toDouble() : 1.0).clamp(0.5, 4.0)).toDouble();
+    final dividerWidth = ((letterhead['headerDividerWidthPt'] is num ? (letterhead['headerDividerWidthPt'] as num).toDouble() : 2.25).clamp(0.5, 6.0)).toDouble();
+    final isTricolorStars = _clean(letterhead['headerDividerStyle']) == 'tricolor-stars';
     final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
@@ -117,12 +102,7 @@ class DocumentStudioPdf {
         maxPages: 500,
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: pw.EdgeInsets.fromLTRB(
-            pageMargin('pageMarginLeftMm', 10),
-            pageMargin('pageMarginTopMm', 10),
-            pageMargin('pageMarginRightMm', 10),
-            pageMargin('pageMarginBottomMm', 10),
-          ),
+          margin: pw.EdgeInsets.fromLTRB(pageMargin('pageMarginLeftMm', 10), pageMargin('pageMarginTopMm', 10), pageMargin('pageMarginRightMm', 10), pageMargin('pageMarginBottomMm', 10)),
           theme: theme,
           textDirection: pw.TextDirection.rtl,
           buildBackground: (context) => pw.FullPage(
@@ -132,28 +112,12 @@ class DocumentStudioPdf {
                 if (frameStyle != 'none')
                   pw.Positioned.fill(
                     child: pw.Container(
-                      margin: pw.EdgeInsets.fromLTRB(
-                        pageMargin('pageMarginLeftMm', 10),
-                        pageMargin('pageMarginTopMm', 10),
-                        pageMargin('pageMarginRightMm', 10),
-                        pageMargin('pageMarginBottomMm', 10),
-                      ),
+                      margin: pw.EdgeInsets.fromLTRB(pageMargin('pageMarginLeftMm', 10), pageMargin('pageMarginTopMm', 10), pageMargin('pageMarginRightMm', 10), pageMargin('pageMarginBottomMm', 10)),
                       decoration: pw.BoxDecoration(
-                        border: pw.Border.all(
-                          color: frameColor,
-                          width: frameWidth,
-                        ),
+                        border: pw.Border.all(color: frameColor, width: frameWidth),
                       ),
                       child: frameStyle == 'ornate' || frameStyle == 'double'
-                          ? pw.Container(
-                              margin: const pw.EdgeInsets.all(3),
-                              decoration: pw.BoxDecoration(
-                                border: pw.Border.all(
-                                  color: frameColor,
-                                  width: frameWidth,
-                                ),
-                              ),
-                            )
+                          ? pw.Container(margin: const pw.EdgeInsets.all(3), decoration: pw.BoxDecoration(border: pw.Border.all(color: frameColor, width: frameWidth)))
                           : null,
                     ),
                   ),
@@ -241,12 +205,7 @@ class DocumentStudioPdf {
                 decoration: isTricolorStars
                     ? null
                     : pw.BoxDecoration(
-                        border: pw.Border(
-                          bottom: pw.BorderSide(
-                            color: borderColor,
-                            width: dividerWidth,
-                          ),
-                        ),
+                        border: pw.Border(bottom: pw.BorderSide(color: borderColor, width: dividerWidth)),
                       ),
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -330,34 +289,10 @@ class DocumentStudioPdf {
               if (isTricolorStars)
                 pw.Padding(
                   padding: const pw.EdgeInsets.only(top: 2),
-                  child: pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.center,
-                    children: [
-                      pw.Expanded(
-                        child: pw.Container(
-                          height: 2.4,
-                          color: const PdfColor(0.07, 0.09, 0.13),
-                        ),
-                      ),
-                      pw.Padding(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 6),
-                        child: pw.Text(
-                          '★ ★ ★',
-                          textDirection: pw.TextDirection.ltr,
-                          style: pw.TextStyle(
-                            font: bold,
-                            fontSize: 10,
-                            color: const PdfColor(0.84, 0.05, 0.11),
-                          ),
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Container(
-                          height: 2.4,
-                          color: const PdfColor(0.08, 0.58, 0.28),
-                        ),
-                      ),
-                    ],
+                  child: pw.SvgImage(
+                    width: double.infinity,
+                    height: 9,
+                    svg: '<svg viewBox="0 0 1056 18" xmlns="http://www.w3.org/2000/svg"><path fill="#000000" d="M0 8.8 470 5.5v7L0 9.2Z"/><g fill="#c91111"><path d="M490 1.2 491.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L490 1.2Z"/><path d="M528 1.2 529.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L528 1.2Z"/><path d="M566 1.2 567.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L566 1.2Z"/></g><path fill="#04993d" d="M586 5.5 1056 8.8v.4L586 12.5Z"/></svg>',
                   ),
                 ),
               pw.SizedBox(height: 12),
@@ -415,13 +350,9 @@ class DocumentStudioPdf {
   }
 
   static PdfColor? _parseHexColor(String? value) {
-    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value))
-      return null;
-    return PdfColor.fromInt(
-      int.parse(value.substring(1), radix: 16) | 0xFF000000,
-    );
+    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value)) return null;
+    return PdfColor.fromInt(int.parse(value.substring(1), radix: 16) | 0xFF000000);
   }
-
   static String? _clean(dynamic value) {
     if (value is! String || value.trim().isEmpty) return null;
     return value.trim();
