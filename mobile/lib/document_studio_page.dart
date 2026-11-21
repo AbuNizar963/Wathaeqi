@@ -22,11 +22,13 @@ class DocumentStudioPage extends StatefulWidget {
     required this.api,
     this.outbox,
     this.initialTab = DocumentStudioTab.documents,
+    this.openCreationOptionsOnOpen = false,
   });
 
   final PoliceApi api;
   final DocumentStudioOutbox? outbox;
   final DocumentStudioTab initialTab;
+  final bool openCreationOptionsOnOpen;
 
   @override
   State<DocumentStudioPage> createState() => _DocumentStudioPageState();
@@ -112,6 +114,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       }
     });
     _load();
+    if (widget.openCreationOptionsOnOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(_showCreateDocumentOptions());
+      });
+    }
   }
 
   @override
