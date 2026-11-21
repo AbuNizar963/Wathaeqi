@@ -67,11 +67,9 @@ class _PlatformDocumentSettingsPageState
   String? _organizationError;
   List<Map<String, dynamic>> _organizations = [];
   String? _selectedOrganizationId;
-  Map<String, dynamic>? _organizationSettings;
   String _organizationLogoUrl = '';
   bool _loadingOrganizationSettings = true;
   bool _uploadingOrganizationLogo = false;
-  bool _savingOrganizationLogo = false;
   final TextEditingController _colorController = TextEditingController(
     text: _defaultColor,
   );
@@ -199,16 +197,15 @@ class _PlatformDocumentSettingsPageState
     });
     try {
       final result = await widget.api.call(
-        'organizations.settings.get',
-        input: {'organizationId': organizationId},
+        'organizations.logo',
+        input: {'id': organizationId},
         allowOfflineCache: false,
       );
       if (result is! Map) {
-        throw Exception('تعذر قراءة إعدادات الجهة.');
+        throw Exception('تعذر قراءة شعار الجهة.');
       }
       if (!mounted) return;
       setState(() {
-        _organizationSettings = Map<String, dynamic>.from(result);
         _organizationLogoUrl = result['logoUrl']?.toString() ?? '';
         _loadingOrganizationSettings = false;
       });
@@ -254,72 +251,18 @@ class _PlatformDocumentSettingsPageState
         bytes: prepared,
       );
       if (!mounted) return;
-      setState(() => _organizationLogoUrl = uploaded['url']?.toString() ?? '');
-      await _saveOrganizationLogo();
+      final logoUrl = uploaded['url']?.toString() ?? '';
+      if (logoUrl.isEmpty) {
+        throw Exception('تم رفع الشعار لكن رابط المعاينة غير متاح.');
+      }
+      setState(() => _organizationLogoUrl = logoUrl);
+      Toast.success(context, 'تم حفظ شعار الجهة وربطه بترويسة الوثائق');
     } catch (exception) {
       if (mounted) {
         setState(() => _organizationError = _settingsErrorMessage(exception));
       }
     } finally {
       if (mounted) setState(() => _uploadingOrganizationLogo = false);
-    }
-  }
-
-  Future<void> _saveOrganizationLogo() async {
-    final current = _organizationSettings;
-    final organizationId = _selectedOrganizationId;
-    if (current == null || organizationId == null) {
-      setState(() => _organizationError = 'حمّل إعدادات الجهة أولاً.');
-      return;
-    }
-    setState(() {
-      _savingOrganizationLogo = true;
-      _organizationError = null;
-    });
-    try {
-      final result = await widget.api.call(
-        'organizations.settings.update',
-        mutation: true,
-        input: {
-          'organizationId': organizationId,
-          'departmentName': current['departmentName']?.toString() ?? '',
-          'unitName': current['unitName']?.toString() ?? '',
-          'unitChiefRank': current['unitChiefRank']?.toString() ?? '',
-          'unitChiefName': current['unitChiefName']?.toString() ?? '',
-          'serialPrefix': current['serialPrefix']?.toString() ?? 'POL',
-          'incomingSerialPrefix':
-              current['incomingSerialPrefix']?.toString() ?? 'POL',
-          'serialStart': current['serialStart'] is int
-              ? current['serialStart']
-              : 1,
-          'incomingSerialStart': current['incomingSerialStart'] is int
-              ? current['incomingSerialStart']
-              : 1,
-          'timezone': current['timezone']?.toString() ?? 'Asia/Damascus',
-          'dateFormat':
-              current['dateFormat']?.toString() ?? 'dd/MM/yyyy HH:mm:ss',
-          'timeFormat': current['timeFormat']?.toString() == '12' ? '12' : '24',
-          'numberSystem': current['numberSystem']?.toString() == 'arabic'
-              ? 'arabic'
-              : 'latin',
-          'logoUrl': _organizationLogoUrl.isEmpty ? null : _organizationLogoUrl,
-        },
-      );
-      if (result is! Map) {
-        throw Exception('تعذر تأكيد حفظ شعار الجهة.');
-      }
-      if (!mounted) return;
-      setState(() {
-        _organizationSettings = Map<String, dynamic>.from(result);
-        _organizationLogoUrl = result['logoUrl']?.toString() ?? '';
-      });
-      Toast.success(context, 'تم حفظ شعار الجهة في ترويسة الوثائق');
-    } catch (exception) {
-      if (mounted) {
-        setState(() => _organizationError = _settingsErrorMessage(exception));
-      }
-    } finally {
-      if (mounted) setState(() => _savingOrganizationLogo = false);
     }
   }
 
@@ -415,7 +358,7 @@ class _PlatformDocumentSettingsPageState
                     ),
                   );
                 }).toList(),
-                onChanged: _uploadingOrganizationLogo || _savingOrganizationLogo
+                onChanged: _uploadingOrganizationLogo
                     ? null
                     : _selectOrganization,
               ),
@@ -453,7 +396,6 @@ class _PlatformDocumentSettingsPageState
                         FilledButton.icon(
                           onPressed:
                               _uploadingOrganizationLogo ||
-                                  _savingOrganizationLogo ||
                                   _selectedOrganizationId == null
                               ? null
                               : _pickAndUploadOrganizationLogo,
