@@ -8,6 +8,7 @@ export function buildDocumentWatermarkCss(opacity: number): string {
   const safeOpacity = Number.isFinite(opacity)
     ? Math.min(0.6, Math.max(0, opacity))
     : DOCUMENT_WATERMARK_DEFAULT_OPACITY;
+  // prettier-ignore
   return `
     .document-a4-page {
       background-color: white;
