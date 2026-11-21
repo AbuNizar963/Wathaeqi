@@ -1644,10 +1644,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             maxScale: 2.5,
             constrained: true,
             boundaryMargin: const EdgeInsets.all(48),
-            child: _buildA4Editor(
-              controller: _documentEditor,
-              editable: false,
-            ),
+            child: _buildA4Editor(controller: _documentEditor, editable: false),
           )
         else if (isWord)
           _buildUnsupportedDocumentPreview(
