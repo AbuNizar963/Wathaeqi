@@ -12,10 +12,7 @@ import {
 type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
 
 function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
-  const {
-    updatedAt: _updatedAt,
-    ...values
-  } = settings;
+  const { updatedAt: _updatedAt, ...values } = settings;
   return values;
 }
 
@@ -137,12 +134,16 @@ export default function PlatformDocumentSettings() {
             </label>
 
             <label className="block rounded-xl border p-4">
-              <span className="mb-2 block text-sm font-bold">نص العلامة الأمنية</span>
+              <span className="mb-2 block text-sm font-bold">
+                نص العلامة الأمنية
+              </span>
               <input
                 type="text"
                 maxLength={255}
                 value={values.watermarkText}
-                onChange={event => updateValue("watermarkText", event.target.value)}
+                onChange={event =>
+                  updateValue("watermarkText", event.target.value)
+                }
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
               />
             </label>
@@ -150,7 +151,9 @@ export default function PlatformDocumentSettings() {
             <label className="block rounded-xl border p-4">
               <span className="flex items-center justify-between gap-3 text-sm font-bold">
                 <span>شفافية العلامة الأمنية</span>
-                <span className="tabular-nums">{values.watermarkOpacityPercent}%</span>
+                <span className="tabular-nums">
+                  {values.watermarkOpacityPercent}%
+                </span>
               </span>
               <input
                 type="range"
@@ -159,7 +162,10 @@ export default function PlatformDocumentSettings() {
                 step={1}
                 value={values.watermarkOpacityPercent}
                 onChange={event =>
-                  updateValue("watermarkOpacityPercent", Number(event.target.value))
+                  updateValue(
+                    "watermarkOpacityPercent",
+                    Number(event.target.value)
+                  )
                 }
                 aria-label="نسبة شفافية العلامة الأمنية"
                 className="mt-3 w-full accent-[#10233f]"
@@ -174,40 +180,72 @@ export default function PlatformDocumentSettings() {
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
                   العنوان الرئيسي
-                  <input value={values.headerTitle} maxLength={255}
-                    onChange={event => updateValue("headerTitle", event.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-2" />
+                  <input
+                    value={values.headerTitle}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerTitle", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
                 </label>
                 <label className="space-y-1 text-sm">
                   العنوان الفرعي / الوحدة
-                  <input value={values.headerSubtitle} maxLength={255}
-                    onChange={event => updateValue("headerSubtitle", event.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-2" />
+                  <input
+                    value={values.headerSubtitle}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerSubtitle", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
                 </label>
                 <label className="space-y-1 text-sm">
                   رتبة / صفة المسؤول
-                  <input value={values.headerChiefRank} maxLength={120}
-                    onChange={event => updateValue("headerChiefRank", event.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-2" />
+                  <input
+                    value={values.headerChiefRank}
+                    maxLength={120}
+                    onChange={event =>
+                      updateValue("headerChiefRank", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
                 </label>
                 <label className="space-y-1 text-sm">
                   اسم المسؤول
-                  <input value={values.headerChiefName} maxLength={255}
-                    onChange={event => updateValue("headerChiefName", event.target.value)}
-                    className="w-full rounded-lg border bg-background px-3 py-2" />
+                  <input
+                    value={values.headerChiefName}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerChiefName", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
                 </label>
               </div>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={values.headerShowLogo}
-                    onChange={event => updateValue("headerShowLogo", event.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={values.headerShowLogo}
+                    onChange={event =>
+                      updateValue("headerShowLogo", event.target.checked)
+                    }
+                  />
                   إظهار شعار الجهة
                 </label>
                 <label className="space-y-1 text-sm">
                   محاذاة الرأس
-                  <select value={values.headerAlignment}
-                    onChange={event => updateValue("headerAlignment", event.target.value as SettingsForm["headerAlignment"])}
-                    className="w-full rounded-lg border bg-background px-3 py-2">
+                  <select
+                    value={values.headerAlignment}
+                    onChange={event =>
+                      updateValue(
+                        "headerAlignment",
+                        event.target.value as SettingsForm["headerAlignment"]
+                      )
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  >
                     <option value="spread">توزيع متوازن</option>
                     <option value="center">توسيط</option>
                     <option value="right">إلى اليمين</option>
@@ -218,31 +256,52 @@ export default function PlatformDocumentSettings() {
                 <span className="flex justify-between">
                   حجم الشعار <output>{values.headerLogoSize}px</output>
                 </span>
-                <input type="range" min={32} max={128} step={4}
+                <input
+                  type="range"
+                  min={32}
+                  max={128}
+                  step={4}
                   value={values.headerLogoSize}
-                  onChange={event => updateValue("headerLogoSize", Number(event.target.value))}
-                  className="w-full accent-[#10233f]" />
+                  onChange={event =>
+                    updateValue("headerLogoSize", Number(event.target.value))
+                  }
+                  className="w-full accent-[#10233f]"
+                />
               </label>
-              {([
-                ["headerTopPaddingMm", "الهامش العلوي"],
-                ["headerHorizontalPaddingMm", "الهامش الأفقي"],
-                ["headerBottomPaddingMm", "الهامش السفلي"],
-              ] as const).map(([key, label]) => (
+              {(
+                [
+                  ["headerTopPaddingMm", "الهامش العلوي"],
+                  ["headerHorizontalPaddingMm", "الهامش الأفقي"],
+                  ["headerBottomPaddingMm", "الهامش السفلي"],
+                ] as const
+              ).map(([key, label]) => (
                 <label key={key} className="mt-3 block space-y-1 text-sm">
                   <span className="flex justify-between">
                     {label} <output>{values[key]} مم</output>
                   </span>
-                  <input type="range" min={0} max={30} step={1}
+                  <input
+                    type="range"
+                    min={0}
+                    max={30}
+                    step={1}
                     value={values[key]}
-                    onChange={event => updateValue(key, Number(event.target.value))}
-                    className="w-full accent-[#10233f]" />
+                    onChange={event =>
+                      updateValue(key, Number(event.target.value))
+                    }
+                    className="w-full accent-[#10233f]"
+                  />
                 </label>
               ))}
               <label className="mt-4 flex items-center justify-between gap-4 text-sm">
                 لون الخط الفاصل
-                <input type="color" value={values.headerDividerColor}
-                  onChange={event => updateValue("headerDividerColor", event.target.value)}
-                  className="h-10 w-12 cursor-pointer rounded-md border bg-background p-1" />
+                <input
+                  type="color"
+                  value={values.headerDividerColor}
+                  onChange={event =>
+                    updateValue("headerDividerColor", event.target.value)
+                  }
+                  className="h-10 w-12 cursor-pointer rounded-md border bg-background p-1"
+                />
               </label>
             </div>
 
@@ -250,7 +309,9 @@ export default function PlatformDocumentSettings() {
               <input
                 type="checkbox"
                 checked={values.showVerificationQr}
-                onChange={event => updateValue("showVerificationQr", event.target.checked)}
+                onChange={event =>
+                  updateValue("showVerificationQr", event.target.checked)
+                }
                 className="mt-1 h-4 w-4 accent-[#10233f]"
               />
               <span className="text-sm font-bold">
@@ -263,7 +324,11 @@ export default function PlatformDocumentSettings() {
               أما النسخ التي سبق تنزيلها فلا تتغير.
             </p>
             <div className="flex justify-end gap-2 pt-1">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 إلغاء
               </Button>
               <Button
