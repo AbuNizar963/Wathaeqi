@@ -20,6 +20,20 @@ import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
 
+Widget _buildClosableDialogTitle(BuildContext context, String title) {
+  return Row(
+    children: [
+      Expanded(child: Text(title)),
+      IconButton(
+        tooltip: 'إغلاق النافذة',
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.close),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+    ],
+  );
+}
+
 enum DocumentStudioTab { documents, templates, archive }
 
 class DocumentStudioPage extends StatefulWidget {
@@ -395,7 +409,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final choice = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إنشاء وثيقة'),
+        title: _buildClosableDialogTitle(dialogContext, 'إنشاء وثيقة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -444,7 +458,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إعداد الطباعة'),
+        title: _buildClosableDialogTitle(dialogContext, 'إعداد الطباعة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -841,7 +855,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إصدار الوثيقة'),
+        title: _buildClosableDialogTitle(dialogContext, 'إصدار الوثيقة'),
         content: const Text(
           'سيتم تخصيص رقم صادر نهائي للوثيقة. لا يمكن تغيير الرقم بعد الإصدار.',
         ),
@@ -881,7 +895,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('أرشفة الوثيقة'),
+        title: _buildClosableDialogTitle(dialogContext, 'أرشفة الوثيقة'),
         content: const Text('سيتم نقل الوثيقة إلى الأرشيف دون حذفها.'),
         actions: [
           TextButton(
@@ -1038,7 +1052,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إيقاف النموذج'),
+        title: _buildClosableDialogTitle(dialogContext, 'إيقاف النموذج'),
         content: const Text(
           'سيُخفى النموذج عن الاستخدام الجديد مع الاحتفاظ بالوثائق المرتبطة به.',
         ),
@@ -2036,7 +2050,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         context: context,
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            title: const Text('إعدادات الوثيقة الرسمية'),
+            title: _buildClosableDialogTitle(dialogContext, 'إعدادات الوثيقة الرسمية'),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
@@ -2105,7 +2119,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       min: 0,
                       max: 30,
                       suffix: ' مم',
-                      onChanged: (value) => setDialogState(() => topPadding = value),
+                      onChanged: (value) =>
+                          setDialogState(() => topPadding = value),
                     ),
                     _documentSettingSlider(
                       label: 'الهامش الأفقي',
@@ -2113,7 +2128,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       min: 0,
                       max: 30,
                       suffix: ' مم',
-                      onChanged: (value) => setDialogState(() => horizontalPadding = value),
+                      onChanged: (value) =>
+                          setDialogState(() => horizontalPadding = value),
                     ),
                     _documentSettingSlider(
                       label: 'الهامش السفلي',
@@ -2121,18 +2137,29 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       min: 0,
                       max: 30,
                       suffix: ' مم',
-                      onChanged: (value) => setDialogState(() => bottomPadding = value),
+                      onChanged: (value) =>
+                          setDialogState(() => bottomPadding = value),
                     ),
                     DropdownButtonFormField<String>(
                       initialValue: alignment,
-                      decoration: const InputDecoration(labelText: 'محاذاة الرأس'),
+                      decoration: const InputDecoration(
+                        labelText: 'محاذاة الرأس',
+                      ),
                       items: const [
-                        DropdownMenuItem(value: 'spread', child: Text('توزيع متوازن')),
+                        DropdownMenuItem(
+                          value: 'spread',
+                          child: Text('توزيع متوازن'),
+                        ),
                         DropdownMenuItem(value: 'center', child: Text('توسيط')),
-                        DropdownMenuItem(value: 'right', child: Text('إلى اليمين')),
+                        DropdownMenuItem(
+                          value: 'right',
+                          child: Text('إلى اليمين'),
+                        ),
                       ],
                       onChanged: (value) {
-                        if (value != null) setDialogState(() => alignment = value);
+                        if (value != null) {
+                          setDialogState(() => alignment = value);
+                        }
                       },
                     ),
                   ],
