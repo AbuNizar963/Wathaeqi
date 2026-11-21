@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/document_studio_pdf.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('builds a valid multi-page-ready A4 PDF from native document content', () async {
     final paragraphs = List<Map<String, dynamic>>.generate(
       90,
