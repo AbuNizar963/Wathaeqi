@@ -2225,7 +2225,7 @@ class _DashboardPageState extends State<DashboardPage>
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: DocumentLibraryPage(
         api: widget.api,
-        onEditDocument: document => _pushPage(
+        onEditDocument: (document) => _pushPage(
           DocumentStudioPage(
             api: widget.api,
             outbox: _documentStudioOutbox,
