@@ -1365,7 +1365,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final isWord = mimeType == DocumentFileSupport.docxMime;
     final isPdf = mimeType == DocumentFileSupport.pdfMime;
     final isNativeDocument = document.file == null;
-    final canUsePdfActions = isPdf || isNativeDocument;
+    final canUsePdfActions = isPdf;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1399,17 +1399,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
         const SizedBox(height: 10),
         if (isNativeDocument)
-          SizedBox(
-            key: const ValueKey('document-a4-pdf-preview'),
-            height: 620,
-            child: PdfPreview(
-              build: (_) => _fetchDocumentPdf(document),
-              allowPrinting: false,
-              allowSharing: false,
-              canChangePageFormat: false,
-              canChangeOrientation: false,
-            ),
-          )
+          _buildA4Editor(controller: _documentEditor, editable: false)
         else if (isWord)
           _buildUnsupportedDocumentPreview(
             document,
