@@ -18,19 +18,14 @@ function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
 
 export default function PlatformDocumentSettings() {
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
-  const organizationContext = trpc.organizations.context.useQuery(undefined, {
-    enabled: Boolean(me.data),
-  });
-  const isOwner =
-    me.data?.isPlatformOwner === true ||
-    organizationContext.data?.isOwner === true;
+  const isPlatformOwner = me.data?.isPlatformOwner === true;
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<SettingsForm>({
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
   const utils = trpc.useUtils();
   const settings = trpc.platformDocumentSettings.get.useQuery(undefined, {
-    enabled: open && isOwner,
+    enabled: open && isPlatformOwner,
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -47,12 +42,12 @@ export default function PlatformDocumentSettings() {
 
   useEffect(() => {
     const handler = () => {
-      if (isOwner) setOpen(true);
+      if (isPlatformOwner) setOpen(true);
     };
     window.addEventListener("open-platform-document-settings", handler);
     return () =>
       window.removeEventListener("open-platform-document-settings", handler);
-  }, [isOwner]);
+  }, [isPlatformOwner]);
 
   useEffect(() => {
     if (!open || !settings.data) return;
@@ -64,7 +59,7 @@ export default function PlatformDocumentSettings() {
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
 
-  if (!open || !isOwner) return null;
+  if (!open || !isPlatformOwner) return null;
 
   return (
     <div className="document-print-modal fixed inset-0 z-[90] overflow-y-auto bg-black/55 p-3 sm:p-6">
