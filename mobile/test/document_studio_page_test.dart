@@ -119,7 +119,7 @@ void main() {
             find.widgetWithText(OutlinedButton, 'تنزيل PDF'),
           )
           .onPressed,
-      isNull,
+      isNotNull,
     );
     expect(
       tester
@@ -127,13 +127,13 @@ void main() {
             find.widgetWithText(OutlinedButton, 'مشاركة PDF'),
           )
           .onPressed,
-      isNull,
+      isNotNull,
     );
     expect(
       tester
           .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'طباعة'))
           .onPressed,
-      isNull,
+      isNotNull,
     );
     expect(find.byTooltip('تعديل الوثيقة'), findsOneWidget);
 
