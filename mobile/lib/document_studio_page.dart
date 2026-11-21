@@ -553,7 +553,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         letterhead: configuredLetterhead,
         dividerColor: _documentHeaderDividerColor().toARGB32(),
         watermarkText:
-            _platformDocumentSettings['watermarkText']?.toString() ?? 'وزارة الداخلية',
+            _platformDocumentSettings['watermarkText']?.toString() ??
+            'وزارة الداخلية',
         showWatermarkText:
             _platformDocumentSettings['showMinistryWatermarkText'] != false,
         watermarkOpacity: opacity,
@@ -2026,10 +2027,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
     var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
     var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
-    var horizontalPadding =
-        (values['headerHorizontalPaddingMm'] as num? ?? 0).toDouble();
-    var bottomPadding =
-        (values['headerBottomPaddingMm'] as num? ?? 6).toDouble();
+    var horizontalPadding = (values['headerHorizontalPaddingMm'] as num? ?? 0)
+        .toDouble();
+    var bottomPadding = (values['headerBottomPaddingMm'] as num? ?? 6)
+        .toDouble();
     var alignment = values['headerAlignment']?.toString() ?? 'spread';
 
     try {
@@ -2037,7 +2038,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         context: context,
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
-            title: closableDialogTitle(dialogContext, const Text('إعدادات الوثيقة الرسمية')),
+            title: closableDialogTitle(
+              dialogContext,
+              const Text('إعدادات الوثيقة الرسمية'),
+            ),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
@@ -2045,12 +2049,16 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('العلامة الأمنية', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'العلامة الأمنية',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('إظهار العلامة الأمنية'),
                       value: showWatermark,
-                      onChanged: (value) => setDialogState(() => showWatermark = value),
+                      onChanged: (value) =>
+                          setDialogState(() => showWatermark = value),
                     ),
                     TextField(
                       controller: watermarkController,
@@ -2066,31 +2074,44 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       min: 0,
                       max: 60,
                       suffix: '%',
-                      onChanged: (value) => setDialogState(() => opacity = value),
+                      onChanged: (value) =>
+                          setDialogState(() => opacity = value),
                     ),
                     const Divider(height: 28),
-                    const Text('رأس الصفحة', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'رأس الصفحة',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     TextField(
                       controller: titleController,
-                      decoration: const InputDecoration(labelText: 'العنوان الرئيسي'),
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الرئيسي',
+                      ),
                     ),
                     TextField(
                       controller: subtitleController,
-                      decoration: const InputDecoration(labelText: 'العنوان الفرعي / الوحدة'),
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الفرعي / الوحدة',
+                      ),
                     ),
                     TextField(
                       controller: rankController,
-                      decoration: const InputDecoration(labelText: 'رتبة / صفة المسؤول'),
+                      decoration: const InputDecoration(
+                        labelText: 'رتبة / صفة المسؤول',
+                      ),
                     ),
                     TextField(
                       controller: nameController,
-                      decoration: const InputDecoration(labelText: 'اسم المسؤول'),
+                      decoration: const InputDecoration(
+                        labelText: 'اسم المسؤول',
+                      ),
                     ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('إظهار شعار الجهة'),
                       value: showLogo,
-                      onChanged: (value) => setDialogState(() => showLogo = value),
+                      onChanged: (value) =>
+                          setDialogState(() => showLogo = value),
                     ),
                     _documentSettingSlider(
                       label: 'حجم الشعار',
@@ -2098,7 +2119,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       min: 32,
                       max: 128,
                       suffix: ' px',
-                      onChanged: (value) => setDialogState(() => logoSize = value),
+                      onChanged: (value) =>
+                          setDialogState(() => logoSize = value),
                     ),
                     _documentSettingSlider(
                       label: 'الهامش العلوي',
@@ -2192,14 +2214,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       );
       if (!mounted) return;
       setState(() => _platformDocumentSettings = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حفظ إعدادات الوثيقة')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حفظ إعدادات الوثيقة')));
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تعذر حفظ الإعدادات: $error')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر حفظ الإعدادات: $error')));
     } finally {
       watermarkController.dispose();
       titleController.dispose();
