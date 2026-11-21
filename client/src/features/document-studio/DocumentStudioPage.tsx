@@ -40,6 +40,7 @@ import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
+import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import { downloadDocumentFile, shareDocument } from "./documentActions";
 import {
   buildDocumentWatermarkCss,
@@ -142,6 +143,8 @@ export default function DocumentStudioPage() {
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importPrintOpen, setImportPrintOpen] = useState(false);
+  const [nativePrintOpen, setNativePrintOpen] = useState(false);
+  const documentPageRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -442,7 +445,7 @@ export default function DocumentStudioPage() {
       toast.success("بدأ تنزيل الملف المستورد");
       return;
     }
-    window.print();
+    setNativePrintOpen(true);
   }
 
   async function shareSelectedDocument() {
@@ -622,7 +625,7 @@ export default function DocumentStudioPage() {
                     )}
                     onClick={() => {
                       if (selectedDocument?.file) setImportPrintOpen(true);
-                      else window.print();
+                      else setNativePrintOpen(true);
                     }}
                   >
                     <Printer className="ml-2 h-4 w-4" />
@@ -1276,7 +1279,7 @@ export default function DocumentStudioPage() {
                 </section>
               ) : (
                 <div className="document-paper-viewport">
-                  <div className="document-a4-page">
+                  <div className="document-a4-page" ref={documentPageRef}>
                     <DocumentWatermark
                       logoUrl={logoUrl}
                       opacityPercent={
@@ -1352,7 +1355,7 @@ export default function DocumentStudioPage() {
                     )}
                     onClick={() => {
                       if (selectedDocument.file) setImportPrintOpen(true);
-                      else window.print();
+                      else setNativePrintOpen(true);
                     }}
                   >
                     <Printer className="h-5 w-5" />
@@ -1374,6 +1377,12 @@ export default function DocumentStudioPage() {
         </main>
       </div>
 
+      <DocumentStudioPrintDialog
+        open={nativePrintOpen}
+        onOpenChange={setNativePrintOpen}
+        title={(selectedDocument?.title ?? documentTitle) || "وثيقة جديدة"}
+        pageElement={documentPageRef.current}
+      />
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
         <DialogContent className="max-w-lg" dir="rtl">
           <DialogHeader>
