@@ -13,10 +13,7 @@ import {
   buildPrintHtml,
   openPrintWindow,
 } from "../document-library/printSheets";
-import type {
-  PagesPerSheet,
-  SourcePage,
-} from "../document-library/types";
+import type { PagesPerSheet, SourcePage } from "../document-library/types";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
@@ -178,9 +175,7 @@ export default function DocumentStudioPrintDialog({
         dir="rtl"
       >
         <DialogHeader>
-          <DialogTitle className="text-right">
-            إعداد طباعة الوثيقة
-          </DialogTitle>
+          <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
             {title} — اختر عدد صفحات الوثيقة التي تريد وضعها في كل ورقة A4.
           </DialogDescription>
