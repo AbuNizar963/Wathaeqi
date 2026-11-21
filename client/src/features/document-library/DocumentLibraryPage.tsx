@@ -399,6 +399,25 @@ export default function DocumentLibraryPage() {
                 </p>
               ) : null}
 
+              <div className="grid gap-2 sm:grid-cols-2">
+                <details className="rounded-xl border bg-card px-3 py-2">
+                  <summary className="cursor-pointer list-none text-sm font-semibold">
+                    إصدارات الوثيقة (1)
+                  </summary>
+                  <div className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+                    الإصدار الحالي · {statusLabel(selected.status)}
+                  </div>
+                </details>
+                <details className="rounded-xl border bg-card px-3 py-2">
+                  <summary className="cursor-pointer list-none text-sm font-semibold">
+                    سجل التدقيق والإجراءات
+                  </summary>
+                  <div className="mt-2 border-t pt-2 text-xs text-muted-foreground">
+                    تم حفظ الوثيقة في المكتبة · {statusLabel(selected.status)}
+                  </div>
+                </details>
+              </div>
+
               {fileUrlQuery.isLoading ? (
                 <div className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" /> جارٍ تجهيز
