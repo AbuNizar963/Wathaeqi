@@ -51,6 +51,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   DocumentTemplate? _selectedTemplate;
   bool _loading = true;
   bool _saving = false;
+  bool _previewMode = false;
   String? _loadError;
   bool _canIssueDocuments = false;
   Map<String, dynamic> _letterhead = {};
@@ -598,6 +599,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   void _startNewDocument() {
+    _previewMode = false;
     _selectedDocument = null;
     _creatingDocument = true;
     _selectedTemplateId = null;
@@ -1050,6 +1052,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Widget _buildDocumentForm() {
+    if (_previewMode && _selectedDocument != null) {
+      return _buildDocumentPreview(_selectedDocument!);
+    }
+
     final canEdit =
         _selectedDocument == null || _selectedDocument!.status == 'draft';
     final matchingTemplates = _templates
@@ -1083,8 +1089,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            if (_selectedDocument != null)
+            if (_selectedDocument != null) ...[
               _statusChip(_selectedDocument!.status),
+              const SizedBox(width: 6),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _previewMode = true),
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('معاينة'),
+              ),
+            ],
           ],
         ),
         TextField(
@@ -1321,6 +1334,143 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildDocumentPreview(OfficialDocument document) {
+    final isWord = document.file?.mimeType == DocumentFileSupport.docxMime;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'قائمة الوثائق',
+              onPressed: () => setState(() {
+                _previewMode = false;
+                _selectedDocument = null;
+                _creatingDocument = false;
+              }),
+              icon: const Icon(Icons.arrow_back),
+            ),
+            Expanded(
+              child: Text(
+                document.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            _statusChip(document.status),
+            const SizedBox(width: 6),
+            IconButton(
+              tooltip: 'تعديل الوثيقة',
+              onPressed: () => setState(() => _previewMode = false),
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (isWord)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  const Icon(Icons.description_outlined, size: 42),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'معاينة ملفات Word غير متاحة داخل التطبيق حالياً',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    document.file?.fileName ?? document.title,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 620,
+            child: PdfPreview(
+              build: (_) => _fetchDocumentPdf(document),
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+            ),
+          ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.55,
+          children: [
+            _documentPreviewAction(
+              icon: Icons.download_outlined,
+              label: isWord ? 'تنزيل Word' : 'تنزيل PDF',
+              onPressed: _saving
+                  ? null
+                  : () => isWord
+                      ? _saveOriginalDocument(document)
+                      : _saveDocumentPdf(document),
+            ),
+            _documentPreviewAction(
+              icon: Icons.share_outlined,
+              label: isWord ? 'مشاركة Word' : 'مشاركة PDF',
+              onPressed: _saving
+                  ? null
+                  : () => isWord
+                      ? _shareOriginalDocument(document)
+                      : _shareDocumentPdf(document),
+            ),
+            _documentPreviewAction(
+              icon: Icons.print_outlined,
+              label: 'طباعة',
+              onPressed: _saving || isWord
+                  ? null
+                  : () => _printDocumentFile(document),
+            ),
+          ],
+        ),
+        if (_saving) ...[
+          const SizedBox(height: 10),
+          const LinearProgressIndicator(),
+        ],
+      ],
+    );
+  }
+
+  Widget _documentPreviewAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 21),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
     );
   }
 
