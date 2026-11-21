@@ -620,6 +620,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   void _selectDocument(OfficialDocument document) {
+    _previewMode = true;
     _selectedDocument = document;
     _creatingDocument = false;
     _selectedTemplateId = document.templateId;
