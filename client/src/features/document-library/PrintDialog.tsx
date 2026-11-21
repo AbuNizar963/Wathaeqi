@@ -112,35 +112,35 @@ export default function PrintDialog({
               </p>
             </fieldset>
           ) : (
-          <fieldset className="rounded-lg border bg-muted/30 px-3 py-3">
-            <legend className="px-1 text-sm font-medium">
-              عدد الصفحات في الورقة
-            </legend>
-            <div className="grid grid-cols-5 gap-2" role="radiogroup">
-              {[1, 2, 4, 6, 8].map(value => {
-                const selected = pagesPerSheet === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setPagesPerSheet(value as PagesPerSheet)}
-                    className={`rounded-md border px-2 py-2 text-xs font-semibold transition ${
-                      selected
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                    }`}
-                  >
-                    {value} {value === 1 ? "صفحة" : "صفحات"}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من صفحة.
-            </p>
-          </fieldset>
+            <fieldset className="rounded-lg border bg-muted/30 px-3 py-3">
+              <legend className="px-1 text-sm font-medium">
+                عدد الصفحات في الورقة
+              </legend>
+              <div className="grid grid-cols-5 gap-2" role="radiogroup">
+                {[1, 2, 4, 6, 8].map(value => {
+                  const selected = pagesPerSheet === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => setPagesPerSheet(value as PagesPerSheet)}
+                      className={`rounded-md border px-2 py-2 text-xs font-semibold transition ${
+                        selected
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                      }`}
+                    >
+                      {value} {value === 1 ? "صفحة" : "صفحات"}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من صفحة.
+              </p>
+            </fieldset>
           )}
 
           {error ? (
