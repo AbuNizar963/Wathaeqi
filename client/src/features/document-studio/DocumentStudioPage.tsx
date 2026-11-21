@@ -46,6 +46,7 @@ import {
   DOCUMENT_WATERMARK_COLUMNS,
   DOCUMENT_WATERMARK_ROWS,
   OFFICIAL_ORGANIZATION_NAME,
+  getA4PreviewPageCount,
 } from "./documentWatermark";
 
 type StudioTab = "documents" | "templates" | "archive";
@@ -1489,9 +1490,9 @@ function DocumentWatermark({
       const width = page.clientWidth;
       if (width <= 0) return;
       const pageHeight = (width * 297) / 210;
-      const pageCount = Math.max(
-        1,
-        Math.ceil(Math.max(page.scrollHeight, page.clientHeight) / pageHeight)
+      const pageCount = getA4PreviewPageCount(
+        width,
+        Math.max(page.scrollHeight, page.clientHeight)
       );
       page.style.setProperty("--document-page-height", `${pageHeight}px`);
       setPageMetrics(current =>
