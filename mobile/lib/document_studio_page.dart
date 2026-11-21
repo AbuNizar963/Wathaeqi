@@ -59,8 +59,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Map<String, dynamic> _letterhead = {};
   Map<String, dynamic> _platformDocumentSettings = {
     'showMinistryWatermarkText': true,
+    'watermarkText': 'وثائقي',
     'watermarkOpacityPercent': 12,
     'headerDividerColor': '#b49a55',
+    'headerTitle': '',
+    'headerSubtitle': '',
+    'headerChiefRank': '',
+    'headerChiefName': '',
+    'headerShowLogo': true,
+    'headerLogoSize': 120,
+    'headerTopPaddingMm': 0,
+    'headerHorizontalPaddingMm': 0,
+    'headerBottomPaddingMm': 6,
+    'headerAlignment': 'spread',
   };
 
   final _titleController = TextEditingController();
@@ -254,8 +265,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
       Map<String, dynamic> platformDocumentSettings = {
         'showMinistryWatermarkText': true,
+        'watermarkText': 'وثائقي',
         'watermarkOpacityPercent': 12,
         'headerDividerColor': '#b49a55',
+        'headerTitle': '',
+        'headerSubtitle': '',
+        'headerChiefRank': '',
+        'headerChiefName': '',
+        'headerShowLogo': true,
+        'headerLogoSize': 120,
+        'headerTopPaddingMm': 0,
+        'headerHorizontalPaddingMm': 0,
+        'headerBottomPaddingMm': 6,
+        'headerAlignment': 'spread',
       };
       try {
         final rawSettings = await widget.api.call(
@@ -263,7 +285,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           allowOfflineCache: false,
         );
         if (rawSettings is Map) {
-          platformDocumentSettings = Map<String, dynamic>.from(rawSettings);
+          platformDocumentSettings = {
+            ...platformDocumentSettings,
+            ...Map<String, dynamic>.from(rawSettings),
+          };
         }
       } catch (_) {
         // Keep the same safe defaults when system settings are unavailable.
@@ -486,14 +511,42 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ? rawOpacity.toDouble()
               : double.tryParse('$rawOpacity') ?? 12) /
           100;
+      final configuredLetterhead = {
+        ..._letterhead,
+        'departmentName': _headerSetting(
+          'headerTitle',
+          _letterhead['departmentName']?.toString() ?? 'وثائقي',
+        ),
+        'unitName': _headerSetting(
+          'headerSubtitle',
+          _letterhead['unitName']?.toString() ?? '',
+        ),
+        'unitChiefRank': _headerSetting(
+          'headerChiefRank',
+          _letterhead['unitChiefRank']?.toString() ?? '',
+        ),
+        'unitChiefName': _headerSetting(
+          'headerChiefName',
+          _letterhead['unitChiefName']?.toString() ?? '',
+        ),
+        'headerShowLogo': _platformDocumentSettings['headerShowLogo'] != false,
+        'headerLogoSize': _platformDocumentSettings['headerLogoSize'] ?? 120,
+        'headerTopPaddingMm': _platformDocumentSettings['headerTopPaddingMm'] ?? 0,
+        'headerHorizontalPaddingMm':
+            _platformDocumentSettings['headerHorizontalPaddingMm'] ?? 0,
+        'headerBottomPaddingMm': _platformDocumentSettings['headerBottomPaddingMm'] ?? 6,
+        'headerAlignment': _platformDocumentSettings['headerAlignment'] ?? 'spread',
+      };
       return DocumentStudioPdf.build(
         content: document.content,
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
         documentDate: document.documentDate,
-        letterhead: _letterhead,
+        letterhead: configuredLetterhead,
         dividerColor: _documentHeaderDividerColor().toARGB32(),
+        watermarkText:
+            _platformDocumentSettings['watermarkText']?.toString() ?? 'وثائقي',
         showWatermarkText:
             _platformDocumentSettings['showMinistryWatermarkText'] != false,
         watermarkOpacity: opacity,
@@ -1942,6 +1995,17 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  String _headerSetting(String key, String fallback) {
+    final value = _platformDocumentSettings[key]?.toString().trim();
+    return value == null || value.isEmpty ? fallback : value;
+  }
+
+  double _headerMillimeters(String key, double fallback) {
+    final value = _platformDocumentSettings[key];
+    final parsed = value is num ? value.toDouble() : double.tryParse('$value');
+    return (parsed ?? fallback).clamp(0, 30);
+  }
+
   Widget _buildA4Editor({
     required QuillController controller,
     required bool editable,
@@ -1953,6 +2017,34 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             ? rawOpacity.toDouble()
             : double.tryParse('$rawOpacity') ?? 12) /
         100;
+    const pixelsPerMillimeter = 794 / 210;
+    final headerTitle = _headerSetting(
+      'headerTitle',
+      _letterhead['departmentName']?.toString() ?? 'وثائقي',
+    );
+    final headerSubtitle = _headerSetting(
+      'headerSubtitle',
+      _letterhead['unitName']?.toString() ?? '',
+    );
+    final chiefRank = _headerSetting(
+      'headerChiefRank',
+      _letterhead['unitChiefRank']?.toString() ?? '',
+    );
+    final chiefName = _headerSetting(
+      'headerChiefName',
+      _letterhead['unitChiefName']?.toString() ?? '',
+    );
+    final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
+    final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
+    final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
+        .clamp(32.0, 128.0);
+    final headerAlignment =
+        _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
+    final blockAlignment = switch (headerAlignment) {
+      'center' => TextAlign.center,
+      'right' => TextAlign.right,
+      _ => null,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1972,95 +2064,144 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   _platformDocumentSettings['showMinistryWatermarkText'] !=
                   false,
               watermarkOpacity: opacity,
+              watermarkText:
+                  _platformDocumentSettings['watermarkText']?.toString() ??
+                  'وثائقي',
               logoUrl: _letterhead['logoUrl']?.toString(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                    padding: EdgeInsets.fromLTRB(
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerTopPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerBottomPaddingMm', 6) *
+                          pixelsPerMillimeter,
+                    ),
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
                           color: _documentHeaderDividerColor(),
-                          width: 2,
+                          width: 3,
                         ),
                       ),
                     ),
                     child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (_letterhead['logoUrl'] is String &&
-                            (_letterhead['logoUrl'] as String).isNotEmpty)
-                          Image.network(
-                            _letterhead['logoUrl'] as String,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) =>
-                                const SizedBox(width: 52, height: 52),
-                          ),
-                        const SizedBox(width: 10),
                         Expanded(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Transform.scale(
+                                scaleX: 0.86,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  headerTitle,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.right,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                              if (headerSubtitle.isNotEmpty)
+                                Transform.scale(
+                                  scaleX: 0.86,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    headerSubtitle,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign: blockAlignment ?? TextAlign.right,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: logoSize,
+                          child: showLogo &&
+                                  (_letterhead['logoUrl']?.toString().isNotEmpty ??
+                                      false)
+                              ? Image.network(
+                                  _letterhead['logoUrl'].toString(),
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) =>
+                                      SizedBox(width: logoSize, height: logoSize),
+                                )
+                              : SizedBox(width: logoSize, height: logoSize),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Text(
-                                _letterhead['departmentName']?.toString() ??
-                                    'وثائقي',
+                                'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
                               ),
-                              if ((_letterhead['unitName']?.toString() ?? '')
-                                  .isNotEmpty)
-                                Text(
-                                  _letterhead['unitName'].toString(),
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if ((_letterhead['unitChiefName']?.toString() ?? '')
-                            .isNotEmpty)
-                          Column(
-                            children: [
                               Text(
-                                _letterhead['unitChiefRank']?.toString() ?? '',
-                                style: const TextStyle(color: Colors.black87),
-                              ),
-                              Text(
-                                _letterhead['unitChiefName'].toString(),
+                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
                                 style: const TextStyle(
                                   color: Colors.black,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
                               ),
+                              if (chiefRank.isNotEmpty)
+                                Text(
+                                  chiefRank,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              if (chiefName.isNotEmpty)
+                                Text(
+                                  chiefName,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
                             ],
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -2069,7 +2210,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 8,
+                      vertical: 12,
                     ),
                     child: Text(
                       _subjectController.text.isEmpty
