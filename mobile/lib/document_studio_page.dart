@@ -467,6 +467,42 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Future<int?> _chooseImageTiles() {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: closableDialogTitle(
+          dialogContext,
+          const Text('تقسيم الصورة للطباعة'),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('اختر عدد أوراق A4 التي ستُقسّم الصورة عليها'),
+            const SizedBox(height: 12),
+            for (final count in const [1, 4, 9, 16])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(dialogContext, count),
+                  child: Text(
+                    count == 1 ? 'ورقة واحدة' : '$count أوراق',
+                  ),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _printDocumentFile(OfficialDocument document) async {
     final file = document.file;
     if (file != null && file.mimeType == DocumentFileSupport.docxMime) {
@@ -474,12 +510,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
 
-    final pagesPerSheet = await _choosePrintPagesPerSheet();
+    final isImage = file?.mimeType.startsWith('image/') == true;
+    final imageTiles = isImage ? await _chooseImageTiles() : 1;
+    if (imageTiles == null || !mounted) return;
+    final pagesPerSheet = isImage ? 1 : await _choosePrintPagesPerSheet();
     if (pagesPerSheet == null || !mounted) return;
 
     setState(() => _saving = true);
     try {
-      final sourcePdf = await _fetchDocumentPdf(document);
+      final sourcePdf = await _fetchDocumentPdf(
+        document,
+        imageTiles: imageTiles,
+      );
       final printPdf = pagesPerSheet == 1
           ? sourcePdf
           : await DocumentStudioPrintLayout.compose(
@@ -497,7 +539,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
-  Future<Uint8List> _fetchDocumentPdf(OfficialDocument document) async {
+  Future<Uint8List> _fetchDocumentPdf(
+    OfficialDocument document, {
+    int imageTiles = 1,
+  }) async {
     final file = document.file;
     if (file == null) {
       final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
@@ -567,28 +612,66 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       }
       final codec = await ui.instantiateImageCodec(imageBytes);
       final frame = await codec.getNextFrame();
-      final pngData = await frame.image.toByteData(
-        format: ui.ImageByteFormat.png,
-      );
-      frame.image.dispose();
-      codec.dispose();
-      if (pngData == null) {
-        throw StateError('تعذر تحويل الصورة إلى صيغة طباعة قياسية');
-      }
-      final normalizedImageBytes = pngData.buffer.asUint8List(
-        pngData.offsetInBytes,
-        pngData.lengthInBytes,
-      );
-      final image = pw.MemoryImage(normalizedImageBytes);
+      final sourceImage = frame.image;
+      final columns = math.sqrt(imageTiles).round();
+      final sourceTileWidth = sourceImage.width / columns;
+      final sourceTileHeight = sourceImage.height / columns;
       final pdf = pw.Document();
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(12),
-          build: (_) =>
-              pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
-        ),
-      );
+      try {
+        for (var row = 0; row < columns; row += 1) {
+          for (var column = 0; column < columns; column += 1) {
+            final recorder = ui.PictureRecorder();
+            final canvas = ui.Canvas(recorder);
+            final sourceRect = ui.Rect.fromLTWH(
+              column * sourceTileWidth,
+              row * sourceTileHeight,
+              sourceTileWidth,
+              sourceTileHeight,
+            );
+            final destinationRect = ui.Rect.fromLTWH(
+              0,
+              0,
+              sourceTileWidth,
+              sourceTileHeight,
+            );
+            canvas.drawImageRect(
+              sourceImage,
+              sourceRect,
+              destinationRect,
+              ui.Paint(),
+            );
+            final picture = recorder.endRecording();
+            final tileImage = await picture.toImage(
+              sourceTileWidth.ceil(),
+              sourceTileHeight.ceil(),
+            );
+            final tileData = await tileImage.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            tileImage.dispose();
+            picture.dispose();
+            if (tileData == null) {
+              throw StateError('تعذر تجهيز جزء من الصورة للطباعة');
+            }
+            final tileBytes = tileData.buffer.asUint8List(
+              tileData.offsetInBytes,
+              tileData.lengthInBytes,
+            );
+            final image = pw.MemoryImage(tileBytes);
+            pdf.addPage(
+              pw.Page(
+                pageFormat: PdfPageFormat.a4,
+                margin: const pw.EdgeInsets.all(12),
+                build: (_) =>
+                    pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
+              ),
+            );
+          }
+        }
+      } finally {
+        sourceImage.dispose();
+        codec.dispose();
+      }
       return Uint8List.fromList(await pdf.save());
     }
     if (file.mimeType != DocumentFileSupport.pdfMime) {
