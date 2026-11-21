@@ -181,8 +181,11 @@ export default function PlatformDocumentSettingsPage() {
                 </div>
               </div>
               {organizationsQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">جارٍ تحميل الجهات...</p>
-              ) : organizationsQuery.isError || !organizationsQuery.data?.length ? (
+                <p className="text-sm text-muted-foreground">
+                  جارٍ تحميل الجهات...
+                </p>
+              ) : organizationsQuery.isError ||
+                !organizationsQuery.data?.length ? (
                 <p className="text-sm text-destructive">
                   تعذر تحميل الجهات. تحقق من صلاحية مالك المنصة ثم أعد المحاولة.
                 </p>
@@ -192,7 +195,9 @@ export default function PlatformDocumentSettingsPage() {
                     <span className="text-sm font-medium">الجهة</span>
                     <select
                       value={selectedOrganizationId}
-                      onChange={event => setSelectedOrganizationId(event.target.value)}
+                      onChange={event =>
+                        setSelectedOrganizationId(event.target.value)
+                      }
                       className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                     >
                       {organizationsQuery.data.map(organization => (
@@ -203,7 +208,9 @@ export default function PlatformDocumentSettingsPage() {
                     </select>
                   </label>
                   {organizationLogoQuery.isLoading ? (
-                    <p className="text-sm text-muted-foreground">جارٍ تحميل شعار الجهة...</p>
+                    <p className="text-sm text-muted-foreground">
+                      جارٍ تحميل شعار الجهة...
+                    </p>
                   ) : organizationLogoQuery.isError ? (
                     <p className="text-sm text-destructive">
                       {organizationLogoQuery.error.message}
@@ -227,7 +234,9 @@ export default function PlatformDocumentSettingsPage() {
                       <div className="min-w-[180px] flex-1 space-y-2">
                         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
                           <Upload className="h-4 w-4" />
-                          {isUploadingLogo ? "جارٍ رفع الشعار..." : "اختيار صورة الشعار"}
+                          {isUploadingLogo
+                            ? "جارٍ رفع الشعار..."
+                            : "اختيار صورة الشعار"}
                           <input
                             type="file"
                             accept="image/png,image/jpeg"
@@ -240,10 +249,12 @@ export default function PlatformDocumentSettingsPage() {
                           />
                         </label>
                         <p className="text-xs text-muted-foreground">
-                          PNG أو JPG، بحد أقصى 5 ميغابايت. احتفظ بخلفية شفافة عند الحاجة.
+                          PNG أو JPG، بحد أقصى 5 ميغابايت. احتفظ بخلفية شفافة
+                          عند الحاجة.
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          يُحفظ الشعار مباشرة بعد اكتمال الرفع، ويُعاد تحميل النسخة المحفوظة للتحقق منها.
+                          يُحفظ الشعار مباشرة بعد اكتمال الرفع، ويُعاد تحميل
+                          النسخة المحفوظة للتحقق منها.
                         </p>
                       </div>
                     </div>
