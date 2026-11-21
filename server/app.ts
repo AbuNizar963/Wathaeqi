@@ -206,12 +206,16 @@ export function createApp(
       }
 
       const rawBody: unknown = req.body;
-      if (!Buffer.isBuffer(rawBody) || rawBody.length < 1) {
+      if (!Buffer.isBuffer(rawBody)) {
         res.status(400).json({ error: "لم يصل ملف الشعار" });
         return;
       }
-      const body: Buffer = rawBody;
-      if (body.length > 2_500_000) {
+      const body = Buffer.from(rawBody);
+      if (body.byteLength < 1) {
+        res.status(400).json({ error: "لم يصل ملف الشعار" });
+        return;
+      }
+      if (body.byteLength > 2_500_000) {
         res.status(413).json({
           error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت",
         });
@@ -219,15 +223,10 @@ export function createApp(
       }
 
       const isPng =
-        body.length >= 8 &&
-        body
-          .subarray(0, 8)
-          .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+        body.byteLength >= 8 &&
+        body.toString("hex", 0, 8) === "89504e470d0a1a0a";
       const isJpeg =
-        body.length >= 3 &&
-        body[0] === 0xff &&
-        body[1] === 0xd8 &&
-        body[2] === 0xff;
+        body.byteLength >= 3 && body.toString("hex", 0, 3) === "ffd8ff";
       if (
         (contentType === "image/png" && !isPng) ||
         (contentType === "image/jpeg" && !isJpeg)
