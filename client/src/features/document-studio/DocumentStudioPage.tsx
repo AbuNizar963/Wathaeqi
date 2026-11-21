@@ -40,6 +40,7 @@ import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
+import ResponsiveA4Preview from "./ResponsiveA4Preview";
 import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import { downloadDocumentFile, shareDocument } from "./documentActions";
 import {
@@ -140,6 +141,7 @@ function newTemplateField(index: number): DocumentTemplateField {
 export default function DocumentStudioPage() {
   const [activeTab, setActiveTab] = useState<StudioTab>("documents");
   const [previewMode, setPreviewMode] = useState(false);
+  const [isCreatingDocument, setIsCreatingDocument] = useState(false);
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importPrintOpen, setImportPrintOpen] = useState(false);
@@ -377,6 +379,7 @@ export default function DocumentStudioPage() {
     });
 
   function startNewDocument() {
+    setIsCreatingDocument(true);
     setSelectedDocumentId(null);
     setSelectedTemplateId(null);
     setSelectedTemplateRevision(null);
@@ -392,6 +395,7 @@ export default function DocumentStudioPage() {
   }
 
   function useTemplate(template: DocumentTemplate) {
+    setIsCreatingDocument(true);
     setSelectedDocumentId(null);
     setSelectedTemplateId(template.id);
     setSelectedTemplateRevision(template.revision);
@@ -766,6 +770,7 @@ export default function DocumentStudioPage() {
                       key={document.id}
                       type="button"
                       onClick={() => {
+                        setIsCreatingDocument(false);
                         setSelectedDocumentId(document.id);
                         setPreviewMode(true);
                       }}
@@ -1000,8 +1005,7 @@ export default function DocumentStudioPage() {
                 )}
               </section>
 
-              <div className="document-paper-viewport">
-                <div className="document-a4-page">
+              <ResponsiveA4Preview>
                   <DocumentWatermark
                     logoUrl={logoUrl}
                     opacityPercent={
@@ -1030,10 +1034,9 @@ export default function DocumentStudioPage() {
                       placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
                     />
                   </div>
-                </div>
-              </div>
+              </ResponsiveA4Preview>
             </Card>
-          ) : (
+          ) : selectedDocument || isCreatingDocument ? (
             <Card className="space-y-4 p-3 sm:p-4">
               <div className="flex flex-wrap items-center justify-between gap-2 document-studio-no-print">
                 <div>
@@ -1282,8 +1285,7 @@ export default function DocumentStudioPage() {
                   )}
                 </section>
               ) : (
-                <div className="document-paper-viewport">
-                  <div className="document-a4-page" ref={documentPageRef}>
+                <ResponsiveA4Preview pageRef={documentPageRef}>
                     <DocumentWatermark
                       logoUrl={logoUrl}
                       opacityPercent={
@@ -1323,8 +1325,7 @@ export default function DocumentStudioPage() {
                     <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
                       وثائقي
                     </footer>
-                  </div>
-                </div>
+                </ResponsiveA4Preview>
               )}
               {previewMode && selectedDocument ? (
                 <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
@@ -1377,7 +1378,7 @@ export default function DocumentStudioPage() {
                 </div>
               ) : null}
             </Card>
-          )}
+          ) : null}
         </main>
       </div>
 
@@ -1388,7 +1389,7 @@ export default function DocumentStudioPage() {
         pageElement={documentPageRef.current}
       />
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
-        <DialogContent className="max-w-lg" dir="rtl">
+        <DialogContent className="w-[calc(100%-1rem)] max-h-[min(90dvh,42rem)] max-w-lg overflow-y-auto p-4 sm:p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
