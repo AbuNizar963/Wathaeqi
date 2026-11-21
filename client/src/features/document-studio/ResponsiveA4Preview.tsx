@@ -39,7 +39,7 @@ export default function ResponsiveA4Preview({
       const pageHeight = Math.max(
         A4_PREVIEW_MIN_HEIGHT,
         page.scrollHeight,
-        page.offsetHeight,
+        page.offsetHeight
       );
 
       setLayout({ scale, height: Math.ceil(pageHeight * scale) });
