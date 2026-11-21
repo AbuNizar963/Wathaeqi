@@ -654,7 +654,11 @@ export default function DocumentStudioPage() {
                   </Button>
                 </>
               ) : null}
-              <Button onClick={() => setCreationDialogOpen(true)}>
+              <Button
+                onClick={() => setCreationDialogOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={creationDialogOpen}
+              >
                 <FilePlus2 className="ml-2 h-4 w-4" />
                 إنشاء وثيقة
               </Button>
@@ -1591,7 +1595,7 @@ function DocumentLetterhead({
 }) {
   return (
     <header
-      className="flex items-center justify-between gap-4 border-b-2 px-[18mm] pb-4 pt-8"
+      className="flex flex-wrap items-center justify-between gap-3 border-b-2 px-4 pb-4 pt-8 sm:px-[18mm]"
       style={{ borderColor: dividerColor }}
       dir="rtl"
     >
@@ -1617,7 +1621,7 @@ function DocumentLetterhead({
         </div>
       ) : null}
       {serial || date ? (
-        <div className="shrink-0 text-left text-xs text-slate-700" dir="rtl">
+        <div className="max-w-full text-left text-xs text-slate-700" dir="rtl">
           {serial ? <p>الرقم: {serial}</p> : null}
           {date ? <p className="mt-1">التاريخ: {date}</p> : null}
         </div>
