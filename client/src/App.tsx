@@ -6,7 +6,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import DashboardLayout from "./components/DashboardLayout";
 import OwnerUserManagement from "./features/users/OwnerUserManagement";
 import OwnerOrganizationManagement from "./features/organizations/OwnerOrganizationManagement";
-import PlatformDocumentSettings from "./features/platform-settings/PlatformDocumentSettings";
 import PlatformDocumentSettingsPage from "./features/platform-settings/PlatformDocumentSettingsPage";
 import WorkspacePage from "./features/workspace/WorkspacePage";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -29,7 +28,6 @@ function DashboardPage({ children }: { children: React.ReactNode }) {
       <DashboardLayout>{children}</DashboardLayout>
       <OwnerUserManagement />
       <OwnerOrganizationManagement />
-      <PlatformDocumentSettings />
     </>
   );
 }

@@ -163,15 +163,13 @@ export default function HeaderActions() {
               </DropdownMenuLabel>
               {isPlatformOwner ? (
                 <DropdownMenuItem
-                  onSelect={() =>
-                    window.dispatchEvent(
-                      new CustomEvent("open-platform-document-settings")
-                    )
-                  }
+                  onSelect={() => {
+                    window.location.href = "/settings";
+                  }}
                   className="cursor-pointer justify-end gap-2"
                 >
                   <SlidersHorizontal className="h-4 w-4" />
-                  <span>إعدادات النظام والوثائق</span>
+                  <span>إعدادات الوثائق</span>
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem

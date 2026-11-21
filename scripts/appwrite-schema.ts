@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * Idempotent Appwrite TablesDB provisioner for the telegram workspace.
+ * Idempotent Appwrite TablesDB provisioner for the Wathaeqi application.
  *
  * Usage:
  *   pnpm appwrite:schema:check   # report drift; exits 1 when work is needed
@@ -19,6 +19,7 @@ import {
   type SchemaIndex,
   type SchemaTable,
 } from "../shared/appwriteSchema";
+import { selectAppwriteSchemaTables } from "./appwrite-schema-selection";
 
 type Mode = "check" | "apply";
 
@@ -289,6 +290,10 @@ async function applyTable(
 
 async function main(): Promise<void> {
   const mode = readMode();
+  const tablesToProcess = selectAppwriteSchemaTables(
+    process.argv.slice(3),
+    appwriteSchema
+  );
   const endpoint = requireEnv("APPWRITE_ENDPOINT");
   const projectId = requireEnv("APPWRITE_PROJECT_ID");
   const databaseId = requireEnv("APPWRITE_DATABASE_ID");
@@ -302,7 +307,7 @@ async function main(): Promise<void> {
 
   if (mode === "check") {
     const drifts: Drift[] = [];
-    for (const table of appwriteSchema) {
+    for (const table of tablesToProcess) {
       drifts.push(await inspectTable(tables, databaseId, table));
     }
     const pending = drifts.filter(
@@ -335,7 +340,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  for (const table of appwriteSchema) {
+  for (const table of tablesToProcess) {
     await applyTable(tables, databaseId, table);
   }
   console.log("Appwrite schema applied.");

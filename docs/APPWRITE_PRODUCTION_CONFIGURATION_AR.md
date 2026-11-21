@@ -86,6 +86,18 @@
 
 الموقع `wathaeqi-preview` مرتبط بفرع ترحيل قديم، وليس بيئة خلفية معزولة. لا تستخدمه لاختبار الكتابة أو تعديل بيانات الإنتاج. لا يُسمح لنطاق المعاينة باستدعاء API الإنتاج عبر قائمة CORS. يجب إنشاء API وقاعدة بيانات وتخزين منفصلين قبل اعتماد معاينة تكاملية كاملة.
 
+## مخطط جداول Appwrite
+
+نشر Site/Function عبر Appwrite VCS لا يطبّق تغييرات مخطط TablesDB تلقائيًا. عند ظهور خطأ مثل `Unknown attribute: "headerDividerStyle"`، فهذا يعني أن قاعدة بيانات Appwrite المستهدفة لا تحتوي العمود الذي يعرفه `shared/appwriteSchema.ts`. شغّل الفحص والتطبيق على مشروع Staging معزول فقط، مستخدمًا معرّفات ومفتاح API الخاصين به:
+
+```sh
+pnpm exec tsx scripts/appwrite-schema.ts --check --table platform_document_settings
+pnpm exec tsx scripts/appwrite-schema.ts --apply --table platform_document_settings
+pnpm exec tsx scripts/appwrite-schema.ts --check --table platform_document_settings
+```
+
+الخيار `--apply` يضيف الأعمدة والفهارس الناقصة فقط ولا يحذف أو يعيد تسمية أو يكتب فوق أعمدة أو صفوف موجودة. يجب أن ينتهي الفحص الأخير بلا انجراف قبل اختبار حفظ الإعدادات والشعار على Staging. لا تستخدم `wathaeqi-preview` أو بيانات اعتماد الإنتاج لهذا الغرض؛ لا توجد بيئة Staging معزولة متاحة لهذه الجلسة.
+
 ## GitHub Actions
 
 - Actions مسؤولة عن الفحص والاختبارات والبناء الأمني.
