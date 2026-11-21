@@ -233,7 +233,7 @@ class _PlatformDocumentSettingsPageState
     final organizationId = _selectedOrganizationId;
     if (organizationId == null || _uploadingOrganizationLogo) return;
     try {
-      final selection = await FilePicker.platform.pickFiles(
+      final selection = await FilePicker.pickFiles(
         type: FileType.image,
         withData: true,
         allowMultiple: false,
