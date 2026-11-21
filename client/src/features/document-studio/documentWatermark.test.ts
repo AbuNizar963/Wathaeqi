@@ -22,7 +22,6 @@ describe("official document watermark", () => {
     expect(css).toContain("opacity: 0.12;");
   });
 
-
   it("calculates one or more continuous A4 preview sheets from measured content", () => {
     const a4PageHeight = (793.7 * 297) / 210;
     expect(getA4PreviewPageCount(793.7, a4PageHeight - 10)).toBe(1);
