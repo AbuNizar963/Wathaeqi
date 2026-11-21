@@ -46,11 +46,11 @@ function collectText(value: unknown): string {
           ? (child as Record<string, unknown>).type
           : undefined;
       return ["paragraph", "heading", "listItem"].includes(String(childType))
-        ? `${text}\\n`
+        ? \`function () { [native code] }\n\`
         : text;
     })
-    .join("")
-    .replace(/\\n{3,}/g, "\\n\\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\n+$/g, "");
     .replace(/\\n+$/g, "");
 }
 
