@@ -9,8 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { buildPrintHtml, openPrintWindow } from "../document-library/printSheets";
-import type { PagesPerSheet, SourcePage } from "../document-library/types";
+import {
+  buildPrintHtml,
+  openPrintWindow,
+} from "../document-library/printSheets";
+import type {
+  PagesPerSheet,
+  SourcePage,
+} from "../document-library/types";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
@@ -39,7 +45,10 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const scale = canvas.width / width;
   const pageHeight = (width * 297) / 210;
   const pageHeightPixels = Math.max(1, Math.round(pageHeight * scale));
-  const pageCount = Math.max(1, Math.ceil(Math.max(0, height - 1) / pageHeight));
+  const pageCount = Math.max(
+    1,
+    Math.ceil(Math.max(0, height - 1) / pageHeight)
+  );
   const pages: SourcePage[] = [];
 
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
@@ -97,7 +106,9 @@ export default function DocumentStudioPrintDialog({
   async function handlePrint() {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      setError("منع المتصفح نافذة الطباعة؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة");
+      setError(
+        "منع المتصفح نافذة الطباعة؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة"
+      );
       return;
     }
 
@@ -136,16 +147,27 @@ export default function DocumentStudioPrintDialog({
         onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto" dir="rtl">
+      <DialogContent
+        className="max-h-[92vh] max-w-lg overflow-y-auto"
+        dir="rtl"
+      >
         <DialogHeader>
-          <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
+          <DialogTitle className="text-right">
+            إعداد طباعة الوثيقة
+          </DialogTitle>
           <DialogDescription className="text-right">
             {title} — اختر عدد صفحات الوثيقة التي تريد وضعها في كل ورقة A4.
           </DialogDescription>
         </DialogHeader>
         <fieldset className="rounded-lg border bg-muted/30 p-3">
-          <legend className="px-1 text-sm font-medium">عدد الصفحات في الورقة</legend>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="عدد الصفحات في الورقة">
+          <legend className="px-1 text-sm font-medium">
+            عدد الصفحات في الورقة
+          </legend>
+          <div
+            className="grid grid-cols-3 gap-2 sm:grid-cols-5"
+            role="radiogroup"
+            aria-label="عدد الصفحات في الورقة"
+          >
             {PAGE_COUNTS.map(value => {
               const selected = pagesPerSheet === value;
               return (
@@ -176,11 +198,23 @@ export default function DocumentStudioPrintDialog({
           </p>
         ) : null}
         <DialogFooter className="gap-2 sm:justify-start">
-          <Button onClick={() => void handlePrint()} disabled={loading} className="gap-2">
-            {loading ? <Loader2 className="size-4 animate-spin" /> : <Printer className="size-4" />}
+          <Button
+            onClick={() => void handlePrint()}
+            disabled={loading}
+            className="gap-2"
+          >
+            {loading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Printer className="size-4" />
+            )}
             {loading ? "جارٍ تجهيز الطباعة..." : "متابعة الطباعة / حفظ PDF"}
           </Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             إغلاق
           </Button>
         </DialogFooter>
