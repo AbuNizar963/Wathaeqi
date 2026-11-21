@@ -67,7 +67,10 @@ function applyFieldValues(
     if (!value || typeof value !== "object") return value;
 
     const node = value as Record<string, unknown>;
-    if (node.type === "text" && typeof node.text === "string") {
+    if (
+      (node.type === "text" || node.type === "legacy-text") &&
+      typeof node.text === "string"
+    ) {
       const text = Object.entries(values).reduce(
         (result, [key, fieldValue]) =>
           result.split(`{{${key}}}`).join(fieldValue),
