@@ -19,7 +19,9 @@ describe("rich document editing safety", () => {
     });
   });
 
-  it("supports formatted text, headings, tables, and safe embedded images", () => {
+  it(
+    "supports formatted text, headings, tables, and safe embedded images",
+    () => {
     const document = {
       type: "doc",
       content: [
@@ -36,7 +38,12 @@ describe("rich document editing safety", () => {
               content: [
                 {
                   type: "tableHeader",
-                  content: [{ type: "paragraph", content: [{ type: "text", text: "رأس" }] }],
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "رأس" }],
+                    },
+                  ],
                 },
               ],
             },
@@ -62,7 +69,9 @@ describe("rich document editing safety", () => {
       content: [
         {
           type: "paragraph",
-          content: [{ type: "text", text: "نص", marks: [{ type: "customMark" }] }],
+          content: [
+            { type: "text", text: "نص", marks: [{ type: "customMark" }] },
+          ],
         },
       ],
     };
@@ -84,7 +93,9 @@ describe("rich document editing safety", () => {
     }
   });
 
-  it("does not rewrite legacy HTML and extracts its text only for display", () => {
+  it(
+    "does not rewrite legacy HTML and extracts its text only for display",
+    () => {
     const legacyHtml = {
       type: "legacy-html",
       html: "<p><strong>محتوى</strong></p>",

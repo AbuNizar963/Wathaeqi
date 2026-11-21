@@ -63,7 +63,10 @@ function isSupportedNode(value: unknown): boolean {
     if (!Array.isArray(value.marks)) return false;
     if (
       !value.marks.every(
-        mark => isRecord(mark) && typeof mark.type === "string" && SUPPORTED_MARKS.has(mark.type)
+        mark =>
+          isRecord(mark) &&
+          typeof mark.type === "string" &&
+          SUPPORTED_MARKS.has(mark.type)
       )
     ) {
       return false;
@@ -71,7 +74,10 @@ function isSupportedNode(value: unknown): boolean {
   }
 
   if (value.content !== undefined) {
-    if (!Array.isArray(value.content) || !value.content.every(isSupportedNode)) {
+    if (
+      !Array.isArray(value.content) ||
+      !value.content.every(isSupportedNode)
+    ) {
       return false;
     }
   }

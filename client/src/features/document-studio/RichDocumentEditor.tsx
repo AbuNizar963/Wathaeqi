@@ -55,10 +55,7 @@ export default function RichDocumentEditor({
 }: RichDocumentEditorProps) {
   const canRoundTrip = supportsRichDocumentEditing(content);
   const canEdit = editable && canRoundTrip;
-  const initialContent = useMemo(
-    () => richEditorContent(content),
-    [content]
-  );
+  const initialContent = useMemo(() => richEditorContent(content), [content]);
   const extensions = useMemo(
     () => [
       StarterKit.configure({ heading: { levels: [1, 2] } }),
@@ -97,13 +94,15 @@ export default function RichDocumentEditor({
   }, [editor, canRoundTrip, initialContent]);
 
   const textFallback = extractDocumentText(content);
+  const rootClassName =
+    "document-rich-editor rounded-xl border border-slate-200 bg-transparent";
+  const containerClass = containerClassName
+    ? rootClassName + " " + containerClassName
+    : rootClassName;
 
   return (
     <div
-      className={
-        "document-rich-editor rounded-xl border border-slate-200 bg-transparent " +
-        containerClassName
-      }
+      className={containerClass}
       dir="rtl"
     >
       {editable && !canRoundTrip ? (
@@ -117,7 +116,7 @@ export default function RichDocumentEditor({
       ) : null}
       {canEdit && editor ? (
         <div
-          className="document-studio-no-print flex flex-wrap items-center gap-1 border-b border-slate-200 p-2"
+          className="document-studio-no-print document-rich-editor-toolbar"
           role="toolbar"
           aria-label="أدوات تنسيق الوثيقة"
         >
@@ -165,20 +164,28 @@ export default function RichDocumentEditor({
           <Button
             type="button"
             size="icon"
-            variant={editor.isActive("heading", { level: 1 }) ? "secondary" : "outline"}
+            variant={
+              editor.isActive("heading", { level: 1 }) ? "secondary" : "outline"
+            }
             aria-label="عنوان رئيسي"
             title="عنوان رئيسي"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
           >
             <Heading1 className="size-4" />
           </Button>
           <Button
             type="button"
             size="icon"
-            variant={editor.isActive("heading", { level: 2 }) ? "secondary" : "outline"}
+            variant={
+              editor.isActive("heading", { level: 2 }) ? "secondary" : "outline"
+            }
             aria-label="عنوان فرعي"
             title="عنوان فرعي"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
           >
             <Heading2 className="size-4" />
           </Button>
@@ -300,7 +307,7 @@ export default function RichDocumentEditor({
           className="document-rich-editor-content px-1 py-2"
         />
       ) : (
-        <div className="document-editor-copy text-right text-[15px] text-slate-900">
+        <div className="document-editor-copy document-rich-editor-fallback">
           {textFallback}
         </div>
       )}

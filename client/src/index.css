@@ -894,3 +894,18 @@
     margin-bottom: 8px !important;
   }
 }
+
+.document-rich-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.5rem;
+}
+
+.document-rich-editor-fallback {
+  text-align: right;
+  font-size: 15px;
+  color: #0f172a;
+}
