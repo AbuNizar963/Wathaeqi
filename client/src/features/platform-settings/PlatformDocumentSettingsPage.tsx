@@ -296,6 +296,11 @@ export default function PlatformDocumentSettingsPage() {
                   أدخل لوناً صالحاً بصيغة HEX.
                 </p>
               ) : null}
+              {!values.watermarkText.trim() ? (
+                <p className="text-xs text-destructive">
+                  لا يمكن ترك نص العلامة الأمنية فارغاً.
+                </p>
+              ) : null}
             </section>
 
             <div className="h-px bg-border" />
