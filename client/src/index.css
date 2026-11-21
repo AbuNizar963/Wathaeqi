@@ -809,3 +809,30 @@
     height: 297mm !important;
   }
 }
+
+/* Word preview fits the complete native page inside a phone viewport. The
+   source page is scaled visually; its layout and print dimensions stay native. */
+.document-word-preview-viewport {
+  contain: layout paint;
+  min-height: 160px;
+}
+
+.document-word-preview-viewport .document-word-preview {
+  will-change: transform;
+}
+
+@media (max-width: 640px) {
+  .document-word-preview-viewport {
+    margin-inline: -0.25rem;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .document-word-preview .docx-wrapper {
+    padding: 0 !important;
+  }
+
+  .document-word-preview .docx {
+    margin-bottom: 8px !important;
+  }
+}

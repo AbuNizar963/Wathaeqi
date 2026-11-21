@@ -7,22 +7,46 @@ export default function FilePreview({
   url,
   fileName,
   mimeType,
+  fitToViewport = true,
 }: {
   url: string;
   fileName: string;
   mimeType: string;
+  fitToViewport?: boolean;
 }) {
   const kind = fileKind(fileName, mimeType);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const wordHost = useRef<HTMLDivElement | null>(null);
+  const wordViewport = useRef<HTMLDivElement | null>(null);
+  const [wordLayout, setWordLayout] = useState({ scale: 1, height: 0 });
+
+  function measureWordLayout() {
+    const viewport = wordViewport.current;
+    const host = wordHost.current;
+    if (!viewport || !host) return;
+    const page = host.querySelector<HTMLElement>(".docx");
+    const naturalWidth = Math.max(
+      host.scrollWidth,
+      page?.scrollWidth ?? 0,
+      page?.getBoundingClientRect().width ?? 0
+    );
+    const naturalHeight = Math.max(host.scrollHeight, page?.scrollHeight ?? 0);
+    if (!naturalWidth || !naturalHeight) return;
+    const availableWidth = Math.max(1, viewport.clientWidth - 16);
+    const scale = fitToViewport
+      ? Math.min(1, availableWidth / naturalWidth)
+      : 1;
+    setWordLayout({ scale, height: Math.ceil(naturalHeight * scale) });
+  }
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
     setPdfPages([]);
+    setWordLayout({ scale: 1, height: 0 });
     if (!kind) {
       setError("صيغة الملف غير مدعومة للمعاينة");
       setLoading(false);
@@ -97,6 +121,7 @@ export default function FilePreview({
           renderFooters: true,
           useBase64URL: true,
         });
+        measureWordLayout();
       } catch (previewError) {
         if (!cancelled) {
           setError(
@@ -113,6 +138,17 @@ export default function FilePreview({
       cancelled = true;
     };
   }, [url, fileName, mimeType, kind]);
+
+  useEffect(() => {
+    if (kind !== "word") return;
+    const viewport = wordViewport.current;
+    const host = wordHost.current;
+    if (!viewport || !host) return;
+    const observer = new ResizeObserver(() => measureWordLayout());
+    observer.observe(viewport);
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [kind, fitToViewport, loading]);
 
   if (error) {
     return (
@@ -157,7 +193,11 @@ export default function FilePreview({
   }
 
   return (
-    <div className="relative overflow-x-auto rounded-lg bg-slate-100 p-2 sm:p-3">
+    <div
+      ref={wordViewport}
+      className="document-word-preview-viewport relative overflow-hidden rounded-lg bg-slate-100 p-2 sm:p-3"
+      style={{ height: wordLayout.height ? wordLayout.height + 16 : undefined }}
+    >
       {loading ? (
         <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> جارٍ تجهيز معاينة Word…
@@ -167,6 +207,12 @@ export default function FilePreview({
         ref={wordHost}
         dir="rtl"
         className="document-word-preview mx-auto w-max min-w-full bg-white shadow"
+        style={{
+          transform: `translateX(-50%) scale(${wordLayout.scale})`,
+          transformOrigin: "top center",
+          position: "relative",
+          left: "50%",
+        }}
       />
     </div>
   );
