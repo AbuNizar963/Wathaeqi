@@ -339,7 +339,10 @@ export default function DocumentLibraryPage() {
         }}
       >
         <DialogContent
-          className="w-[calc(100vw-1rem)] max-w-5xl max-h-[95dvh] overflow-y-auto p-3 sm:p-6"
+          className={[
+            "w-[calc(100vw-1rem)] max-w-5xl",
+            "max-h-[95dvh] overflow-y-auto p-3 sm:p-6",
+          ].join(" ")}
           dir="rtl"
         >
           {selected && selected.file ? (
