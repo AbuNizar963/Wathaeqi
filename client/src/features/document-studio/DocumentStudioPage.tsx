@@ -1155,6 +1155,7 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
+              {/* prettier-ignore */}
               <div
                 className="grid grid-cols-2 gap-2 md:hidden document-studio-no-print"
                 role="group"
@@ -1337,6 +1338,7 @@ export default function DocumentStudioPage() {
                 </section>
               ) : null}
 
+              {/* prettier-ignore */}
               <div className={previewMode ? "" : "hidden md:block"}>
                 {selectedDocument?.file ? (
                   <section className="space-y-3 rounded-lg border p-3">
