@@ -65,7 +65,8 @@ export default function DocumentEditor({
 
   return (
     <div
-      className={`document-plain-editor overflow-hidden rounded-xl border border-slate-200 bg-white ${containerClassName}`}
+      className={`document-plain-editor overflow-hidden rounded-xl border
+        border-slate-200 bg-white ${containerClassName}`}
       dir="rtl"
     >
       <Textarea
@@ -76,7 +77,9 @@ export default function DocumentEditor({
         readOnly={!editable}
         placeholder={placeholder}
         aria-label="نص الوثيقة"
-        className="min-h-[760px] resize-y rounded-none border-0 bg-transparent px-[18mm] py-[16mm] text-right text-[15px] leading-8 text-slate-900 shadow-none focus-visible:ring-0"
+        className="min-h-[760px] resize-y rounded-none border-0 bg-transparent
+          px-[18mm] py-[16mm] text-right text-[15px] leading-8 text-slate-900
+          shadow-none focus-visible:ring-0"
       />
     </div>
   );
