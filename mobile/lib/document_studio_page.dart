@@ -431,9 +431,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 for (final count in const [1, 2, 4, 6, 8])
                   OutlinedButton(
                     onPressed: () => Navigator.pop(dialogContext, count),
-                    child: Text(
-                      count == 1 ? '1 صفحة' : '$count صفحات',
-                    ),
+                    child: Text(count == 1 ? '1 صفحة' : '$count صفحات'),
                   ),
               ],
             ),
