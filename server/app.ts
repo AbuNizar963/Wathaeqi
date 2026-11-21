@@ -19,6 +19,7 @@ import {
   saveOrganizationLogo,
 } from "./features/organizations/organizationService";
 import { resolveOrganizationScope } from "./features/organizations/organizationAccess";
+import { isPlatformOwner } from "./ownerAccess";
 import { z } from "zod";
 import {
   getAllowedDocumentMimeType,
@@ -230,15 +231,17 @@ export function createApp(
         Awaited<ReturnType<typeof getAppwriteAuthenticatedUserFromRequest>>
       >;
       try {
-        const scope = await resolveOrganizationScope(user);
-        if (
-          !scope.canAdministrate ||
-          (!scope.isOwner && scope.organizationId !== organizationId)
-        ) {
-          res.status(403).json({
-            error: "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط",
-          });
-          return;
+        if (!isPlatformOwner(user)) {
+          const scope = await resolveOrganizationScope(user);
+          if (
+            !scope.canAdministrate ||
+            scope.organizationId !== organizationId
+          ) {
+            res.status(403).json({
+              error: "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط",
+            });
+            return;
+          }
         }
 
         const key = await saveOrganizationLogo(
