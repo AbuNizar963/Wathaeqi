@@ -1,6 +1,8 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../organizations/organization_logo_upload.dart';
 import '../notifications/toast.dart';
 
 const _navy = Color(0xFF10233F);
@@ -61,7 +63,22 @@ class _PlatformDocumentSettingsPageState
   bool _showVerificationQr = true;
   double _watermarkOpacityPercent = 12;
   String _headerDividerColor = _defaultColor;
+  String _headerDividerStyle = 'double';
+  String _frameStyle = 'single';
+  String _frameColor = _defaultColor;
+  double _headerDividerWidthPt = 2.25;
+  double _frameWidthPt = 1;
+  double _marginTopMm = 10;
+  double _marginRightMm = 10;
+  double _marginBottomMm = 10;
+  double _marginLeftMm = 10;
   String? _error;
+  String? _organizationError;
+  List<Map<String, dynamic>> _organizations = [];
+  String? _selectedOrganizationId;
+  String _organizationLogoUrl = '';
+  bool _loadingOrganizationSettings = true;
+  bool _uploadingOrganizationLogo = false;
   final TextEditingController _colorController = TextEditingController(
     text: _defaultColor,
   );
@@ -70,6 +87,7 @@ class _PlatformDocumentSettingsPageState
   void initState() {
     super.initState();
     _load();
+    _loadOrganizationLogoSettings();
   }
 
   @override
@@ -119,6 +137,18 @@ class _PlatformDocumentSettingsPageState
         _showVerificationQr = result['showVerificationQr'] as bool;
         _watermarkOpacityPercent = opacity.toDouble();
         _headerDividerColor = color.toLowerCase();
+        _headerDividerStyle =
+            result['headerDividerStyle']?.toString() ?? 'double';
+        _headerDividerWidthPt = (result['headerDividerWidthPt'] as num? ?? 2.25)
+            .toDouble();
+        _frameStyle = result['frameStyle']?.toString() ?? 'single';
+        _frameColor = result['frameColor']?.toString() ?? _defaultColor;
+        _frameWidthPt = (result['frameWidthPt'] as num? ?? 1).toDouble();
+        _marginTopMm = (result['pageMarginTopMm'] as num? ?? 10).toDouble();
+        _marginRightMm = (result['pageMarginRightMm'] as num? ?? 10).toDouble();
+        _marginBottomMm = (result['pageMarginBottomMm'] as num? ?? 10)
+            .toDouble();
+        _marginLeftMm = (result['pageMarginLeftMm'] as num? ?? 10).toDouble();
         _colorController.text = _headerDividerColor;
         _settingsConfirmed = true;
       });
@@ -131,6 +161,128 @@ class _PlatformDocumentSettingsPageState
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadOrganizationLogoSettings() async {
+    setState(() {
+      _loadingOrganizationSettings = true;
+      _organizationError = null;
+    });
+    try {
+      final results = await Future.wait([
+        widget.api.call('organizations.all', allowOfflineCache: false),
+        widget.api.call('organizations.context', allowOfflineCache: false),
+      ]);
+      final organizations = (results[0] is List ? results[0] as List : const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+      final contextData = results[1];
+      final currentId = contextData is Map
+          ? contextData['organizationId']?.toString()
+          : null;
+      final selected =
+          organizations.where((item) {
+            return item['id']?.toString() == currentId;
+          }).firstOrNull ??
+          (organizations.isNotEmpty ? organizations.first : null);
+      if (!mounted) return;
+      setState(() {
+        _organizations = organizations;
+        _selectedOrganizationId = selected?['id']?.toString();
+      });
+      if (_selectedOrganizationId != null) {
+        await _loadSelectedOrganizationSettings(_selectedOrganizationId!);
+      } else {
+        setState(() {
+          _loadingOrganizationSettings = false;
+          _organizationError = 'لا توجد جهة متاحة لربط شعار الوثيقة بها.';
+        });
+      }
+    } catch (exception) {
+      if (mounted) {
+        setState(() {
+          _loadingOrganizationSettings = false;
+          _organizationError = _settingsErrorMessage(exception);
+        });
+      }
+    }
+  }
+
+  Future<void> _loadSelectedOrganizationSettings(String organizationId) async {
+    setState(() {
+      _loadingOrganizationSettings = true;
+      _organizationError = null;
+    });
+    try {
+      final result = await widget.api.call(
+        'organizations.logo',
+        input: {'id': organizationId},
+        allowOfflineCache: false,
+      );
+      if (result is! Map) {
+        throw Exception('تعذر قراءة شعار الجهة.');
+      }
+      if (!mounted) return;
+      setState(() {
+        _organizationLogoUrl = result['logoUrl']?.toString() ?? '';
+        _loadingOrganizationSettings = false;
+      });
+    } catch (exception) {
+      if (mounted) {
+        setState(() {
+          _loadingOrganizationSettings = false;
+          _organizationError = _settingsErrorMessage(exception);
+        });
+      }
+    }
+  }
+
+  Future<void> _selectOrganization(String? organizationId) async {
+    if (organizationId == null || organizationId == _selectedOrganizationId) {
+      return;
+    }
+    setState(() => _selectedOrganizationId = organizationId);
+    await _loadSelectedOrganizationSettings(organizationId);
+  }
+
+  Future<void> _pickAndUploadOrganizationLogo() async {
+    final organizationId = _selectedOrganizationId;
+    if (organizationId == null || _uploadingOrganizationLogo) return;
+    try {
+      final selection = await FilePicker.pickFiles(
+        type: FileType.image,
+        withData: true,
+        allowMultiple: false,
+      );
+      if (selection == null || selection.files.isEmpty) return;
+      final file = selection.files.single;
+      final sourceBytes = file.bytes;
+      if (sourceBytes == null || sourceBytes.isEmpty) {
+        throw Exception('تعذر قراءة الصورة المختارة من الجهاز.');
+      }
+      setState(() => _uploadingOrganizationLogo = true);
+      final prepared = await prepareOrganizationLogoBytes(sourceBytes);
+      final uploaded = await widget.api.uploadOrganizationLogo(
+        organizationId: organizationId,
+        fileName: file.name,
+        contentType: 'image/png',
+        bytes: prepared,
+      );
+      if (!mounted) return;
+      final logoUrl = uploaded['url']?.toString() ?? '';
+      if (logoUrl.isEmpty) {
+        throw Exception('تم رفع الشعار لكن رابط المعاينة غير متاح.');
+      }
+      setState(() => _organizationLogoUrl = logoUrl);
+      Toast.success(context, 'تم حفظ شعار الجهة وربطه بترويسة الوثائق');
+    } catch (exception) {
+      if (mounted) {
+        setState(() => _organizationError = _settingsErrorMessage(exception));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingOrganizationLogo = false);
     }
   }
 
@@ -156,6 +308,15 @@ class _PlatformDocumentSettingsPageState
           'showMinistryWatermarkText': _showMinistryWatermarkText,
           'watermarkOpacityPercent': _watermarkOpacityPercent.round(),
           'headerDividerColor': color.toLowerCase(),
+          'headerDividerStyle': _headerDividerStyle,
+          'headerDividerWidthPt': _headerDividerWidthPt,
+          'pageMarginTopMm': _marginTopMm.round(),
+          'pageMarginRightMm': _marginRightMm.round(),
+          'pageMarginBottomMm': _marginBottomMm.round(),
+          'pageMarginLeftMm': _marginLeftMm.round(),
+          'frameStyle': _frameStyle,
+          'frameColor': _frameColor,
+          'frameWidthPt': _frameWidthPt,
           'showVerificationQr': _showVerificationQr,
         },
       );
@@ -179,6 +340,180 @@ class _PlatformDocumentSettingsPageState
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  Widget _settingsSlider(
+    String label,
+    double value,
+    double min,
+    double max,
+    String suffix,
+    ValueChanged<double> onChanged,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(
+            '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2)}$suffix',
+          ),
+        ],
+      ),
+      Slider.adaptive(
+        value: value.clamp(min, max),
+        min: min,
+        max: max,
+        onChanged: _saving ? null : onChanged,
+      ),
+    ],
+  );
+  Widget _buildOrganizationLogoCard() {
+    final colors = Theme.of(context).colorScheme;
+    final selectedOrganization = _organizations.where((organization) {
+      return organization['id']?.toString() == _selectedOrganizationId;
+    }).firstOrNull;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'شعار الجهة في ترويسة الوثيقة',
+              style: TextStyle(
+                color: colors.onSurface,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'اختر الجهة ثم ارفع شعارها ليظهر في منتصف رأس الوثيقة الرسمية.',
+              style: TextStyle(color: colors.onSurfaceVariant, height: 1.5),
+            ),
+            const SizedBox(height: 12),
+            if (_loadingOrganizationSettings)
+              const Center(child: CircularProgressIndicator())
+            else if (_organizations.isEmpty)
+              const Text('لا توجد جهات متاحة.')
+            else ...[
+              DropdownButtonFormField<String>(
+                initialValue: _selectedOrganizationId,
+                decoration: const InputDecoration(
+                  labelText: 'الجهة',
+                  border: OutlineInputBorder(),
+                ),
+                items: _organizations.map((organization) {
+                  return DropdownMenuItem(
+                    value: organization['id']?.toString(),
+                    child: Text(
+                      organization['name']?.toString() ?? 'جهة بدون اسم',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: _uploadingOrganizationLogo
+                    ? null
+                    : _selectOrganization,
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 92,
+                    height: 92,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colors.outlineVariant),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: _organizationLogoUrl.isEmpty
+                        ? Icon(
+                            Icons.image_outlined,
+                            color: colors.onSurfaceVariant,
+                          )
+                        : Image.network(
+                            _organizationLogoUrl,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => Icon(
+                              Icons.broken_image_outlined,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FilledButton.icon(
+                          onPressed:
+                              _uploadingOrganizationLogo ||
+                                  _selectedOrganizationId == null
+                              ? null
+                              : _pickAndUploadOrganizationLogo,
+                          icon: _uploadingOrganizationLogo
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.upload_outlined),
+                          label: Text(
+                            _uploadingOrganizationLogo
+                                ? 'جارٍ رفع الشعار...'
+                                : 'اختيار ورفع الشعار',
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'PNG أو JPG، حتى 5 ميغابايت. يتم حفظ الصورة في مساحة ملفات الجهة.',
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
+                            fontSize: 12,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (_organizationError != null) ...[
+              const SizedBox(height: 10),
+              _ErrorCard(message: _organizationError!),
+              TextButton.icon(
+                onPressed: _loadingOrganizationSettings
+                    ? null
+                    : () {
+                        final id = _selectedOrganizationId;
+                        if (id != null) _loadSelectedOrganizationSettings(id);
+                      },
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة تحميل إعدادات الجهة'),
+              ),
+            ],
+            if (selectedOrganization != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'الشعار مرتبط بجهة: ${selectedOrganization['name'] ?? '—'}',
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -216,6 +551,7 @@ class _PlatformDocumentSettingsPageState
               padding: const EdgeInsets.all(16),
               children: [
                 if (_error != null) _ErrorCard(message: _error!),
+                _buildOrganizationLogoCard(),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -375,6 +711,155 @@ class _PlatformDocumentSettingsPageState
                             }
                           },
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'تنسيق الصفحة والإطار',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _frameStyle,
+                          decoration: const InputDecoration(
+                            labelText: 'شكل الإطار',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'none',
+                              child: Text('بدون إطار'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'single',
+                              child: Text('مفرد'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'double',
+                              child: Text('مزدوج'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'ornate',
+                              child: Text('زخرفي احترافي'),
+                            ),
+                          ],
+                          onChanged: _saving
+                              ? null
+                              : (v) {
+                                  if (v != null) {
+                                    setState(() => _frameStyle = v);
+                                  }
+                                },
+                        ),
+                        TextField(
+                          enabled: !_saving,
+                          textDirection: TextDirection.ltr,
+                          decoration: const InputDecoration(
+                            labelText: 'لون الإطار #RRGGBB',
+                          ),
+                          controller: TextEditingController(text: _frameColor),
+                          onChanged: (v) {
+                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) {
+                              setState(() => _frameColor = v.toLowerCase());
+                            }
+                          },
+                        ),
+                        _settingsSlider(
+                          'سماكة الإطار',
+                          _frameWidthPt,
+                          .5,
+                          4,
+                          ' نقطة',
+                          (v) => setState(() => _frameWidthPt = v),
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _headerDividerStyle,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'نمط الفاصل بين الرأس والمحتوى',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'solid',
+                              child: Text('متصل'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'double',
+                              child: Text('مزدوج'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'dashed',
+                              child: Text('متقطع'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'dotted',
+                              child: Text('منقط'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'tricolor-stars',
+                              child: Text(
+                                'أسود وأخضر مع ثلاث نجوم',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                          onChanged: _saving
+                              ? null
+                              : (v) {
+                                  if (v != null) {
+                                    setState(() => _headerDividerStyle = v);
+                                  }
+                                },
+                        ),
+                        _settingsSlider(
+                          'سماكة الفاصل',
+                          _headerDividerWidthPt,
+                          .5,
+                          6,
+                          ' نقطة',
+                          (v) => setState(() => _headerDividerWidthPt = v),
+                        ),
+                        for (final item
+                            in <
+                              ({
+                                String label,
+                                double value,
+                                void Function(double) onChanged,
+                              })
+                            >[
+                              (
+                                label: 'الهامش العلوي',
+                                value: _marginTopMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginTopMm = v),
+                              ),
+                              (
+                                label: 'الهامش الأيمن',
+                                value: _marginRightMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginRightMm = v),
+                              ),
+                              (
+                                label: 'الهامش السفلي',
+                                value: _marginBottomMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginBottomMm = v),
+                              ),
+                              (
+                                label: 'الهامش الأيسر',
+                                value: _marginLeftMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginLeftMm = v),
+                              ),
+                            ])
+                          _settingsSlider(
+                            item.label,
+                            item.value,
+                            0,
+                            35,
+                            ' مم',
+                            item.onChanged,
+                          ),
                         const SizedBox(height: 8),
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,

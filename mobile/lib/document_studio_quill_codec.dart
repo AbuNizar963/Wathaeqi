@@ -3,9 +3,33 @@ import 'package:flutter_quill/flutter_quill.dart' show Document;
 class DocumentStudioQuillCodec {
   const DocumentStudioQuillCodec._();
 
+  /// Older Appwrite records may contain plain text rather than a doc node.
+  /// Convert only that known representation; leave other content untouched.
+  static Map<String, dynamic> normalizeLegacyText(
+    Map<String, dynamic> content,
+  ) {
+    if (content['type'] != 'legacy-text' || content['text'] is! String) {
+      return content;
+    }
+    final lines = (content['text'] as String).split('\n');
+    return {
+      'type': 'doc',
+      'content': [
+        for (final line in lines)
+          {
+            'type': 'paragraph',
+            if (line.isNotEmpty)
+              'content': [
+                {'type': 'text', 'text': line},
+              ],
+          },
+      ],
+    };
+  }
+
   static Document toQuillDocument(Map<String, dynamic> tiptapContent) {
     final operations = <Map<String, dynamic>>[];
-    final nodes = _asList(tiptapContent['content']);
+    final nodes = _asList(normalizeLegacyText(tiptapContent)['content']);
     for (final node in nodes) {
       _appendBlock(node, operations);
     }

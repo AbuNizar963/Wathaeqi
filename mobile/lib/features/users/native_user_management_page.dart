@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../api.dart';
 import '../notifications/toast.dart';
+import '../../closable_dialog_title.dart';
 
 const _userGold = Color(0xFFD8C38E);
 
@@ -127,7 +128,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: Text(title),
+          title: closableDialogTitle(dialogContext, Text(title)),
           content: TextField(
             controller: controller,
             obscureText: true,
@@ -746,7 +747,10 @@ class _UserFormDialogState extends State<_UserFormDialog> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: AlertDialog(
-      title: Text(_editing ? 'تعديل الحساب' : 'إنشاء حساب ضمن جهة محددة'),
+      title: closableDialogTitle(
+        context,
+        Text(_editing ? 'تعديل الحساب' : 'إنشاء حساب ضمن جهة محددة'),
+      ),
       content: SizedBox(
         width: MediaQuery.sizeOf(context).width * 0.82,
         child: SingleChildScrollView(
@@ -896,7 +900,7 @@ class _EnableUserDialogState extends State<_EnableUserDialog> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: AlertDialog(
-      title: const Text('إعادة تفعيل الحساب'),
+      title: closableDialogTitle(context, const Text('إعادة تفعيل الحساب')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -18,6 +18,7 @@ class DocumentStudioPdf {
     required Map<String, dynamic> letterhead,
     required int dividerColor,
     required bool showWatermarkText,
+    required String watermarkText,
     required double watermarkOpacity,
   }) async {
     final regular = pw.Font.ttf(
@@ -58,156 +59,293 @@ class DocumentStudioPdf {
         : 0.12;
     final watermarkColor = PdfColor(0.42, 0.44, 0.47, safeOpacity);
     final borderColor = PdfColor.fromInt(dividerColor);
+    double pageMargin(String key, double fallback) {
+      final value = letterhead[key];
+      return (value is num ? value.toDouble() : fallback)
+              .clamp(0.0, 35.0)
+              .toDouble() *
+          PdfPageFormat.mm;
+    }
+
+    final frameStyle = _clean(letterhead['frameStyle']) ?? 'single';
+    final frameColor =
+        _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
+    final frameWidth =
+        ((letterhead['frameWidthPt'] is num
+                    ? (letterhead['frameWidthPt'] as num).toDouble()
+                    : 1.0)
+                .clamp(0.5, 4.0))
+            .toDouble();
+    final dividerWidth =
+        ((letterhead['headerDividerWidthPt'] is num
+                    ? (letterhead['headerDividerWidthPt'] as num).toDouble()
+                    : 2.25)
+                .clamp(0.5, 6.0))
+            .toDouble();
+    final isTricolorStars =
+        _clean(letterhead['headerDividerStyle']) == 'tricolor-stars';
     final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
     final chiefRank = _clean(letterhead['unitChiefRank']);
     final chiefName = _clean(letterhead['unitChiefName']);
+    final headerShowLogo = letterhead['headerShowLogo'] != false;
+    final rawHeaderLogoSize = letterhead['headerLogoSize'];
+    final headerLogoSize =
+        (rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 120.0)
+            .clamp(32.0, 128.0)
+            .toDouble();
+    final headerLogoSizePoints = headerLogoSize * 0.75;
+    final headerTopPadding = _headerPadding(
+      letterhead,
+      'headerTopPaddingMm',
+      0,
+    );
+    final headerHorizontalPadding = _headerPadding(
+      letterhead,
+      'headerHorizontalPaddingMm',
+      0,
+    );
+    final headerBottomPadding = _headerPadding(
+      letterhead,
+      'headerBottomPaddingMm',
+      6,
+    );
+    final headerAlignment = _clean(letterhead['headerAlignment']) ?? 'spread';
 
     pdf.addPage(
       pw.MultiPage(
         maxPages: 500,
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.fromLTRB(38, 30, 38, 38),
+          margin: pw.EdgeInsets.fromLTRB(
+            pageMargin('pageMarginLeftMm', 10),
+            pageMargin('pageMarginTopMm', 10),
+            pageMargin('pageMarginRightMm', 10),
+            pageMargin('pageMarginBottomMm', 10),
+          ),
           theme: theme,
           textDirection: pw.TextDirection.rtl,
           buildBackground: (context) => pw.FullPage(
             ignoreMargins: true,
             child: pw.Stack(
               children: [
-                pw.Center(
-                  child: pw.Column(
-                    mainAxisAlignment: pw.MainAxisAlignment.center,
-                    children: [
-                      if (showWatermarkText)
-                        for (var row = 0; row < 17; row++)
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.symmetric(vertical: 5),
-                            child: pw.Text(
-                              row.isEven
-                                  ? 'وثائقي     وثائقي     وثائقي'
-                                  : '     وثائقي     وثائقي     وثائقي',
-                              textDirection: pw.TextDirection.rtl,
-                              style: pw.TextStyle(
-                                font: watermarkFont,
-                                fontSize: 14,
-                                color: watermarkColor,
+                if (frameStyle != 'none')
+                  pw.Positioned.fill(
+                    child: pw.Container(
+                      margin: pw.EdgeInsets.fromLTRB(
+                        pageMargin('pageMarginLeftMm', 10),
+                        pageMargin('pageMarginTopMm', 10),
+                        pageMargin('pageMarginRightMm', 10),
+                        pageMargin('pageMarginBottomMm', 10),
+                      ),
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(
+                          color: frameColor,
+                          width: frameWidth,
+                        ),
+                      ),
+                      child: frameStyle == 'ornate' || frameStyle == 'double'
+                          ? pw.Container(
+                              margin: const pw.EdgeInsets.all(3),
+                              decoration: pw.BoxDecoration(
+                                border: pw.Border.all(
+                                  color: frameColor,
+                                  width: frameWidth,
+                                ),
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                if (showWatermarkText)
+                  pw.Positioned.fill(
+                    child: pw.Padding(
+                      padding: const pw.EdgeInsets.fromLTRB(
+                        3.2 * PdfPageFormat.mm,
+                        2.4 * PdfPageFormat.mm,
+                        3.2 * PdfPageFormat.mm,
+                        3 * PdfPageFormat.mm,
+                      ),
+                      child: pw.Column(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          for (var row = 0; row < 33; row++)
+                            pw.ClipRect(
+                              child: pw.Transform.translate(
+                                offset: PdfPoint(
+                                  row.isOdd ? -10.3 * PdfPageFormat.mm : 0,
+                                  0,
+                                ),
+                                child: pw.Row(
+                                  mainAxisAlignment: pw.MainAxisAlignment.start,
+                                  children: [
+                                    for (var column = 0; column < 13; column++)
+                                      pw.Padding(
+                                        padding: const pw.EdgeInsets.only(
+                                          right: 6.16 * PdfPageFormat.mm,
+                                        ),
+                                        child: pw.Text(
+                                          watermarkText,
+                                          textDirection: pw.TextDirection.rtl,
+                                          style: pw.TextStyle(
+                                            font: watermarkFont,
+                                            fontSize: 11,
+                                            color: watermarkColor,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
                 if (logoImage != null)
                   pw.Center(
                     child: pw.Opacity(
                       opacity: safeOpacity,
                       child: pw.Image(
                         logoImage,
-                        width: 460,
-                        height: 460,
+                        width: PdfPageFormat.a4.width * 0.9375,
+                        height: PdfPageFormat.a4.height * 0.9375,
                         fit: pw.BoxFit.contain,
                       ),
                     ),
                   ),
-                pw.Center(
-                  child: pw.Text(
-                    'وثائقي',
-                    textDirection: pw.TextDirection.rtl,
-                    style: pw.TextStyle(
-                      font: watermarkFont,
-                      fontSize: 76,
-                      color: PdfColor(0.42, 0.44, 0.47, safeOpacity * 0.55),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
         ),
         header: (context) {
           if (context.pageNumber > 1) return pw.SizedBox(height: 8);
+          final titleAlignment = headerAlignment == 'center'
+              ? pw.TextAlign.center
+              : pw.TextAlign.right;
+          final metadataAlignment = headerAlignment == 'center'
+              ? pw.TextAlign.center
+              : headerAlignment == 'right'
+              ? pw.TextAlign.right
+              : pw.TextAlign.left;
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
-              pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
-                children: [
-                  if (logoImage != null)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(left: 8),
-                      child: pw.Image(
-                        logoImage,
-                        width: 44,
-                        height: 44,
-                        fit: pw.BoxFit.contain,
+              pw.Container(
+                padding: pw.EdgeInsets.fromLTRB(
+                  headerHorizontalPadding,
+                  headerTopPadding,
+                  headerHorizontalPadding,
+                  headerBottomPadding,
+                ),
+                decoration: isTricolorStars
+                    ? null
+                    : pw.BoxDecoration(
+                        border: pw.Border(
+                          bottom: pw.BorderSide(
+                            color: borderColor,
+                            width: dividerWidth,
+                          ),
+                        ),
+                      ),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                        children: [
+                          pw.Text(
+                            department,
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: titleAlignment,
+                            maxLines: 1,
+                            style: pw.TextStyle(font: bold, fontSize: 15),
+                          ),
+                          if (unit != null)
+                            pw.Text(
+                              unit,
+                              textDirection: pw.TextDirection.rtl,
+                              textAlign: titleAlignment,
+                              maxLines: 1,
+                              style: pw.TextStyle(font: bold, fontSize: 15),
+                            ),
+                        ],
                       ),
                     ),
-                  pw.Expanded(
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        pw.Text(
-                          department,
-                          textDirection: pw.TextDirection.rtl,
-                          style: pw.TextStyle(font: bold, fontSize: 16),
-                        ),
-                        if (unit != null)
-                          pw.Text(
-                            unit,
-                            textDirection: pw.TextDirection.rtl,
-                            style: const pw.TextStyle(fontSize: 10),
-                          ),
-                      ],
+                    pw.SizedBox(
+                      width: headerLogoSizePoints,
+                      child: headerShowLogo && logoImage != null
+                          ? pw.Image(
+                              logoImage,
+                              width: headerLogoSizePoints,
+                              height: headerLogoSizePoints,
+                              fit: pw.BoxFit.contain,
+                            )
+                          : pw.SizedBox(
+                              width: headerLogoSizePoints,
+                              height: headerLogoSizePoints,
+                            ),
                     ),
-                  ),
-                  if (chiefName != null)
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.center,
-                      children: [
-                        if (chiefRank != null)
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                        children: [
                           pw.Text(
-                            chiefRank,
+                            'الرقم: ${serialCode.isEmpty ? 'يخصص عند الإصدار' : serialCode}',
                             textDirection: pw.TextDirection.rtl,
-                            style: const pw.TextStyle(fontSize: 10),
+                            textAlign: metadataAlignment,
+                            maxLines: 1,
+                            style: pw.TextStyle(font: bold, fontSize: 15),
                           ),
-                        pw.Text(
-                          chiefName,
-                          textDirection: pw.TextDirection.rtl,
-                          style: pw.TextStyle(font: bold, fontSize: 11),
-                        ),
-                      ],
+                          pw.Text(
+                            'التاريخ: $dateText',
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: metadataAlignment,
+                            maxLines: 1,
+                            style: pw.TextStyle(font: bold, fontSize: 15),
+                          ),
+                          if (chiefRank != null)
+                            pw.Text(
+                              chiefRank,
+                              textDirection: pw.TextDirection.rtl,
+                              textAlign: metadataAlignment,
+                              maxLines: 1,
+                              style: const pw.TextStyle(fontSize: 12),
+                            ),
+                          if (chiefName != null)
+                            pw.Text(
+                              chiefName,
+                              textDirection: pw.TextDirection.rtl,
+                              textAlign: metadataAlignment,
+                              maxLines: 1,
+                              style: pw.TextStyle(font: bold, fontSize: 12),
+                            ),
+                        ],
+                      ),
                     ),
-                ],
+                  ],
+                ),
               ),
-              pw.SizedBox(height: 8),
-              pw.Container(height: 2, color: borderColor),
-              pw.SizedBox(height: 10),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'الرقم: ${serialCode.isEmpty ? 'يخصص عند الإصدار' : serialCode}',
-                    textDirection: pw.TextDirection.rtl,
-                    style: const pw.TextStyle(fontSize: 9),
+              if (isTricolorStars)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(top: 2),
+                  child: pw.SvgImage(
+                    width: double.infinity,
+                    height: 9,
+                    svg: '<svg viewBox="0 0 1056 18" xmlns="http://www.w3.org/2000/svg"><path fill="#000000" d="M0 8.8 470 5.5v7L0 9.2Z"/><g fill="#c91111"><path d="M490 1.2 491.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L490 1.2Z"/><path d="M528 1.2 529.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L528 1.2Z"/><path d="M566 1.2 567.9 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4L566 1.2Z"/></g><path fill="#04993d" d="M586 5.5 1056 8.8v.4L586 12.5Z"/></svg>',
                   ),
-                  pw.Text(
-                    'التاريخ: $dateText',
-                    textDirection: pw.TextDirection.rtl,
-                    style: const pw.TextStyle(fontSize: 9),
-                  ),
-                ],
-              ),
+                ),
+              pw.SizedBox(height: 12),
               if (subject.trim().isNotEmpty) ...[
-                pw.SizedBox(height: 12),
                 pw.Text(
                   'الموضوع: ${subject.trim()}',
                   textDirection: pw.TextDirection.rtl,
                   style: pw.TextStyle(font: bold, fontSize: 11),
                 ),
+                pw.SizedBox(height: 12),
               ],
-              pw.SizedBox(height: 8),
               pw.Text(
                 title,
                 textDirection: pw.TextDirection.rtl,
@@ -241,6 +379,25 @@ class DocumentStudioPdf {
     );
 
     return pdf.save();
+  }
+
+  static double _headerPadding(
+    Map<String, dynamic> settings,
+    String key,
+    double fallback,
+  ) {
+    final value = settings[key];
+    final parsed = value is num ? value.toDouble() : double.tryParse('$value');
+    return (parsed ?? fallback).clamp(0, 30).toDouble() * PdfPageFormat.mm;
+  }
+
+  static PdfColor? _parseHexColor(String? value) {
+    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value)) {
+      return null;
+    }
+    return PdfColor.fromInt(
+      int.parse(value.substring(1), radix: 16) | 0xFF000000,
+    );
   }
 
   static String? _clean(dynamic value) {

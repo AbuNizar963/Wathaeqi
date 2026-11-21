@@ -8,6 +8,7 @@ import 'package:printing/printing.dart' show PdfPreview, Printing;
 import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
+import 'closable_dialog_title.dart';
 import 'document_studio_models.dart';
 import 'document_file_support.dart';
 import 'document_print_layout.dart';
@@ -166,7 +167,10 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: ui.TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('إضافة وثيقة إلى المكتبة'),
+            title: closableDialogTitle(
+              dialogContext,
+              const Text('إضافة وثيقة إلى المكتبة'),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,

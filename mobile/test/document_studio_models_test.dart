@@ -50,6 +50,40 @@ void main() {
       expect(restored.content['content'], isA<List<dynamic>>());
     });
 
+    test('legacy starter drafts are excluded from user document lists', () {
+      const starterHtml =
+          '<h2>بسم الله الرحمن الرحيم</h2><p>العدد: ....................</p><p>التاريخ: .... / .... / ........</p><p><strong>إلى /</strong> ................................................</p><p><strong>الموضوع /</strong> ............................................</p><p>تحية طيبة...</p><p>يرجى التفضل بالاطلاع واتخاذ ما يلزم بشأن الموضوع أعلاه، مع التقدير.</p><p>وتفضلوا بقبول فائق الاحترام.</p><p><strong>التوقيع:</strong> ............................</p>';
+      final starter = OfficialDocument.fromJson({
+        'id': 'legacy-starter-1',
+        'ownerId': 'owner-1',
+        'title': 'كتاب رسمي جديد',
+        'category': 'مسودة',
+        'content': {'type': 'legacy-html', 'html': starterHtml},
+        'serialNumber': 0,
+        'serialCode': '',
+        'status': 'draft',
+        'documentDate': '2026-11-16T21:41:41.000Z',
+        'createdAt': '2026-11-16T21:41:41.000Z',
+        'updatedAt': '2026-11-16T21:41:41.000Z',
+      });
+      final userDocument = OfficialDocument.fromJson({
+        'id': 'user-document-1',
+        'ownerId': 'owner-1',
+        'title': 'كتاب رسمي جديد',
+        'category': 'general',
+        'content': {'type': 'legacy-html', 'html': starterHtml},
+        'serialNumber': 0,
+        'serialCode': '',
+        'status': 'draft',
+        'documentDate': '2026-11-16T21:41:41.000Z',
+        'createdAt': '2026-11-16T21:41:41.000Z',
+        'updatedAt': '2026-11-16T21:41:41.000Z',
+      });
+
+      expect(starter.isLegacyStarterDraft, isTrue);
+      expect(userDocument.isLegacyStarterDraft, isFalse);
+    });
+
     test(
       'official documents round-trip editor snapshots and issue metadata',
       () {

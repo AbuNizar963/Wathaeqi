@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -7,10 +8,13 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
+import 'closable_dialog_title.dart';
 import 'document_studio_outbox.dart';
 import 'document_studio_pdf.dart';
 import 'document_studio_print_layout.dart';
@@ -56,11 +60,32 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   bool _previewMode = false;
   String? _loadError;
   bool _canIssueDocuments = false;
+  bool _isPlatformOwner = false;
   Map<String, dynamic> _letterhead = {};
   Map<String, dynamic> _platformDocumentSettings = {
     'showMinistryWatermarkText': true,
+    'watermarkText': 'وزارة الداخلية',
     'watermarkOpacityPercent': 12,
     'headerDividerColor': '#b49a55',
+    'headerDividerStyle': 'double',
+    'headerDividerWidthPt': 2.25,
+    'pageMarginTopMm': 10,
+    'pageMarginRightMm': 10,
+    'pageMarginBottomMm': 10,
+    'pageMarginLeftMm': 10,
+    'frameStyle': 'single',
+    'frameColor': '#b49a55',
+    'frameWidthPt': 1,
+    'headerTitle': '',
+    'headerSubtitle': '',
+    'headerChiefRank': '',
+    'headerChiefName': '',
+    'headerShowLogo': true,
+    'headerLogoSize': 120,
+    'headerTopPaddingMm': 0,
+    'headerHorizontalPaddingMm': 0,
+    'headerBottomPaddingMm': 6,
+    'headerAlignment': 'spread',
   };
 
   final _titleController = TextEditingController();
@@ -254,8 +279,28 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
       Map<String, dynamic> platformDocumentSettings = {
         'showMinistryWatermarkText': true,
+        'watermarkText': 'وزارة الداخلية',
         'watermarkOpacityPercent': 12,
         'headerDividerColor': '#b49a55',
+        'headerDividerStyle': 'double',
+        'headerDividerWidthPt': 2.25,
+        'pageMarginTopMm': 10,
+        'pageMarginRightMm': 10,
+        'pageMarginBottomMm': 10,
+        'pageMarginLeftMm': 10,
+        'frameStyle': 'single',
+        'frameColor': '#b49a55',
+        'frameWidthPt': 1,
+        'headerTitle': '',
+        'headerSubtitle': '',
+        'headerChiefRank': '',
+        'headerChiefName': '',
+        'headerShowLogo': true,
+        'headerLogoSize': 120,
+        'headerTopPaddingMm': 0,
+        'headerHorizontalPaddingMm': 0,
+        'headerBottomPaddingMm': 6,
+        'headerAlignment': 'spread',
       };
       try {
         final rawSettings = await widget.api.call(
@@ -263,7 +308,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           allowOfflineCache: false,
         );
         if (rawSettings is Map) {
-          platformDocumentSettings = Map<String, dynamic>.from(rawSettings);
+          platformDocumentSettings = {
+            ...platformDocumentSettings,
+            ...Map<String, dynamic>.from(rawSettings),
+          };
         }
       } catch (_) {
         // Keep the same safe defaults when system settings are unavailable.
@@ -289,8 +337,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           _editingTemplateId = null;
           _creatingTemplate = false;
         }
+        _isPlatformOwner = context['isOwner'] == true;
         _canIssueDocuments =
-            context['isOwner'] == true ||
+            _isPlatformOwner ||
             const [
               'system_admin',
               'organization_admin',
@@ -367,27 +416,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final choice = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إنشاء وثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('إنشاء وثيقة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('إنشاء والكتابة في وثيقة'),
-              subtitle: const Text('افتح المحرر واكتب وثيقتك مباشرة'),
+              title: const Text('وثيقة جديدة'),
+              subtitle: const Text('ابدأ وثيقة رسمية جديدة على ورق A4 المعتمد'),
               onTap: () => Navigator.pop(dialogContext, 'write'),
             ),
             ListTile(
               leading: const Icon(Icons.file_open_outlined),
-              title: const Text('استيراد PDF أو Word أو صورة'),
-              subtitle: const Text('إرفاق ملف موجود وإنشاء سجل للوثيقة'),
+              title: const Text('رفع ملف'),
+              subtitle: const Text('ارفع ملف Word أو PDF أو صورة إلى مكتبتك'),
               onTap: () => Navigator.pop(dialogContext, 'import'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_customize_outlined),
-              title: const Text('اختيار نموذج جاهز'),
-              subtitle: const Text('استخدم نموذجاً محفوظاً للبدء'),
-              onTap: () => Navigator.pop(dialogContext, 'template'),
             ),
           ],
         ),
@@ -404,11 +447,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _startNewDocument();
     } else if (choice == 'import') {
       await _uploadDocumentFile();
-    } else if (choice == 'template') {
-      setState(() {
-        _selectedTemplate = null;
-        _tab = DocumentStudioTab.templates;
-      });
     }
   }
 
@@ -416,7 +454,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إعداد الطباعة'),
+        title: closableDialogTitle(dialogContext, const Text('إعداد الطباعة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -447,6 +485,40 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Future<int?> _chooseImageTiles() {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: closableDialogTitle(
+          dialogContext,
+          const Text('تقسيم الصورة للطباعة'),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('اختر عدد أوراق A4 التي ستُقسّم الصورة عليها'),
+            const SizedBox(height: 12),
+            for (final count in const [1, 4, 9, 16])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(dialogContext, count),
+                  child: Text(count == 1 ? 'ورقة واحدة' : '$count أوراق'),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _printDocumentFile(OfficialDocument document) async {
     final file = document.file;
     if (file != null && file.mimeType == DocumentFileSupport.docxMime) {
@@ -454,12 +526,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
 
-    final pagesPerSheet = await _choosePrintPagesPerSheet();
+    final isImage = file?.mimeType.startsWith('image/') == true;
+    final imageTiles = isImage ? await _chooseImageTiles() : 1;
+    if (imageTiles == null || !mounted) return;
+    final pagesPerSheet = isImage ? 1 : await _choosePrintPagesPerSheet();
     if (pagesPerSheet == null || !mounted) return;
 
     setState(() => _saving = true);
     try {
-      final sourcePdf = await _fetchDocumentPdf(document);
+      final sourcePdf = await _fetchDocumentPdf(
+        document,
+        imageTiles: imageTiles,
+      );
       final printPdf = pagesPerSheet == 1
           ? sourcePdf
           : await DocumentStudioPrintLayout.compose(
@@ -477,7 +555,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
-  Future<Uint8List> _fetchDocumentPdf(OfficialDocument document) async {
+  Future<Uint8List> _fetchDocumentPdf(
+    OfficialDocument document, {
+    int imageTiles = 1,
+  }) async {
     final file = document.file;
     if (file == null) {
       final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
@@ -486,14 +567,59 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ? rawOpacity.toDouble()
               : double.tryParse('$rawOpacity') ?? 12) /
           100;
+      final configuredLetterhead = {
+        ..._letterhead,
+        'departmentName': _headerSetting(
+          'headerTitle',
+          _letterhead['departmentName']?.toString() ?? 'وثائقي',
+        ),
+        'unitName': _headerSetting(
+          'headerSubtitle',
+          _letterhead['unitName']?.toString() ?? '',
+        ),
+        'unitChiefRank': _headerSetting(
+          'headerChiefRank',
+          _letterhead['unitChiefRank']?.toString() ?? '',
+        ),
+        'unitChiefName': _headerSetting(
+          'headerChiefName',
+          _letterhead['unitChiefName']?.toString() ?? '',
+        ),
+        'headerShowLogo': _platformDocumentSettings['headerShowLogo'] != false,
+        'headerLogoSize': _platformDocumentSettings['headerLogoSize'] ?? 120,
+        'headerTopPaddingMm':
+            _platformDocumentSettings['headerTopPaddingMm'] ?? 0,
+        'headerHorizontalPaddingMm':
+            _platformDocumentSettings['headerHorizontalPaddingMm'] ?? 0,
+        'headerBottomPaddingMm':
+            _platformDocumentSettings['headerBottomPaddingMm'] ?? 6,
+        'headerAlignment':
+            _platformDocumentSettings['headerAlignment'] ?? 'spread',
+        'headerDividerStyle':
+            _platformDocumentSettings['headerDividerStyle'] ?? 'double',
+        'headerDividerWidthPt':
+            _platformDocumentSettings['headerDividerWidthPt'] ?? 2.25,
+        'pageMarginTopMm': _platformDocumentSettings['pageMarginTopMm'] ?? 10,
+        'pageMarginRightMm':
+            _platformDocumentSettings['pageMarginRightMm'] ?? 10,
+        'pageMarginBottomMm':
+            _platformDocumentSettings['pageMarginBottomMm'] ?? 10,
+        'pageMarginLeftMm': _platformDocumentSettings['pageMarginLeftMm'] ?? 10,
+        'frameStyle': _platformDocumentSettings['frameStyle'] ?? 'single',
+        'frameColor': _platformDocumentSettings['frameColor'] ?? '#b49a55',
+        'frameWidthPt': _platformDocumentSettings['frameWidthPt'] ?? 1,
+      };
       return DocumentStudioPdf.build(
-        content: document.content,
+        content: DocumentStudioQuillCodec.normalizeLegacyText(document.content),
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
         documentDate: document.documentDate,
-        letterhead: _letterhead,
+        letterhead: configuredLetterhead,
         dividerColor: _documentHeaderDividerColor().toARGB32(),
+        watermarkText:
+            _platformDocumentSettings['watermarkText']?.toString() ??
+            'وزارة الداخلية',
         showWatermarkText:
             _platformDocumentSettings['showMinistryWatermarkText'] != false,
         watermarkOpacity: opacity,
@@ -505,8 +631,80 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     if (file.mimeType == DocumentFileSupport.docxMime) {
       throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
     }
+    if (file.mimeType.startsWith('image/')) {
+      final imageBytes = await widget.api.fetchDocumentFileBytes(
+        documentId: document.id,
+        mimeType: file.mimeType,
+      );
+      if (!DocumentFileSupport.matchesMime(file.mimeType, imageBytes)) {
+        throw StateError('تعذر التحقق من صيغة الصورة التي أعادها الخادم');
+      }
+      final codec = await ui.instantiateImageCodec(imageBytes);
+      final frame = await codec.getNextFrame();
+      final sourceImage = frame.image;
+      final columns = math.sqrt(imageTiles).round();
+      final sourceTileWidth = sourceImage.width / columns;
+      final sourceTileHeight = sourceImage.height / columns;
+      final pdf = pw.Document();
+      try {
+        for (var row = 0; row < columns; row += 1) {
+          for (var column = 0; column < columns; column += 1) {
+            final recorder = ui.PictureRecorder();
+            final canvas = ui.Canvas(recorder);
+            final sourceRect = ui.Rect.fromLTWH(
+              column * sourceTileWidth,
+              row * sourceTileHeight,
+              sourceTileWidth,
+              sourceTileHeight,
+            );
+            final destinationRect = ui.Rect.fromLTWH(
+              0,
+              0,
+              sourceTileWidth,
+              sourceTileHeight,
+            );
+            canvas.drawImageRect(
+              sourceImage,
+              sourceRect,
+              destinationRect,
+              ui.Paint(),
+            );
+            final picture = recorder.endRecording();
+            final tileImage = await picture.toImage(
+              sourceTileWidth.ceil(),
+              sourceTileHeight.ceil(),
+            );
+            final tileData = await tileImage.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            tileImage.dispose();
+            picture.dispose();
+            if (tileData == null) {
+              throw StateError('تعذر تجهيز جزء من الصورة للطباعة');
+            }
+            final tileBytes = tileData.buffer.asUint8List(
+              tileData.offsetInBytes,
+              tileData.lengthInBytes,
+            );
+            final image = pw.MemoryImage(tileBytes);
+            pdf.addPage(
+              pw.Page(
+                pageFormat: PdfPageFormat.a4,
+                margin: const pw.EdgeInsets.all(12),
+                build: (_) =>
+                    pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
+              ),
+            );
+          }
+        }
+      } finally {
+        sourceImage.dispose();
+        codec.dispose();
+      }
+      return Uint8List.fromList(await pdf.save());
+    }
     if (file.mimeType != DocumentFileSupport.pdfMime) {
-      throw StateError('إخراج PDF متاح للوثائق المنشأة وملفات PDF فقط');
+      throw StateError('صيغة الملف غير مدعومة لإخراج PDF');
     }
     final bytes = await widget.api.fetchDocumentFileBytes(
       documentId: document.id,
@@ -631,8 +829,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   void _replaceDocumentEditor(Map<String, dynamic> content) {
     _documentEditor.removeListener(_onDocumentEditorChanged);
     _documentEditor.dispose();
-    _documentContent = content;
-    _documentEditor = _makeEditor(content);
+    _documentContent = DocumentStudioQuillCodec.normalizeLegacyText(content);
+    _documentEditor = _makeEditor(_documentContent);
     _documentEditor.addListener(_onDocumentEditorChanged);
     setState(() {});
   }
@@ -640,9 +838,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   void _replaceTemplateEditor(Map<String, dynamic> content) {
     _templateEditor.removeListener(_onTemplateEditorChanged);
     _templateEditor.dispose();
-    _templateContent = content;
+    _templateContent = DocumentStudioQuillCodec.normalizeLegacyText(content);
     _templateContentDirty = false;
-    _templateEditor = _makeEditor(content);
+    _templateEditor = _makeEditor(_templateContent);
     _templateEditor.addListener(_onTemplateEditorChanged);
     setState(() {});
   }
@@ -697,7 +895,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = document.documentDate;
     _titleController.text = document.title;
     _subjectController.text = document.subject;
-    _templateBaseContent = document.content;
+    _templateBaseContent = DocumentStudioQuillCodec.normalizeLegacyText(
+      document.content,
+    );
     _resetFieldControllers(
       document.templateFieldsSnapshot,
       document.fieldValues,
@@ -720,7 +920,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = DateTime.now();
     _titleController.text = template.title;
     _subjectController.clear();
-    _templateBaseContent = template.content;
+    _templateBaseContent = DocumentStudioQuillCodec.normalizeLegacyText(
+      template.content,
+    );
     _resetFieldControllers(template.fields, {});
     _replaceDocumentEditor(template.content);
     setState(() => _tab = DocumentStudioTab.documents);
@@ -782,7 +984,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إصدار الوثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('إصدار الوثيقة')),
         content: const Text(
           'سيتم تخصيص رقم صادر نهائي للوثيقة. لا يمكن تغيير الرقم بعد الإصدار.',
         ),
@@ -822,7 +1024,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('أرشفة الوثيقة'),
+        title: closableDialogTitle(dialogContext, const Text('أرشفة الوثيقة')),
         content: const Text('سيتم نقل الوثيقة إلى الأرشيف دون حذفها.'),
         actions: [
           TextButton(
@@ -943,7 +1145,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           : _templateDescriptionController.text.trim(),
       'content': _templateContentDirty
           ? _templateContent
-          : (_selectedTemplate?.content ?? _templateContent),
+          : DocumentStudioQuillCodec.normalizeLegacyText(
+              _selectedTemplate?.content ?? _templateContent,
+            ),
       'fields': _templateFields.map((field) => field.toJson()).toList(),
     };
     try {
@@ -979,7 +1183,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('إيقاف النموذج'),
+        title: closableDialogTitle(dialogContext, const Text('إيقاف النموذج')),
         content: const Text(
           'سيُخفى النموذج عن الاستخدام الجديد مع الاحتفاظ بالوثائق المرتبطة به.',
         ),
@@ -1050,11 +1254,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             icon: Icon(Icons.description_outlined),
           ),
           ButtonSegment(
-            value: DocumentStudioTab.templates,
-            label: Text('القوالب'),
-            icon: Icon(Icons.dashboard_customize_outlined),
-          ),
-          ButtonSegment(
             value: DocumentStudioTab.archive,
             label: Text('الأرشيف'),
             icon: Icon(Icons.archive_outlined),
@@ -1078,8 +1277,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final items = _documents
         .where(
           (document) =>
-              document.status == (archived ? 'archived' : 'draft') ||
-              (!archived && document.status == 'issued'),
+              !document.isLegacyStarterDraft &&
+              (document.status == (archived ? 'archived' : 'draft') ||
+                  (!archived && document.status == 'issued')),
         )
         .toList();
     if (items.isEmpty) {
@@ -1942,6 +2142,397 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Future<void> _editDocumentSettings() async {
+    if (!_isPlatformOwner) return;
+
+    final values = Map<String, dynamic>.from(_platformDocumentSettings);
+    final watermarkController = TextEditingController(
+      text: values['watermarkText']?.toString() ?? 'وزارة الداخلية',
+    );
+    final titleController = TextEditingController(
+      text: values['headerTitle']?.toString() ?? '',
+    );
+    final subtitleController = TextEditingController(
+      text: values['headerSubtitle']?.toString() ?? '',
+    );
+    final rankController = TextEditingController(
+      text: values['headerChiefRank']?.toString() ?? '',
+    );
+    final nameController = TextEditingController(
+      text: values['headerChiefName']?.toString() ?? '',
+    );
+    var showWatermark = values['showMinistryWatermarkText'] != false;
+    var showLogo = values['headerShowLogo'] != false;
+    var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
+    var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
+    var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
+    var horizontalPadding = (values['headerHorizontalPaddingMm'] as num? ?? 0)
+        .toDouble();
+    var bottomPadding = (values['headerBottomPaddingMm'] as num? ?? 6)
+        .toDouble();
+    var alignment = values['headerAlignment']?.toString() ?? 'spread';
+    var dividerStyle = values['headerDividerStyle']?.toString() ?? 'double';
+    var frameStyle = values['frameStyle']?.toString() ?? 'single';
+    var frameColor = values['frameColor']?.toString() ?? '#b49a55';
+    var dividerWidth = (values['headerDividerWidthPt'] as num? ?? 2.25)
+        .toDouble();
+    var frameWidth = (values['frameWidthPt'] as num? ?? 1).toDouble();
+    var marginTop = (values['pageMarginTopMm'] as num? ?? 10).toDouble();
+    var marginRight = (values['pageMarginRightMm'] as num? ?? 10).toDouble();
+    var marginBottom = (values['pageMarginBottomMm'] as num? ?? 10).toDouble();
+    var marginLeft = (values['pageMarginLeftMm'] as num? ?? 10).toDouble();
+
+    try {
+      final updated = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: closableDialogTitle(
+              dialogContext,
+              const Text('إعدادات الوثيقة الرسمية'),
+            ),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'العلامة الأمنية',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار العلامة الأمنية'),
+                      value: showWatermark,
+                      onChanged: (value) =>
+                          setDialogState(() => showWatermark = value),
+                    ),
+                    TextField(
+                      controller: watermarkController,
+                      maxLength: 255,
+                      decoration: const InputDecoration(
+                        labelText: 'نص العلامة الأمنية',
+                        hintText: 'وزارة الداخلية',
+                      ),
+                    ),
+                    _documentSettingSlider(
+                      label: 'شفافية العلامة الأمنية',
+                      value: opacity,
+                      min: 0,
+                      max: 60,
+                      suffix: '%',
+                      onChanged: (value) =>
+                          setDialogState(() => opacity = value),
+                    ),
+                    const Divider(height: 28),
+                    const Text(
+                      'رأس الصفحة',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الرئيسي',
+                      ),
+                    ),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الفرعي / الوحدة',
+                      ),
+                    ),
+                    TextField(
+                      controller: rankController,
+                      decoration: const InputDecoration(
+                        labelText: 'رتبة / صفة المسؤول',
+                      ),
+                    ),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم المسؤول',
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار شعار الجهة'),
+                      value: showLogo,
+                      onChanged: (value) =>
+                          setDialogState(() => showLogo = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'حجم الشعار',
+                      value: logoSize,
+                      min: 32,
+                      max: 128,
+                      suffix: ' px',
+                      onChanged: (value) =>
+                          setDialogState(() => logoSize = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش العلوي',
+                      value: topPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => topPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش الأفقي',
+                      value: horizontalPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => horizontalPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش السفلي',
+                      value: bottomPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => bottomPadding = value),
+                    ),
+                    const Divider(height: 28),
+                    const Text(
+                      'صفحة الوثيقة والإطار',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    for (final item
+                        in <
+                          ({
+                            String label,
+                            double value,
+                            void Function(double) onChanged,
+                          })
+                        >[
+                          (
+                            label: 'الهامش العلوي',
+                            value: marginTop,
+                            onChanged: (v) =>
+                                setDialogState(() => marginTop = v),
+                          ),
+                          (
+                            label: 'الهامش الأيمن',
+                            value: marginRight,
+                            onChanged: (v) =>
+                                setDialogState(() => marginRight = v),
+                          ),
+                          (
+                            label: 'الهامش السفلي',
+                            value: marginBottom,
+                            onChanged: (v) =>
+                                setDialogState(() => marginBottom = v),
+                          ),
+                          (
+                            label: 'الهامش الأيسر',
+                            value: marginLeft,
+                            onChanged: (v) =>
+                                setDialogState(() => marginLeft = v),
+                          ),
+                        ])
+                      _documentSettingSlider(
+                        label: item.label,
+                        value: item.value,
+                        min: 0,
+                        max: 35,
+                        suffix: ' مم',
+                        onChanged: item.onChanged,
+                      ),
+                    DropdownButtonFormField<String>(
+                      initialValue: frameStyle,
+                      decoration: const InputDecoration(
+                        labelText: 'شكل الإطار',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'none',
+                          child: Text('بدون إطار'),
+                        ),
+                        DropdownMenuItem(value: 'single', child: Text('مفرد')),
+                        DropdownMenuItem(value: 'double', child: Text('مزدوج')),
+                        DropdownMenuItem(value: 'ornate', child: Text('زخرفي')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => frameStyle = v);
+                      },
+                    ),
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'لون الإطار #RRGGBB',
+                      ),
+                      controller: TextEditingController(text: frameColor),
+                      onChanged: (v) => frameColor = v,
+                    ),
+                    _documentSettingSlider(
+                      label: 'سماكة الإطار',
+                      value: frameWidth,
+                      min: .5,
+                      max: 4,
+                      suffix: ' نقطة',
+                      onChanged: (v) => setDialogState(() => frameWidth = v),
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: dividerStyle,
+                      decoration: const InputDecoration(
+                        labelText: 'نمط الفاصل',
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'solid', child: Text('متصل')),
+                        DropdownMenuItem(value: 'double', child: Text('مزدوج')),
+                        DropdownMenuItem(value: 'dashed', child: Text('متقطع')),
+                        DropdownMenuItem(value: 'dotted', child: Text('منقط')),
+                        DropdownMenuItem(
+                          value: 'tricolor-stars',
+                          child: Text('أسود وأخضر مع ثلاث نجوم'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => dividerStyle = v);
+                      },
+                    ),
+                    _documentSettingSlider(
+                      label: 'سماكة الفاصل',
+                      value: dividerWidth,
+                      min: .5,
+                      max: 6,
+                      suffix: ' نقطة',
+                      onChanged: (v) => setDialogState(() => dividerWidth = v),
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: alignment,
+                      decoration: const InputDecoration(
+                        labelText: 'محاذاة الرأس',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'spread',
+                          child: Text('توزيع متوازن'),
+                        ),
+                        DropdownMenuItem(value: 'center', child: Text('توسيط')),
+                        DropdownMenuItem(
+                          value: 'right',
+                          child: Text('إلى اليمين'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() => alignment = value);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, {
+                  ...values,
+                  'showMinistryWatermarkText': showWatermark,
+                  'watermarkText': watermarkController.text.trim().isEmpty
+                      ? 'وزارة الداخلية'
+                      : watermarkController.text.trim(),
+                  'watermarkOpacityPercent': opacity.round(),
+                  'headerTitle': titleController.text.trim(),
+                  'headerSubtitle': subtitleController.text.trim(),
+                  'headerChiefRank': rankController.text.trim(),
+                  'headerChiefName': nameController.text.trim(),
+                  'headerShowLogo': showLogo,
+                  'headerLogoSize': logoSize.round(),
+                  'headerTopPaddingMm': topPadding.round(),
+                  'headerHorizontalPaddingMm': horizontalPadding.round(),
+                  'headerBottomPaddingMm': bottomPadding.round(),
+                  'headerAlignment': alignment,
+                  'headerDividerStyle': dividerStyle,
+                  'headerDividerWidthPt': dividerWidth,
+                  'pageMarginTopMm': marginTop.round(),
+                  'pageMarginRightMm': marginRight.round(),
+                  'pageMarginBottomMm': marginBottom.round(),
+                  'pageMarginLeftMm': marginLeft.round(),
+                  'frameStyle': frameStyle,
+                  'frameColor': frameColor,
+                  'frameWidthPt': frameWidth,
+                }),
+                child: const Text('حفظ الإعدادات'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (updated == null || !mounted) return;
+      await widget.api.call(
+        'platformDocumentSettings.update',
+        input: updated,
+        mutation: true,
+      );
+      if (!mounted) return;
+      setState(() => _platformDocumentSettings = updated);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حفظ إعدادات الوثيقة')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر حفظ الإعدادات: $error')));
+    } finally {
+      watermarkController.dispose();
+      titleController.dispose();
+      subtitleController.dispose();
+      rankController.dispose();
+      nameController.dispose();
+    }
+  }
+
+  Widget _documentSettingSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required String suffix,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text('${value.round()}$suffix'),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: (max - min).round(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  String _headerSetting(String key, String fallback) {
+    final value = _platformDocumentSettings[key]?.toString().trim();
+    return value == null || value.isEmpty ? fallback : value;
+  }
+
+  double _headerMillimeters(String key, double fallback) {
+    final value = _platformDocumentSettings[key];
+    final parsed = value is num ? value.toDouble() : double.tryParse('$value');
+    return (parsed ?? fallback).clamp(0, 30).toDouble();
+  }
+
   Widget _buildA4Editor({
     required QuillController controller,
     required bool editable,
@@ -1953,6 +2544,35 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             ? rawOpacity.toDouble()
             : double.tryParse('$rawOpacity') ?? 12) /
         100;
+    const pixelsPerMillimeter = 794 / 210;
+    final headerTitle = _headerSetting(
+      'headerTitle',
+      _letterhead['departmentName']?.toString() ?? 'وثائقي',
+    );
+    final headerSubtitle = _headerSetting(
+      'headerSubtitle',
+      _letterhead['unitName']?.toString() ?? '',
+    );
+    final chiefRank = _headerSetting(
+      'headerChiefRank',
+      _letterhead['unitChiefRank']?.toString() ?? '',
+    );
+    final chiefName = _headerSetting(
+      'headerChiefName',
+      _letterhead['unitChiefName']?.toString() ?? '',
+    );
+    final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
+    final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
+    final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
+        .clamp(32.0, 128.0)
+        .toDouble();
+    final headerAlignment =
+        _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
+    final blockAlignment = switch (headerAlignment) {
+      'center' => TextAlign.center,
+      'right' => TextAlign.right,
+      _ => null,
+    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1962,159 +2582,206 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             config: const QuillSimpleToolbarConfig(),
           ),
         LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (context, _) {
             const pageWidth = 794.0;
             final pageHeight =
                 pageWidth * DocumentPaper.a4Height / DocumentPaper.a4Width;
-            return FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.topCenter,
-              child: SizedBox(
-                width: pageWidth,
-                child: DocumentPaper(
-                  showWatermarkText:
-                      _platformDocumentSettings['showMinistryWatermarkText'] !=
-                      false,
-                  watermarkOpacity: opacity,
-                  logoUrl: _letterhead['logoUrl']?.toString(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: _documentHeaderDividerColor(),
-                              width: 2,
-                            ),
-                          ),
+            final paper = DocumentPaper(
+              fixedWidth: pageWidth,
+              showWatermarkText:
+                  _platformDocumentSettings['showMinistryWatermarkText'] !=
+                  false,
+              watermarkOpacity: opacity,
+              watermarkText:
+                  _platformDocumentSettings['watermarkText']?.toString() ??
+                  'وزارة الداخلية',
+              logoUrl: _letterhead['logoUrl']?.toString(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerTopPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerBottomPaddingMm', 6) *
+                          pixelsPerMillimeter,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _documentHeaderDividerColor(),
+                          width: 3,
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            if (_letterhead['logoUrl'] is String &&
-                                (_letterhead['logoUrl'] as String).isNotEmpty)
-                              Image.network(
-                                _letterhead['logoUrl'] as String,
-                                width: 52,
-                                height: 52,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) =>
-                                    const SizedBox(width: 52, height: 52),
+                      ),
+                    ),
+                    child: Row(
+                      textDirection: ui.TextDirection.rtl,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Transform.scale(
+                                scaleX: 0.86,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  headerTitle,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.right,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    height: 1.5,
+                                  ),
+                                ),
                               ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _letterhead['departmentName']?.toString() ??
-                                        'وثائقي',
+                              if (headerSubtitle.isNotEmpty)
+                                Transform.scale(
+                                  scaleX: 0.86,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    headerSubtitle,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign:
+                                        blockAlignment ?? TextAlign.right,
                                     style: const TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                      fontSize: 20,
+                                      height: 1.5,
                                     ),
                                   ),
-                                  if ((_letterhead['unitName']?.toString() ??
-                                          '')
-                                      .isNotEmpty)
-                                    Text(
-                                      _letterhead['unitName'].toString(),
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            if ((_letterhead['unitChiefName']?.toString() ?? '')
-                                .isNotEmpty)
-                              Column(
-                                children: [
-                                  Text(
-                                    _letterhead['unitChiefRank']?.toString() ??
-                                        '',
-                                    style: const TextStyle(
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  Text(
-                                    _letterhead['unitChiefName'].toString(),
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
+                        SizedBox(
+                          width: logoSize,
+                          child:
+                              showLogo &&
+                                  (_letterhead['logoUrl']
+                                          ?.toString()
+                                          .isNotEmpty ??
+                                      false)
+                              ? Image.network(
+                                  _letterhead['logoUrl'].toString(),
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => SizedBox(
+                                    width: logoSize,
+                                    height: logoSize,
+                                  ),
+                                )
+                              : SizedBox(width: logoSize, height: logoSize),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
                                 'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
                                 style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontSize: 12,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
                               ),
-                            ),
-                            Text(
-                              'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontSize: 12,
+                              Text(
+                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Text(
-                          _subjectController.text.isEmpty
-                              ? 'الموضوع: —'
-                              : 'الموضوع: ${_subjectController.text}',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
+                              if (chiefRank.isNotEmpty)
+                                Text(
+                                  chiefRank,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              if (chiefName.isNotEmpty)
+                                Text(
+                                  chiefName,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                      ),
-                      Container(
-                        constraints: BoxConstraints(
-                          minHeight: math.max(96, pageHeight - 250),
-                        ),
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
-                        child: QuillEditor.basic(
-                          controller: controller,
-                          config: const QuillEditorConfig(
-                            padding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
-                        child: Text(
-                          'وثائقي',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black54, fontSize: 11),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      _subjectController.text.isEmpty
+                          ? 'الموضوع: —'
+                          : 'الموضوع: ${_subjectController.text}',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    constraints: BoxConstraints(
+                      minHeight: math.max(96, pageHeight - 350),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+                    child: QuillEditor.basic(
+                      controller: controller,
+                      config: const QuillEditorConfig(padding: EdgeInsets.zero),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Text(
+                      'وثائقي',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black54, fontSize: 11),
+                    ),
+                  ),
+                ],
               ),
+            );
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: paper,
             );
           },
         ),
@@ -2193,6 +2860,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   );
                 },
               ),
+              if (_isPlatformOwner)
+                IconButton(
+                  tooltip: 'إعدادات الوثيقة',
+                  onPressed: _editDocumentSettings,
+                  icon: const Icon(Icons.tune),
+                ),
               IconButton(
                 tooltip: 'تحديث',
                 onPressed: _refresh,
