@@ -185,8 +185,7 @@ export function createApp(
     express.raw({ type: () => true, limit: "3mb" }),
     async (req, res) => {
       res.setHeader("Cache-Control", "private, no-store");
-      const rawOrganizationId: unknown =
-        req.headers["x-organization-id"];
+      const rawOrganizationId: unknown = req.headers["x-organization-id"];
       const organizationId =
         typeof rawOrganizationId === "string"
           ? rawOrganizationId.trim()
