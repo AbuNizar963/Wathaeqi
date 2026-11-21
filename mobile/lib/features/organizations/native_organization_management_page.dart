@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../../closable_dialog_title.dart';
 
 const _organizationTypes = <String, String>{
   'central': 'جهة مركزية',
@@ -147,7 +148,10 @@ class _NativeOrganizationManagementPageState
             builder: (dialogContext) => Directionality(
               textDirection: TextDirection.rtl,
               child: AlertDialog(
-                title: const Text('تم إنشاء الجهة والحساب'),
+                title: closableDialogTitle(
+                  dialogContext,
+                  const Text('تم إنشاء الجهة والحساب'),
+                ),
                 content: SelectableText(
                   'اسم المستخدم: ${_text(account['username'])}\n'
                   'كلمة المرور الأولية: ${_text(account['password'])}\n\n'
@@ -579,7 +583,10 @@ class _OrganizationFormDialogState extends State<_OrganizationFormDialog> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
-        title: Text(_editing ? 'تعديل الجهة' : 'إنشاء جهة جديدة'),
+        title: closableDialogTitle(
+          context,
+          Text(_editing ? 'تعديل الجهة' : 'إنشاء جهة جديدة'),
+        ),
         content: SizedBox(
           width: (MediaQuery.sizeOf(context).width - 64).clamp(0.0, 480.0),
           child: SingleChildScrollView(
