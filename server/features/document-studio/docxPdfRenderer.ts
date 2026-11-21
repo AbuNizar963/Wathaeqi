@@ -310,15 +310,17 @@ const LOAD_RENDERER_IN_PAGE = async (pageArguments: {
   docxPreview: string;
   nonce: string;
 }): Promise<void> => {
-  const injectScript = (source: string) => {
-    const script = document.createElement("script");
-    script.nonce = pageArguments.nonce;
-    script.textContent = source;
-    (document.head ?? document.documentElement).appendChild(script);
-    script.remove();
-  };
-  injectScript(pageArguments.jsZip);
-  injectScript(pageArguments.docxPreview);
+  const jsZipScript = document.createElement("script");
+  jsZipScript.nonce = pageArguments.nonce;
+  jsZipScript.textContent = pageArguments.jsZip;
+  (document.head ?? document.documentElement).appendChild(jsZipScript);
+  jsZipScript.remove();
+
+  const docxPreviewScript = document.createElement("script");
+  docxPreviewScript.nonce = pageArguments.nonce;
+  docxPreviewScript.textContent = pageArguments.docxPreview;
+  (document.head ?? document.documentElement).appendChild(docxPreviewScript);
+  docxPreviewScript.remove();
   const renderer = (window as unknown as { docx?: { renderAsync?: unknown } })
     .docx;
   if (typeof renderer?.renderAsync !== "function") {
@@ -423,6 +425,16 @@ export function createDocxToPdfConverter(
       if (pageCount > MAX_DOCX_PAGES) {
         throw new DocxConversionError("page_limit_exceeded");
       }
+
+      await page.addStyleTag({
+        content: [
+          "html,body{margin:0!important;padding:0!important}",
+          ".docx-wrapper{background:#fff!important;padding:0!important;display:block!important}",
+          ".docx-wrapper>section.docx{margin:0!important;box-shadow:none!important}",
+          "section.docx{break-after:page;page-break-after:always}",
+          "section.docx:last-child{break-after:auto;page-break-after:auto}",
+        ].join("\n"),
+      });
 
       const pdf = await page.pdf({
         format: "A4",

@@ -19,10 +19,15 @@ const validDocx = Buffer.from(
 function createFakeBrowser() {
   const pdf = Buffer.from("%PDF-1.7\nmock PDF data");
   let evaluateCount = 0;
+  const evaluatedFunctionSources: string[] = [];
   const page = {
     setDefaultTimeout: vi.fn(),
     setContent: vi.fn().mockResolvedValue(undefined),
-    evaluate: vi.fn().mockImplementation(async () => {
+    addStyleTag: vi.fn().mockResolvedValue(undefined),
+    evaluate: vi.fn().mockImplementation(async (callback: unknown) => {
+      if (typeof callback === "function") {
+        evaluatedFunctionSources.push(callback.toString());
+      }
       evaluateCount += 1;
       return evaluateCount === 1 ? undefined : 2;
     }),
@@ -39,7 +44,7 @@ function createFakeBrowser() {
     newContext: vi.fn().mockResolvedValue(context),
     close: vi.fn().mockResolvedValue(undefined),
   } as unknown as Browser;
-  return { browser, context, page, pdf };
+  return { browser, context, page, pdf, evaluatedFunctionSources };
 }
 
 const bundleLoader = async () => ({ jsZip: "", docxPreview: "" });
@@ -112,6 +117,13 @@ describe("DOCX to PDF renderer", () => {
     });
 
     await expect(convert(validDocx)).resolves.toEqual(fake.pdf);
+    expect(fake.evaluatedFunctionSources).toHaveLength(2);
+    expect(fake.evaluatedFunctionSources.join("\n")).not.toContain("__name");
+    expect(fake.page.addStyleTag).toHaveBeenCalledWith({
+      content: expect.stringContaining(
+        "html,body{margin:0!important;padding:0!important}"
+      ),
+    });
     expect(fake.page.pdf).toHaveBeenCalledWith(
       expect.objectContaining({ format: "A4", printBackground: true })
     );
