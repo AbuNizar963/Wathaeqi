@@ -16,16 +16,11 @@ import {
 import { getUserOrganizationMembership } from "./features/organizations/appwriteOwnerOrganizationRepository";
 import { z } from "zod";
 import {
-  DOCX_MIME_TYPE,
   getAllowedDocumentMimeType,
   isValidDocumentFile,
   isSafeDocumentStorageKey,
   MAX_DOCUMENT_UPLOAD_BYTES,
 } from "./features/document-studio/documentUploadValidation";
-import {
-  MAX_PDF_BYTES,
-  renderDocxToPdf,
-} from "./features/document-studio/docxPdfRenderer";
 
 function safeUploadName(value: string): string {
   const base = value.split(/[\\/]/).pop() ?? "document";
@@ -386,11 +381,10 @@ export function createApp(
       const expectedMimeType = file
         ? getAllowedDocumentMimeType(file.fileName)
         : null;
-      const isDocx = expectedMimeType === DOCX_MIME_TYPE;
       const isPdf = expectedMimeType === "application/pdf";
       if (
         !file ||
-        (!isDocx && !isPdf) ||
+        !isPdf ||
         file.mimeType !== expectedMimeType ||
         !isSafeDocumentStorageKey(
           file.storageKey,
@@ -399,7 +393,8 @@ export function createApp(
         )
       ) {
         res.status(415).json({
-          error: "الطباعة متاحة لملفات Word بصيغة DOCX وملفات PDF فقط",
+          error:
+            "مسار PDF الأصلي متاح لملفات PDF فقط؛ اطبع ملف Word من معاينة DOCX",
         });
         return;
       }
@@ -431,34 +426,14 @@ export function createApp(
         return;
       }
 
-      let pdf: Buffer;
-      if (isPdf) {
-        pdf = stored.body;
-      } else {
-        try {
-          pdf = await renderDocxToPdf(stored.body);
-        } catch {
-          res.status(422).json({
-            error: "تعذر تحويل ملف Word؛ تحقق من سلامة المستند ثم أعد المحاولة",
-          });
-          return;
-        }
-      }
-      if (
-        !Buffer.isBuffer(pdf) ||
-        pdf.length < 8 ||
-        pdf.length > MAX_PDF_BYTES ||
-        pdf.subarray(0, 5).toString("ascii") !== "%PDF-"
-      ) {
-        res.status(422).json({ error: "تعذر تجهيز ملف PDF للطباعة" });
-        return;
-      }
-
       res.status(200);
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", 'inline; filename="document.pdf"');
-      res.setHeader("Content-Length", String(pdf.length));
-      res.end(pdf);
+      res.setHeader(
+        "Content-Disposition",
+        `inline; filename="${safeUploadName(file.fileName)}"`
+      );
+      res.setHeader("Content-Length", String(stored.body.length));
+      res.end(stored.body);
     }
   );
 

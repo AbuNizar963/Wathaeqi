@@ -11,6 +11,7 @@ import {
   HardDrive,
   Layers,
   Loader2,
+  MessageSquarePlus,
   Pencil,
   Plus,
   Printer,
@@ -34,6 +35,10 @@ import { trpc } from "@/lib/trpc";
 import FilePreview from "./FilePreview";
 import PrintDialog from "./PrintDialog";
 import UploadDialog from "./UploadDialog";
+import {
+  downloadDocumentFile,
+  shareDocument,
+} from "../document-studio/documentActions";
 import {
   DOCUMENT_CATEGORIES,
   fileKind,
@@ -309,20 +314,16 @@ export default function DocumentLibraryPage() {
         </div>
       )}
 
-      <button
+      <Button
         type="button"
-        aria-label="إنشاء وثيقة"
-        title="إنشاء وثيقة"
+        aria-label="إنشاء وثيقة جديدة"
+        title="إنشاء وثيقة جديدة"
         onClick={() => navigate("/studio?create=1")}
-        className={[
-          "fixed bottom-6 left-6 z-40 flex size-16 items-center justify-center",
-          "rounded-full bg-blue-500 text-white shadow-xl shadow-blue-950/20",
-          "transition hover:bg-blue-600 focus-visible:outline-none",
-          "focus-visible:ring-4 focus-visible:ring-blue-300",
-        ].join(" ")}
+        className="group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
       >
-        <Plus className="size-7" />
-      </button>
+        <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
+        <span className="sr-only">وثيقة جديدة</span>
+      </Button>
 
       <UploadDialog
         open={uploadOpen}
@@ -420,13 +421,12 @@ export default function DocumentLibraryPage() {
                   <Button
                     variant="outline"
                     className="h-12 gap-2"
-                    onClick={() => {
-                      const link = window.document.createElement("a");
-                      link.href = fileUrlQuery.data!.url;
-                      link.download = selected.file!.fileName;
-                      link.rel = "noopener";
-                      link.click();
-                    }}
+                    onClick={() =>
+                      downloadDocumentFile(
+                        fileUrlQuery.data!.url,
+                        selected.file!.fileName
+                      )
+                    }
                   >
                     <Download className="size-4" />
                     تنزيل
@@ -441,18 +441,13 @@ export default function DocumentLibraryPage() {
                   <Button
                     variant="outline"
                     className="h-12 gap-2"
-                    onClick={async () => {
-                      const url = fileUrlQuery.data!.url;
-                      if (navigator.share) {
-                        await navigator.share({
-                          title: selected.title,
-                          text: selected.subject || selected.title,
-                          url,
-                        });
-                      } else {
-                        await navigator.clipboard.writeText(url);
-                      }
-                    }}
+                    onClick={() =>
+                      void shareDocument({
+                        documentId: selected.id,
+                        title: selected.title,
+                        text: selected.subject || selected.title,
+                      })
+                    }
                   >
                     <Share2 className="size-4" />
                     مشاركة
@@ -461,7 +456,9 @@ export default function DocumentLibraryPage() {
                     variant="outline"
                     className="h-12 gap-2"
                     onClick={() =>
-                      navigate(`/studio?document=${encodeURIComponent(selected.id)}`)
+                      navigate(
+                        `/studio?document=${encodeURIComponent(selected.id)}`
+                      )
                     }
                   >
                     <Pencil className="size-4" />

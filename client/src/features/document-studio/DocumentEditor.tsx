@@ -65,22 +65,29 @@ export default function DocumentEditor({
 
   return (
     <div
-      className={`document-plain-editor overflow-hidden rounded-xl border
-        border-slate-200 bg-white ${containerClassName}`}
+      className={`document-plain-editor rounded-xl border
+        border-slate-200 bg-transparent ${containerClassName}`}
       dir="rtl"
     >
-      <Textarea
-        value={text}
-        onChange={event =>
-          onChange({ type: "legacy-text", text: event.target.value })
-        }
-        readOnly={!editable}
-        placeholder={placeholder}
-        aria-label="نص الوثيقة"
-        className="min-h-[760px] resize-y rounded-none border-0 bg-transparent
-          px-[18mm] py-[16mm] text-right text-[15px] leading-8 text-slate-900
-          shadow-none focus-visible:ring-0"
-      />
+      {editable ? (
+        <Textarea
+          value={text}
+          onChange={event =>
+            onChange({ type: "legacy-text", text: event.target.value })
+          }
+          placeholder={placeholder}
+          aria-label="نص الوثيقة"
+          className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent
+            p-0 text-right text-[15px] leading-8 text-slate-900
+            shadow-none focus-visible:ring-0"
+        />
+      ) : null}
+      <div
+        className={`document-editor-copy text-right text-[15px] text-slate-900 ${editable ? "document-editor-print-copy" : ""}`}
+        aria-hidden={editable ? true : undefined}
+      >
+        {text}
+      </div>
     </div>
   );
 }

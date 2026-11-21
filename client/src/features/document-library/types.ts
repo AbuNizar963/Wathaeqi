@@ -28,14 +28,21 @@ export function fileKind(
   mimeType: string
 ): DocumentFileKind | null {
   const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (extension === "pdf" || mimeType === "application/pdf") return "pdf";
-  if (extension === "docx") return "word";
+  const mime = mimeType.toLowerCase().split(";", 1)[0]?.trim();
+  if (extension === "pdf" && mime === "application/pdf") return "pdf";
   if (
-    ["png", "jpg", "jpeg", "webp"].includes(extension) ||
-    mimeType.startsWith("image/")
-  ) {
-    return "image";
-  }
+    extension === "docx" &&
+    mime ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  )
+    return "word";
+  const imageMimeByExtension: Record<string, string> = {
+    png: "image/png",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+  };
+  if (imageMimeByExtension[extension] === mime) return "image";
   return null;
 }
 

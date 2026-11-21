@@ -1,5 +1,6 @@
 import {
   Archive,
+  Download,
   Eye,
   EyeOff,
   FilePlus2,
@@ -11,6 +12,7 @@ import {
   Printer,
   Save,
   Search,
+  Share2,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -35,8 +37,10 @@ import type {
   OfficialDocument,
 } from "../../../../shared/documentStudio";
 import FilePreview from "../document-library/FilePreview";
+import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
+import { downloadDocumentFile, shareDocument } from "./documentActions";
 import {
   buildDocumentWatermarkCss,
   DOCUMENT_WATERMARK_COLUMNS,
@@ -136,6 +140,7 @@ export default function DocumentStudioPage() {
   const [previewMode, setPreviewMode] = useState(false);
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importPrintOpen, setImportPrintOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -362,6 +367,7 @@ export default function DocumentStudioPage() {
     setSelectedDocumentId(null);
     setSelectedTemplateId(null);
     setSelectedTemplateRevision(null);
+    setPreviewMode(false);
     setDocumentTitle("");
     setDocumentCategory("general");
     setDocumentSubject("");
@@ -376,6 +382,7 @@ export default function DocumentStudioPage() {
     setSelectedDocumentId(null);
     setSelectedTemplateId(template.id);
     setSelectedTemplateRevision(template.revision);
+    setPreviewMode(false);
     setDocumentTitle(template.title);
     setDocumentCategory(template.category);
     setDocumentSubject("");
@@ -413,6 +420,49 @@ export default function DocumentStudioPage() {
       });
     } else {
       createDocumentMutation.mutate(input);
+    }
+  }
+
+  function downloadSelectedDocument() {
+    if (selectedDocument?.file && importedFileUrlQuery.data?.url) {
+      downloadDocumentFile(
+        importedFileUrlQuery.data.url,
+        selectedDocument.file.fileName
+      );
+      toast.success("بدأ تنزيل الملف المستورد");
+      return;
+    }
+    window.print();
+  }
+
+  async function shareSelectedDocument() {
+    if (!selectedDocument) {
+      toast.error("احفظ الوثيقة أولاً قبل مشاركتها");
+      return;
+    }
+    try {
+      const result = await shareDocument({
+        documentId: selectedDocument.id,
+        title: selectedDocument.title,
+        text: selectedDocument.subject || selectedDocument.title,
+      });
+      toast.success(
+        result === "copied"
+          ? "تم نسخ رابط الوثيقة الآمن"
+          : "تم فتح خيارات مشاركة الوثيقة"
+      );
+    } catch (shareError) {
+      if (
+        shareError instanceof DOMException &&
+        shareError.name === "AbortError"
+      ) {
+        return;
+      }
+      toast.error(
+        shareError instanceof Error
+          ? shareError.message
+          : "تعذرت مشاركة الوثيقة"
+      );
     }
   }
 
@@ -553,9 +603,39 @@ export default function DocumentStudioPage() {
           </Button>
           {activeTab === "documents" || activeTab === "archive" ? (
             <>
-              <Button variant="outline" onClick={() => window.print()}>
+              <Button
+                variant="outline"
+                disabled={Boolean(
+                  selectedDocument?.file && !importedFileUrlQuery.data?.url
+                )}
+                onClick={() => {
+                  if (selectedDocument?.file) setImportPrintOpen(true);
+                  else window.print();
+                }}
+              >
                 <Printer className="ml-2 h-4 w-4" />
                 طباعة / PDF
+              </Button>
+              <Button
+                variant="outline"
+                disabled={
+                  !selectedDocument ||
+                  Boolean(
+                    selectedDocument.file && !importedFileUrlQuery.data?.url
+                  )
+                }
+                onClick={downloadSelectedDocument}
+              >
+                <Download className="ml-2 h-4 w-4" />
+                تنزيل
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!selectedDocument}
+                onClick={() => void shareSelectedDocument()}
+              >
+                <Share2 className="ml-2 h-4 w-4" />
+                مشاركة
               </Button>
               <Button onClick={() => setCreationDialogOpen(true)}>
                 <FilePlus2 className="ml-2 h-4 w-4" />
@@ -896,33 +976,36 @@ export default function DocumentStudioPage() {
                 )}
               </section>
 
-              <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
-                <DocumentWatermark
-                  logoUrl={logoUrl}
-                  opacityPercent={
-                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
-                  }
-                  showMinistryText={
-                    platformDocumentSettings.data?.showMinistryWatermarkText ??
-                    true
-                  }
-                />
-                <DocumentLetterhead
-                  organizationName={organizationName}
-                  unitName={settings?.unitName ?? ""}
-                  chiefRank={settings?.unitChiefRank ?? ""}
-                  chiefName={settings?.unitChiefName ?? ""}
-                  logoUrl={logoUrl}
-                  dividerColor={dividerColor}
-                />
-                <div className="px-[18mm] py-6">
-                  <DocumentEditor
-                    content={templateContent}
-                    onChange={handleTemplateContentChange}
-                    editable={!previewMode}
-                    containerClassName="rounded-none border-0 shadow-none"
-                    placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
+              <div className="document-paper-viewport">
+                <div className="document-a4-page">
+                  <DocumentWatermark
+                    logoUrl={logoUrl}
+                    opacityPercent={
+                      platformDocumentSettings.data?.watermarkOpacityPercent ??
+                      12
+                    }
+                    showMinistryText={
+                      platformDocumentSettings.data
+                        ?.showMinistryWatermarkText ?? true
+                    }
                   />
+                  <DocumentLetterhead
+                    organizationName={organizationName}
+                    unitName={settings?.unitName ?? ""}
+                    chiefRank={settings?.unitChiefRank ?? ""}
+                    chiefName={settings?.unitChiefName ?? ""}
+                    logoUrl={logoUrl}
+                    dividerColor={dividerColor}
+                  />
+                  <div className="py-6">
+                    <DocumentEditor
+                      content={templateContent}
+                      onChange={handleTemplateContentChange}
+                      editable={!previewMode}
+                      containerClassName="rounded-none border-0 shadow-none"
+                      placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
+                    />
+                  </div>
                 </div>
               </div>
             </Card>
@@ -1175,49 +1258,48 @@ export default function DocumentStudioPage() {
                   )}
                 </section>
               ) : (
-                <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
-                  <DocumentWatermark
-                    logoUrl={logoUrl}
-                    opacityPercent={
-                      platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
-                    }
-                    showMinistryText={
-                      platformDocumentSettings.data?.showMinistryWatermarkText ??
-                      true
-                    }
-                  />
-                  <DocumentLetterhead
-                    organizationName={organizationName}
-                    unitName={settings?.unitName ?? ""}
-                    chiefRank={settings?.unitChiefRank ?? ""}
-                    chiefName={settings?.unitChiefName ?? ""}
-                    logoUrl={logoUrl}
-                    dividerColor={dividerColor}
-                  />
-                  <div className="flex items-center justify-between gap-4 px-[18mm] pt-5 text-sm">
-                    <span>
-                      الرقم: {selectedDocument?.serialCode || "يخصص عند الإصدار"}
-                    </span>
-                    <span>
-                      التاريخ: {formatArabicDate(makeDocumentDate(documentDate))}
-                    </span>
-                  </div>
-                  <div className="px-[18mm] pt-6">
-                    {documentSubject ? (
-                      <p className="mb-4 text-right font-semibold">
-                        الموضوع: {documentSubject}
-                      </p>
-                    ) : null}
-                    <DocumentEditor
-                      content={documentContent}
-                      onChange={handleDocumentContentChange}
-                      editable={canEditDocument && !previewMode}
-                      containerClassName="rounded-none border-0 shadow-none"
+                <div className="document-paper-viewport">
+                  <div className="document-a4-page">
+                    <DocumentWatermark
+                      logoUrl={logoUrl}
+                      opacityPercent={
+                        platformDocumentSettings.data
+                          ?.watermarkOpacityPercent ?? 12
+                      }
+                      showMinistryText={
+                        platformDocumentSettings.data
+                          ?.showMinistryWatermarkText ?? true
+                      }
                     />
+                    <DocumentLetterhead
+                      organizationName={organizationName}
+                      unitName={settings?.unitName ?? ""}
+                      chiefRank={settings?.unitChiefRank ?? ""}
+                      chiefName={settings?.unitChiefName ?? ""}
+                      logoUrl={logoUrl}
+                      dividerColor={dividerColor}
+                      serial={
+                        selectedDocument?.serialCode || "يخصص عند الإصدار"
+                      }
+                      date={formatArabicDate(makeDocumentDate(documentDate))}
+                    />
+                    <div className="pt-6">
+                      {documentSubject ? (
+                        <p className="mb-4 text-right font-semibold">
+                          الموضوع: {documentSubject}
+                        </p>
+                      ) : null}
+                      <DocumentEditor
+                        content={documentContent}
+                        onChange={handleDocumentContentChange}
+                        editable={canEditDocument && !previewMode}
+                        containerClassName="rounded-none border-0 shadow-none"
+                      />
+                    </div>
+                    <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
+                      وثائقي
+                    </footer>
                   </div>
-                  <footer className="px-[18mm] pb-8 pt-4 text-center text-xs text-slate-500">
-                    وثائقي
-                  </footer>
                 </div>
               )}
             </Card>
@@ -1279,6 +1361,7 @@ export default function DocumentStudioPage() {
               onClick={() => {
                 setCreationDialogOpen(false);
                 setActiveTab("templates");
+                setPreviewMode(false);
               }}
             >
               <LayoutTemplate className="size-5 shrink-0" />
@@ -1303,6 +1386,16 @@ export default function DocumentStudioPage() {
           toast.success("تم استيراد الملف وإضافته إلى الوثائق");
         }}
       />
+      {selectedDocument?.file && importedFileUrlQuery.data?.url ? (
+        <PrintDialog
+          open={importPrintOpen}
+          onOpenChange={setImportPrintOpen}
+          title={selectedDocument.title}
+          url={importedFileUrlQuery.data.url}
+          fileName={selectedDocument.file.fileName}
+          mimeType={selectedDocument.file.mimeType}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1320,10 +1413,7 @@ function DocumentWatermark({
 
   return (
     <>
-      <style>{`.document-a4-page { position: relative; isolation: isolate; }
-        .document-a4-page > :not(style):not(.document-watermark-layer) { position: relative; z-index: 2; }
-        .document-watermark-layer { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; }
-        ${watermarkCss}`}</style>
+      <style>{watermarkCss}</style>
       <div className="document-watermark-layer" aria-hidden="true">
         <div className="page-watermark">
           {showMinistryText ? (
@@ -1368,6 +1458,8 @@ function DocumentLetterhead({
   chiefName,
   logoUrl,
   dividerColor,
+  serial,
+  date,
 }: {
   organizationName: string;
   unitName: string;
@@ -1375,6 +1467,8 @@ function DocumentLetterhead({
   chiefName: string;
   logoUrl: string | null;
   dividerColor: string;
+  serial?: string;
+  date?: string;
 }) {
   return (
     <header
@@ -1401,6 +1495,12 @@ function DocumentLetterhead({
         <div className="shrink-0 text-center text-sm">
           {chiefRank ? <p>{chiefRank}</p> : null}
           {chiefName ? <p className="mt-1 font-semibold">{chiefName}</p> : null}
+        </div>
+      ) : null}
+      {serial || date ? (
+        <div className="shrink-0 text-left text-xs text-slate-700" dir="rtl">
+          {serial ? <p>الرقم: {serial}</p> : null}
+          {date ? <p className="mt-1">التاريخ: {date}</p> : null}
         </div>
       ) : null}
     </header>

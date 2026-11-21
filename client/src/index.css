@@ -527,3 +527,100 @@
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
 }
+
+/* Official document paper: the same physical A4 and 10mm inset as the reference. */
+@font-face {
+  font-family: "Aref Ruqaa";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ArefRuqaa-Regular.ttf") format("truetype");
+}
+
+.document-paper-viewport {
+  overflow-x: auto;
+}
+
+.document-a4-page {
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 10mm;
+  margin: 0 auto;
+  background: white;
+  color: #172033;
+}
+
+.document-a4-page > :not(style):not(.document-watermark-layer) {
+  position: relative;
+  z-index: 2;
+}
+
+.document-watermark-layer {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 1;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.document-editor-copy {
+  min-height: 570px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.85;
+}
+
+.document-editor-print-copy {
+  display: none;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  /* Only the selected document is printed, not the dashboard or editor controls. */
+  body:has(.document-a4-page) * {
+    visibility: hidden;
+  }
+  body:has(.document-a4-page) *:has(.document-a4-page) {
+    position: static !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+  body:has(.document-a4-page) .document-a4-page,
+  body:has(.document-a4-page) .document-a4-page * {
+    visibility: visible;
+  }
+  body:has(.document-a4-page) .document-a4-page {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    max-width: none;
+    min-height: 297mm;
+    margin: 0;
+    padding: 10mm;
+    overflow: visible;
+  }
+  .document-a4-page .document-watermark-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+  .document-a4-page .document-editor-input {
+    display: none;
+  }
+  .document-a4-page .document-editor-print-copy {
+    display: block;
+  }
+  .document-a4-page .document-editor-copy {
+    min-height: 0;
+  }
+}

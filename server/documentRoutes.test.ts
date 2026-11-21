@@ -373,7 +373,7 @@ describe("authenticated document HTTP routes", () => {
     });
   });
 
-  it("enforces document ownership, verifies stored bytes, and returns rendered PDF", async () => {
+  it("does not route DOCX through the legacy PDF endpoint", async () => {
     await withServer(async baseUrl => {
       mocks.getOfficialDocument.mockResolvedValueOnce(null);
       const notOwned = await fetch(
@@ -386,20 +386,10 @@ describe("authenticated document HTTP routes", () => {
         `${baseUrl}/api/documents/document-1/print-pdf`,
         { method: "POST" }
       );
-      expect(response.status).toBe(200);
-      expect(response.headers.get("content-type")).toBe("application/pdf");
-      expect(response.headers.get("cache-control")).toBe("private, no-store");
-      expect(
-        Buffer.from(await response.arrayBuffer())
-          .subarray(0, 5)
-          .toString()
-      ).toBe("%PDF-");
-      expect(mocks.getOfficialDocument).toHaveBeenLastCalledWith(
-        ownerId,
-        "document-1"
-      );
-      expect(mocks.download).toHaveBeenCalledWith(storageKey);
-      expect(mocks.renderDocxToPdf).toHaveBeenCalledWith(validDocx);
+      expect(response.status).toBe(415);
+      expect(await response.text()).toContain("معاينة DOCX");
+      expect(mocks.download).not.toHaveBeenCalled();
+      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
     });
   });
 
@@ -484,7 +474,7 @@ describe("authenticated document HTTP routes", () => {
     });
   });
 
-  it("rejects corrupt stored DOCX and maps renderer/storage failures safely", async () => {
+  it("rejects DOCX from the legacy PDF endpoint", async () => {
     await withServer(async baseUrl => {
       mocks.download.mockResolvedValueOnce({
         body: Buffer.from("bad zip"),
@@ -497,19 +487,13 @@ describe("authenticated document HTTP routes", () => {
       expect(corrupt.status).toBe(415);
       expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
 
-      mocks.download.mockResolvedValueOnce({
-        body: validDocx,
-        contentType: docxMimeType,
-      });
-      mocks.renderDocxToPdf.mockRejectedValueOnce(
-        new Error("private renderer detail")
-      );
       const failed = await fetch(
         `${baseUrl}/api/documents/document-1/print-pdf`,
         { method: "POST" }
       );
-      expect(failed.status).toBe(422);
-      expect(await failed.text()).not.toContain("private renderer detail");
+      expect(failed.status).toBe(415);
+      expect(await failed.text()).toContain("معاينة DOCX");
+      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
     });
   });
 });
