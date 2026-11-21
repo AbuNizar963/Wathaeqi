@@ -46,8 +46,8 @@ jobs:
           fi
       - name: Diagnose document studio formatting
         run: |
-          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-library/DocumentLibraryPage.tsx
-          git --no-pager diff -- client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-library/DocumentLibraryPage.tsx
+          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-studio/documentWatermark.ts client/src/features/document-studio/documentWatermark.test.ts client/src/index.css
+          git --no-pager diff -- client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-studio/documentWatermark.ts client/src/features/document-studio/documentWatermark.test.ts client/src/index.css
 
       - name: Check formatting
         run: pnpm lint
