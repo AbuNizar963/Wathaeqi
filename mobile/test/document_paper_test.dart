@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/document_paper.dart';
 
 void main() {
-  testWidgets('repeats the watermark on every A4 preview page', (
-    tester,
-  ) async {
+  testWidgets('repeats the watermark on every A4 preview page', (tester) async {
     await tester.binding.setSurfaceSize(const Size(300, 900));
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
