@@ -65,9 +65,7 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
     try {
       context.fillStyle = colorFunction;
       const resolved = context.fillStyle;
-      return /oklch\s*\(/i.test(resolved)
-        ? SAFE_COLOR_FALLBACK
-        : resolved;
+      return /oklch\s*\(/i.test(resolved) ? SAFE_COLOR_FALLBACK : resolved;
     } catch {
       return SAFE_COLOR_FALLBACK;
     }
