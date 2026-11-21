@@ -565,7 +565,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       if (!DocumentFileSupport.matchesMime(file.mimeType, imageBytes)) {
         throw StateError('تعذر التحقق من صيغة الصورة التي أعادها الخادم');
       }
-      final image = pw.MemoryImage(imageBytes);
+      final codec = await ui.instantiateImageCodec(imageBytes);
+      final frame = await codec.getNextFrame();
+      final pngData = await frame.image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
+      frame.image.dispose();
+      codec.dispose();
+      if (pngData == null) {
+        throw StateError('تعذر تحويل الصورة إلى صيغة طباعة قياسية');
+      }
+      final normalizedImageBytes = pngData.buffer.asUint8List(
+        pngData.offsetInBytes,
+        pngData.lengthInBytes,
+      );
+      final image = pw.MemoryImage(normalizedImageBytes);
       final pdf = pw.Document();
       pdf.addPage(
         pw.Page(
