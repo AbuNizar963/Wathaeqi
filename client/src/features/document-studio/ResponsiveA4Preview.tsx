@@ -42,10 +42,7 @@ export default function ResponsiveA4Preview({
         page.offsetHeight,
       );
 
-      setLayout({
-        scale,
-        height: Math.ceil(pageHeight * scale),
-      });
+      setLayout({ scale, height: Math.ceil(pageHeight * scale) });
     };
 
     updateLayout();
