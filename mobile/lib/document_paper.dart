@@ -27,11 +27,14 @@ class DocumentPaper extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final pageHeight = constraints.maxWidth * a4Height / a4Width;
+        final pageWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : a4Width;
+        final pageHeight = pageWidth * a4Height / a4Width;
         final logo = logoUrl?.trim();
         return Container(
           key: const ValueKey('document-a4-paper'),
-          width: double.infinity,
+          width: pageWidth,
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
