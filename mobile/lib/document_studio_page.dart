@@ -550,7 +550,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         letterhead: configuredLetterhead,
         dividerColor: _documentHeaderDividerColor().toARGB32(),
         watermarkText:
-            _platformDocumentSettings['watermarkText']?.toString() ?? 'وثائقي',
+            _platformDocumentSettings['watermarkText']?.toString() ?? 'وزارة الداخلية',
         showWatermarkText:
             _platformDocumentSettings['showMinistryWatermarkText'] != false,
         watermarkOpacity: opacity,
