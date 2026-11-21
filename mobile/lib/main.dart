@@ -2214,6 +2214,7 @@ class _DashboardPageState extends State<DashboardPage>
             api: widget.api,
             outbox: _documentStudioOutbox,
             initialTab: DocumentStudioTab.documents,
+            openCreationOptionsOnOpen: true,
           ),
         ),
       ),
