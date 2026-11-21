@@ -151,7 +151,7 @@ export default function FilePreview({
             key={index}
             src={page}
             alt={`صفحة ${index + 1}`}
-            className="mx-auto block h-auto w-full max-w-[820px] min-w-0 bg-white shadow sm:min-w-[620px]"
+            className="mx-auto block h-auto w-full max-w-[820px] min-w-0 bg-white object-contain shadow sm:min-w-[620px]"
           />
         ))}
       </div>
