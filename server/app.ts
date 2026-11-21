@@ -174,6 +174,7 @@ export function createApp(
     });
   });
 
+  // prettier-ignore
   app.put(
     "/api/storage/department-logo",
     createRateLimit({
