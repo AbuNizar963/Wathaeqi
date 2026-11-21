@@ -56,6 +56,10 @@ class DocumentPaper extends StatelessWidget {
                     return Stack(
                       fit: StackFit.expand,
                       children: [
+                        CustomPaint(
+                          key: const ValueKey('document-a4-page-breaks'),
+                          painter: _DocumentPageBreakPainter(pageHeight),
+                        ),
                         for (var pageIndex = 0;
                             pageIndex < pageCount;
                             pageIndex++)
@@ -111,6 +115,33 @@ class DocumentPaper extends StatelessWidget {
       },
     );
   }
+}
+
+class _DocumentPageBreakPainter extends CustomPainter {
+  const _DocumentPageBreakPainter(this.pageHeight);
+
+  final double pageHeight;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFFE2E8F0);
+    const gapHeight = 10.0;
+    for (var page = 1; page * pageHeight < size.height; page++) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          0,
+          page * pageHeight - gapHeight / 2,
+          size.width,
+          gapHeight,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DocumentPageBreakPainter oldDelegate) =>
+      oldDelegate.pageHeight != pageHeight;
 }
 
 /// Reference mosaic: 33 horizontal staggered rows and 13 columns, Aref Ruqaa
