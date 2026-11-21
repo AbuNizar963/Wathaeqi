@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -2095,6 +2096,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       ),
                     ),
                     child: Row(
+                      textDirection: ui.TextDirection.rtl,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
