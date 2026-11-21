@@ -40,6 +40,7 @@ import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
+import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import { downloadDocumentFile, shareDocument } from "./documentActions";
 import {
   buildDocumentWatermarkCss,
@@ -142,6 +143,8 @@ export default function DocumentStudioPage() {
   const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importPrintOpen, setImportPrintOpen] = useState(false);
+  const [nativePrintOpen, setNativePrintOpen] = useState(false);
+  const documentPageRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -442,7 +445,7 @@ export default function DocumentStudioPage() {
       toast.success("بدأ تنزيل الملف المستورد");
       return;
     }
-    window.print();
+    setNativePrintOpen(true);
   }
 
   async function shareSelectedDocument() {
@@ -622,7 +625,7 @@ export default function DocumentStudioPage() {
                     )}
                     onClick={() => {
                       if (selectedDocument?.file) setImportPrintOpen(true);
-                      else window.print();
+                      else setNativePrintOpen(true);
                     }}
                   >
                     <Printer className="ml-2 h-4 w-4" />
@@ -651,7 +654,11 @@ export default function DocumentStudioPage() {
                   </Button>
                 </>
               ) : null}
-              <Button onClick={() => setCreationDialogOpen(true)}>
+              <Button
+                onClick={() => setCreationDialogOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={creationDialogOpen}
+              >
                 <FilePlus2 className="ml-2 h-4 w-4" />
                 إنشاء وثيقة
               </Button>
@@ -1276,7 +1283,7 @@ export default function DocumentStudioPage() {
                 </section>
               ) : (
                 <div className="document-paper-viewport">
-                  <div className="document-a4-page">
+                  <div className="document-a4-page" ref={documentPageRef}>
                     <DocumentWatermark
                       logoUrl={logoUrl}
                       opacityPercent={
@@ -1352,7 +1359,7 @@ export default function DocumentStudioPage() {
                     )}
                     onClick={() => {
                       if (selectedDocument.file) setImportPrintOpen(true);
-                      else window.print();
+                      else setNativePrintOpen(true);
                     }}
                   >
                     <Printer className="h-5 w-5" />
@@ -1374,6 +1381,12 @@ export default function DocumentStudioPage() {
         </main>
       </div>
 
+      <DocumentStudioPrintDialog
+        open={nativePrintOpen}
+        onOpenChange={setNativePrintOpen}
+        title={(selectedDocument?.title ?? documentTitle) || "وثيقة جديدة"}
+        pageElement={documentPageRef.current}
+      />
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
         <DialogContent className="max-w-lg" dir="rtl">
           <DialogHeader>
@@ -1582,7 +1595,7 @@ function DocumentLetterhead({
 }) {
   return (
     <header
-      className="flex items-center justify-between gap-4 border-b-2 px-[18mm] pb-4 pt-8"
+      className="flex flex-wrap items-center justify-between gap-3 border-b-2 px-4 pb-4 pt-8 sm:px-[18mm]"
       style={{ borderColor: dividerColor }}
       dir="rtl"
     >
@@ -1608,7 +1621,7 @@ function DocumentLetterhead({
         </div>
       ) : null}
       {serial || date ? (
-        <div className="shrink-0 text-left text-xs text-slate-700" dir="rtl">
+        <div className="max-w-full text-left text-xs text-slate-700" dir="rtl">
           {serial ? <p>الرقم: {serial}</p> : null}
           {date ? <p className="mt-1">التاريخ: {date}</p> : null}
         </div>
