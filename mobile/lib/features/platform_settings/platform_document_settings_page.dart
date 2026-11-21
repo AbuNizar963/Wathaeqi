@@ -193,7 +193,6 @@ class _PlatformDocumentSettingsPageState
     setState(() {
       _loadingOrganizationSettings = true;
       _organizationError = null;
-      _organizationSettings = null;
     });
     try {
       final result = await widget.api.call(
