@@ -486,9 +486,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(dialogContext, count),
-                  child: Text(
-                    count == 1 ? 'ورقة واحدة' : '$count أوراق',
-                  ),
+                  child: Text(count == 1 ? 'ورقة واحدة' : '$count أوراق'),
                 ),
               ),
           ],
