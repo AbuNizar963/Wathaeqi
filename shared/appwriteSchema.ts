@@ -488,6 +488,38 @@ export const appwriteSchema: SchemaTable[] = [
     ],
     indexes: [{ key: "counters_key_unique", type: "unique", columns: ["key"] }],
   },
+  {
+    id: "platform_document_settings",
+    name: "Platform document settings",
+    description: "Singleton document watermark and official letterhead configuration.",
+    columns: [
+      { key: "id", type: "integer", required: true },
+      { key: "showMinistryWatermarkText", type: "boolean", required: false, default: true },
+      { key: "watermarkOpacityPercent", type: "integer", required: false, default: 12 },
+      { key: "headerDividerColor", type: "varchar", size: 7, required: false, default: "#b49a55" },
+      { key: "showVerificationQr", type: "boolean", required: false, default: true },
+      { key: "updatedByUserId", type: "integer", required: false },
+      { key: "updatedAt", type: "datetime", required: true },
+      { key: "watermarkText", type: "varchar", size: 255, required: false, default: "وثائقي" },
+      { key: "headerTitle", type: "varchar", size: 255, required: false, default: "" },
+      { key: "headerSubtitle", type: "varchar", size: 255, required: false, default: "" },
+      { key: "headerChiefRank", type: "varchar", size: 120, required: false, default: "" },
+      { key: "headerChiefName", type: "varchar", size: 255, required: false, default: "" },
+      { key: "headerShowLogo", type: "boolean", required: false, default: true },
+      { key: "headerLogoSize", type: "integer", required: false, default: 64 },
+      { key: "headerTopPaddingMm", type: "integer", required: false, default: 8 },
+      { key: "headerHorizontalPaddingMm", type: "integer", required: false, default: 18 },
+      { key: "headerBottomPaddingMm", type: "integer", required: false, default: 4 },
+      { key: "headerAlignment", type: "varchar", size: 16, required: false, default: "spread" },
+    ],
+    indexes: [
+      {
+        key: "platform_doc_settings_id_unique",
+        type: "unique",
+        columns: ["id"],
+      },
+    ],
+  },
 ];
 
 export function findSchemaTable(tableId: string): SchemaTable | undefined {
