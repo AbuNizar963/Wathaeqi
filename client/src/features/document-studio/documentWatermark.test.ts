@@ -15,14 +15,19 @@ describe("official document watermark", () => {
     expect(css).toContain("--document-watermark-opacity: 0.12;");
   });
 
-  it("calculates one or more continuous A4 preview sheets from measured content", () => {
+  it(
+    "calculates one or more continuous A4 preview sheets from measured content",
+    () => {
     const a4PageHeight = (793.7 * 297) / 210;
     expect(getA4PreviewPageCount(793.7, a4PageHeight - 10)).toBe(1);
     expect(getA4PreviewPageCount(793.7, a4PageHeight + 10)).toBe(2);
-    expect(getA4PreviewPageCount(793.7, a4PageHeight * 2 + 10)).toBe(3);
+    expect(
+      getA4PreviewPageCount(793.7, a4PageHeight * 2 + 10)
+    ).toBe(3);
     expect(getA4PreviewPageCount(0, 1200)).toBe(1);
     expect(getA4PreviewPageCount(793.7, Number.NaN)).toBe(1);
-  });
+    }
+  );
 
   it("clamps malformed opacity values without disabling the watermark", () => {
     expect(buildDocumentWatermarkCss(2)).toContain("--document-watermark-opacity: 0.6;");
