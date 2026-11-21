@@ -44,13 +44,6 @@ class _DocumentStudioTestApi extends PoliceApi {
                 'status': 'draft',
                 'createdAt': '2026-11-21T00:00:00.000Z',
                 'updatedAt': '2026-11-21T00:00:00.000Z',
-                'file': {
-                  'fileName': 'test.docx',
-                  'mimeType':
-                      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                  'sizeBytes': 128,
-                  'pageCount': 1,
-                },
               },
             ]
           : <dynamic>[],
@@ -102,10 +95,10 @@ void main() {
     await tester.tap(find.text('وثيقة تجريبية'));
     await tester.pumpAndSettle();
 
-    expect(find.text('معاينة ملفات Word غير متاحة داخل التطبيق حالياً'),
-        findsOneWidget);
-    expect(find.text('تنزيل Word'), findsOneWidget);
-    expect(find.text('مشاركة Word'), findsOneWidget);
+    expect(find.byKey(const ValueKey('document-a4-paper')), findsOneWidget);
+    expect(find.text('تنزيل PDF'), findsOneWidget);
+    expect(find.text('مشاركة PDF'), findsOneWidget);
+    expect(find.text('طباعة'), findsOneWidget);
     expect(find.text('تعديل الوثيقة'), findsOneWidget);
 
     await tester.tap(find.byTooltip('تعديل الوثيقة'));
