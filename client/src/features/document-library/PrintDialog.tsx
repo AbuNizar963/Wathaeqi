@@ -80,22 +80,35 @@ export default function PrintDialog({
               صيغة الملف غير مدعومة للطباعة الأصلية.
             </p>
           )}
-          <label className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
-            <span className="shrink-0 font-medium">عدد الصفحات في الورقة</span>
-            <select
-              value={pagesPerSheet}
-              onChange={event =>
-                setPagesPerSheet(Number(event.target.value) as PagesPerSheet)
-              }
-              className="h-9 flex-1 rounded-md border bg-background px-2"
-            >
-              {[1, 2, 4, 6, 8].map(value => (
-                <option key={value} value={value}>
-                  {value} {value === 1 ? "صفحة" : "صفحات"} في الورقة
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset className="rounded-lg border bg-muted/30 px-3 py-3">
+            <legend className="px-1 text-sm font-medium">
+              عدد الصفحات في الورقة
+            </legend>
+            <div className="grid grid-cols-5 gap-2" role="radiogroup">
+              {[1, 2, 4, 6, 8].map(value => {
+                const selected = pagesPerSheet === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setPagesPerSheet(value as PagesPerSheet)}
+                    className={`rounded-md border px-2 py-2 text-xs font-semibold transition ${
+                      selected
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    }`}
+                  >
+                    {value} {value === 1 ? "صفحة" : "صفحات"}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من صفحة.
+            </p>
+          </fieldset>
           {error ? (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {error}

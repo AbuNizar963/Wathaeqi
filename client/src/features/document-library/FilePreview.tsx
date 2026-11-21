@@ -3,8 +3,6 @@ import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 import { FileWarning, Loader2 } from "lucide-react";
 import { fileKind } from "./types";
 
-const PREVIEW_PDF_PAGES = 8;
-
 export default function FilePreview({
   url,
   fileName,
@@ -44,7 +42,7 @@ export default function FilePreview({
           const document = await pdfjs.getDocument({
             data: new Uint8Array(await response.arrayBuffer()),
           }).promise;
-          const total = Math.min(document.numPages, PREVIEW_PDF_PAGES);
+          const total = document.numPages;
           const images: string[] = [];
           for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
             const page = await document.getPage(pageNumber);
