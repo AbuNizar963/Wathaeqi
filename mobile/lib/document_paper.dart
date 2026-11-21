@@ -60,9 +60,11 @@ class DocumentPaper extends StatelessWidget {
                           key: const ValueKey('document-a4-page-breaks'),
                           painter: _DocumentPageBreakPainter(pageHeight),
                         ),
-                        for (var pageIndex = 0;
-                            pageIndex < pageCount;
-                            pageIndex++)
+                        for (
+                          var pageIndex = 0;
+                          pageIndex < pageCount;
+                          pageIndex++
+                        )
                           Positioned(
                             key: ValueKey('document-watermark-page-$pageIndex'),
                             top: pageIndex * pageHeight,
