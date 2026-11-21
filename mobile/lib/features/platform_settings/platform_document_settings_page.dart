@@ -163,9 +163,10 @@ class _PlatformDocumentSettingsPageState
       final currentId = contextData is Map
           ? contextData['organizationId']?.toString()
           : null;
-      final selected = organizations.where((item) {
-        return item['id']?.toString() == currentId;
-      }).firstOrNull ??
+      final selected =
+          organizations.where((item) {
+            return item['id']?.toString() == currentId;
+          }).firstOrNull ??
           (organizations.isNotEmpty ? organizations.first : null);
       if (!mounted) return;
       setState(() {
@@ -298,8 +299,9 @@ class _PlatformDocumentSettingsPageState
           'dateFormat':
               current['dateFormat']?.toString() ?? 'dd/MM/yyyy HH:mm:ss',
           'timeFormat': current['timeFormat']?.toString() == '12' ? '12' : '24',
-          'numberSystem':
-              current['numberSystem']?.toString() == 'arabic' ? 'arabic' : 'latin',
+          'numberSystem': current['numberSystem']?.toString() == 'arabic'
+              ? 'arabic'
+              : 'latin',
           'logoUrl': _organizationLogoUrl.isEmpty ? null : _organizationLogoUrl,
         },
       );
@@ -430,7 +432,10 @@ class _PlatformDocumentSettingsPageState
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: _organizationLogoUrl.isEmpty
-                        ? Icon(Icons.image_outlined, color: colors.onSurfaceVariant)
+                        ? Icon(
+                            Icons.image_outlined,
+                            color: colors.onSurfaceVariant,
+                          )
                         : Image.network(
                             _organizationLogoUrl,
                             fit: BoxFit.contain,
@@ -446,7 +451,8 @@ class _PlatformDocumentSettingsPageState
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         FilledButton.icon(
-                          onPressed: _uploadingOrganizationLogo ||
+                          onPressed:
+                              _uploadingOrganizationLogo ||
                                   _savingOrganizationLogo ||
                                   _selectedOrganizationId == null
                               ? null
@@ -455,7 +461,9 @@ class _PlatformDocumentSettingsPageState
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Icon(Icons.upload_outlined),
                           label: Text(
@@ -498,7 +506,10 @@ class _PlatformDocumentSettingsPageState
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   'الشعار مرتبط بجهة: ${selectedOrganization['name'] ?? '—'}',
-                  style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
                 ),
               ),
           ],
