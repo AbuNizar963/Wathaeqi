@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Archive,
+  Download,
   FileImage,
   FileText,
   FileType2,
@@ -9,9 +10,11 @@ import {
   HardDrive,
   Layers,
   Loader2,
+  Pencil,
   Plus,
   Printer,
   Search,
+  Share2,
   Trash2,
   UploadCloud,
 } from "lucide-react";
@@ -128,23 +131,14 @@ export default function DocumentLibraryPage() {
             صفحات في الورقة.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => navigate("/studio?create=1")}
-            className="gap-2"
-          >
-            <Plus className="size-4" />
-            إنشاء وثيقة
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setUploadOpen(true)}
-            className="gap-2"
-          >
-            <UploadCloud className="size-4" />
-            استيراد ملف
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={() => setUploadOpen(true)}
+          className="gap-2"
+        >
+          <UploadCloud className="size-4" />
+          استيراد ملف
+        </Button>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -314,6 +308,16 @@ export default function DocumentLibraryPage() {
         </div>
       )}
 
+      <button
+        type="button"
+        aria-label="إنشاء وثيقة"
+        title="إنشاء وثيقة"
+        onClick={() => navigate("/studio?create=1")}
+        className="fixed bottom-6 left-6 z-40 flex size-16 items-center justify-center rounded-full bg-blue-500 text-white shadow-xl shadow-blue-950/20 transition hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+      >
+        <Plus className="size-7" />
+      </button>
+
       <UploadDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
@@ -330,7 +334,7 @@ export default function DocumentLibraryPage() {
         }}
       >
         <DialogContent
-          className="max-h-[94vh] max-w-5xl overflow-y-auto"
+          className="w-[calc(100vw-1rem)] max-w-5xl max-h-[95dvh] overflow-y-auto p-3 sm:p-6"
           dir="rtl"
         >
           {selected && selected.file ? (
@@ -401,6 +405,80 @@ export default function DocumentLibraryPage() {
                   تعذر تجهيز رابط المعاينة. أعد فتح الوثيقة.
                 </div>
               )}
+
+              {fileUrlQuery.data?.url ? (
+                <div className="grid grid-cols-3 gap-2 rounded-2xl border bg-card p-3">
+                  <Button
+                    variant="outline"
+                    className="h-12 gap-2"
+                    onClick={() => {
+                      const link = window.document.createElement("a");
+                      link.href = fileUrlQuery.data!.url;
+                      link.download = selected.file!.fileName;
+                      link.rel = "noopener";
+                      link.click();
+                    }}
+                  >
+                    <Download className="size-4" />
+                    تنزيل
+                  </Button>
+                  <Button
+                    className="h-12 gap-2"
+                    onClick={() => setPrintOpen(true)}
+                  >
+                    <Printer className="size-4" />
+                    طباعة
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 gap-2"
+                    onClick={async () => {
+                      const url = fileUrlQuery.data!.url;
+                      if (navigator.share) {
+                        await navigator.share({
+                          title: selected.title,
+                          text: selected.subject || selected.title,
+                          url,
+                        });
+                      } else {
+                        await navigator.clipboard.writeText(url);
+                      }
+                    }}
+                  >
+                    <Share2 className="size-4" />
+                    مشاركة
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 gap-2"
+                    onClick={() => navigate(`/studio?document=${encodeURIComponent(selected.id)}`)}
+                  >
+                    <Pencil className="size-4" />
+                    تعديل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-12 gap-2"
+                    onClick={() => setUploadOpen(true)}
+                  >
+                    <UploadCloud className="size-4" />
+                    استيراد ملف
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="h-12 gap-2"
+                    onClick={() => {
+                      if (window.confirm(`حذف «${selected.title}» نهائيًا من المكتبة؟`)) {
+                        deleteDocument.mutate({ id: selected.id });
+                      }
+                    }}
+                    disabled={deleteDocument.isPending}
+                  >
+                    <Trash2 className="size-4" />
+                    حذف
+                  </Button>
+                </div>
+              ) : null}
 
               {fileUrlQuery.data?.url ? (
                 <PrintDialog
