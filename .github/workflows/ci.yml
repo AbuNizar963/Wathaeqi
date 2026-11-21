@@ -44,6 +44,11 @@ jobs:
             echo "Retired Supabase/PostgreSQL runtime dependency detected"
             exit 1
           fi
+      - name: Diagnose document studio formatting
+        run: |
+          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx
+          git --no-pager diff -- client/src/features/document-studio/DocumentStudioPage.tsx
+
       - name: Check formatting
         run: pnpm lint
 
