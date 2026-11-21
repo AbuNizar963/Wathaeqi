@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
@@ -39,11 +44,13 @@ export default function ResponsiveA4Preview({
         page.scrollHeight,
         page.offsetHeight,
       );
+      const height = Math.ceil(pageHeight * scale);
 
-      setLayout({
-        scale,
-        height: Math.ceil(pageHeight * scale),
-      });
+      setLayout(current =>
+        current.scale === scale && current.height === height
+          ? current
+          : { scale, height },
+      );
     };
 
     updateLayout();
