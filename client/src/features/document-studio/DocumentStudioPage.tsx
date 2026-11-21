@@ -1218,8 +1218,8 @@ export default function DocumentStudioPage() {
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
-              اختر طريقة إنشاء الوثيقة. يمكنك الكتابة داخل محرر الوثائق أو استيراد
-              ملف محفوظ لديك.
+              اختر طريقة إنشاء الوثيقة. يمكنك الكتابة داخل محرر الوثائق أو
+              استيراد ملف محفوظ لديك.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
