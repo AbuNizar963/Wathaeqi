@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   },
   getAppwriteTablesDB: vi.fn(),
   getAppwriteDatabaseId: vi.fn(),
+  getOrganizationLogoDataUrl: vi.fn(),
 }));
 
 vi.mock("node-appwrite", () => ({
@@ -23,6 +24,10 @@ vi.mock("node-appwrite", () => ({
 vi.mock("../../_core/appwrite", () => ({
   getAppwriteTablesDB: mocks.getAppwriteTablesDB,
   getAppwriteDatabaseId: mocks.getAppwriteDatabaseId,
+}));
+
+vi.mock("../organizations/organizationService", () => ({
+  getOrganizationLogoDataUrl: mocks.getOrganizationLogoDataUrl,
 }));
 
 import {
@@ -52,6 +57,9 @@ describe("Appwrite document organization repository", () => {
     vi.clearAllMocks();
     mocks.getAppwriteTablesDB.mockReturnValue(mocks.tables);
     mocks.getAppwriteDatabaseId.mockReturnValue("wathaeqi-db");
+    mocks.getOrganizationLogoDataUrl.mockResolvedValue(
+      "data:image/png;base64,cGVyc2lzdGVkLWxvZ28="
+    );
     mocks.tables.listRows.mockResolvedValue({ rows: [settingsRow] });
     mocks.tables.createTransaction.mockResolvedValue({ $id: "tx-1" });
     mocks.tables.updateRow.mockResolvedValue({});
@@ -68,13 +76,14 @@ describe("Appwrite document organization repository", () => {
         total: false,
       })
     );
+    expect(mocks.getOrganizationLogoDataUrl).toHaveBeenCalledWith("org-1");
     expect(result).toEqual({
       organizationId: "org-1",
       departmentName: "إدارة الوثائق",
       unitName: "الوحدة المركزية",
       unitChiefRank: "العقيد",
       unitChiefName: "رئيس الوحدة",
-      logoUrl: "https://example.test/logo.png",
+      logoUrl: "data:image/png;base64,cGVyc2lzdGVkLWxvZ28=",
       serialPrefix: "DOC",
       numberSystem: "latin",
       dateFormat: "dd/MM/yyyy",
