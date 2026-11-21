@@ -98,5 +98,11 @@ describe("rich document editing safety", () => {
     };
     expect(supportsRichDocumentEditing(legacyHtml)).toBe(false);
     expect(extractDocumentText(legacyHtml)).toBe("محتوى");
+    expect(
+      extractDocumentText({
+        type: "legacy-html",
+        html: "<p>&amp;lt;script&amp;gt;</p>",
+      })
+    ).toBe("&lt;script&gt;");
   });
 });
