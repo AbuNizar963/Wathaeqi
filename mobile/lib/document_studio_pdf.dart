@@ -66,13 +66,16 @@ class DocumentStudioPdf {
     final chiefName = _clean(letterhead['unitChiefName']);
     final headerShowLogo = letterhead['headerShowLogo'] != false;
     final rawHeaderLogoSize = letterhead['headerLogoSize'];
-    final headerLogoSize = (rawHeaderLogoSize is num
-            ? rawHeaderLogoSize.toDouble()
-            : 120.0)
-        .clamp(32.0, 128.0)
-        .toDouble();
+    final headerLogoSize =
+        (rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 120.0)
+            .clamp(32.0, 128.0)
+            .toDouble();
     final headerLogoSizePoints = headerLogoSize * 0.75;
-    final headerTopPadding = _headerPadding(letterhead, 'headerTopPaddingMm', 0);
+    final headerTopPadding = _headerPadding(
+      letterhead,
+      'headerTopPaddingMm',
+      0,
+    );
     final headerHorizontalPadding = _headerPadding(
       letterhead,
       'headerHorizontalPaddingMm',
@@ -166,8 +169,8 @@ class DocumentStudioPdf {
           final metadataAlignment = headerAlignment == 'center'
               ? pw.TextAlign.center
               : headerAlignment == 'right'
-                  ? pw.TextAlign.right
-                  : pw.TextAlign.left;
+              ? pw.TextAlign.right
+              : pw.TextAlign.left;
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
@@ -313,8 +316,7 @@ class DocumentStudioPdf {
   ) {
     final value = settings[key];
     final parsed = value is num ? value.toDouble() : double.tryParse('$value');
-    return (parsed ?? fallback).clamp(0, 30).toDouble() *
-        PdfPageFormat.mm;
+    return (parsed ?? fallback).clamp(0, 30).toDouble() * PdfPageFormat.mm;
   }
 
   static String? _clean(dynamic value) {
