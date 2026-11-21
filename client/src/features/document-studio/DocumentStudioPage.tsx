@@ -135,11 +135,6 @@ export default function DocumentStudioPage() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("create") === "1") {
-      setCreationDialogOpen(true);
-    }
-  }, []);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
   );
@@ -178,6 +173,12 @@ export default function DocumentStudioPage() {
   const [templateFields, setTemplateFields] = useState<DocumentTemplateField[]>(
     []
   );
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("create") === "1") {
+      setCreationDialogOpen(true);
+    }
+  }, []);
 
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
@@ -1212,7 +1213,10 @@ export default function DocumentStudioPage() {
         </main>
       </div>
 
-      <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
+      <Dialog
+        open={creationDialogOpen}
+        onOpenChange={setCreationDialogOpen}
+      >
         <DialogContent className="max-w-lg" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
