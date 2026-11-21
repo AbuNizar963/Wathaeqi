@@ -612,40 +612,45 @@ export default function DocumentStudioPage() {
           </Button>
           {activeTab === "documents" || activeTab === "archive" ? (
             <>
-              <Button
-                variant="outline"
-                disabled={Boolean(
-                  selectedDocument?.file && !importedFileUrlQuery.data?.url
-                )}
-                onClick={() => {
-                  if (selectedDocument?.file) setImportPrintOpen(true);
-                  else window.print();
-                }}
-              >
-                <Printer className="ml-2 h-4 w-4" />
-                طباعة / PDF
-              </Button>
-              <Button
-                variant="outline"
-                disabled={
-                  !selectedDocument ||
-                  Boolean(
-                    selectedDocument.file && !importedFileUrlQuery.data?.url
-                  )
-                }
-                onClick={downloadSelectedDocument}
-              >
-                <Download className="ml-2 h-4 w-4" />
-                تنزيل
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!selectedDocument}
-                onClick={() => void shareSelectedDocument()}
-              >
-                <Share2 className="ml-2 h-4 w-4" />
-                مشاركة
-              </Button>
+              {!previewMode ? (
+                <>
+                <Button
+                  variant="outline"
+                  disabled={Boolean(
+                    selectedDocument?.file && !importedFileUrlQuery.data?.url
+                  )}
+                  onClick={() => {
+                    if (selectedDocument?.file) setImportPrintOpen(true);
+                    else window.print();
+                  }}
+                >
+                  <Printer className="ml-2 h-4 w-4" />
+                  طباعة / PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={
+                    !selectedDocument ||
+                    Boolean(
+                      selectedDocument.file && !importedFileUrlQuery.data?.url
+                    )
+                  }
+                  onClick={downloadSelectedDocument}
+                >
+                  <Download className="ml-2 h-4 w-4" />
+                  تنزيل
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!selectedDocument}
+                  onClick={() => void shareSelectedDocument()}
+                >
+                  <Share2 className="ml-2 h-4 w-4" />
+                  مشاركة
+                </Button>
+  
+                </>
+              ) : null}
               <Button onClick={() => setCreationDialogOpen(true)}>
                 <FilePlus2 className="ml-2 h-4 w-4" />
                 إنشاء وثيقة
@@ -1311,6 +1316,56 @@ export default function DocumentStudioPage() {
                   </div>
                 </div>
               )}
+              {previewMode && selectedDocument ? (
+                <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={Boolean(
+                      selectedDocument.file && !importedFileUrlQuery.data?.url
+                    )}
+                    onClick={downloadSelectedDocument}
+                  >
+                    <Download className="h-5 w-5" />
+                    <span className="text-xs">تنزيل</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={!selectedDocument}
+                    onClick={() => void shareSelectedDocument()}
+                  >
+                    <Share2 className="h-5 w-5" />
+                    <span className="text-xs">مشاركة</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={Boolean(
+                      selectedDocument.file && !importedFileUrlQuery.data?.url
+                    )}
+                    onClick={() => {
+                      if (selectedDocument.file) setImportPrintOpen(true);
+                      else window.print();
+                    }}
+                  >
+                    <Printer className="h-5 w-5" />
+                    <span className="text-xs">طباعة</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    onClick={() => setPreviewMode(false)}
+                  >
+                    <PenLine className="h-5 w-5" />
+                    <span className="text-xs">تعديل الوثيقة</span>
+                  </Button>
+                </div>
+              ) : null}
             </Card>
           )}
         </main>
