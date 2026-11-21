@@ -59,6 +59,14 @@ class DocumentStudioPdf {
         : 0.12;
     final watermarkColor = PdfColor(0.42, 0.44, 0.47, safeOpacity);
     final borderColor = PdfColor.fromInt(dividerColor);
+    final pageMargin = (key, fallback) {
+      final value = letterhead[key];
+      return (value is num ? value.toDouble() : fallback).clamp(0.0, 35.0).toDouble() * PdfPageFormat.mm;
+    };
+    final frameStyle = _clean(letterhead['frameStyle']) ?? 'single';
+    final frameColor = _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
+    final frameWidth = ((letterhead['frameWidthPt'] is num ? (letterhead['frameWidthPt'] as num).toDouble() : 1.0).clamp(0.5, 4.0)).toDouble();
+    final dividerWidth = ((letterhead['headerDividerWidthPt'] is num ? (letterhead['headerDividerWidthPt'] as num).toDouble() : 2.25).clamp(0.5, 6.0)).toDouble();
     final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
@@ -93,13 +101,25 @@ class DocumentStudioPdf {
         maxPages: 500,
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(10 * PdfPageFormat.mm),
+          margin: pw.EdgeInsets.fromLTRB(pageMargin('pageMarginLeftMm', 10), pageMargin('pageMarginTopMm', 10), pageMargin('pageMarginRightMm', 10), pageMargin('pageMarginBottomMm', 10)),
           theme: theme,
           textDirection: pw.TextDirection.rtl,
           buildBackground: (context) => pw.FullPage(
             ignoreMargins: true,
             child: pw.Stack(
               children: [
+                if (frameStyle != 'none')
+                  pw.Positioned.fill(
+                    child: pw.Container(
+                      margin: pw.EdgeInsets.fromLTRB(pageMargin('pageMarginLeftMm', 10), pageMargin('pageMarginTopMm', 10), pageMargin('pageMarginRightMm', 10), pageMargin('pageMarginBottomMm', 10)),
+                      decoration: pw.BoxDecoration(
+                        border: pw.Border.all(color: frameColor, width: frameWidth),
+                      ),
+                      child: frameStyle == 'ornate' || frameStyle == 'double'
+                          ? pw.Container(margin: const pw.EdgeInsets.all(3), decoration: pw.BoxDecoration(border: pw.Border.all(color: frameColor, width: frameWidth)))
+                          : null,
+                    ),
+                  ),
                 if (showWatermarkText)
                   pw.Positioned.fill(
                     child: pw.Padding(
@@ -182,9 +202,7 @@ class DocumentStudioPdf {
                   headerBottomPadding,
                 ),
                 decoration: pw.BoxDecoration(
-                  border: pw.Border(
-                    bottom: pw.BorderSide(color: borderColor, width: 2.25),
-                  ),
+                  border: pw.Border(bottom: pw.BorderSide(color: borderColor, width: dividerWidth)),
                 ),
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -319,6 +337,10 @@ class DocumentStudioPdf {
     return (parsed ?? fallback).clamp(0, 30).toDouble() * PdfPageFormat.mm;
   }
 
+  static PdfColor? _parseHexColor(String? value) {
+    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value)) return null;
+    return PdfColor.fromInt(int.parse(value.substring(1), radix: 16) | 0xFF000000);
+  }
   static String? _clean(dynamic value) {
     if (value is! String || value.trim().isEmpty) return null;
     return value.trim();
