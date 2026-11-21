@@ -655,6 +655,9 @@
   .document-a4-page .document-editor-input {
     display: none;
   }
+  .document-a4-page .document-editor-warning {
+    display: none;
+  }
   .document-a4-page .document-editor-print-copy {
     display: block;
   }

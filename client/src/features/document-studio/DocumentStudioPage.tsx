@@ -42,6 +42,7 @@ import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
+import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
 import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import { downloadDocumentFile, shareDocument } from "./documentActions";
@@ -65,35 +66,6 @@ const CATEGORIES = [
   { value: "personnel", label: "شؤون الموظفين" },
   { value: "correspondence", label: "مراسلات" },
 ];
-
-function applyFieldValues(
-  content: Record<string, unknown>,
-  values: Record<string, string>
-): Record<string, unknown> {
-  const visit = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(visit);
-    if (!value || typeof value !== "object") return value;
-
-    const node = value as Record<string, unknown>;
-    if (
-      (node.type === "text" || node.type === "legacy-text") &&
-      typeof node.text === "string"
-    ) {
-      const text = Object.entries(values).reduce(
-        (result, [key, fieldValue]) =>
-          result.split(`{{${key}}}`).join(fieldValue),
-        node.text
-      );
-      return { ...node, text };
-    }
-
-    return Object.fromEntries(
-      Object.entries(node).map(([key, child]) => [key, visit(child)])
-    );
-  };
-
-  return visit(content) as Record<string, unknown>;
-}
 
 function defaultFieldValues(
   fields: DocumentTemplateField[]
@@ -177,12 +149,10 @@ export default function DocumentStudioPage() {
   const [documentContent, setDocumentContent] = useState(
     EMPTY_DOCUMENT_CONTENT
   );
-  const [templateBaseContent, setTemplateBaseContent] = useState(
-    EMPTY_DOCUMENT_CONTENT
-  );
   const [documentFieldValues, setDocumentFieldValues] = useState<
     Record<string, string>
   >({});
+  const [templateValuesApplied, setTemplateValuesApplied] = useState(false);
 
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
     null
@@ -290,8 +260,8 @@ export default function DocumentStudioPage() {
     setDocumentSubject(selectedDocument.subject);
     setDocumentDate(dateInputValue(selectedDocument.documentDate));
     setDocumentContent(selectedDocument.content);
-    setTemplateBaseContent(selectedDocument.content);
     setDocumentFieldValues(selectedDocument.fieldValues);
+    setTemplateValuesApplied(true);
     setSelectedTemplateId(selectedDocument.templateId);
     setSelectedTemplateRevision(selectedDocument.templateRevision);
   }, [selectedDocument]);
@@ -394,8 +364,8 @@ export default function DocumentStudioPage() {
     setDocumentSubject("");
     setDocumentDate(new Date().toISOString().slice(0, 10));
     setDocumentContent(EMPTY_DOCUMENT_CONTENT);
-    setTemplateBaseContent(EMPTY_DOCUMENT_CONTENT);
     setDocumentFieldValues({});
+    setTemplateValuesApplied(false);
     setActiveTab("documents");
   }
 
@@ -409,9 +379,9 @@ export default function DocumentStudioPage() {
     setDocumentCategory(template.category);
     setDocumentSubject("");
     setDocumentDate(new Date().toISOString().slice(0, 10));
-    setTemplateBaseContent(template.content);
     setDocumentContent(template.content);
     setDocumentFieldValues(defaultFieldValues(template.fields));
+    setTemplateValuesApplied(false);
     setActiveTab("documents");
   }
 
@@ -425,9 +395,11 @@ export default function DocumentStudioPage() {
       title: documentTitle.trim(),
       category: documentCategory,
       subject: documentSubject.trim(),
-      content: selectedTemplateId
-        ? applyFieldValues(documentContent, documentFieldValues)
-        : documentContent,
+      content: contentForSave(
+        documentContent,
+        documentFieldValues,
+        Boolean(selectedTemplateId) && !templateValuesApplied
+      ),
       fieldValues: documentFieldValues,
       documentDate: makeDocumentDate(documentDate),
       templateId: selectedTemplateId,
@@ -1202,18 +1174,22 @@ export default function DocumentStudioPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() =>
-                        setDocumentContent(
-                          applyFieldValues(
-                            templateBaseContent,
-                            documentFieldValues
-                          )
-                        )
-                      }
+                      disabled={!canEditDocument}
+                      onClick={() => {
+                        setDocumentContent(current =>
+                          applyFieldValues(current, documentFieldValues)
+                        );
+                        setTemplateValuesApplied(true);
+                      }}
                     >
                       تطبيق البيانات في النص
                     </Button>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    تُستبدل المفاتيح الموجودة في عقد النص المدعومة فقط. لتغيير
+                    قيمة بعد استبدالها، أعد إدراج مفتاحها في النص ثم اضغط تطبيق
+                    البيانات؛ لا يعاد تطبيقها تلقائياً على وثيقة محفوظة.
+                  </p>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {documentTemplateFields.map(field => (
                       <div key={field.key} className="space-y-1">

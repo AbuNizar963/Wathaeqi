@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import React from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { editablePlainText, plainTextDocument } from "./documentEditorContent";
 
 type EditorContentValue = Record<string, unknown>;
 
@@ -61,7 +62,9 @@ export default function DocumentEditor({
   placeholder = "اكتب نص الوثيقة هنا...",
   containerClassName = "",
 }: DocumentEditorProps) {
-  const text = useMemo(() => collectText(content), [content]);
+  const plainText = editablePlainText(content);
+  const canEditText = editable && plainText !== null;
+  const text = plainText ?? collectText(content);
 
   return (
     <div
@@ -69,12 +72,19 @@ export default function DocumentEditor({
         border-slate-200 bg-transparent ${containerClassName}`}
       dir="rtl"
     >
-      {editable ? (
+      {editable && !canEditText ? (
+        <p
+          role="status"
+          className="document-editor-warning mb-3 text-sm text-amber-800"
+        >
+          هذا المحتوى يتضمن تنسيقاً أو بيانات لا يدعم تحريرها المحرر النصي.
+          تُعرض معاينة نصية فقط، ويبقى المحتوى الأصلي دون تحويله.
+        </p>
+      ) : null}
+      {canEditText ? (
         <Textarea
           value={text}
-          onChange={event =>
-            onChange({ type: "legacy-text", text: event.target.value })
-          }
+          onChange={event => onChange(plainTextDocument(event.target.value))}
           placeholder={placeholder}
           aria-label="نص الوثيقة"
           className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent
@@ -83,8 +93,8 @@ export default function DocumentEditor({
         />
       ) : null}
       <div
-        className={`document-editor-copy text-right text-[15px] text-slate-900 ${editable ? "document-editor-print-copy" : ""}`}
-        aria-hidden={editable ? true : undefined}
+        className={`document-editor-copy text-right text-[15px] text-slate-900 ${canEditText ? "document-editor-print-copy" : ""}`}
+        aria-hidden={canEditText ? true : undefined}
       >
         {text}
       </div>

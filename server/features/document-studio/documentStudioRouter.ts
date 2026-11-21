@@ -39,9 +39,36 @@ import {
   MAX_DOCUMENT_UPLOAD_BYTES,
 } from "./documentUploadValidation";
 
+function isEditorNode(value: unknown, depth = 0): boolean {
+  if (
+    depth > 100 ||
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return false;
+  }
+  const node = value as Record<string, unknown>;
+  if (typeof node.type !== "string" || node.type.length === 0) return false;
+  if (node.type === "text" && typeof node.text !== "string") return false;
+  if (node.content === undefined) return true;
+  return (
+    Array.isArray(node.content) &&
+    node.content.every(child => isEditorNode(child, depth + 1))
+  );
+}
+
 const editorDocumentSchema = z
   .record(z.string(), z.unknown())
-  .refine(value => value.type === "doc", "محتوى المحرر غير صالح");
+  .refine(
+    value =>
+      (value.type === "doc" &&
+        Array.isArray(value.content) &&
+        value.content.every(child => isEditorNode(child))) ||
+      (value.type === "legacy-text" && typeof value.text === "string") ||
+      (value.type === "legacy-html" && typeof value.html === "string"),
+    "محتوى المحرر غير صالح"
+  );
 
 const templateFieldOptionSchema = z.object({
   value: z.string().trim().min(1).max(120),
