@@ -46,7 +46,12 @@ export default function PlatformDocumentSettingsPage() {
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("");
   const organizationLogoQuery = trpc.organizations.logo.useQuery(
     { id: selectedOrganizationId || "00000000-0000-0000-0000-000000000000" },
-    { enabled: Boolean(selectedOrganizationId) }
+    {
+      enabled: Boolean(selectedOrganizationId),
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+    }
   );
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
