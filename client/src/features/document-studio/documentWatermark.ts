@@ -8,7 +8,11 @@ export function buildDocumentWatermarkCss(opacity: number): string {
   const safeOpacity = Number.isFinite(opacity)
     ? Math.min(0.6, Math.max(0, opacity))
     : DOCUMENT_WATERMARK_DEFAULT_OPACITY;
-  return `.document-watermark-layer { --document-watermark-opacity: ${safeOpacity}; }`;
+  return [
+    ".document-watermark-layer {",
+    `  --document-watermark-opacity: ${safeOpacity};`,
+    "}",
+  ].join("\\n");
 }
 
 /**
@@ -17,7 +21,7 @@ export function buildDocumentWatermarkCss(opacity: number): string {
  */
 export function getA4PreviewPageCount(
   width: number,
-  contentHeight: number,
+  contentHeight: number
 ): number {
   if (
     !Number.isFinite(width) ||
@@ -30,6 +34,6 @@ export function getA4PreviewPageCount(
   const pageHeight = (width * 297) / 210;
   return Math.max(
     1,
-    Math.ceil(Math.max(0, contentHeight - 1) / pageHeight),
+    Math.ceil(Math.max(0, contentHeight - 1) / pageHeight)
   );
 }
