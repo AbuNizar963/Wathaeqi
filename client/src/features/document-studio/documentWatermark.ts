@@ -1,4 +1,4 @@
-export const OFFICIAL_ORGANIZATION_NAME = "وثائقي";
+export const OFFICIAL_ORGANIZATION_NAME = "وزارة الداخلية";
 export const DOCUMENT_WATERMARK_ROWS = 33;
 export const DOCUMENT_WATERMARK_COLUMNS = 13;
 export const DOCUMENT_WATERMARK_DEFAULT_OPACITY = 0.12;

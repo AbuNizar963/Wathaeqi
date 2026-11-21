@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -56,7 +57,16 @@ function AlertDialogContent({
           className
         )}
         {...props}
-      />
+      >
+        {props.children}
+        <AlertDialogPrimitive.Cancel
+          aria-label="إغلاق النافذة"
+          title="إغلاق النافذة"
+          className="ring-offset-background focus:ring-ring absolute start-3 top-3 inline-flex size-9 items-center justify-center rounded-md border bg-background/90 text-muted-foreground opacity-80 shadow-sm transition hover:bg-accent hover:text-foreground hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2"
+        >
+          <XIcon className="size-4" aria-hidden="true" />
+        </AlertDialogPrimitive.Cancel>
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   );
 }

@@ -110,7 +110,7 @@ assert(
 
 assert(
   documentStudio.includes("معاينة الوثيقة") &&
-    documentStudio.includes("OFFICIAL_ORGANIZATION_NAME") &&
+    documentStudio.includes("watermarkText") &&
     documentStudio.includes("buildDocumentWatermarkCss") &&
     documentStudio.includes("editable={!previewMode}"),
   "The document workspace must expose a read-only preview and apply watermark settings."

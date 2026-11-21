@@ -9,6 +9,7 @@ import {
 } from "./platformDocumentSettings";
 
 const ownerSettings: PlatformDocumentSettings = {
+  ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   showMinistryWatermarkText: false,
   watermarkOpacityPercent: 0,
   headerDividerColor: "#2457a6",
@@ -52,6 +53,10 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: 61 },
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
+    { watermarkText: "   " },
+    { headerLogoSize: 200 },
+    { headerTopPaddingMm: -1 },
+    { headerAlignment: "invalid" },
   ])("blocks export with invalid effective settings: %o", async invalid => {
     await expect(
       loadDocumentSettingsForExport(

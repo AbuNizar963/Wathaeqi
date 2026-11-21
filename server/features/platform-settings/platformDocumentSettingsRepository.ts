@@ -3,6 +3,9 @@ import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MAX_HEADER_LOGO_SIZE,
+  MIN_HEADER_LOGO_SIZE,
+  MAX_HEADER_PADDING_MM,
   type PlatformDocumentSettings,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
 import {
@@ -58,6 +61,58 @@ function mapPlatformDocumentSettings(
       typeof storedColor === "string" && HEX_COLOR_PATTERN.test(storedColor)
         ? storedColor
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerColor,
+    watermarkText:
+      typeof row.watermarkText === "string" && row.watermarkText.trim()
+        ? row.watermarkText.trim().slice(0, 255)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkText,
+    headerTitle:
+      typeof row.headerTitle === "string"
+        ? row.headerTitle.trim().slice(0, 255)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerTitle,
+    headerSubtitle:
+      typeof row.headerSubtitle === "string"
+        ? row.headerSubtitle.trim().slice(0, 255)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerSubtitle,
+    headerChiefRank:
+      typeof row.headerChiefRank === "string"
+        ? row.headerChiefRank.trim().slice(0, 120)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerChiefRank,
+    headerChiefName:
+      typeof row.headerChiefName === "string"
+        ? row.headerChiefName.trim().slice(0, 255)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerChiefName,
+    headerShowLogo:
+      typeof row.headerShowLogo === "boolean"
+        ? row.headerShowLogo
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerShowLogo,
+    headerLogoSize:
+      Number.isInteger(Number(row.headerLogoSize)) &&
+      Number(row.headerLogoSize) >= MIN_HEADER_LOGO_SIZE &&
+      Number(row.headerLogoSize) <= MAX_HEADER_LOGO_SIZE
+        ? Number(row.headerLogoSize)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerLogoSize,
+    headerTopPaddingMm:
+      Number.isInteger(Number(row.headerTopPaddingMm)) &&
+      Number(row.headerTopPaddingMm) >= 0 &&
+      Number(row.headerTopPaddingMm) <= MAX_HEADER_PADDING_MM
+        ? Number(row.headerTopPaddingMm)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerTopPaddingMm,
+    headerHorizontalPaddingMm:
+      Number.isInteger(Number(row.headerHorizontalPaddingMm)) &&
+      Number(row.headerHorizontalPaddingMm) >= 0 &&
+      Number(row.headerHorizontalPaddingMm) <= MAX_HEADER_PADDING_MM
+        ? Number(row.headerHorizontalPaddingMm)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerHorizontalPaddingMm,
+    headerBottomPaddingMm:
+      Number.isInteger(Number(row.headerBottomPaddingMm)) &&
+      Number(row.headerBottomPaddingMm) >= 0 &&
+      Number(row.headerBottomPaddingMm) <= MAX_HEADER_PADDING_MM
+        ? Number(row.headerBottomPaddingMm)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm,
+    headerAlignment:
+      row.headerAlignment === "center" || row.headerAlignment === "right"
+        ? row.headerAlignment
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerAlignment,
     showVerificationQr:
       typeof row.showVerificationQr === "boolean"
         ? row.showVerificationQr
