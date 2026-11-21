@@ -2236,7 +2236,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   ),
                   Container(
                     constraints: BoxConstraints(
-                      minHeight: math.max(96, pageHeight - 250),
+                      minHeight: math.max(96, pageHeight - 350),
                     ),
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                     child: QuillEditor.basic(
