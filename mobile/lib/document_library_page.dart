@@ -341,66 +341,204 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
           textDirection: ui.TextDirection.rtl,
           child: Scaffold(
             backgroundColor: Theme.of(previewContext).scaffoldBackgroundColor,
-            appBar: AppBar(title: Text(document.title)),
-            body: isWord
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'معاينة Word غير مدعومة محلياً.\n\nالملف الأصلي جاهز للتنزيل أو المشاركة دون تحويل أو فقدان للتنسيق.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                : PdfPreview(
-                    pdfFileName: file.fileName,
-                    canChangePageFormat: false,
-                    canChangeOrientation: false,
-                    allowPrinting: false,
-                    allowSharing: false,
-                    build: (_) => loadBytes(),
+            appBar: AppBar(
+              titleSpacing: 12,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    document.serialCode.isEmpty
+                        ? 'وثيقة رسمية'
+                        : 'وثيقة رقم: ${document.serialCode}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 15),
                   ),
-            bottomNavigationBar: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-                child: GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 2.55,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: downloadFile,
-                      icon: const Icon(Icons.download_outlined, size: 18),
-                      label: Text(isWord ? 'تنزيل Word الأصلي' : 'تنزيل PDF'),
+                  Text(
+                    document.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
-                    FilledButton.icon(
-                      onPressed: isWord ? null : printFile,
-                      icon: const Icon(Icons.print_outlined, size: 18),
-                      label: const Text('طباعة'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: shareFile,
-                      icon: const Icon(Icons.share_outlined, size: 18),
-                      label: Text(isWord ? 'مشاركة Word الأصلي' : 'مشاركة PDF'),
-                    ),
-                    if (widget.onEditDocument != null)
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.of(previewContext).pop();
-                          widget.onEditDocument!(document);
-                        },
-                        icon: const Icon(Icons.edit_outlined),
-                        label: const Text('تعديل'),
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+              actions: [
+                IconButton(
+                  tooltip: 'إغلاق تفاصيل الوثيقة',
+                  onPressed: () => Navigator.of(previewContext).maybePop(),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ],
+            ),
+            body: Column(
+              children: [
+                Expanded(
+                  child: isWord
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'معاينة Word غير مدعومة محلياً.\n\nالملف الأصلي جاهز للتنزيل أو المشاركة دون تحويل أو فقدان للتنسيق.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                      : PdfPreview(
+                          pdfFileName: file.fileName,
+                          canChangePageFormat: false,
+                          canChangeOrientation: false,
+                          allowPrinting: false,
+                          allowSharing: false,
+                          build: (_) => loadBytes(),
+                        ),
+                ),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 330),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                    child: Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '${_categories[document.category] ?? 'عام'} · الحالة: ${_statusLabel(document.status)}',
+                            style: Theme.of(previewContext).textTheme.bodySmall,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Card(
+                          margin: EdgeInsets.zero,
+                          child: ExpansionTile(
+                            initiallyExpanded: true,
+                            title: const Text('إصدارات الوثيقة (1)'),
+                            subtitle: Text(
+                              'الإصدار الحالي · ${DateFormat('yyyy/MM/dd').format(document.updatedAt.toLocal())}',
+                            ),
+                            children: [
+                              ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.history_edu_outlined),
+                                title: Text(
+                                  document.serialCode.isEmpty
+                                      ? 'مسودة الوثيقة'
+                                      : 'الإصدار الحالي',
+                                ),
+                                subtitle: Text(
+                                  'أُنشئت في ${DateFormat('yyyy/MM/dd').format(document.createdAt.toLocal())}',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Card(
+                          margin: EdgeInsets.zero,
+                          child: ExpansionTile(
+                            title: const Text('سجل التدقيق والإجراءات'),
+                            subtitle: const Text('إنشاء الوثيقة وتحديثها'),
+                            children: [
+                              ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.fact_check_outlined),
+                                title: const Text('تم حفظ الوثيقة في المكتبة'),
+                                subtitle: Text(
+                                  DateFormat('yyyy/MM/dd – HH:mm')
+                                      .format(document.updatedAt.toLocal()),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(previewContext)
+                                .colorScheme
+                                .surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(previewContext)
+                                  .colorScheme
+                                  .outlineVariant,
+                            ),
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              const spacing = 8.0;
+                              final itemWidth =
+                                  (constraints.maxWidth - spacing * 2) / 3;
+                              final actions = <Widget>[
+                                _documentAction(
+                                  label: isWord ? 'تنزيل Word' : 'تنزيل PDF',
+                                  icon: Icons.download_outlined,
+                                  onPressed: downloadFile,
+                                ),
+                                _documentAction(
+                                  label: 'طباعة',
+                                  icon: Icons.print_outlined,
+                                  primary: true,
+                                  onPressed: isWord ? null : printFile,
+                                ),
+                                _documentAction(
+                                  label: isWord ? 'مشاركة Word' : 'مشاركة PDF',
+                                  icon: Icons.share_outlined,
+                                  onPressed: shareFile,
+                                ),
+                                if (widget.onEditDocument != null)
+                                  _documentAction(
+                                    label: 'تعديل',
+                                    icon: Icons.edit_outlined,
+                                    onPressed: () {
+                                      Navigator.of(previewContext).pop();
+                                      widget.onEditDocument!(document);
+                                    },
+                                  ),
+                              ];
+                              return Directionality(
+                                textDirection: ui.TextDirection.rtl,
+                                child: Wrap(
+                                  spacing: spacing,
+                                  runSpacing: spacing,
+                                  children: [
+                                    for (final action in actions)
+                                      SizedBox(width: itemWidth, child: action),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _documentAction({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    bool primary = false,
+  }) {
+    final button = primary ? FilledButton.icon : OutlinedButton.icon;
+    return button(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+      style: ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(Size(0, 46)),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         ),
       ),
     );
