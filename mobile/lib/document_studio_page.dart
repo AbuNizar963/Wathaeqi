@@ -1339,7 +1339,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Widget _buildDocumentPreview(OfficialDocument document) {
-    final isWord = document.file?.mimeType == DocumentFileSupport.docxMime;
+    final mimeType = document.file?.mimeType;
+    final isWord = mimeType == DocumentFileSupport.docxMime;
+    final isPdf = mimeType == DocumentFileSupport.pdfMime;
+    final isNativeDocument = document.file == null;
+    final canUsePdfActions = isPdf;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1372,28 +1376,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ],
         ),
         const SizedBox(height: 10),
-        if (isWord)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const Icon(Icons.description_outlined, size: 42),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'معاينة ملفات Word غير متاحة داخل التطبيق حالياً',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    document.file?.fileName ?? document.title,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+        if (isNativeDocument)
+          _buildA4Editor(controller: _documentEditor, editable: false)
+        else if (isWord)
+          _buildUnsupportedDocumentPreview(
+            document,
+            'معاينة ملفات Word غير متاحة داخل التطبيق حالياً',
           )
-        else
+        else if (isPdf)
           SizedBox(
             height: 620,
             child: PdfPreview(
@@ -1403,6 +1393,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               canChangePageFormat: false,
               canChangeOrientation: false,
             ),
+          )
+        else
+          _buildUnsupportedDocumentPreview(
+            document,
+            'نوع الملف هذا لا يدعم المعاينة داخل التطبيق حالياً',
           ),
         const SizedBox(height: 12),
         GridView.count(
@@ -1418,23 +1413,27 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               label: isWord ? 'تنزيل Word' : 'تنزيل PDF',
               onPressed: _saving
                   ? null
-                  : () => isWord
-                      ? _saveOriginalDocument(document)
-                      : _saveDocumentPdf(document),
+                  : isWord
+                      ? () => _saveOriginalDocument(document)
+                      : canUsePdfActions
+                          ? () => _saveDocumentPdf(document)
+                          : null,
             ),
             _documentPreviewAction(
               icon: Icons.share_outlined,
               label: isWord ? 'مشاركة Word' : 'مشاركة PDF',
               onPressed: _saving
                   ? null
-                  : () => isWord
-                      ? _shareOriginalDocument(document)
-                      : _shareDocumentPdf(document),
+                  : isWord
+                      ? () => _shareOriginalDocument(document)
+                      : canUsePdfActions
+                          ? () => _shareDocumentPdf(document)
+                          : null,
             ),
             _documentPreviewAction(
               icon: Icons.print_outlined,
               label: 'طباعة',
-              onPressed: _saving || isWord
+              onPressed: _saving || !canUsePdfActions
                   ? null
                   : () => _printDocumentFile(document),
             ),
@@ -1445,6 +1444,29 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           const LinearProgressIndicator(),
         ],
       ],
+    );
+  }
+
+  Widget _buildUnsupportedDocumentPreview(
+    OfficialDocument document,
+    String message,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(Icons.description_outlined, size: 42),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 4),
+            Text(
+              document.file?.fileName ?? document.title,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
