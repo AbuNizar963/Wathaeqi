@@ -49,6 +49,7 @@ function collectText(value: unknown): string {
         ? `${text}\n`
         : text;
     })
+    .join("")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\n+$/g, "");
 }
