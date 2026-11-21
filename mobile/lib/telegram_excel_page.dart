@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'closable_dialog_title.dart';
 import 'telegram_excel_codec.dart';
 import 'telegram_display.dart';
 
@@ -186,7 +187,10 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
         builder: (context, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('معاينة تصدير سجل البرقيات'),
+            title: closableDialogTitle(
+            dialogContext,
+            const Text('معاينة تصدير سجل البرقيات'),
+          ),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
@@ -277,7 +281,10 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('الملف محمي بكلمة مرور'),
+          title: closableDialogTitle(
+            dialogContext,
+            const Text('الملف محمي بكلمة مرور'),
+          ),
           content: TextField(
             controller: controller,
             obscureText: true,
@@ -435,7 +442,10 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('تأكيد استيراد سجل Excel'),
+          title: closableDialogTitle(
+            dialogContext,
+            const Text('تأكيد استيراد سجل Excel'),
+          ),
           content: Text(
             'سيتم استيراد ${rowsToImport.length} صفًا من اختيارك. الصفوف المتجاوزة: $skippedRows، والمكررات المستبعدة تلقائيًا: $duplicateRows.',
           ),
@@ -521,7 +531,10 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: Text('تعديل صف ${index + 1} قبل الاستيراد'),
+            title: closableDialogTitle(
+            dialogContext,
+            Text('تعديل صف ${index + 1} قبل الاستيراد'),
+          ),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
