@@ -46,30 +46,8 @@ jobs:
           fi
       - name: Diagnose document studio formatting
         run: |
-          pnpm exec prettier --write \
-            client/src/features/document-studio/DocumentStudioPage.tsx \
-            client/src/features/document-studio/DocumentStudioPrintDialog.tsx \
-            client/src/features/document-studio/ResponsiveA4Preview.tsx \
-            client/src/features/document-studio/printColorCompatibility.ts \
-            client/src/features/platform-settings/PlatformDocumentSettings.tsx \
-            client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx \
-            client/src/features/document-library/DocumentLibraryPage.tsx \
-            server/ownerApiRouter.ts \
-            server/features/platform-settings/platformDocumentSettingsRepository.ts \
-            shared/appwriteSchema.ts \
-            shared/features/platform-settings/platformDocumentSettings.ts
-          git --no-pager diff -- \
-            client/src/features/document-studio/DocumentStudioPage.tsx \
-            client/src/features/document-studio/DocumentStudioPrintDialog.tsx \
-            client/src/features/document-studio/ResponsiveA4Preview.tsx \
-            client/src/features/document-studio/printColorCompatibility.ts \
-            client/src/features/platform-settings/PlatformDocumentSettings.tsx \
-            client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx \
-            client/src/features/document-library/DocumentLibraryPage.tsx \
-            server/ownerApiRouter.ts \
-            server/features/platform-settings/platformDocumentSettingsRepository.ts \
-            shared/appwriteSchema.ts \
-            shared/features/platform-settings/platformDocumentSettings.ts
+          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx
+          git --no-pager diff -- client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx
 
       - name: Check formatting
         run: pnpm lint
