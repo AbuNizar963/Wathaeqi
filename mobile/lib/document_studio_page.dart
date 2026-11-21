@@ -282,15 +282,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'watermarkText': 'وزارة الداخلية',
         'watermarkOpacityPercent': 12,
         'headerDividerColor': '#b49a55',
-        'headerDividerStyle': 'double',
-        'headerDividerWidthPt': 2.25,
-        'pageMarginTopMm': 10,
-        'pageMarginRightMm': 10,
-        'pageMarginBottomMm': 10,
-        'pageMarginLeftMm': 10,
-        'frameStyle': 'single',
-        'frameColor': '#b49a55',
-        'frameWidthPt': 1,
+    'headerDividerStyle': 'double',
+    'headerDividerWidthPt': 2.25,
+    'pageMarginTopMm': 10,
+    'pageMarginRightMm': 10,
+    'pageMarginBottomMm': 10,
+    'pageMarginLeftMm': 10,
+    'frameStyle': 'single',
+    'frameColor': '#b49a55',
+    'frameWidthPt': 1,
         'headerTitle': '',
         'headerSubtitle': '',
         'headerChiefRank': '',
@@ -595,15 +595,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             _platformDocumentSettings['headerBottomPaddingMm'] ?? 6,
         'headerAlignment':
             _platformDocumentSettings['headerAlignment'] ?? 'spread',
-        'headerDividerStyle':
-            _platformDocumentSettings['headerDividerStyle'] ?? 'double',
-        'headerDividerWidthPt':
-            _platformDocumentSettings['headerDividerWidthPt'] ?? 2.25,
+        'headerDividerStyle': _platformDocumentSettings['headerDividerStyle'] ?? 'double',
+        'headerDividerWidthPt': _platformDocumentSettings['headerDividerWidthPt'] ?? 2.25,
         'pageMarginTopMm': _platformDocumentSettings['pageMarginTopMm'] ?? 10,
-        'pageMarginRightMm':
-            _platformDocumentSettings['pageMarginRightMm'] ?? 10,
-        'pageMarginBottomMm':
-            _platformDocumentSettings['pageMarginBottomMm'] ?? 10,
+        'pageMarginRightMm': _platformDocumentSettings['pageMarginRightMm'] ?? 10,
+        'pageMarginBottomMm': _platformDocumentSettings['pageMarginBottomMm'] ?? 10,
         'pageMarginLeftMm': _platformDocumentSettings['pageMarginLeftMm'] ?? 10,
         'frameStyle': _platformDocumentSettings['frameStyle'] ?? 'single',
         'frameColor': _platformDocumentSettings['frameColor'] ?? '#b49a55',
@@ -2174,8 +2170,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     var dividerStyle = values['headerDividerStyle']?.toString() ?? 'double';
     var frameStyle = values['frameStyle']?.toString() ?? 'single';
     var frameColor = values['frameColor']?.toString() ?? '#b49a55';
-    var dividerWidth = (values['headerDividerWidthPt'] as num? ?? 2.25)
-        .toDouble();
+    var dividerWidth = (values['headerDividerWidthPt'] as num? ?? 2.25).toDouble();
     var frameWidth = (values['frameWidthPt'] as num? ?? 1).toDouble();
     var marginTop = (values['pageMarginTopMm'] as num? ?? 10).toDouble();
     var marginRight = (values['pageMarginRightMm'] as num? ?? 10).toDouble();
@@ -2299,107 +2294,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                           setDialogState(() => bottomPadding = value),
                     ),
                     const Divider(height: 28),
-                    const Text(
-                      'صفحة الوثيقة والإطار',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    for (final item
-                        in <
-                          ({
-                            String label,
-                            double value,
-                            void Function(double) onChanged,
-                          })
-                        >[
-                          (
-                            label: 'الهامش العلوي',
-                            value: marginTop,
-                            onChanged: (v) =>
-                                setDialogState(() => marginTop = v),
-                          ),
-                          (
-                            label: 'الهامش الأيمن',
-                            value: marginRight,
-                            onChanged: (v) =>
-                                setDialogState(() => marginRight = v),
-                          ),
-                          (
-                            label: 'الهامش السفلي',
-                            value: marginBottom,
-                            onChanged: (v) =>
-                                setDialogState(() => marginBottom = v),
-                          ),
-                          (
-                            label: 'الهامش الأيسر',
-                            value: marginLeft,
-                            onChanged: (v) =>
-                                setDialogState(() => marginLeft = v),
-                          ),
-                        ])
-                      _documentSettingSlider(
-                        label: item.label,
-                        value: item.value,
-                        min: 0,
-                        max: 35,
-                        suffix: ' مم',
-                        onChanged: item.onChanged,
-                      ),
-                    DropdownButtonFormField<String>(
-                      initialValue: frameStyle,
-                      decoration: const InputDecoration(
-                        labelText: 'شكل الإطار',
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'none',
-                          child: Text('بدون إطار'),
-                        ),
-                        DropdownMenuItem(value: 'single', child: Text('مفرد')),
-                        DropdownMenuItem(value: 'double', child: Text('مزدوج')),
-                        DropdownMenuItem(value: 'ornate', child: Text('زخرفي')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setDialogState(() => frameStyle = v);
-                      },
-                    ),
-                    TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'لون الإطار #RRGGBB',
-                      ),
-                      controller: TextEditingController(text: frameColor),
-                      onChanged: (v) => frameColor = v,
-                    ),
-                    _documentSettingSlider(
-                      label: 'سماكة الإطار',
-                      value: frameWidth,
-                      min: .5,
-                      max: 4,
-                      suffix: ' نقطة',
-                      onChanged: (v) => setDialogState(() => frameWidth = v),
-                    ),
-                    DropdownButtonFormField<String>(
-                      initialValue: dividerStyle,
-                      decoration: const InputDecoration(
-                        labelText: 'نمط الفاصل',
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'solid', child: Text('متصل')),
-                        DropdownMenuItem(value: 'double', child: Text('مزدوج')),
-                        DropdownMenuItem(value: 'dashed', child: Text('متقطع')),
-                        DropdownMenuItem(value: 'dotted', child: Text('منقط')),
-                      ],
-                      onChanged: (v) {
-                        if (v != null) setDialogState(() => dividerStyle = v);
-                      },
-                    ),
-                    _documentSettingSlider(
-                      label: 'سماكة الفاصل',
-                      value: dividerWidth,
-                      min: .5,
-                      max: 6,
-                      suffix: ' نقطة',
-                      onChanged: (v) => setDialogState(() => dividerWidth = v),
-                    ),
+                    const Text('صفحة الوثيقة والإطار', style: TextStyle(fontWeight: FontWeight.bold)),
+                    for (final item in <({String label, double value, void Function(double) onChanged})>[
+                      (label: 'الهامش العلوي', value: marginTop, onChanged: (v) => setDialogState(() => marginTop = v)),
+                      (label: 'الهامش الأيمن', value: marginRight, onChanged: (v) => setDialogState(() => marginRight = v)),
+                      (label: 'الهامش السفلي', value: marginBottom, onChanged: (v) => setDialogState(() => marginBottom = v)),
+                      (label: 'الهامش الأيسر', value: marginLeft, onChanged: (v) => setDialogState(() => marginLeft = v)),
+                    ]) _documentSettingSlider(label: item.label, value: item.value, min: 0, max: 35, suffix: ' مم', onChanged: item.onChanged),
+                    DropdownButtonFormField<String>(initialValue: frameStyle, decoration: const InputDecoration(labelText: 'شكل الإطار'), items: const [DropdownMenuItem(value: 'none', child: Text('بدون إطار')), DropdownMenuItem(value: 'single', child: Text('مفرد')), DropdownMenuItem(value: 'double', child: Text('مزدوج')), DropdownMenuItem(value: 'ornate', child: Text('زخرفي'))], onChanged: (v) { if (v != null) setDialogState(() => frameStyle = v); }),
+                    TextField(decoration: const InputDecoration(labelText: 'لون الإطار #RRGGBB'), controller: TextEditingController(text: frameColor), onChanged: (v) => frameColor = v),
+                    _documentSettingSlider(label: 'سماكة الإطار', value: frameWidth, min: .5, max: 4, suffix: ' نقطة', onChanged: (v) => setDialogState(() => frameWidth = v)),
+                    DropdownButtonFormField<String>(initialValue: dividerStyle, decoration: const InputDecoration(labelText: 'نمط الفاصل'), items: const [DropdownMenuItem(value: 'solid', child: Text('متصل')), DropdownMenuItem(value: 'double', child: Text('مزدوج')), DropdownMenuItem(value: 'dashed', child: Text('متقطع')), DropdownMenuItem(value: 'dotted', child: Text('منقط')), DropdownMenuItem(value: 'tricolor-stars', child: Text('أسود وأخضر مع ثلاث نجوم'))], onChanged: (v) { if (v != null) setDialogState(() => dividerStyle = v); }),
+                    _documentSettingSlider(label: 'سماكة الفاصل', value: dividerWidth, min: .5, max: 6, suffix: ' نقطة', onChanged: (v) => setDialogState(() => dividerWidth = v)),
                     DropdownButtonFormField<String>(
                       initialValue: alignment,
                       decoration: const InputDecoration(

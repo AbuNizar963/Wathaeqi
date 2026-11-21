@@ -68,7 +68,8 @@ function mapPlatformDocumentSettings(
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerColor,
     headerDividerStyle:
       row.headerDividerStyle === "solid" || row.headerDividerStyle === "double" ||
-      row.headerDividerStyle === "dashed" || row.headerDividerStyle === "dotted"
+      row.headerDividerStyle === "dashed" || row.headerDividerStyle === "dotted" ||
+      row.headerDividerStyle === "tricolor-stars"
         ? row.headerDividerStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerStyle,
     headerDividerWidthPt: boundedNumber(row.headerDividerWidthPt, MIN_DIVIDER_WIDTH_PT, MAX_DIVIDER_WIDTH_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerWidthPt),
