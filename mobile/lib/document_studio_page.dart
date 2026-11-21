@@ -13,6 +13,7 @@ import 'api.dart';
 import 'document_studio_models.dart';
 import 'document_studio_outbox.dart';
 import 'document_studio_pdf.dart';
+import 'document_studio_print_layout.dart';
 import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
@@ -411,18 +412,63 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
+  Future<int?> _choosePrintPagesPerSheet() {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إعداد الطباعة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('اختر عدد صفحات الوثيقة في كل ورقة A4'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final count in const [1, 2, 4, 6, 8])
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext, count),
+                    child: Text(count == 1 ? '1 صفحة' : '$count صفحات'),
+                  ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _printDocumentFile(OfficialDocument document) async {
     final file = document.file;
     if (file != null && file.mimeType == DocumentFileSupport.docxMime) {
       _showMessage('معاينة Word غير مدعومة محلياً؛ نزّل الملف الأصلي أو شاركه');
       return;
     }
+
+    final pagesPerSheet = await _choosePrintPagesPerSheet();
+    if (pagesPerSheet == null || !mounted) return;
+
     setState(() => _saving = true);
     try {
       final sourcePdf = await _fetchDocumentPdf(document);
+      final printPdf = pagesPerSheet == 1
+          ? sourcePdf
+          : await DocumentStudioPrintLayout.compose(
+              sourcePdf,
+              pagesPerSheet: pagesPerSheet,
+            );
       await Printing.layoutPdf(
         name: document.title,
-        onLayout: (_) async => sourcePdf,
+        onLayout: (_) async => printPdf,
       );
     } catch (error) {
       _showMessage('تعذرت تهيئة الملف للطباعة: $error');

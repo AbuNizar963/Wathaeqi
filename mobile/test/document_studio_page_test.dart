@@ -137,6 +137,19 @@ void main() {
     );
     expect(find.text('تعديل الوثيقة'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('طباعة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('طباعة'));
+    await tester.pumpAndSettle();
+    expect(find.text('إعداد الطباعة'), findsOneWidget);
+    expect(find.text('1 صفحة'), findsOneWidget);
+    expect(find.text('2 صفحات'), findsOneWidget);
+    expect(find.text('4 صفحات'), findsOneWidget);
+    expect(find.text('6 صفحات'), findsOneWidget);
+    expect(find.text('8 صفحات'), findsOneWidget);
+    await tester.tap(find.text('إلغاء'));
+    await tester.pumpAndSettle();
+
     await tester.ensureVisible(find.text('تعديل الوثيقة'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('تعديل الوثيقة'));
