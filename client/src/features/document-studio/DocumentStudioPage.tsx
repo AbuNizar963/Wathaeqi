@@ -1222,20 +1222,17 @@ export default function DocumentStudioPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              className="h-auto w-full justify-start gap-3 p-4 text-right"
               onClick={() => {
                 setCreationDialogOpen(false);
                 startNewDocument();
               }}
-              className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
-              <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
-              >
-                <PenLine className="size-5" />
-              </span>
-              <span className="min-w-0">
+              <PenLine className="size-5 shrink-0" />
+              <span className="flex-1 text-right">
                 <span className="block font-semibold">
                   إنشاء والكتابة في وثيقة
                 </span>
@@ -1243,21 +1240,18 @@ export default function DocumentStudioPage() {
                   افتح صفحة الوثيقة الرسمية واكتب النص ونسّقه مباشرة
                 </span>
               </span>
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              className="h-auto w-full justify-start gap-3 p-4 text-right"
               onClick={() => {
                 setCreationDialogOpen(false);
                 setImportDialogOpen(true);
               }}
-              className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
-              <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
-              >
-                <FileUp className="size-5" />
-              </span>
-              <span className="min-w-0">
+              <FileUp className="size-5 shrink-0" />
+              <span className="flex-1 text-right">
                 <span className="block font-semibold">
                   استيراد PDF أو Word أو صورة
                 </span>
@@ -1265,29 +1259,24 @@ export default function DocumentStudioPage() {
                   أرفق ملفاً موجوداً وأنشئ له سجلاً في مكتبة الوثائق
                 </span>
               </span>
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="outline"
+              className="h-auto w-full justify-start gap-3 p-4 text-right"
               onClick={() => {
                 setCreationDialogOpen(false);
                 setActiveTab("templates");
               }}
-              className="flex items-center gap-3 rounded-xl border p-4 text-right transition hover:border-primary hover:bg-primary/5"
             >
-              <span
-                className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
-              >
-                <LayoutTemplate className="size-5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-semibold">
-                  اختيار نموذج جاهز
-                </span>
+              <LayoutTemplate className="size-5 shrink-0" />
+              <span className="flex-1 text-right">
+                <span className="block font-semibold">اختيار نموذج جاهز</span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   ابدأ باستخدام نموذج إداري جاهز أو أنشئ نموذجاً جديداً
                 </span>
               </span>
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
