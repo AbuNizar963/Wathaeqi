@@ -37,7 +37,7 @@ function isSafeImageSource(value: unknown): boolean {
   return (
     typeof value === "string" &&
     (/^https:\/\//iu.test(value) ||
-      /^data:image\/(?:png|jpeg|webp);base64,/iu.test(value))
+      /^data:image\/(?:png|jpeg|gif|webp);base64,/iu.test(value))
   );
 }
 

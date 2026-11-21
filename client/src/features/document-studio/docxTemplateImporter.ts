@@ -275,7 +275,7 @@ function mergeAdjacentTextNodes(nodes: EditorNode[]): EditorNode[] {
     const currentText = String(node.text ?? "");
     const hasOpenVariable =
       previousText.lastIndexOf("{{") > previousText.lastIndexOf("}}");
-    if (previousMarks === currentMarks || (hasOpenVariable && currentText.includes("}}"))) {
+    if (previousMarks === currentMarks || hasOpenVariable) {
       previous.text = previousText + currentText;
     } else {
       merged.push(node);
@@ -286,7 +286,10 @@ function mergeAdjacentTextNodes(nodes: EditorNode[]): EditorNode[] {
 
 function paragraphAlignment(paragraph: Element): string | null {
   const properties = directChild(paragraph, "pPr");
-  const alignment = wordAttribute(directChild(properties ?? paragraph, "jc"), "val");
+  const alignment = wordAttribute(
+    directChild(properties ?? paragraph, "jc"),
+    "val"
+  );
   switch (alignment) {
     case "right":
       return "right";
@@ -304,8 +307,11 @@ function paragraphAlignment(paragraph: Element): string | null {
 
 function paragraphHeadingLevel(paragraph: Element): number | null {
   const properties = directChild(paragraph, "pPr");
-  const style = wordAttribute(directChild(properties ?? paragraph, "pStyle"), "val");
-  const match = style.match(/^(?:Heading|heading)([12])$/u);
+  const style = wordAttribute(
+    directChild(properties ?? paragraph, "pStyle"),
+    "val"
+  );
+  const match = style.match(/^heading([12])$/iu);
   if (match) return Number(match[1]);
   if (style.toLowerCase() === "title") return 1;
   if (style.toLowerCase() === "subtitle") return 2;
@@ -321,7 +327,9 @@ async function parseParagraph(
     if (child.localName === "r") {
       nodes.push(...(await parseRun(child, resolveImage)));
     } else if (child.localName === "hyperlink") {
-      for (const run of directChildren(child).filter(item => item.localName === "r")) {
+      for (const run of directChildren(child).filter(
+        item => item.localName === "r"
+      )) {
         nodes.push(...(await parseRun(run, resolveImage)));
       }
     } else if (child.localName === "sdt") {
@@ -350,12 +358,16 @@ async function parseTable(
   resolveImage: ImageResolver
 ): Promise<EditorNode> {
   const rows: EditorNode[] = [];
-  for (const row of directChildren(table).filter(item => item.localName === "tr")) {
+  for (const row of directChildren(table).filter(
+    item => item.localName === "tr"
+  )) {
     const rowProperties = directChild(row, "trPr");
     const isHeader = Boolean(directChild(rowProperties ?? row, "tblHeader"));
     const cells: EditorNode[] = [];
 
-    for (const cell of directChildren(row).filter(item => item.localName === "tc")) {
+    for (const cell of directChildren(row).filter(
+      item => item.localName === "tc"
+    )) {
       const cellContent: EditorNode[] = [];
       for (const child of directChildren(cell)) {
         if (child.localName === "p") {
@@ -389,7 +401,18 @@ function collectEditorText(value: unknown): string {
   if (node.type === "text" && typeof node.text === "string") return node.text;
   if (node.type === "hardBreak") return "\n";
   const children = Array.isArray(node.content) ? node.content : [];
-  return children.map(collectEditorText).join("");
+  const text = children.map(collectEditorText).join("");
+  if (node.type === "tableCell" || node.type === "tableHeader") {
+    return text + "\t";
+  }
+  if (
+    node.type === "tableRow" ||
+    node.type === "paragraph" ||
+    node.type === "heading"
+  ) {
+    return text + "\n";
+  }
+  return text;
 }
 
 async function parseDocumentContent(
