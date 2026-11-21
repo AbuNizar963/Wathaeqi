@@ -2106,6 +2106,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 ],
                 ),
               ),
+              ),
             );
           },
         ),
