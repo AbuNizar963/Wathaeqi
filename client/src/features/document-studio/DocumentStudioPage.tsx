@@ -1218,7 +1218,7 @@ export default function DocumentStudioPage() {
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
-              اختر إنشاء وثيقة بالكتابة مباشرة أو استيراد ملف PDF أو Word أو صورة.
+              اختر طريقة الإنشاء: كتابة وثيقة جديدة أو استيراد ملف موجود.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
