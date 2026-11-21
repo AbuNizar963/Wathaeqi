@@ -2003,7 +2003,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   double _headerMillimeters(String key, double fallback) {
     final value = _platformDocumentSettings[key];
     final parsed = value is num ? value.toDouble() : double.tryParse('$value');
-    return (parsed ?? fallback).clamp(0, 30);
+    return (parsed ?? fallback).clamp(0, 30).toDouble();
   }
 
   Widget _buildA4Editor({
@@ -2037,7 +2037,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
     final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
-        .clamp(32.0, 128.0);
+        .clamp(32.0, 128.0)
+        .toDouble();
     final headerAlignment =
         _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
     final blockAlignment = switch (headerAlignment) {
