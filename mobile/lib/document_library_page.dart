@@ -361,6 +361,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
           textDirection: ui.TextDirection.rtl,
           child: Scaffold(
             backgroundColor: Theme.of(previewContext).scaffoldBackgroundColor,
+            resizeToAvoidBottomInset: false,
             appBar: AppBar(
               titleSpacing: 12,
               title: Column(
