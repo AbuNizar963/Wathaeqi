@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
-import { Save, Settings2 } from "lucide-react";
+import { ImagePlus, Save, Settings2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { ownerTrpc as ownerTrpc } from "@/lib/ownerTrpc";
+import { trpc } from "@/lib/trpc";
+import {
+  prepareOrganizationLogoUpload,
+  uploadOrganizationLogoDirect,
+} from "@/features/organizations/organizationLogoUpload";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
@@ -35,7 +40,21 @@ function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
 
 export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
-  const settingsQuery = trpc.platformDocumentSettings.get.useQuery();
+  const settingsQuery = ownerTrpc.platformDocumentSettings.get.useQuery();
+  const organizationsQuery = trpc.organizations.all.useQuery();
+  const organizationContext = trpc.organizations.context.useQuery();
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState("");
+  const organizationLogoQuery = trpc.organizations.logo.useQuery(
+    { id: selectedOrganizationId || "00000000-0000-0000-0000-000000000000" },
+    {
+      enabled: Boolean(selectedOrganizationId),
+      refetchInterval: false,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+    }
+  );
+  const [logoUrl, setLogoUrl] = useState("");
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [values, setValues] = useState<SettingsForm>({
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
@@ -44,7 +63,26 @@ export default function PlatformDocumentSettingsPage() {
     if (settingsQuery.data) setValues(toFormSettings(settingsQuery.data));
   }, [settingsQuery.data]);
 
-  const saveMutation = trpc.platformDocumentSettings.update.useMutation({
+  useEffect(() => {
+    if (selectedOrganizationId || !organizationsQuery.data?.length) return;
+    const currentId = organizationContext.data?.organizationId;
+    const currentOrganization = organizationsQuery.data.find(
+      organization => organization.id === currentId
+    );
+    setSelectedOrganizationId(
+      currentOrganization?.id ?? organizationsQuery.data[0].id
+    );
+  }, [
+    selectedOrganizationId,
+    organizationsQuery.data,
+    organizationContext.data?.organizationId,
+  ]);
+
+  useEffect(() => {
+    setLogoUrl(organizationLogoQuery.data?.dataUrl ?? "");
+  }, [organizationLogoQuery.data?.dataUrl]);
+
+  const saveMutation = ownerTrpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
       setValues(toFormSettings(saved));
       await utils.platformDocumentSettings.get.invalidate();
@@ -57,6 +95,27 @@ export default function PlatformDocumentSettingsPage() {
     key: K,
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
+
+  const handleLogoFile = async (file: File | undefined) => {
+    if (!file || !selectedOrganizationId) return;
+    setIsUploadingLogo(true);
+    try {
+      const prepared = await prepareOrganizationLogoUpload(file);
+      await uploadOrganizationLogoDirect({
+        organizationId: selectedOrganizationId,
+        fileName: file.name,
+        blob: prepared.blob,
+        contentType: prepared.contentType,
+      });
+      const refreshedLogo = await organizationLogoQuery.refetch();
+      setLogoUrl(refreshedLogo.data?.dataUrl ?? "");
+      toast.success("تم حفظ شعار الجهة في مساحة التخزين وربطه بترويسة الوثائق");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر رفع الشعار");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   const colorIsValid = HEX_COLOR_PATTERN.test(values.headerDividerColor);
 
@@ -111,6 +170,101 @@ export default function PlatformDocumentSettingsPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
           <Card className="space-y-6 p-5">
+            <section className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+              <div className="flex items-center gap-2">
+                <ImagePlus className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="font-semibold">هوية الجهة وشعارها</h2>
+                  <p className="text-xs text-muted-foreground">
+                    اختر الجهة وارفع شعارها ليظهر في منتصف رأس الوثيقة الرسمية.
+                  </p>
+                </div>
+              </div>
+              {organizationsQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">
+                  جارٍ تحميل الجهات...
+                </p>
+              ) : organizationsQuery.isError ||
+                !organizationsQuery.data?.length ? (
+                <p className="text-sm text-destructive">
+                  تعذر تحميل الجهات. تحقق من صلاحية مالك المنصة ثم أعد المحاولة.
+                </p>
+              ) : (
+                <>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium">الجهة</span>
+                    <select
+                      value={selectedOrganizationId}
+                      onChange={event =>
+                        setSelectedOrganizationId(event.target.value)
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                    >
+                      {organizationsQuery.data.map(organization => (
+                        <option key={organization.id} value={organization.id}>
+                          {organization.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {organizationLogoQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">
+                      جارٍ تحميل شعار الجهة...
+                    </p>
+                  ) : organizationLogoQuery.isError ? (
+                    <p className="text-sm text-destructive">
+                      {organizationLogoQuery.error.message}
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border bg-background">
+                        {logoUrl ? (
+                          <img
+                            src={logoUrl}
+                            alt="شعار الجهة"
+                            className="max-h-full max-w-full object-contain"
+                          />
+                        ) : (
+                          <div className="text-center text-xs text-muted-foreground">
+                            <ImagePlus className="mx-auto mb-1 h-6 w-6" />
+                            لا يوجد شعار
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-[180px] flex-1 space-y-2">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
+                          <Upload className="h-4 w-4" />
+                          {isUploadingLogo
+                            ? "جارٍ رفع الشعار..."
+                            : "اختيار صورة الشعار"}
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg"
+                            className="sr-only"
+                            disabled={isUploadingLogo}
+                            onChange={event => {
+                              void handleLogoFile(event.target.files?.[0]);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
+                        <p className="text-xs text-muted-foreground">
+                          PNG أو JPG، بحد أقصى 5 ميغابايت. احتفظ بخلفية شفافة
+                          عند الحاجة.
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          يُحفظ الشعار مباشرة بعد اكتمال الرفع، ويُعاد تحميل
+                          النسخة المحفوظة للتحقق منها.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+
+            <div className="h-px bg-border" />
+
             <section className="space-y-2">
               <label className="flex items-center justify-between gap-3">
                 <span>
@@ -446,9 +600,21 @@ export default function PlatformDocumentSettingsPage() {
                 </div>
                 <div className="flex items-center justify-center">
                   {values.headerShowLogo ? (
-                    <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed text-[9px] text-slate-500">
-                      الشعار
-                    </div>
+                    logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt="شعار الجهة"
+                        style={{
+                          width: values.headerLogoSize,
+                          height: values.headerLogoSize,
+                          objectFit: "contain",
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed text-[9px] text-slate-500">
+                        أضف الشعار
+                      </div>
+                    )
                   ) : null}
                 </div>
                 <div className="min-w-0 text-left text-xs font-bold">

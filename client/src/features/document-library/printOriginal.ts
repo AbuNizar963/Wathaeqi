@@ -28,10 +28,11 @@ export async function openOriginalPrintWindow(options: {
   fileName: string;
   mimeType: string;
   pagesPerSheet?: PagesPerSheet;
+  imageTiles?: 1 | 4 | 9 | 16;
 }): Promise<void> {
   const kind = fileKind(options.fileName, options.mimeType);
-  if (kind !== "pdf" && kind !== "word") {
-    throw new Error("الطباعة الأصلية متاحة لملفات PDF وWord فقط");
+  if (kind !== "pdf" && kind !== "word" && kind !== "image") {
+    throw new Error("صيغة الملف غير مدعومة للطباعة");
   }
 
   const printWindow = window.open("", "_blank");
@@ -41,6 +42,83 @@ export async function openOriginalPrintWindow(options: {
     );
   }
   printWindow.opener = null;
+
+  if (kind === "image") {
+    try {
+      const response = await fetch(options.url, { credentials: "omit" });
+      if (!response.ok) throw new Error("تعذر تنزيل الصورة للطباعة");
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error("تعذر قراءة الصورة"));
+        reader.onerror = () => reject(new Error("تعذر قراءة الصورة"));
+        reader.readAsDataURL(blob);
+      });
+      const image = new Image();
+      image.src = dataUrl;
+      await image.decode();
+      const canvas = window.document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) throw new Error("تعذر تجهيز الصورة للطباعة");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0);
+      const tileCount = options.imageTiles ?? 1;
+      const columns = Math.sqrt(tileCount);
+      const rows = columns;
+      const sourceTileWidth = canvas.width / columns;
+      const sourceTileHeight = canvas.height / rows;
+      const pages = [];
+
+      for (let row = 0; row < rows; row += 1) {
+        for (let column = 0; column < columns; column += 1) {
+          const tileCanvas = window.document.createElement("canvas");
+          tileCanvas.width = Math.ceil(sourceTileWidth);
+          tileCanvas.height = Math.ceil(sourceTileHeight);
+          const tileContext = tileCanvas.getContext("2d", { alpha: false });
+          if (!tileContext) throw new Error("تعذر تجهيز جزء الصورة للطباعة");
+          tileContext.fillStyle = "#ffffff";
+          tileContext.fillRect(0, 0, tileCanvas.width, tileCanvas.height);
+          tileContext.drawImage(
+            canvas,
+            column * sourceTileWidth,
+            row * sourceTileHeight,
+            sourceTileWidth,
+            sourceTileHeight,
+            0,
+            0,
+            tileCanvas.width,
+            tileCanvas.height
+          );
+          pages.push({
+            dataUrl: tileCanvas.toDataURL("image/png"),
+            width: tileCanvas.width,
+            height: tileCanvas.height,
+          });
+        }
+      }
+
+      await openPrintWindow(
+        buildPrintHtml(pages, {
+          pagesPerSheet: 1,
+          marginMm: 8,
+          headerText: "",
+          footerText: "",
+          showPageNumbers: false,
+        }),
+        printWindow
+      );
+      return;
+    } catch (error) {
+      printWindow.close();
+      throw error;
+    }
+  }
 
   if (kind === "pdf" && (options.pagesPerSheet ?? 1) !== 1) {
     const pdfjs = await import("pdfjs-dist");
