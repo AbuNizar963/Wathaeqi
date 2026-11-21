@@ -2092,7 +2092,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       ),
                     ),
                     child: Row(
-                      textDirection: TextDirection.rtl,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
