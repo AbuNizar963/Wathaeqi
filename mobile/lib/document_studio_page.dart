@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import 'api.dart';
 import 'document_studio_models.dart';
 import 'document_studio_outbox.dart';
+import 'document_studio_pdf.dart';
 import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
@@ -431,19 +432,40 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Future<Uint8List> _fetchDocumentPdf(OfficialDocument document) async {
+    final file = document.file;
+    if (file == null) {
+      final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
+      final opacity =
+          (rawOpacity is num
+              ? rawOpacity.toDouble()
+              : double.tryParse('$rawOpacity') ?? 12) /
+          100;
+      return DocumentStudioPdf.build(
+        content: document.content,
+        title: document.title,
+        subject: document.subject,
+        serialCode: document.serialCode,
+        documentDate: document.documentDate,
+        letterhead: _letterhead,
+        dividerColor: _documentHeaderDividerColor().toARGB32(),
+        showWatermarkText:
+            _platformDocumentSettings['showMinistryWatermarkText'] != false,
+        watermarkOpacity: opacity,
+      );
+    }
     if (!isSafeDocumentOutputId(document.id)) {
       throw StateError('احفظ الوثيقة ومزامنتها مع الخادم قبل إخراج PDF');
     }
-    final file = document.file;
-    if (file?.mimeType == DocumentFileSupport.docxMime) {
+    if (file.mimeType == DocumentFileSupport.docxMime) {
       throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
     }
-    final bytes = file?.mimeType == DocumentFileSupport.pdfMime
-        ? await widget.api.fetchDocumentFileBytes(
-            documentId: document.id,
-            mimeType: DocumentFileSupport.pdfMime,
-          )
-        : await widget.api.fetchDocumentPrintPdf(document.id);
+    if (file.mimeType != DocumentFileSupport.pdfMime) {
+      throw StateError('إخراج PDF متاح للوثائق المنشأة وملفات PDF فقط');
+    }
+    final bytes = await widget.api.fetchDocumentFileBytes(
+      documentId: document.id,
+      mimeType: DocumentFileSupport.pdfMime,
+    );
     if (!hasPdfSignature(bytes)) {
       throw StateError('تعذر التحقق من ملف PDF الذي أعاده الخادم');
     }
@@ -1343,7 +1365,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final isWord = mimeType == DocumentFileSupport.docxMime;
     final isPdf = mimeType == DocumentFileSupport.pdfMime;
     final isNativeDocument = document.file == null;
-    final canUsePdfActions = isPdf;
+    final canUsePdfActions = isPdf || isNativeDocument;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1377,7 +1399,17 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
         const SizedBox(height: 10),
         if (isNativeDocument)
-          _buildA4Editor(controller: _documentEditor, editable: false)
+          SizedBox(
+            key: const ValueKey('document-a4-pdf-preview'),
+            height: 620,
+            child: PdfPreview(
+              build: (_) => _fetchDocumentPdf(document),
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+            ),
+          )
         else if (isWord)
           _buildUnsupportedDocumentPreview(
             document,
