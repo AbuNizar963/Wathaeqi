@@ -41,5 +41,9 @@ void main() {
       find.byKey(const ValueKey('document-watermark-page-2')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('document-a4-page-breaks')),
+      findsOneWidget,
+    );
   });
 }
