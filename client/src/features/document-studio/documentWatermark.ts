@@ -12,7 +12,7 @@ export function buildDocumentWatermarkCss(opacity: number): string {
     ".document-watermark-layer {",
     `  --document-watermark-opacity: ${safeOpacity};`,
     "}",
-  ].join("\\n");
+  ].join("\n");
 }
 
 /**
