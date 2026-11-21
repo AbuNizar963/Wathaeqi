@@ -259,8 +259,8 @@ export default function PlatformDocumentSettings() {
             </label>
 
             <p className="rounded-lg bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
-              تسري التغييرات على الوثائق التي تُنشأ بعد الحفظ. النسخ التي سبق
-              تنزيلها لا تتغير.
+              تُطبّق التغييرات على معاينات ومخرجات الوثائق عند فتحها بعد الحفظ؛
+              أما النسخ التي سبق تنزيلها فلا تتغير.
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
