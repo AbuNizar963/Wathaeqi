@@ -15,7 +15,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ import {
   DOCUMENT_WATERMARK_COLUMNS,
   DOCUMENT_WATERMARK_ROWS,
   OFFICIAL_ORGANIZATION_NAME,
+  getA4PreviewPageCount,
 } from "./documentWatermark";
 
 type StudioTab = "documents" | "templates" | "archive";
@@ -612,40 +613,44 @@ export default function DocumentStudioPage() {
           </Button>
           {activeTab === "documents" || activeTab === "archive" ? (
             <>
-              <Button
-                variant="outline"
-                disabled={Boolean(
-                  selectedDocument?.file && !importedFileUrlQuery.data?.url
-                )}
-                onClick={() => {
-                  if (selectedDocument?.file) setImportPrintOpen(true);
-                  else window.print();
-                }}
-              >
-                <Printer className="ml-2 h-4 w-4" />
-                طباعة / PDF
-              </Button>
-              <Button
-                variant="outline"
-                disabled={
-                  !selectedDocument ||
-                  Boolean(
-                    selectedDocument.file && !importedFileUrlQuery.data?.url
-                  )
-                }
-                onClick={downloadSelectedDocument}
-              >
-                <Download className="ml-2 h-4 w-4" />
-                تنزيل
-              </Button>
-              <Button
-                variant="outline"
-                disabled={!selectedDocument}
-                onClick={() => void shareSelectedDocument()}
-              >
-                <Share2 className="ml-2 h-4 w-4" />
-                مشاركة
-              </Button>
+              {!previewMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    disabled={Boolean(
+                      selectedDocument?.file && !importedFileUrlQuery.data?.url
+                    )}
+                    onClick={() => {
+                      if (selectedDocument?.file) setImportPrintOpen(true);
+                      else window.print();
+                    }}
+                  >
+                    <Printer className="ml-2 h-4 w-4" />
+                    طباعة / PDF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={
+                      !selectedDocument ||
+                      Boolean(
+                        selectedDocument.file && !importedFileUrlQuery.data?.url
+                      )
+                    }
+                    onClick={downloadSelectedDocument}
+                  >
+                    <Download className="ml-2 h-4 w-4" />
+                    تنزيل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={!selectedDocument}
+                    onClick={() => void shareSelectedDocument()}
+                  >
+                    <Share2 className="ml-2 h-4 w-4" />
+                    مشاركة رابط
+                  </Button>
+                </>
+              ) : null}
               <Button onClick={() => setCreationDialogOpen(true)}>
                 <FilePlus2 className="ml-2 h-4 w-4" />
                 إنشاء وثيقة
@@ -753,7 +758,10 @@ export default function DocumentStudioPage() {
                     <button
                       key={document.id}
                       type="button"
-                      onClick={() => setSelectedDocumentId(document.id)}
+                      onClick={() => {
+                        setSelectedDocumentId(document.id);
+                        setPreviewMode(true);
+                      }}
                       className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
                     >
                       <span className="block truncate font-medium">
@@ -1311,6 +1319,56 @@ export default function DocumentStudioPage() {
                   </div>
                 </div>
               )}
+              {previewMode && selectedDocument ? (
+                <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={Boolean(
+                      selectedDocument.file && !importedFileUrlQuery.data?.url
+                    )}
+                    onClick={downloadSelectedDocument}
+                  >
+                    <Download className="h-5 w-5" />
+                    <span className="text-xs">تنزيل</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={!selectedDocument}
+                    onClick={() => void shareSelectedDocument()}
+                  >
+                    <Share2 className="h-5 w-5" />
+                    <span className="text-xs">مشاركة رابط</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={Boolean(
+                      selectedDocument.file && !importedFileUrlQuery.data?.url
+                    )}
+                    onClick={() => {
+                      if (selectedDocument.file) setImportPrintOpen(true);
+                      else window.print();
+                    }}
+                  >
+                    <Printer className="h-5 w-5" />
+                    <span className="text-xs">طباعة</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    onClick={() => setPreviewMode(false)}
+                  >
+                    <PenLine className="h-5 w-5" />
+                    <span className="text-xs">تعديل الوثيقة</span>
+                  </Button>
+                </div>
+              ) : null}
             </Card>
           )}
         </main>
@@ -1419,42 +1477,85 @@ function DocumentWatermark({
   showMinistryText: boolean;
 }) {
   const watermarkCss = buildDocumentWatermarkCss(opacityPercent / 100);
+  const layerRef = useRef<HTMLDivElement>(null);
+  const [pageMetrics, setPageMetrics] = useState({ count: 1, height: 0 });
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    const page = layer?.parentElement;
+    if (!page) return;
+
+    const updatePageMetrics = () => {
+      const width = page.clientWidth;
+      if (width <= 0) return;
+      const pageHeight = (width * 297) / 210;
+      const pageCount = getA4PreviewPageCount(
+        width,
+        Math.max(page.scrollHeight, page.clientHeight)
+      );
+      page.style.setProperty("--document-page-height", `${pageHeight}px`);
+      setPageMetrics(current =>
+        current.count === pageCount && Math.abs(current.height - pageHeight) < 1
+          ? current
+          : { count: pageCount, height: pageHeight }
+      );
+    };
+
+    const observer = new ResizeObserver(updatePageMetrics);
+    observer.observe(page);
+    updatePageMetrics();
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
       <style>{watermarkCss}</style>
-      <div className="document-watermark-layer" aria-hidden="true">
-        <div className="page-watermark">
-          {showMinistryText ? (
-            <div className="watermark-text-pattern">
-              {Array.from({ length: DOCUMENT_WATERMARK_ROWS }, (_, row) => (
-                <div
-                  key={row}
-                  className={
-                    row % 2
-                      ? "watermark-text-row watermark-text-row-offset"
-                      : "watermark-text-row"
-                  }
-                >
-                  {Array.from(
-                    { length: DOCUMENT_WATERMARK_COLUMNS },
-                    (_, column) => (
-                      <span key={column}>{OFFICIAL_ORGANIZATION_NAME}</span>
-                    )
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {logoUrl ? (
-            <img
-              className="watermark-logo"
-              src={logoUrl}
-              alt=""
-              decoding="async"
-            />
-          ) : null}
-        </div>
+      <div
+        ref={layerRef}
+        className="document-watermark-layer"
+        aria-hidden="true"
+      >
+        {Array.from({ length: pageMetrics.count }, (_, pageIndex) => (
+          <div
+            key={pageIndex}
+            className="page-watermark"
+            style={{
+              top: pageIndex * pageMetrics.height,
+              width: "100%",
+              height: pageMetrics.height || undefined,
+            }}
+          >
+            {showMinistryText ? (
+              <div className="watermark-text-pattern">
+                {Array.from({ length: DOCUMENT_WATERMARK_ROWS }, (_, row) => (
+                  <div
+                    key={row}
+                    className={
+                      row % 2
+                        ? "watermark-text-row watermark-text-row-offset"
+                        : "watermark-text-row"
+                    }
+                  >
+                    {Array.from(
+                      { length: DOCUMENT_WATERMARK_COLUMNS },
+                      (_, column) => (
+                        <span key={column}>{OFFICIAL_ORGANIZATION_NAME}</span>
+                      )
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {logoUrl ? (
+              <img
+                className="watermark-logo"
+                src={logoUrl}
+                alt=""
+                decoding="async"
+              />
+            ) : null}
+          </div>
+        ))}
       </div>
     </>
   );
