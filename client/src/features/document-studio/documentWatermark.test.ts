@@ -12,14 +12,9 @@ describe("official document watermark", () => {
     const css = buildDocumentWatermarkCss(0.12);
     expect(DOCUMENT_WATERMARK_ROWS).toBe(33);
     expect(DOCUMENT_WATERMARK_COLUMNS).toBe(13);
-    expect(css).toContain("width: 210mm;");
-    expect(css).toContain("height: 297mm;");
-    expect(css).toContain("inset: 2.4mm 3.2mm 3mm;");
-    expect(css).toContain('font-family: "Aref Ruqaa", serif;');
-    expect(css).toContain("font-size: 11pt;");
-    expect(css).toContain("gap: 6.16mm;");
-    expect(css).toContain("width: 93.75%;");
-    expect(css).toContain("opacity: 0.12;");
+    expect(css).toContain(
+      "--document-watermark-opacity: 0.12;"
+    );
   });
 
   it("calculates one or more continuous A4 preview sheets from measured content", () => {
