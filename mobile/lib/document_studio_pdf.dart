@@ -313,7 +313,8 @@ class DocumentStudioPdf {
   ) {
     final value = settings[key];
     final parsed = value is num ? value.toDouble() : double.tryParse('$value');
-    return ((parsed ?? fallback).clamp(0, 30)) * PdfPageFormat.mm;
+    return (parsed ?? fallback).clamp(0, 30).toDouble() *
+        PdfPageFormat.mm;
   }
 
   static String? _clean(dynamic value) {
