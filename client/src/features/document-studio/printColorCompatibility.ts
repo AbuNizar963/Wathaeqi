@@ -68,13 +68,13 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
     try {
       probe.style.color = colorFunction;
       const computed = document.defaultView?.getComputedStyle(probe).color;
-      if (computed && !/oklch\\s*\\(/i.test(computed)) return computed;
+      if (computed && !/oklch\s*\(/i.test(computed)) return computed;
 
       if (!context) return SAFE_COLOR_FALLBACK;
       context.fillStyle = "#000000";
       context.fillStyle = colorFunction;
       const resolved = context.fillStyle;
-      return typeof resolved === "string" && !/oklch\\s*\\(/i.test(resolved)
+      return typeof resolved === "string" && !/oklch\s*\(/i.test(resolved)
         ? resolved
         : SAFE_COLOR_FALLBACK;
     } catch {
