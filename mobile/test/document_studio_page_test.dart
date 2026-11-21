@@ -25,30 +25,31 @@ class _DocumentStudioTestApi extends PoliceApi {
   }) async {
     calls[procedure] = input;
     return switch (procedure) {
-      'documentStudio.listDocuments' => includeDocument
-          ? <dynamic>[
-              {
-                'id': 'doc-preview-test',
-                'ownerId': 'owner-test',
-                'title': 'وثيقة تجريبية',
-                'category': 'general',
-                'subject': 'اختبار المعاينة',
-                'content': {
-                  'type': 'doc',
-                  'content': [
-                    {'type': 'paragraph'},
-                  ],
+      'documentStudio.listDocuments' =>
+        includeDocument
+            ? <dynamic>[
+                {
+                  'id': 'doc-preview-test',
+                  'ownerId': 'owner-test',
+                  'title': 'وثيقة تجريبية',
+                  'category': 'general',
+                  'subject': 'اختبار المعاينة',
+                  'content': {
+                    'type': 'doc',
+                    'content': [
+                      {'type': 'paragraph'},
+                    ],
+                  },
+                  'fieldValues': <String, dynamic>{},
+                  'serialNumber': 0,
+                  'serialCode': '',
+                  'documentDate': '2026-11-21T00:00:00.000Z',
+                  'status': 'draft',
+                  'createdAt': '2026-11-21T00:00:00.000Z',
+                  'updatedAt': '2026-11-21T00:00:00.000Z',
                 },
-                'fieldValues': <String, dynamic>{},
-                'serialNumber': 0,
-                'serialCode': '',
-                'documentDate': '2026-11-21T00:00:00.000Z',
-                'status': 'draft',
-                'createdAt': '2026-11-21T00:00:00.000Z',
-                'updatedAt': '2026-11-21T00:00:00.000Z',
-              },
-            ]
-          : <dynamic>[],
+              ]
+            : <dynamic>[],
       'documentStudio.listTemplates' => <dynamic>[],
       'organizations.context' => {
         if (includeOrganization) 'organizationId': 'org-test',
@@ -107,7 +108,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
 
-    expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('document-a4-pdf-preview')),
+      findsOneWidget,
+    );
     expect(find.text('تنزيل PDF'), findsOneWidget);
     expect(find.text('مشاركة PDF'), findsOneWidget);
     expect(find.text('طباعة'), findsOneWidget);
