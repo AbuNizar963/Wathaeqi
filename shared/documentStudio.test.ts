@@ -4,6 +4,7 @@ import {
   decodeTemplateStorageContent,
   encodeOfficialDocumentStorageContent,
   encodeTemplateStorageContent,
+  isLegacyStarterDraft,
   validateTemplateFieldValues,
 } from "./documentStudio";
 import type { DocumentTemplateField } from "./documentStudio";
@@ -58,6 +59,52 @@ describe("validateTemplateFieldValues", () => {
     });
     expect(issues).toHaveLength(1);
     expect(issues[0]?.fieldKey).toBe("leave_type");
+  });
+});
+
+
+describe("legacy starter document visibility", () => {
+  const starterHtml = "<h2>بسم الله الرحمن الرحيم</h2><p>العدد: ....................</p><p>التاريخ: .... / .... / ........</p><p><strong>إلى /</strong> ................................................</p><p><strong>الموضوع /</strong> ............................................</p><p>تحية طيبة...</p><p>يرجى التفضل بالاطلاع واتخاذ ما يلزم بشأن الموضوع أعلاه، مع التقدير.</p><p>وتفضلوا بقبول فائق الاحترام.</p><p><strong>التوقيع:</strong> ............................</p>";
+  const starterDocument = {
+    id: "legacy-starter-1",
+    ownerId: "owner-1",
+    organizationId: null,
+    templateId: null,
+    templateRevision: null,
+    templateFieldsSnapshot: [],
+    title: "كتاب رسمي جديد",
+    category: "مسودة",
+    subject: "",
+    content: { type: "legacy-html", html: starterHtml },
+    fieldValues: {},
+    serialNumber: 0,
+    serialCode: "",
+    documentDate: "2026-11-16T21:41:41.000Z",
+    status: "draft" as const,
+    file: null,
+    createdAt: "2026-11-16T21:41:41.000Z",
+    updatedAt: "2026-11-16T21:41:41.000Z",
+    issuedAt: null,
+    archivedAt: null,
+  };
+
+  it("recognizes the exact legacy starter draft without deleting it", () => {
+    expect(isLegacyStarterDraft(starterDocument)).toBe(true);
+  });
+
+  it("keeps user-authored documents with a similar title visible", () => {
+    expect(
+      isLegacyStarterDraft({
+        ...starterDocument,
+        content: {
+          type: "legacy-html",
+          html: `${starterHtml}<p>محتوى أضافه المستخدم</p>`,
+        },
+      })
+    ).toBe(false);
+    expect(
+      isLegacyStarterDraft({ ...starterDocument, category: "general" })
+    ).toBe(false);
   });
 });
 
