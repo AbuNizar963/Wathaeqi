@@ -734,15 +734,11 @@
     overflow: hidden;
   }
 
-  .document-a4-page
-    .document-watermark-layer
-    .page-watermark:not(:first-child) {
+  .document-a4-page .document-watermark-layer .page-watermark:not(:first-child) {
     display: none;
   }
 
-  .document-a4-page
-    .document-watermark-layer
-    .page-watermark:first-child {
+  .document-a4-page .document-watermark-layer .page-watermark:first-child {
     top: 0 !important;
     width: 210mm !important;
     height: 297mm !important;
