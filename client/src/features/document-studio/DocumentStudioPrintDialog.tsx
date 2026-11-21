@@ -11,12 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import {
   buildPrintHtml,
+  duplicatePages,
   openPrintWindow,
 } from "../document-library/printSheets";
 import type { PagesPerSheet, SourcePage } from "../document-library/types";
 import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
+const COPY_COUNTS = [1, 2, 4] as const;
 
 async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const width = element.clientWidth;
@@ -142,6 +144,7 @@ export default function DocumentStudioPrintDialog({
   pageElement: HTMLElement | null;
 }) {
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
+  const [copiesPerPage, setCopiesPerPage] = useState<(typeof COPY_COUNTS)[number]>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,7 +163,10 @@ export default function DocumentStudioPrintDialog({
       if (!pageElement || !pageElement.isConnected) {
         throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
       }
-      const pages = await renderA4Pages(pageElement);
+      const pages = duplicatePages(
+        await renderA4Pages(pageElement),
+        copiesPerPage
+      );
       const html = buildPrintHtml(pages, {
         pagesPerSheet,
         marginMm: 8,
@@ -196,9 +202,42 @@ export default function DocumentStudioPrintDialog({
         <DialogHeader>
           <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — اختر عدد صفحات الوثيقة التي تريد وضعها في كل ورقة A4.
+            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4.
           </DialogDescription>
         </DialogHeader>
+        <fieldset className="rounded-lg border bg-muted/30 p-3">
+          <legend className="px-1 text-sm font-medium">
+            عدد النسخ من كل صفحة
+          </legend>
+          <div
+            className="grid grid-cols-3 gap-2"
+            role="radiogroup"
+            aria-label="عدد النسخ من كل صفحة"
+          >
+            {COPY_COUNTS.map(value => {
+              const selected = copiesPerPage === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setCopiesPerPage(value)}
+                  className={`rounded-md border px-2 py-3 text-sm font-semibold transition ${
+                    selected
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                >
+                  {value}
+                  <span className="mt-1 block text-[11px] font-normal">
+                    {value === 1 ? "نسخة واحدة" : "نسخ"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
         <fieldset className="rounded-lg border bg-muted/30 p-3">
           <legend className="px-1 text-sm font-medium">
             عدد الصفحات في الورقة

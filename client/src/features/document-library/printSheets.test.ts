@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrintHtml, groupPages } from "./printSheets";
+import { buildPrintHtml, duplicatePages, groupPages } from "./printSheets";
 import type { PrintOptions, SourcePage } from "./types";
 
 function page(index: number): SourcePage {
@@ -28,6 +28,22 @@ describe("document print sheet layout", () => {
     expect(groupPages(pages, 4).at(-1)).toHaveLength(1);
     expect(groupPages(pages, 6)).toHaveLength(1);
     expect(groupPages(pages, 8)).toHaveLength(1);
+  });
+
+  it("duplicates each source page for compact copy printing", () => {
+    expect(duplicatePages([page(1)], 2)).toEqual([page(1), page(1)]);
+    expect(duplicatePages([page(1)], 4)).toEqual([
+      page(1),
+      page(1),
+      page(1),
+      page(1),
+    ]);
+    expect(duplicatePages([page(1), page(2)], 2)).toEqual([
+      page(1),
+      page(1),
+      page(2),
+      page(2),
+    ]);
   });
 
   it("renders the selected grid and keeps every page in the output", () => {

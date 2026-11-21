@@ -1,5 +1,14 @@
 import type { PagesPerSheet, PrintOptions, SourcePage } from "./types";
 
+export function duplicatePages(
+  pages: SourcePage[],
+  copiesPerPage: 1 | 2 | 4
+): SourcePage[] {
+  return pages.flatMap(page =>
+    Array.from({ length: copiesPerPage }, () => page)
+  );
+}
+
 export function groupPages(
   pages: SourcePage[],
   perSheet: PagesPerSheet
