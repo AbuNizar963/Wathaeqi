@@ -1,17 +1,20 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
 import 'document_studio_outbox.dart';
-import 'document_print_layout.dart';
+import 'document_output_security.dart';
+import 'document_paper.dart';
+import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
 
 enum DocumentStudioTab { documents, templates, archive }
@@ -92,6 +95,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   final Map<String, TextEditingController> _fieldControllers = {};
   bool _templateContentDirty = false;
   bool _creatingTemplate = false;
+  bool _creatingDocument = false;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
 
   static const _categories = <String, String>{
@@ -405,64 +409,137 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
-  Future<int?> _choosePagesPerSheet() => showDialog<int>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('تخطيط الطباعة على ورقة A4'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final choice in const <(int, String)>[
-            (1, 'صفحة واحدة على كل ورقة'),
-            (2, 'صفحتان على كل ورقة'),
-            (4, 'أربع صفحات على كل ورقة'),
-          ])
-            ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: Text(choice.$2),
-              onTap: () => Navigator.pop(dialogContext, choice.$1),
-            ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('إلغاء'),
-        ),
-      ],
-    ),
-  );
-
   Future<void> _printDocumentFile(OfficialDocument document) async {
     final file = document.file;
-    if (file == null) {
-      _showMessage('لا يوجد ملف مرفق بهذه الوثيقة');
+    if (file != null && file.mimeType == DocumentFileSupport.docxMime) {
+      _showMessage('معاينة Word غير مدعومة محلياً؛ نزّل الملف الأصلي أو شاركه');
       return;
     }
-    if (!{
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    }.contains(file.mimeType)) {
-      _showMessage('الطباعة متعددة الصفحات متاحة حالياً لملفات PDF وDOCX');
-      return;
-    }
-    final pagesPerSheet = await _choosePagesPerSheet();
-    if (pagesPerSheet == null) return;
-
     setState(() => _saving = true);
     try {
-      final sourcePdf = await widget.api.fetchDocumentPrintPdf(document.id);
-      final laidOutPdf = await DocumentPrintLayout.createA4Pdf(
-        sourcePdf: sourcePdf,
-        pagesPerSheet: pagesPerSheet,
-      );
+      final sourcePdf = await _fetchDocumentPdf(document);
       await Printing.layoutPdf(
         name: document.title,
-        format: PdfPageFormat.a4,
-        onLayout: (_) async => laidOutPdf,
+        onLayout: (_) async => sourcePdf,
       );
     } catch (error) {
       _showMessage('تعذرت تهيئة الملف للطباعة: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<Uint8List> _fetchDocumentPdf(OfficialDocument document) async {
+    if (!isSafeDocumentOutputId(document.id)) {
+      throw StateError('احفظ الوثيقة ومزامنتها مع الخادم قبل إخراج PDF');
+    }
+    final file = document.file;
+    if (file?.mimeType == DocumentFileSupport.docxMime) {
+      throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
+    }
+    final bytes = file?.mimeType == DocumentFileSupport.pdfMime
+        ? await widget.api.fetchDocumentFileBytes(
+            documentId: document.id,
+            mimeType: DocumentFileSupport.pdfMime,
+          )
+        : await widget.api.fetchDocumentPrintPdf(document.id);
+    if (!hasPdfSignature(bytes)) {
+      throw StateError('تعذر التحقق من ملف PDF الذي أعاده الخادم');
+    }
+    return bytes;
+  }
+
+  Future<Uint8List> _fetchOriginalDocument(OfficialDocument document) {
+    final file = document.file;
+    if (file == null) throw StateError('لا يوجد ملف أصلي لهذه الوثيقة');
+    return widget.api.fetchDocumentFileBytes(
+      documentId: document.id,
+      mimeType: file.mimeType,
+    );
+  }
+
+  Future<void> _saveOriginalDocument(OfficialDocument document) async {
+    setState(() => _saving = true);
+    try {
+      final file = document.file!;
+      final bytes = await _fetchOriginalDocument(document);
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'حفظ الملف الأصلي',
+        fileName: file.fileName,
+        bytes: bytes,
+      );
+      if (mounted) {
+        _showMessage(path == null ? 'تم إلغاء الحفظ' : 'تم حفظ الملف الأصلي');
+      }
+    } catch (error) {
+      _showMessage('تعذر تنزيل الملف الأصلي: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _shareOriginalDocument(OfficialDocument document) async {
+    setState(() => _saving = true);
+    try {
+      final file = document.file!;
+      final bytes = await _fetchOriginalDocument(document);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(bytes, name: file.fileName, mimeType: file.mimeType),
+          ],
+          title: document.title,
+          text: 'الملف الأصلي لوثيقة ${document.title}',
+        ),
+      );
+    } catch (error) {
+      _showMessage('تعذرت مشاركة الملف الأصلي: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _saveDocumentPdf(OfficialDocument document) async {
+    setState(() => _saving = true);
+    try {
+      final bytes = await _fetchDocumentPdf(document);
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'حفظ معاينة الوثيقة الرسمية',
+        fileName: '${document.title}.pdf',
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+        bytes: bytes,
+      );
+      if (!mounted) return;
+      _showMessage(
+        path == null ? 'تم إلغاء حفظ ملف PDF' : 'تم حفظ ملف PDF بنجاح',
+      );
+    } catch (error) {
+      _showMessage('تعذر تنزيل ملف PDF: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _shareDocumentPdf(OfficialDocument document) async {
+    setState(() => _saving = true);
+    try {
+      final bytes = await _fetchDocumentPdf(document);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              bytes,
+              name: '${document.title}.pdf',
+              mimeType: 'application/pdf',
+            ),
+          ],
+          title: document.title,
+          text: 'معاينة PDF لوثيقة ${document.title}',
+        ),
+      );
+    } catch (error) {
+      _showMessage('تعذرت مشاركة ملف PDF: $error');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -522,6 +599,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   void _startNewDocument() {
     _selectedDocument = null;
+    _creatingDocument = true;
     _selectedTemplateId = null;
     _selectedTemplateRevision = null;
     _documentCategory = 'general';
@@ -541,6 +619,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   void _selectDocument(OfficialDocument document) {
     _selectedDocument = document;
+    _creatingDocument = false;
     _selectedTemplateId = document.templateId;
     _selectedTemplateRevision = document.templateRevision;
     _documentCategory = document.category;
@@ -562,6 +641,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   void _useTemplate(DocumentTemplate template) {
     _selectedDocument = null;
+    _creatingDocument = true;
     _selectedTemplate = template;
     _selectedTemplateId = template.id;
     _selectedTemplateRevision = template.revision;
@@ -603,6 +683,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             });
       if (!mounted) return;
       _selectedDocument = OfficialDocument.fromJson(saved);
+      _creatingDocument = false;
       _replaceDocumentEditor(_selectedDocument!.content);
       await _load();
       _showMessage(
@@ -914,6 +995,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             _tab = selection.first;
             if (_tab == DocumentStudioTab.archive) {
               _selectedDocument = null;
+              _creatingDocument = false;
             }
           });
         },
@@ -989,7 +1071,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           children: [
             IconButton(
               tooltip: 'قائمة الوثائق',
-              onPressed: () => setState(() => _selectedDocument = null),
+              onPressed: () => setState(() {
+                _selectedDocument = null;
+                _creatingDocument = false;
+              }),
               icon: const Icon(Icons.arrow_back),
             ),
             Expanded(
@@ -1125,25 +1210,85 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ),
         ],
         const SizedBox(height: 12),
-        if (_selectedDocument?.file case final file?)
+        if (_selectedDocument case final document?)
           Card(
-            child: ListTile(
-              leading: const Icon(Icons.attach_file_outlined),
-              title: Text(
-                file.fileName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                '${(file.sizeBytes / (1024 * 1024)).toStringAsFixed(2)} م.ب'
-                '${file.pageCount > 0 ? ' · ${file.pageCount} صفحة' : ''}',
-              ),
-              trailing: IconButton(
-                tooltip: 'طباعة بخيارات A4',
-                onPressed: _saving
-                    ? null
-                    : () => _printDocumentFile(_selectedDocument!),
-                icon: const Icon(Icons.print_outlined),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'معاينة وإخراج الوثيقة الرسمية',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    document.file == null
+                        ? 'ملف PDF سيُجهّز من محرك الوثائق عند الطلب'
+                        : document.file!.mimeType ==
+                              DocumentFileSupport.docxMime
+                        ? 'معاينة Word غير مدعومة محلياً؛ استخدم الملف الأصلي للتنزيل أو المشاركة.'
+                        : 'تتم معاينة PDF وتنزيله وطباعته من bytes الملف الأصلي.',
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (document.file?.mimeType ==
+                          DocumentFileSupport.docxMime) ...[
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _saveOriginalDocument(document),
+                          icon: const Icon(Icons.download_outlined),
+                          label: const Text('تنزيل Word الأصلي'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _shareOriginalDocument(document),
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('مشاركة Word الأصلي'),
+                        ),
+                      ] else ...[
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _saveDocumentPdf(document),
+                          icon: const Icon(Icons.download_outlined),
+                          label: const Text('تنزيل PDF'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _shareDocumentPdf(document),
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('مشاركة PDF'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _printDocumentFile(document),
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('طباعة'),
+                        ),
+                      ],
+                      if (document.file != null) ...[
+                        Text(
+                          document.file!.fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (_saving)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: LinearProgressIndicator(),
+                    ),
+                ],
               ),
             ),
           ),
@@ -1560,134 +1705,164 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     required bool editable,
   }) {
     controller.readOnly = !editable;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      color: Colors.white,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (editable)
-            QuillSimpleToolbar(
-              controller: controller,
-              config: const QuillSimpleToolbarConfig(),
-            ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: _documentHeaderDividerColor(),
-                  width: 2,
-                ),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (_letterhead['logoUrl'] is String &&
-                    (_letterhead['logoUrl'] as String).isNotEmpty)
-                  Image.network(
-                    _letterhead['logoUrl'] as String,
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) =>
-                        const SizedBox(width: 52, height: 52),
-                  ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _letterhead['departmentName']?.toString() ?? 'وثائقي',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+    final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
+    final opacity =
+        (rawOpacity is num
+            ? rawOpacity.toDouble()
+            : double.tryParse('$rawOpacity') ?? 12) /
+        100;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (editable)
+          QuillSimpleToolbar(
+            controller: controller,
+            config: const QuillSimpleToolbarConfig(),
+          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final pageHeight =
+                constraints.maxWidth *
+                DocumentPaper.a4Height /
+                DocumentPaper.a4Width;
+            return DocumentPaper(
+              showWatermarkText:
+                  _platformDocumentSettings['showMinistryWatermarkText'] !=
+                  false,
+              watermarkOpacity: opacity,
+              logoUrl: _letterhead['logoUrl']?.toString(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _documentHeaderDividerColor(),
+                          width: 2,
                         ),
                       ),
-                      if ((_letterhead['unitName']?.toString() ?? '')
-                          .isNotEmpty)
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (_letterhead['logoUrl'] is String &&
+                            (_letterhead['logoUrl'] as String).isNotEmpty)
+                          Image.network(
+                            _letterhead['logoUrl'] as String,
+                            width: 52,
+                            height: 52,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) =>
+                                const SizedBox(width: 52, height: 52),
+                          ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _letterhead['departmentName']?.toString() ??
+                                    'وثائقي',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if ((_letterhead['unitName']?.toString() ?? '')
+                                  .isNotEmpty)
+                                Text(
+                                  _letterhead['unitName'].toString(),
+                                  style: const TextStyle(color: Colors.black87),
+                                ),
+                            ],
+                          ),
+                        ),
+                        if ((_letterhead['unitChiefName']?.toString() ?? '')
+                            .isNotEmpty)
+                          Column(
+                            children: [
+                              Text(
+                                _letterhead['unitChiefRank']?.toString() ?? '',
+                                style: const TextStyle(color: Colors.black87),
+                              ),
+                              Text(
+                                _letterhead['unitChiefName'].toString(),
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
                         Text(
-                          _letterhead['unitName'].toString(),
-                          style: const TextStyle(color: Colors.black87),
+                          'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 12,
+                          ),
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                if ((_letterhead['unitChiefName']?.toString() ?? '').isNotEmpty)
-                  Column(
-                    children: [
-                      Text(
-                        _letterhead['unitChiefRank']?.toString() ?? '',
-                        style: const TextStyle(color: Colors.black87),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      _subjectController.text.isEmpty
+                          ? 'الموضوع: —'
+                          : 'الموضوع: ${_subjectController.text}',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
                       ),
-                      Text(
-                        _letterhead['unitChiefName'].toString(),
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
-                  style: const TextStyle(color: Colors.black87, fontSize: 12),
-                ),
-                Text(
-                  'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
-                  style: const TextStyle(color: Colors.black87, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              _subjectController.text.isEmpty
-                  ? 'الموضوع: —'
-                  : 'الموضوع: ${_subjectController.text}',
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
+                  Container(
+                    constraints: BoxConstraints(
+                      minHeight: math.max(96, pageHeight - 250),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+                    child: QuillEditor.basic(
+                      controller: controller,
+                      config: const QuillEditorConfig(padding: EdgeInsets.zero),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Text(
+                      'وثائقي',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black54, fontSize: 11),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          Container(
-            constraints: const BoxConstraints(minHeight: 420),
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
-            color: Colors.white,
-            child: Stack(
-              children: [
-                Positioned.fill(child: _buildSecurityWatermark()),
-                QuillEditor.basic(
-                  controller: controller,
-                  config: const QuillEditorConfig(padding: EdgeInsets.zero),
-                ),
-              ],
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
-            child: Text(
-              'وثائقي',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54, fontSize: 11),
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -1697,65 +1872,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         .replaceFirst('#', '');
     final parsed = int.tryParse(value ?? '', radix: 16);
     return Color(0xFF000000 | (parsed ?? 0xFFB49A55));
-  }
-
-  Widget _buildSecurityWatermark() {
-    final logoUrl = _letterhead['logoUrl']?.toString().trim();
-    final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
-    final opacity = ((rawOpacity is num ? rawOpacity.toDouble() : 12) / 100)
-        .clamp(0.0, 0.6)
-        .toDouble();
-    final showSecurityText =
-        _platformDocumentSettings['showMinistryWatermarkText'] != false;
-    return IgnorePointer(
-      child: Opacity(
-        opacity: opacity,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (showSecurityText)
-              Transform.rotate(
-                angle: -0.49,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List<Widget>.generate(
-                    7,
-                    (_) => Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: List<Widget>.generate(
-                        3,
-                        (_) => const Text(
-                          'وثائقي',
-                          maxLines: 1,
-                          style: TextStyle(
-                            color: Color(0xFF0F172A),
-                            fontSize: 21,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            if (logoUrl != null && logoUrl.isNotEmpty)
-              Center(
-                child: Opacity(
-                  opacity: 0.55,
-                  child: Image.network(
-                    logoUrl,
-                    width: 190,
-                    height: 190,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _statusChip(String status) {
@@ -1863,7 +1979,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
                 children: [
                   if (_tab == DocumentStudioTab.documents)
-                    if (_selectedDocument == null) ...[
+                    if (_selectedDocument == null && !_creatingDocument) ...[
                       Align(
                         alignment: AlignmentDirectional.centerEnd,
                         child: Wrap(

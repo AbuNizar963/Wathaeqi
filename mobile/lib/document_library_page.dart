@@ -5,9 +5,11 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart' show PdfPreview, Printing;
+import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
+import 'document_file_support.dart';
 
 /// Native mobile counterpart of the web document library.
 ///
@@ -272,28 +274,36 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
   }
 
   Future<void> _preview(OfficialDocument document) async {
-    if (document.file == null) return;
-
-    Future<Uint8List> loadPdf() async =>
-        await widget.api.fetchDocumentPrintPdf(document.id);
-
-    Future<void> downloadPdf() async {
+    final file = document.file;
+    if (file == null) return;
+    final isWord = file.mimeType == DocumentFileSupport.docxMime;
+    Future<Uint8List> loadBytes() => widget.api.fetchDocumentFileBytes(
+      documentId: document.id,
+      mimeType: file.mimeType,
+    );
+    Future<void> downloadFile() async {
       try {
-        final bytes = await loadPdf();
+        final bytes = await loadBytes();
         final path = await FilePicker.saveFile(
-          dialogTitle: 'حفظ نسخة PDF',
-          fileName: '${document.title}.pdf',
+          dialogTitle: isWord ? 'حفظ ملف Word الأصلي' : 'حفظ ملف PDF الأصلي',
+          fileName: file.fileName,
           bytes: bytes,
         );
-        if (path != null) _showMessage('تم حفظ نسخة PDF');
+        if (path != null) _showMessage('تم حفظ الملف الأصلي');
       } catch (error) {
         _showMessage('تعذر تنزيل الوثيقة: $error');
       }
     }
 
-    Future<void> printPdf() async {
+    Future<void> printFile() async {
+      if (isWord) {
+        _showMessage(
+          'معاينة Word غير مدعومة محلياً؛ نزّل الملف الأصلي أو شاركه',
+        );
+        return;
+      }
       try {
-        final bytes = await loadPdf();
+        final bytes = await loadBytes();
         await Printing.layoutPdf(
           name: document.title,
           onLayout: (_) async => bytes,
@@ -303,12 +313,21 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
       }
     }
 
-    Future<void> sharePdf() async {
+    Future<void> shareFile() async {
       try {
-        final bytes = await loadPdf();
-        await Printing.sharePdf(
-          bytes: bytes,
-          filename: '${document.title}.pdf',
+        final bytes = await loadBytes();
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                bytes,
+                name: file.fileName,
+                mimeType: file.mimeType,
+              ),
+            ],
+            title: document.title,
+            text: 'الملف الأصلي لوثيقة ${document.title}',
+          ),
         );
       } catch (error) {
         _showMessage('تعذرت مشاركة الوثيقة: $error');
@@ -322,31 +341,25 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
           textDirection: ui.TextDirection.rtl,
           child: Scaffold(
             backgroundColor: Theme.of(previewContext).scaffoldBackgroundColor,
-            appBar: AppBar(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    document.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (document.serialCode.isNotEmpty)
-                    Text(
-                      'رقم الوثيقة: ${document.serialCode}',
-                      style: Theme.of(previewContext).textTheme.labelSmall,
+            appBar: AppBar(title: Text(document.title)),
+            body: isWord
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'معاينة Word غير مدعومة محلياً.\n\nالملف الأصلي جاهز للتنزيل أو المشاركة دون تحويل أو فقدان للتنسيق.',
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                ],
-              ),
-            ),
-            body: PdfPreview(
-              pdfFileName: '${document.title}.pdf',
-              canChangePageFormat: false,
-              canChangeOrientation: false,
-              allowPrinting: false,
-              allowSharing: false,
-              build: (_) => loadPdf(),
-            ),
+                  )
+                : PdfPreview(
+                    pdfFileName: file.fileName,
+                    canChangePageFormat: false,
+                    canChangeOrientation: false,
+                    allowPrinting: false,
+                    allowSharing: false,
+                    build: (_) => loadBytes(),
+                  ),
             bottomNavigationBar: SafeArea(
               top: false,
               child: Padding(
@@ -360,19 +373,19 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                   childAspectRatio: 2.55,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: downloadPdf,
+                      onPressed: downloadFile,
                       icon: const Icon(Icons.download_outlined, size: 18),
-                      label: const Text('تنزيل PDF'),
+                      label: Text(isWord ? 'تنزيل Word الأصلي' : 'تنزيل PDF'),
                     ),
                     FilledButton.icon(
-                      onPressed: printPdf,
+                      onPressed: isWord ? null : printFile,
                       icon: const Icon(Icons.print_outlined, size: 18),
                       label: const Text('طباعة'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: sharePdf,
+                      onPressed: shareFile,
                       icon: const Icon(Icons.share_outlined, size: 18),
-                      label: const Text('مشاركة PDF'),
+                      label: Text(isWord ? 'مشاركة Word الأصلي' : 'مشاركة PDF'),
                     ),
                     if (widget.onEditDocument != null)
                       OutlinedButton.icon(
@@ -380,7 +393,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                           Navigator.of(previewContext).pop();
                           widget.onEditDocument!(document);
                         },
-                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        icon: const Icon(Icons.edit_outlined),
                         label: const Text('تعديل'),
                       ),
                   ],

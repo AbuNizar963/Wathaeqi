@@ -9,6 +9,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'offline_vault.dart';
+import 'document_file_support.dart';
 
 /// Keep client-side waits below the Appwrite Function request timeout.
 const telegramDocumentRenderTimeout = Duration(seconds: 50);
@@ -283,16 +284,7 @@ class PoliceApi {
     int pageCount = 0,
   }) async {
     final normalizedName = fileName.split(RegExp(r'[/\\]')).last.trim();
-    final extension = normalizedName.split('.').last.toLowerCase();
-    const mimeTypes = <String, String>{
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'pdf': 'application/pdf',
-      'png': 'image/png',
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'webp': 'image/webp',
-    };
-    final mimeType = mimeTypes[extension];
+    final mimeType = DocumentFileSupport.mimeForFileName(normalizedName);
     if (normalizedName.isEmpty ||
         normalizedName.length > 256 ||
         mimeType == null ||
@@ -429,6 +421,78 @@ class PoliceApi {
     }
     return Uint8List.fromList(bytes);
   }
+
+  /// Returns the private uploaded object without converting or rendering it.
+  /// The server remains responsible for authentication and document ownership.
+  Future<Uint8List> fetchDocumentFileBytes({
+    required String documentId,
+    required String mimeType,
+  }) async {
+    final expectedMime = DocumentFileSupport.mimeForFileName(
+      'file.${_extensionForMime(mimeType)}',
+    );
+    if (!RegExp(r'^[A-Za-z0-9._-]{1,36}$').hasMatch(documentId) ||
+        expectedMime != mimeType) {
+      throw const FormatException('بيانات الملف غير صالحة');
+    }
+    final baseUri = Uri.parse(baseUrl);
+    if (!baseUri.isScheme('https') &&
+        !{'localhost', '127.0.0.1', '::1'}.contains(baseUri.host)) {
+      throw const FormatException('يجب استخدام اتصال HTTPS لتنزيل الوثائق');
+    }
+    final cookie = await _storage.read(key: 'session_cookie');
+    if (cookie == null || cookie.trim().isEmpty) {
+      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
+    }
+    final request =
+        http.Request(
+            'GET',
+            baseUri.resolve(
+              '/api/documents/${Uri.encodeComponent(documentId)}/file',
+            ),
+          )
+          ..followRedirects = false
+          ..headers.addAll({'cookie': cookie, 'accept': mimeType});
+    late final http.Response response;
+    try {
+      final streamed = await _httpClient
+          .send(request)
+          .timeout(_documentPdfTimeout);
+      response = await http.Response.fromStream(streamed)
+          .timeout(_documentPdfTimeout);
+    } on TimeoutException {
+      throw const NetworkException('انتهت مهلة تنزيل الوثيقة');
+    } on IOException {
+      throw const NetworkException();
+    } on http.ClientException {
+      throw const NetworkException();
+    }
+    if (response.statusCode != 200) {
+      throw ApiException(response.statusCode, _message(response.body));
+    }
+    final bytes = Uint8List.fromList(response.bodyBytes);
+    final contentType = (response.headers['content-type'] ?? '')
+        .split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    if (contentType != mimeType ||
+        bytes.isEmpty ||
+        bytes.length > maxDocumentUploadBytes ||
+        !DocumentFileSupport.matchesMime(mimeType, bytes)) {
+      throw const ApiException(502, 'أعاد الخادم ملفاً غير صالح');
+    }
+    return bytes;
+  }
+
+  static String _extensionForMime(String mimeType) => switch (mimeType) {
+    DocumentFileSupport.pdfMime => 'pdf',
+    DocumentFileSupport.docxMime => 'docx',
+    'image/png' => 'png',
+    'image/jpeg' => 'jpg',
+    'image/webp' => 'webp',
+    _ => '',
+  };
 
   /// Renders an official telegram through the authenticated server-side
   /// Chromium pipeline shared with the web client.

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/document_print_layout.dart';
+import 'package:police_telegrams/document_output_security.dart';
 
 void main() {
   group('DocumentPrintLayout.pageGroups', () {
@@ -89,5 +90,21 @@ void main() {
       ),
       throwsArgumentError,
     );
+  });
+
+  group('document output security', () {
+    test('rejects local, malformed, and unsafe document identifiers', () {
+      expect(isSafeDocumentOutputId('local_123'), isFalse);
+      expect(isSafeDocumentOutputId('../other'), isFalse);
+      expect(isSafeDocumentOutputId('document-1'), isTrue);
+    });
+
+    test('accepts only PDF bytes before sharing or printing', () {
+      expect(hasPdfSignature(Uint8List.fromList('%PDF-1.7'.codeUnits)), isTrue);
+      expect(
+        hasPdfSignature(Uint8List.fromList('not-a-pdf'.codeUnits)),
+        isFalse,
+      );
+    });
   });
 }

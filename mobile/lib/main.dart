@@ -2210,8 +2210,9 @@ class _DashboardPageState extends State<DashboardPage>
       floatingActionButton: FloatingActionButton(
         heroTag: 'create-document-fab',
         tooltip: 'إنشاء وثيقة',
-        backgroundColor: const Color(0xFF348FEA),
+        backgroundColor: navy,
         foregroundColor: Colors.white,
+        elevation: 4,
         onPressed: () => _pushPage(
           DocumentStudioPage(
             api: widget.api,
@@ -2220,7 +2221,7 @@ class _DashboardPageState extends State<DashboardPage>
             openCreationOptionsOnOpen: true,
           ),
         ),
-        child: const Icon(Icons.add_comment_outlined, size: 25),
+        child: const Icon(LucideIcons.plus),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: DocumentLibraryPage(
