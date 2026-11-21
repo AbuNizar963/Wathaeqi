@@ -60,7 +60,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Map<String, dynamic> _letterhead = {};
   Map<String, dynamic> _platformDocumentSettings = {
     'showMinistryWatermarkText': true,
-    'watermarkText': 'وثائقي',
+    'watermarkText': 'وزارة الداخلية',
     'watermarkOpacityPercent': 12,
     'headerDividerColor': '#b49a55',
     'headerTitle': '',
