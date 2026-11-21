@@ -55,6 +55,11 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
       if (clonedPage) clonedPage.style.minHeight = `${height}px`;
 
       clonedDocument
+        .querySelectorAll<HTMLElement>(".document-studio-no-print")
+        .forEach(control => {
+          control.style.display = "none";
+        });
+      clonedDocument
         .querySelectorAll<HTMLElement>(".document-editor-input")
         .forEach(editor => {
           editor.style.display = "none";

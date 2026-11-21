@@ -41,7 +41,7 @@ import type { PlatformDocumentSettings } from "@shared/features/platform-setting
 import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
-import DocumentEditor from "./DocumentEditor";
+import RichDocumentEditor from "./RichDocumentEditor";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
@@ -1077,7 +1077,7 @@ export default function DocumentStudioPage() {
                   headerSettings={platformDocumentSettings.data}
                 />
                 <div className="py-6">
-                  <DocumentEditor
+                  <RichDocumentEditor
                     content={templateContent}
                     onChange={handleTemplateContentChange}
                     editable={!previewMode}
@@ -1402,7 +1402,7 @@ export default function DocumentStudioPage() {
                           الموضوع: {documentSubject}
                         </p>
                       ) : null}
-                      <DocumentEditor
+                      <RichDocumentEditor
                         content={documentContent}
                         onChange={handleDocumentContentChange}
                         editable={canEditDocument && !previewMode}
