@@ -91,9 +91,11 @@ function variableFields(text: string): DocumentTemplateField[] {
 }
 
 function normalizeRelationshipTarget(target: string): string | null {
-  if (!target || target.startsWith("/") || target.includes("\\")) return null;
-  const segments = ["word"];
-  for (const segment of target.split("/")) {
+  if (!target || target.includes("\\")) return null;
+  const source = target.startsWith("/word/") ? target.slice(1) : target;
+  if (source.startsWith("/")) return null;
+  const segments = source.startsWith("word/") ? [] : ["word"];
+  for (const segment of source.split("/")) {
     if (!segment || segment === ".") continue;
     if (segment === "..") {
       if (segments.length <= 1) return null;
@@ -194,14 +196,21 @@ function createImageResolver(
       properties?.getAttribute("descr") ||
       properties?.getAttribute("title") ||
       "صورة من مستند Word";
-    const imageNode: EditorNode = {
-      type: "image",
-      attrs: {
-        src: "data:" + mimeType + ";base64," + base64,
-        alt: alt.slice(0, 255),
-        title: alt.slice(0, 255),
-      },
+    const extent = localElements(drawing, "extent")[0];
+    const widthEmu = Number(extent?.getAttribute("cx"));
+    const heightEmu = Number(extent?.getAttribute("cy"));
+    const attrs: Record<string, unknown> = {
+      src: "data:" + mimeType + ";base64," + base64,
+      alt: alt.slice(0, 255),
+      title: alt.slice(0, 255),
     };
+    if (Number.isFinite(widthEmu) && widthEmu > 0) {
+      attrs.width = Math.min(1600, Math.max(1, Math.round(widthEmu / 9525)));
+    }
+    if (Number.isFinite(heightEmu) && heightEmu > 0) {
+      attrs.height = Math.min(1600, Math.max(1, Math.round(heightEmu / 9525)));
+    }
+    const imageNode: EditorNode = { type: "image", attrs };
     cache.set(relationshipId, imageNode);
     return imageNode;
   };
