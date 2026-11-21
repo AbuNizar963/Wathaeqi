@@ -14,6 +14,7 @@ import {
   openPrintWindow,
 } from "../document-library/printSheets";
 import type { PagesPerSheet, SourcePage } from "../document-library/types";
+import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
@@ -48,6 +49,7 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     scrollX: 0,
     scrollY: 0,
     onclone: clonedDocument => {
+      sanitizeUnsupportedPrintColors(clonedDocument);
       const clonedPage =
         clonedDocument.querySelector<HTMLElement>(".document-a4-page");
       if (clonedPage) clonedPage.style.minHeight = `${height}px`;
