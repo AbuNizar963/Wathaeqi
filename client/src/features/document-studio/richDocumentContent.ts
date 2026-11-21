@@ -113,26 +113,10 @@ export function extractDocumentText(value: unknown): string {
     return value.text;
   }
   if (value.type === "legacy-html" && typeof value.html === "string") {
-    return value.html
-      .replace(/<\/(p|div|h[1-6]|li|tr)>/giu, "\n")
-      .replace(/<br\s*\/?\s*>/giu, "\n")
-      .replace(/<[^>]*>/gu, "")
-      .replace(/&(?:nbsp|amp|quot|apos|#39);/giu, entity => {
-        switch (entity.toLowerCase()) {
-          case "&nbsp;":
-            return " ";
-          case "&amp;":
-            return "&";
-          case "&quot;":
-            return '"';
-          case "&apos;":
-          case "&#39;":
-            return "'";
-          default:
-            return entity;
-        }
-      })
-      .trim();
+    if (typeof DOMParser === "undefined") return "";
+    const parsed = new DOMParser().parseFromString(value.html, "text/html");
+    parsed.querySelectorAll("script, style").forEach(element => element.remove());
+    return parsed.body.textContent?.trim() ?? "";
   }
   if (value.type === "text" && typeof value.text === "string") {
     return value.text;
