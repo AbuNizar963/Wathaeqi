@@ -2223,17 +2223,7 @@ class _DashboardPageState extends State<DashboardPage>
         child: const Icon(Icons.add_comment_outlined, size: 25),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: DocumentLibraryPage(
-        api: widget.api,
-        onCreateDocument: () => _pushPage(
-          DocumentStudioPage(
-            api: widget.api,
-            outbox: _documentStudioOutbox,
-            initialTab: DocumentStudioTab.documents,
-            openCreationOptionsOnOpen: true,
-          ),
-        ),
-      ),
+      body: DocumentLibraryPage(api: widget.api),
     ),
   );
 }
