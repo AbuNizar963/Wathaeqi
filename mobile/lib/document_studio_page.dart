@@ -23,12 +23,14 @@ class DocumentStudioPage extends StatefulWidget {
     this.outbox,
     this.initialTab = DocumentStudioTab.documents,
     this.openCreationOptionsOnOpen = false,
+    this.initialDocumentId,
   });
 
   final PoliceApi api;
   final DocumentStudioOutbox? outbox;
   final DocumentStudioTab initialTab;
   final bool openCreationOptionsOnOpen;
+  final String? initialDocumentId;
 
   @override
   State<DocumentStudioPage> createState() => _DocumentStudioPageState();
@@ -113,7 +115,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         unawaited(_load());
       }
     });
-    _load();
+    if (widget.initialDocumentId != null) {
+      unawaited(
+        _load().then((_) {
+          if (!mounted) return;
+          final matches = _documents
+              .where((item) => item.id == widget.initialDocumentId)
+              .toList();
+          if (matches.isNotEmpty) _selectDocument(matches.first);
+        }),
+      );
+    } else {
+      _load();
+    }
     if (widget.openCreationOptionsOnOpen) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) unawaited(_showCreateDocumentOptions());
