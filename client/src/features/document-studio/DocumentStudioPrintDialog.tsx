@@ -144,7 +144,9 @@ export default function DocumentStudioPrintDialog({
   pageElement: HTMLElement | null;
 }) {
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
-  const [copiesPerPage, setCopiesPerPage] = useState<(typeof COPY_COUNTS)[number]>(1);
+  const [copiesPerPage, setCopiesPerPage] = useState<
+    (typeof COPY_COUNTS)[number]
+  >(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -231,7 +233,11 @@ export default function DocumentStudioPrintDialog({
                 >
                   {value}
                   <span className="mt-1 block text-[11px] font-normal">
-                    {value === 1 ? "نسخة واحدة" : "نسخ"}
+                    {value === 1
+                      ? "نسخة واحدة"
+                      : value === 2
+                        ? "نسختان"
+                        : "أربع نسخ"}
                   </span>
                 </button>
               );

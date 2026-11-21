@@ -54,6 +54,9 @@ describe("document print sheet layout", () => {
       footerText: "نسخة أرشيفية",
     });
     expect(html).toContain("grid per-4");
+    expect(html).toContain(
+      ".per-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }"
+    );
     expect(html.match(/<section class="sheet">/g)).toHaveLength(2);
     expect(html.match(/<img /g)).toHaveLength(5);
     expect(html).toContain("وزارة الداخلية");
