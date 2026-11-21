@@ -30,7 +30,6 @@ describe("document actions", () => {
       text: "المعاينة",
       url: "https://wathaeqi.example/studio?document=doc%2F42",
     });
-    expect(share.mock.calls[0][0].url).not.toContain("manus-storage");
   });
 
   it("copies the authenticated route when Web Share is unavailable", async () => {
