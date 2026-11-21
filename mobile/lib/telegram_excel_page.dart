@@ -188,9 +188,9 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             title: closableDialogTitle(
-            dialogContext,
-            const Text('معاينة تصدير سجل البرقيات'),
-          ),
+              dialogContext,
+              const Text('معاينة تصدير سجل البرقيات'),
+            ),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
@@ -532,9 +532,9 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             title: closableDialogTitle(
-            dialogContext,
-            Text('تعديل صف ${index + 1} قبل الاستيراد'),
-          ),
+              dialogContext,
+              Text('تعديل صف ${index + 1} قبل الاستيراد'),
+            ),
             content: SizedBox(
               width: 520,
               child: SingleChildScrollView(
