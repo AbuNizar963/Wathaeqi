@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
 
 type ResponsiveA4PreviewProps = {
   children: ReactNode;
-  pageRef?: RefObject<HTMLDivElement | null>;
+  pageRef?: { current: HTMLDivElement | null };
 };
 
 /**
