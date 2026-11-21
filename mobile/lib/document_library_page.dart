@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart' show PdfPreview;
+import 'package:printing/printing.dart' show PdfPreview, Printing;
 
 import 'api.dart';
 import 'document_studio_models.dart';
@@ -271,26 +271,110 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
 
   Future<void> _preview(OfficialDocument document) async {
     if (document.file == null) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => Dialog.fullscreen(
-        child: Directionality(
+
+    Future<Uint8List> loadPdf() async =>
+        await widget.api.fetchDocumentPrintPdf(document.id);
+
+    Future<void> downloadPdf() async {
+      try {
+        final bytes = await loadPdf();
+        final path = await FilePicker.platform.saveFile(
+          dialogTitle: 'حفظ نسخة PDF',
+          fileName: '${document.title}.pdf',
+          bytes: bytes,
+        );
+        if (path != null) _showMessage('تم حفظ نسخة PDF');
+      } catch (error) {
+        _showMessage('تعذر تنزيل الوثيقة: $error');
+      }
+    }
+
+    Future<void> printPdf() async {
+      try {
+        final bytes = await loadPdf();
+        await Printing.layoutPdf(
+          name: document.title,
+          onLayout: (_) async => bytes,
+        );
+      } catch (error) {
+        _showMessage('تعذرت طباعة الوثيقة: $error');
+      }
+    }
+
+    Future<void> sharePdf() async {
+      try {
+        final bytes = await loadPdf();
+        await Printing.sharePdf(
+          bytes: bytes,
+          filename: '${document.title}.pdf',
+        );
+      } catch (error) {
+        _showMessage('تعذرت مشاركة الوثيقة: $error');
+      }
+    }
+
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (previewContext) => Directionality(
           textDirection: ui.TextDirection.rtl,
           child: Scaffold(
+            backgroundColor: Theme.of(previewContext).scaffoldBackgroundColor,
             appBar: AppBar(
-              title: Text(
-                document.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    document.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (document.serialCode.isNotEmpty)
+                    Text(
+                      'رقم الوثيقة: ${document.serialCode}',
+                      style: Theme.of(previewContext).textTheme.labelSmall,
+                    ),
+                ],
               ),
             ),
             body: PdfPreview(
               pdfFileName: '${document.title}.pdf',
               canChangePageFormat: false,
               canChangeOrientation: false,
-              allowPrinting: true,
-              allowSharing: true,
-              build: (_) => widget.api.fetchDocumentPrintPdf(document.id),
+              allowPrinting: false,
+              allowSharing: false,
+              build: (_) => loadPdf(),
+            ),
+            bottomNavigationBar: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+                child: GridView.count(
+                  crossAxisCount: 3,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 2.55,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: downloadPdf,
+                      icon: const Icon(Icons.download_outlined, size: 18),
+                      label: const Text('تنزيل PDF'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: printPdf,
+                      icon: const Icon(Icons.print_outlined, size: 18),
+                      label: const Text('طباعة'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: sharePdf,
+                      icon: const Icon(Icons.share_outlined, size: 18),
+                      label: const Text('مشاركة PDF'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
