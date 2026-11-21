@@ -1385,7 +1385,7 @@ export default function DocumentStudioPage() {
         pageElement={documentPageRef.current}
       />
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
-        <DialogContent className="max-w-lg" dir="rtl">
+        <DialogContent className="w-[calc(100%-1rem)] max-h-[min(90dvh,42rem)] max-w-lg overflow-y-auto p-4 sm:p-6" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
