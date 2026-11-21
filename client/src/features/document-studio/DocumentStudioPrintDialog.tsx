@@ -22,7 +22,17 @@ const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
 async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const width = element.clientWidth;
-  const height = Math.max(element.scrollHeight, element.clientHeight);
+  const editorOverflow = Array.from(
+    element.querySelectorAll<HTMLTextAreaElement>(".document-editor-input")
+  ).reduce(
+    (total, editor) =>
+      total + Math.max(0, editor.scrollHeight - editor.clientHeight),
+    0
+  );
+  const height = Math.max(
+    element.scrollHeight,
+    element.clientHeight + editorOverflow
+  );
   if (width <= 0 || height <= 0) {
     throw new Error("تعذر تحديد أبعاد صفحة الوثيقة للطباعة");
   }
@@ -40,6 +50,22 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     windowHeight: Math.max(window.innerHeight, height),
     scrollX: 0,
     scrollY: 0,
+    onclone: clonedDocument => {
+      const clonedPage =
+        clonedDocument.querySelector<HTMLElement>(".document-a4-page");
+      if (clonedPage) clonedPage.style.minHeight = `${height}px`;
+
+      clonedDocument
+        .querySelectorAll<HTMLElement>(".document-editor-input")
+        .forEach(editor => {
+          editor.style.display = "none";
+        });
+      clonedDocument
+        .querySelectorAll<HTMLElement>(".document-editor-print-copy")
+        .forEach(copy => {
+          copy.style.display = "block";
+        });
+    },
   });
 
   const scale = canvas.width / width;
