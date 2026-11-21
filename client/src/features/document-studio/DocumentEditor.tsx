@@ -22,8 +22,8 @@ function collectText(value: unknown): string {
   }
   if (node.type === "legacy-html" && typeof node.html === "string") {
     return node.html
-      .replace(/<\\/(p|div|h[1-6]|li|tr)>/gi, "\\n")
-      .replace(/<br\\s*\\/?\\s*>/gi, "\\n")
+      .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, "\n")
+      .replace(/<br\s*\/?\s*>/gi, "\n")
       .replace(/<[^>]*>/g, "")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
