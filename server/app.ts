@@ -185,23 +185,33 @@ export function createApp(
     express.raw({ type: () => true, limit: "3mb" }),
     async (req, res) => {
       res.setHeader("Cache-Control", "private, no-store");
-      const organizationId = req.get("x-organization-id")?.trim() ?? "";
+      const rawOrganizationId: unknown =
+        req.headers["x-organization-id"];
+      const organizationId =
+        typeof rawOrganizationId === "string"
+          ? rawOrganizationId.trim()
+          : "";
       if (!organizationId || organizationId.length > 36) {
         res.status(400).json({ error: "معرّف الجهة غير صالح" });
         return;
       }
 
-      const contentType = req.get("content-type")?.split(";")[0]?.trim();
+      const rawContentType: unknown = req.headers["content-type"];
+      const contentType =
+        typeof rawContentType === "string"
+          ? rawContentType.split(";")[0]?.trim()
+          : undefined;
       if (contentType !== "image/png" && contentType !== "image/jpeg") {
         res.status(415).json({ error: "صيغة الشعار يجب أن تكون PNG أو JPG" });
         return;
       }
 
-      const body = req.body;
-      if (!Buffer.isBuffer(body) || body.length < 1) {
+      const rawBody: unknown = req.body;
+      if (!Buffer.isBuffer(rawBody) || rawBody.length < 1) {
         res.status(400).json({ error: "لم يصل ملف الشعار" });
         return;
       }
+      const body: Buffer = rawBody;
       if (body.length > 2_500_000) {
         res.status(413).json({
           error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت",
