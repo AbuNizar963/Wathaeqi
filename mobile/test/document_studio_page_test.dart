@@ -135,9 +135,9 @@ void main() {
           .onPressed,
       isNotNull,
     );
-    expect(find.byTooltip('تعديل الوثيقة'), findsOneWidget);
+    expect(find.text('تعديل الوثيقة'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('تعديل الوثيقة'));
+    await tester.tap(find.text('تعديل الوثيقة'));
     await tester.pumpAndSettle();
     expect(find.text('تحرير الوثيقة'), findsOneWidget);
   });
