@@ -886,6 +886,28 @@ export default function DocumentStudioPage() {
               </div>
 
               <div
+                className="grid grid-cols-2 gap-2 md:hidden document-studio-no-print"
+                role="group"
+                aria-label="التبديل بين إدخال البيانات ومعاينة الوثيقة"
+              >
+                <Button
+                  type="button"
+                  variant={previewMode ? "outline" : "default"}
+                  aria-pressed={!previewMode}
+                  onClick={() => setPreviewMode(false)}
+                >
+                  إدخال البيانات
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewMode ? "default" : "outline"}
+                  aria-pressed={previewMode}
+                  onClick={() => setPreviewMode(true)}
+                >
+                  معاينة A4
+                </Button>
+              </div>
+              <div
                 className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
               >
                 <div className="space-y-1">
@@ -1315,6 +1337,7 @@ export default function DocumentStudioPage() {
                 </section>
               ) : null}
 
+              <div className={previewMode ? "" : "hidden md:block"}>
               {selectedDocument?.file ? (
                 <section className="space-y-3 rounded-lg border p-3">
                   <div>
@@ -1387,6 +1410,7 @@ export default function DocumentStudioPage() {
                   </footer>
                 </ResponsiveA4Preview>
               )}
+              </div>
               {previewMode && selectedDocument ? (
                 <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
                   <Button
