@@ -46,7 +46,7 @@ export default function ResponsiveA4Preview({
       );
       const height = Math.ceil(pageHeight * scale);
 
-      setLayout(current =>
+      setLayout((current) =>
         current.scale === scale && current.height === height
           ? current
           : { scale, height },
@@ -73,7 +73,7 @@ export default function ResponsiveA4Preview({
       }}
     >
       <div
-        ref={node => {
+        ref={(node) => {
           internalPageRef.current = node;
           if (pageRef) pageRef.current = node;
         }}
