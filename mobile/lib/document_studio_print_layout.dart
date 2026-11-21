@@ -34,7 +34,7 @@ class DocumentStudioPrintLayout {
     if (pagesPerSheet == 1) return sourcePdf;
 
     final images = <pw.MemoryImage>[];
-    await for (final raster in Printing.raster(sourcePdf, dpi: 72)) {
+    await for (final raster in Printing.raster(sourcePdf, dpi: 144)) {
       images.add(pw.MemoryImage(await raster.toPng()));
     }
     if (images.isEmpty) {
