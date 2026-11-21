@@ -15,7 +15,7 @@ import {
   Share2,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -1477,42 +1477,85 @@ function DocumentWatermark({
   showMinistryText: boolean;
 }) {
   const watermarkCss = buildDocumentWatermarkCss(opacityPercent / 100);
+  const layerRef = useRef<HTMLDivElement>(null);
+  const [pageMetrics, setPageMetrics] = useState({ count: 1, height: 0 });
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    const page = layer?.parentElement;
+    if (!page) return;
+
+    const updatePageMetrics = () => {
+      const width = page.clientWidth;
+      if (width <= 0) return;
+      const pageHeight = (width * 297) / 210;
+      const pageCount = Math.max(
+        1,
+        Math.ceil(Math.max(page.scrollHeight, page.clientHeight) / pageHeight)
+      );
+      page.style.setProperty("--document-page-height", `${pageHeight}px`);
+      setPageMetrics(current =>
+        current.count === pageCount && Math.abs(current.height - pageHeight) < 1
+          ? current
+          : { count: pageCount, height: pageHeight }
+      );
+    };
+
+    const observer = new ResizeObserver(updatePageMetrics);
+    observer.observe(page);
+    updatePageMetrics();
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
       <style>{watermarkCss}</style>
-      <div className="document-watermark-layer" aria-hidden="true">
-        <div className="page-watermark">
-          {showMinistryText ? (
-            <div className="watermark-text-pattern">
-              {Array.from({ length: DOCUMENT_WATERMARK_ROWS }, (_, row) => (
-                <div
-                  key={row}
-                  className={
-                    row % 2
-                      ? "watermark-text-row watermark-text-row-offset"
-                      : "watermark-text-row"
-                  }
-                >
-                  {Array.from(
-                    { length: DOCUMENT_WATERMARK_COLUMNS },
-                    (_, column) => (
-                      <span key={column}>{OFFICIAL_ORGANIZATION_NAME}</span>
-                    )
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          {logoUrl ? (
-            <img
-              className="watermark-logo"
-              src={logoUrl}
-              alt=""
-              decoding="async"
-            />
-          ) : null}
-        </div>
+      <div
+        ref={layerRef}
+        className="document-watermark-layer"
+        aria-hidden="true"
+      >
+        {Array.from({ length: pageMetrics.count }, (_, pageIndex) => (
+          <div
+            key={pageIndex}
+            className="page-watermark"
+            style={{
+              top: pageIndex * pageMetrics.height,
+              width: "100%",
+              height: pageMetrics.height || undefined,
+            }}
+          >
+            {showMinistryText ? (
+              <div className="watermark-text-pattern">
+                {Array.from({ length: DOCUMENT_WATERMARK_ROWS }, (_, row) => (
+                  <div
+                    key={row}
+                    className={
+                      row % 2
+                        ? "watermark-text-row watermark-text-row-offset"
+                        : "watermark-text-row"
+                    }
+                  >
+                    {Array.from(
+                      { length: DOCUMENT_WATERMARK_COLUMNS },
+                      (_, column) => (
+                        <span key={column}>{OFFICIAL_ORGANIZATION_NAME}</span>
+                      )
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {logoUrl ? (
+              <img
+                className="watermark-logo"
+                src={logoUrl}
+                alt=""
+                decoding="async"
+              />
+            ) : null}
+          </div>
+        ))}
       </div>
     </>
   );
