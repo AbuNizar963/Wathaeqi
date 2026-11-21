@@ -32,6 +32,7 @@ export default function PrintDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
+  const [imageTiles, setImageTiles] = useState<1 | 4 | 9 | 16>(1);
   const kind = fileKind(fileName, mimeType);
   const canPrint = kind !== null;
   const printButtonLabel =
@@ -50,6 +51,7 @@ export default function PrintDialog({
         fileName,
         mimeType,
         pagesPerSheet,
+        imageTiles,
       });
     } catch (printError) {
       setError(
@@ -83,6 +85,33 @@ export default function PrintDialog({
               صيغة الملف غير مدعومة للطباعة الأصلية.
             </p>
           )}
+          {kind === "image" ? (
+            <fieldset className="rounded-lg border bg-muted/30 px-3 py-3">
+              <legend className="px-1 text-sm font-medium">
+                تقسيم الصورة على أوراق A4
+              </legend>
+              <div className="grid grid-cols-4 gap-2">
+                {([1, 4, 9, 16] as const).map(value => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={imageTiles === value}
+                    onClick={() => setImageTiles(value)}
+                    className={`rounded-md border px-2 py-2 text-xs font-semibold transition ${
+                      imageTiles === value
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    }`}
+                  >
+                    {value === 1 ? "ورقة واحدة" : `${value} أوراق`}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                تُقسّم الصورة إلى أجزاء متجاورة؛ اطبع الأوراق ثم رتّبها لتكوين الصورة كاملة.
+              </p>
+            </fieldset>
+          ) : (
           <fieldset className="rounded-lg border bg-muted/30 px-3 py-3">
             <legend className="px-1 text-sm font-medium">
               عدد الصفحات في الورقة
@@ -112,6 +141,8 @@ export default function PrintDialog({
               يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من صفحة.
             </p>
           </fieldset>
+          )}
+
           {error ? (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {error}
