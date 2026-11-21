@@ -59,13 +59,13 @@ class DocumentStudioPdf {
         : 0.12;
     final watermarkColor = PdfColor(0.42, 0.44, 0.47, safeOpacity);
     final borderColor = PdfColor.fromInt(dividerColor);
-    final pageMargin = (key, fallback) {
+    double pageMargin(String key, double fallback) {
       final value = letterhead[key];
       return (value is num ? value.toDouble() : fallback)
               .clamp(0.0, 35.0)
               .toDouble() *
           PdfPageFormat.mm;
-    };
+    }
     final frameStyle = _clean(letterhead['frameStyle']) ?? 'single';
     final frameColor =
         _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
@@ -391,8 +391,9 @@ class DocumentStudioPdf {
   }
 
   static PdfColor? _parseHexColor(String? value) {
-    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value))
+    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value)) {
       return null;
+    }
     return PdfColor.fromInt(
       int.parse(value.substring(1), radix: 16) | 0xFF000000,
     );

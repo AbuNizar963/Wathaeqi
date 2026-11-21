@@ -745,8 +745,9 @@ class _PlatformDocumentSettingsPageState
                           onChanged: _saving
                               ? null
                               : (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _frameStyle = v);
+                                  }
                                 },
                         ),
                         TextField(
@@ -757,8 +758,9 @@ class _PlatformDocumentSettingsPageState
                           ),
                           controller: TextEditingController(text: _frameColor),
                           onChanged: (v) {
-                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v))
+                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) {
                               setState(() => _frameColor = v.toLowerCase());
+                            }
                           },
                         ),
                         _settingsSlider(
@@ -799,8 +801,9 @@ class _PlatformDocumentSettingsPageState
                           onChanged: _saving
                               ? null
                               : (v) {
-                                  if (v != null)
+                                  if (v != null) {
                                     setState(() => _headerDividerStyle = v);
+                                  }
                                 },
                         ),
                         _settingsSlider(
