@@ -1365,7 +1365,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final isWord = mimeType == DocumentFileSupport.docxMime;
     final isPdf = mimeType == DocumentFileSupport.pdfMime;
     final isNativeDocument = document.file == null;
-    final canUsePdfActions = isPdf;
+    final canUsePdfActions = isPdf || isNativeDocument;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
