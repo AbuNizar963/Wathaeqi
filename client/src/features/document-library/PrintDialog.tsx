@@ -129,7 +129,9 @@ export default function PrintDialog({
             ) : (
               <Printer className="size-4" />
             )}
-            {kind === "image" ? "طباعة الصورة" : "طباعة من الملف الأصلي"}
+            {kind === "image"
+              ? "طباعة الصورة"
+              : "طباعة من الملف الأصلي"}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             إغلاق
