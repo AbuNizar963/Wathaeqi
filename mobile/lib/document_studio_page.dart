@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import 'api.dart';
 import 'document_studio_models.dart';
 import 'document_studio_outbox.dart';
+import 'document_studio_pdf.dart';
 import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
@@ -51,6 +52,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   DocumentTemplate? _selectedTemplate;
   bool _loading = true;
   bool _saving = false;
+  bool _previewMode = false;
   String? _loadError;
   bool _canIssueDocuments = false;
   Map<String, dynamic> _letterhead = {};
@@ -430,19 +432,40 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Future<Uint8List> _fetchDocumentPdf(OfficialDocument document) async {
+    final file = document.file;
+    if (file == null) {
+      final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
+      final opacity =
+          (rawOpacity is num
+              ? rawOpacity.toDouble()
+              : double.tryParse('$rawOpacity') ?? 12) /
+          100;
+      return DocumentStudioPdf.build(
+        content: document.content,
+        title: document.title,
+        subject: document.subject,
+        serialCode: document.serialCode,
+        documentDate: document.documentDate,
+        letterhead: _letterhead,
+        dividerColor: _documentHeaderDividerColor().toARGB32(),
+        showWatermarkText:
+            _platformDocumentSettings['showMinistryWatermarkText'] != false,
+        watermarkOpacity: opacity,
+      );
+    }
     if (!isSafeDocumentOutputId(document.id)) {
       throw StateError('احفظ الوثيقة ومزامنتها مع الخادم قبل إخراج PDF');
     }
-    final file = document.file;
-    if (file?.mimeType == DocumentFileSupport.docxMime) {
+    if (file.mimeType == DocumentFileSupport.docxMime) {
       throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
     }
-    final bytes = file?.mimeType == DocumentFileSupport.pdfMime
-        ? await widget.api.fetchDocumentFileBytes(
-            documentId: document.id,
-            mimeType: DocumentFileSupport.pdfMime,
-          )
-        : await widget.api.fetchDocumentPrintPdf(document.id);
+    if (file.mimeType != DocumentFileSupport.pdfMime) {
+      throw StateError('إخراج PDF متاح للوثائق المنشأة وملفات PDF فقط');
+    }
+    final bytes = await widget.api.fetchDocumentFileBytes(
+      documentId: document.id,
+      mimeType: DocumentFileSupport.pdfMime,
+    );
     if (!hasPdfSignature(bytes)) {
       throw StateError('تعذر التحقق من ملف PDF الذي أعاده الخادم');
     }
@@ -598,6 +621,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   void _startNewDocument() {
+    _previewMode = false;
     _selectedDocument = null;
     _creatingDocument = true;
     _selectedTemplateId = null;
@@ -618,6 +642,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   void _selectDocument(OfficialDocument document) {
+    _previewMode = true;
     _selectedDocument = document;
     _creatingDocument = false;
     _selectedTemplateId = document.templateId;
@@ -1050,6 +1075,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Widget _buildDocumentForm() {
+    if (_previewMode && _selectedDocument != null) {
+      return _buildDocumentPreview(_selectedDocument!);
+    }
+
     final canEdit =
         _selectedDocument == null || _selectedDocument!.status == 'draft';
     final matchingTemplates = _templates
@@ -1083,8 +1112,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            if (_selectedDocument != null)
+            if (_selectedDocument != null) ...[
               _statusChip(_selectedDocument!.status),
+              const SizedBox(width: 6),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _previewMode = true),
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('معاينة'),
+              ),
+            ],
           ],
         ),
         TextField(
@@ -1321,6 +1357,166 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildDocumentPreview(OfficialDocument document) {
+    final mimeType = document.file?.mimeType;
+    final isWord = mimeType == DocumentFileSupport.docxMime;
+    final isPdf = mimeType == DocumentFileSupport.pdfMime;
+    final isNativeDocument = document.file == null;
+    final canUsePdfActions = isPdf || isNativeDocument;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'قائمة الوثائق',
+              onPressed: () => setState(() {
+                _previewMode = false;
+                _selectedDocument = null;
+                _creatingDocument = false;
+              }),
+              icon: const Icon(Icons.arrow_back),
+            ),
+            Expanded(
+              child: Text(
+                document.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            _statusChip(document.status),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (isNativeDocument)
+          _buildA4Editor(controller: _documentEditor, editable: false)
+        else if (isWord)
+          _buildUnsupportedDocumentPreview(
+            document,
+            'معاينة ملفات Word غير متاحة داخل التطبيق حالياً',
+          )
+        else if (isPdf)
+          SizedBox(
+            height: 620,
+            child: PdfPreview(
+              build: (_) => _fetchDocumentPdf(document),
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+            ),
+          )
+        else
+          _buildUnsupportedDocumentPreview(
+            document,
+            'نوع الملف هذا لا يدعم المعاينة داخل التطبيق حالياً',
+          ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.55,
+          children: [
+            _documentPreviewAction(
+              icon: Icons.download_outlined,
+              label: isWord ? 'تنزيل Word' : 'تنزيل PDF',
+              onPressed: _saving
+                  ? null
+                  : isWord
+                  ? () => _saveOriginalDocument(document)
+                  : canUsePdfActions
+                  ? () => _saveDocumentPdf(document)
+                  : null,
+            ),
+            _documentPreviewAction(
+              icon: Icons.share_outlined,
+              label: isWord ? 'مشاركة Word' : 'مشاركة PDF',
+              onPressed: _saving
+                  ? null
+                  : isWord
+                  ? () => _shareOriginalDocument(document)
+                  : canUsePdfActions
+                  ? () => _shareDocumentPdf(document)
+                  : null,
+            ),
+            _documentPreviewAction(
+              icon: Icons.print_outlined,
+              label: 'طباعة',
+              onPressed: _saving || !canUsePdfActions
+                  ? null
+                  : () => _printDocumentFile(document),
+            ),
+            _documentPreviewAction(
+              icon: Icons.edit_outlined,
+              label: 'تعديل الوثيقة',
+              onPressed: _saving
+                  ? null
+                  : () => setState(() => _previewMode = false),
+            ),
+          ],
+        ),
+        if (_saving) ...[
+          const SizedBox(height: 10),
+          const LinearProgressIndicator(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildUnsupportedDocumentPreview(
+    OfficialDocument document,
+    String message,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(Icons.description_outlined, size: 42),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 4),
+            Text(
+              document.file?.fileName ?? document.title,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _documentPreviewAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 21),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
     );
   }
 

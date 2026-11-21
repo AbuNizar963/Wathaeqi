@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/api.dart';
 import 'package:police_telegrams/document_studio_outbox.dart';
 import 'package:police_telegrams/document_studio_page.dart';
 
 class _DocumentStudioTestApi extends PoliceApi {
-  _DocumentStudioTestApi({this.includeOrganization = true});
+  _DocumentStudioTestApi({
+    this.includeOrganization = true,
+    this.includeDocument = false,
+  });
 
   final bool includeOrganization;
+  final bool includeDocument;
   final calls = <String, Map<String, dynamic>?>{};
 
   @override
@@ -19,7 +25,31 @@ class _DocumentStudioTestApi extends PoliceApi {
   }) async {
     calls[procedure] = input;
     return switch (procedure) {
-      'documentStudio.listDocuments' => <dynamic>[],
+      'documentStudio.listDocuments' =>
+        includeDocument
+            ? <dynamic>[
+                {
+                  'id': 'doc-preview-test',
+                  'ownerId': 'owner-test',
+                  'title': 'وثيقة تجريبية',
+                  'category': 'general',
+                  'subject': 'اختبار المعاينة',
+                  'content': {
+                    'type': 'doc',
+                    'content': [
+                      {'type': 'paragraph'},
+                    ],
+                  },
+                  'fieldValues': <String, dynamic>{},
+                  'serialNumber': 0,
+                  'serialCode': '',
+                  'documentDate': '2026-11-21T00:00:00.000Z',
+                  'status': 'draft',
+                  'createdAt': '2026-11-21T00:00:00.000Z',
+                  'updatedAt': '2026-11-21T00:00:00.000Z',
+                },
+              ]
+            : <dynamic>[],
       'documentStudio.listTemplates' => <dynamic>[],
       'organizations.context' => {
         if (includeOrganization) 'organizationId': 'org-test',
@@ -47,6 +77,73 @@ class _DocumentStudioTestOutbox extends DocumentStudioOutbox {
 }
 
 void main() {
+  testWidgets('opening a saved document shows its preview first', (
+    tester,
+  ) async {
+    final api = _DocumentStudioTestApi(includeDocument: true);
+    final outbox = _DocumentStudioTestOutbox(api: api);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          FlutterQuillLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('ar')],
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: DocumentStudioPage(api: api, outbox: outbox),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('وثيقة تجريبية'));
+    // PDF preview rendering may keep an indeterminate progress animation
+    // alive; advance a bounded amount of virtual time instead of settling it.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 2));
+
+    expect(find.byKey(const ValueKey('document-a4-paper')), findsOneWidget);
+    expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsNothing);
+    expect(find.text('تنزيل PDF'), findsOneWidget);
+    expect(find.text('مشاركة PDF'), findsOneWidget);
+    expect(find.text('طباعة'), findsOneWidget);
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'تنزيل PDF'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(OutlinedButton, 'مشاركة PDF'),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'طباعة'))
+          .onPressed,
+      isNotNull,
+    );
+    expect(find.text('تعديل الوثيقة'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('تعديل الوثيقة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تعديل الوثيقة'));
+    await tester.pumpAndSettle();
+    expect(find.text('تحرير الوثيقة'), findsOneWidget);
+  });
+
   testWidgets('document studio opens with its three work areas', (
     tester,
   ) async {

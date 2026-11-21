@@ -47,38 +47,64 @@ class DocumentPaper extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: pageHeight,
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: watermarkOpacity.clamp(0.0, 0.6),
-                    child: Stack(
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, watermarkConstraints) {
+                    final pageCount = watermarkConstraints.maxHeight.isFinite
+                        ? (watermarkConstraints.maxHeight / pageHeight).ceil()
+                        : 1;
+                    return Stack(
                       fit: StackFit.expand,
                       children: [
-                        if (showWatermarkText)
-                          const CustomPaint(
-                            key: ValueKey('document-watermark-pattern'),
-                            painter: _DocumentWatermarkPainter(),
-                          ),
-                        if (logo != null && logo.isNotEmpty)
-                          Center(
-                            child: FractionallySizedBox(
-                              widthFactor: 0.9375,
-                              heightFactor: 0.9375,
-                              child: Image.network(
-                                logo,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) =>
-                                    const SizedBox.shrink(),
+                        CustomPaint(
+                          key: const ValueKey('document-a4-page-breaks'),
+                          painter: _DocumentPageBreakPainter(pageHeight),
+                        ),
+                        for (
+                          var pageIndex = 0;
+                          pageIndex < pageCount;
+                          pageIndex++
+                        )
+                          Positioned(
+                            key: ValueKey('document-watermark-page-$pageIndex'),
+                            top: pageIndex * pageHeight,
+                            left: 0,
+                            right: 0,
+                            height: pageHeight,
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: watermarkOpacity.clamp(0.0, 0.6),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    if (showWatermarkText)
+                                      const CustomPaint(
+                                        key: ValueKey(
+                                          'document-watermark-pattern',
+                                        ),
+                                        painter: _DocumentWatermarkPainter(),
+                                      ),
+                                    if (logo != null && logo.isNotEmpty)
+                                      Center(
+                                        child: FractionallySizedBox(
+                                          widthFactor: 0.9375,
+                                          heightFactor: 0.9375,
+                                          child: Image.network(
+                                            logo,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, _, _) =>
+                                                const SizedBox.shrink(),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
               ConstrainedBox(
@@ -91,6 +117,33 @@ class DocumentPaper extends StatelessWidget {
       },
     );
   }
+}
+
+class _DocumentPageBreakPainter extends CustomPainter {
+  const _DocumentPageBreakPainter(this.pageHeight);
+
+  final double pageHeight;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFFE2E8F0);
+    const gapHeight = 10.0;
+    for (var page = 1; page * pageHeight < size.height; page++) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          0,
+          page * pageHeight - gapHeight / 2,
+          size.width,
+          gapHeight,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DocumentPageBreakPainter oldDelegate) =>
+      oldDelegate.pageHeight != pageHeight;
 }
 
 /// Reference mosaic: 33 horizontal staggered rows and 13 columns, Aref Ruqaa
