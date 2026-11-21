@@ -116,6 +116,14 @@ describe("document upload validation", () => {
 
   it("binds generated storage keys to the authenticated owner and exact filename", () => {
     expect(isSafeDocumentStorageKey(storageKey, ownerId, fileName)).toBe(true);
+    const allowedName = "وثيقة..pdf";
+    expect(
+      isSafeDocumentStorageKey(
+        `documents/${ownerId}/550e8400-e29b-41d4-a716-446655440001-${allowedName}`,
+        ownerId,
+        allowedName
+      )
+    ).toBe(true);
     expect(
       isSafeDocumentStorageKey(storageKey, "another-owner", fileName)
     ).toBe(false);

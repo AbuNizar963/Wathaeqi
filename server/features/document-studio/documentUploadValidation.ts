@@ -343,10 +343,11 @@ export function isSafeDocumentStorageKey(
   const expectedPrefix = `documents/${ownerId}/`;
   if (!storageKey.startsWith(expectedPrefix)) return false;
   const objectName = storageKey.slice(expectedPrefix.length);
+  // Dots inside the generated single filename are valid upload names; path
+  // traversal requires a separate segment, which the separator checks reject.
   if (
     objectName.includes("/") ||
     objectName.includes("\\") ||
-    objectName.includes("..") ||
     objectName.length <= fileName.length + 1
   ) {
     return false;

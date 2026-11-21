@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
+import type { Express } from "express";
 import serverless from "serverless-http";
+import { serverlessOptions } from "../../server/_core/serverlessOptions";
 
 type ApiHandler = ReturnType<typeof serverless>;
 type LambdaEvent = Parameters<ApiHandler>[0];
 type LambdaContext = Parameters<ApiHandler>[1];
-
-let wrappedHandler: ApiHandler | undefined;
 
 function getMultiValueQueryParameters(
   searchParams: URLSearchParams
@@ -128,27 +128,32 @@ function toWebResponse(result: Awaited<ReturnType<ApiHandler>>): Response {
  * application is adapted through serverless-http so the original /api path,
  * cookies, repeated query parameters, and JSON bodies reach tRPC unchanged.
  */
-export default async function api(request: Request): Promise<Response> {
-  try {
-    if (!wrappedHandler) {
-      const { createApp } = await import("../../dist/server/app.js");
-      wrappedHandler = serverless(createApp({ productionStatic: false }));
+export function createNetlifyApi(loadApp: () => Promise<Express>) {
+  let wrappedHandler: ApiHandler | undefined;
+  return async function api(request: Request): Promise<Response> {
+    try {
+      wrappedHandler ??= serverless(await loadApp(), serverlessOptions);
+      const event = await toLambdaEvent(request);
+      const result = await wrappedHandler(event, createLambdaContext());
+      return toWebResponse(result);
+    } catch (error) {
+      console.error("[wathaeqi-api] Function startup or request failed", error);
+      return Response.json(
+        { error: "API function is temporarily unavailable" },
+        {
+          status: 503,
+          headers: { "Cache-Control": "no-store" },
+        }
+      );
     }
-
-    const event = await toLambdaEvent(request);
-    const result = await wrappedHandler(event, createLambdaContext());
-    return toWebResponse(result);
-  } catch (error) {
-    console.error("[wathaeqi-api] Function startup or request failed", error);
-    return Response.json(
-      { error: "API function is temporarily unavailable" },
-      {
-        status: 503,
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
-  }
+  };
 }
+
+const api = createNetlifyApi(async () => {
+  const { createApp } = await import("../../dist/server/app.js");
+  return createApp({ productionStatic: false });
+});
+export default api;
 
 export const config = {
   path: "/api/*",
