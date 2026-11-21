@@ -582,7 +582,7 @@ export default function DocumentStudioPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">وثائقي</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            إعداد الوثائق الرسمية وإدارة النماذج والأرشيف
+            إنشاء الوثائق الرسمية وإدارة أرشيفك
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -592,13 +592,6 @@ export default function DocumentStudioPage() {
           >
             <FileText className="ml-2 h-4 w-4" />
             الوثائق
-          </Button>
-          <Button
-            variant={activeTab === "templates" ? "default" : "outline"}
-            onClick={() => setActiveTab("templates")}
-          >
-            <LayoutTemplate className="ml-2 h-4 w-4" />
-            القوالب
           </Button>
           <Button
             variant={activeTab === "archive" ? "default" : "outline"}
@@ -1440,24 +1433,6 @@ export default function DocumentStudioPage() {
                 </span>
                 <span className="mt-1 block text-xs text-muted-foreground">
                   أرفق ملفاً موجوداً وأنشئ له سجلاً في مكتبة الوثائق
-                </span>
-              </span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-auto w-full justify-start gap-3 p-4 text-right"
-              onClick={() => {
-                setCreationDialogOpen(false);
-                setActiveTab("templates");
-                setPreviewMode(false);
-              }}
-            >
-              <LayoutTemplate className="size-5 shrink-0" />
-              <span className="flex-1 text-right">
-                <span className="block font-semibold">اختيار نموذج جاهز</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  ابدأ باستخدام نموذج إداري جاهز أو أنشئ نموذجاً جديداً
                 </span>
               </span>
             </Button>
