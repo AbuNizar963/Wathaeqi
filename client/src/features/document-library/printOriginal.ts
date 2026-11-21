@@ -148,21 +148,16 @@ export async function openOriginalPrintWindow(options: {
       page.cleanup();
     }
     await (pdf as unknown as { destroy?: () => Promise<void> }).destroy?.();
-    printWindow.document.open();
-    printWindow.document.write(
+    await openPrintWindow(
       buildPrintHtml(pages, {
         pagesPerSheet: options.pagesPerSheet ?? 1,
         marginMm: 8,
         headerText: "",
         footerText: "",
         showPageNumbers: false,
-      })
+      }),
+      printWindow
     );
-    printWindow.document.close();
-    await waitForImages(printWindow.document);
-    await new Promise(resolve => printWindow.setTimeout(resolve, 250));
-    printWindow.focus();
-    printWindow.print();
     return;
   }
 
