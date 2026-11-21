@@ -903,7 +903,11 @@ export default function DocumentStudioPage() {
                           setSelectedDocumentId(document.id);
                           setPreviewMode(true);
                         }}
-                        className={`min-w-0 w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                        className={`min-w-0 w-full rounded-lg border p-3 text-right transition-colors ${
+                          selectedDocumentId === document.id
+                            ? "border-primary bg-primary/5"
+                            : "hover:bg-muted/50"
+                        }`}
                       >
                         <span className="block truncate font-medium">
                           {document.title}
@@ -1608,12 +1612,45 @@ export default function DocumentStudioPage() {
         >
           {selectedPrintDocuments.map(document => {
             const pageSettings = platformDocumentSettings.data;
+            const pagePadding = [
+              pageSettings?.pageMarginTopMm ?? 10,
+              pageSettings?.pageMarginRightMm ?? 10,
+              pageSettings?.pageMarginBottomMm ?? 10,
+              pageSettings?.pageMarginLeftMm ?? 10,
+            ]
+              .map(value => value + "mm")
+              .join(" ");
+            const frameStyle = pageSettings?.frameStyle ?? "single";
+            const frameBorderStyle =
+              frameStyle === "double" || frameStyle === "ornate"
+                ? "double"
+                : "solid";
+            const frameBorder =
+              frameStyle === "none"
+                ? "none"
+                : (pageSettings?.frameWidthPt ?? 1) +
+                  "pt " +
+                  frameBorderStyle +
+                  " " +
+                  (pageSettings?.frameColor ?? "#b49a55");
+            const frameShadow =
+              frameStyle === "ornate"
+                ? "inset 0 0 0 3px #fff, inset 0 0 0 4px " +
+                  (pageSettings?.frameColor ?? "#b49a55")
+                : undefined;
+            const documentDateValue = makeDocumentDate(
+              dateInputValue(document.documentDate)
+            );
+
             return (
               <div
                 key={document.id}
                 ref={element => {
-                  if (element) batchPrintRefs.current.set(document.id, element);
-                  else batchPrintRefs.current.delete(document.id);
+                  if (element) {
+                    batchPrintRefs.current.set(document.id, element);
+                  } else {
+                    batchPrintRefs.current.delete(document.id);
+                  }
                 }}
                 className="document-a4-page"
                 dir="rtl"
@@ -1623,32 +1660,10 @@ export default function DocumentStudioPage() {
                   maxWidth: "none",
                   minHeight: 1123,
                   position: "relative",
-                  padding:
-                    (pageSettings?.pageMarginTopMm ?? 10) +
-                    "mm " +
-                    (pageSettings?.pageMarginRightMm ?? 10) +
-                    "mm " +
-                    (pageSettings?.pageMarginBottomMm ?? 10) +
-                    "mm " +
-                    (pageSettings?.pageMarginLeftMm ?? 10) +
-                    "mm",
+                  padding: pagePadding,
                   boxSizing: "border-box",
-                  border:
-                    pageSettings?.frameStyle === "none"
-                      ? "none"
-                      : (pageSettings?.frameWidthPt ?? 1) +
-                        "pt " +
-                        (pageSettings?.frameStyle === "double" ||
-                        pageSettings?.frameStyle === "ornate"
-                          ? "double"
-                          : "solid") +
-                        " " +
-                        (pageSettings?.frameColor ?? "#b49a55"),
-                  boxShadow:
-                    pageSettings?.frameStyle === "ornate"
-                      ? "inset 0 0 0 3px #fff, inset 0 0 0 4px " +
-                        (pageSettings.frameColor ?? "#b49a55")
-                      : undefined,
+                  border: frameBorder,
+                  boxShadow: frameShadow,
                 }}
               >
                 <DocumentWatermark
@@ -1668,12 +1683,8 @@ export default function DocumentStudioPage() {
                   dividerColor={dividerColor}
                   headerSettings={pageSettings}
                   serial={document.serialCode || "غير مرقم"}
-                  date={formatArabicDate(
-                    makeDocumentDate(dateInputValue(document.documentDate))
-                  )}
-                  hijriDate={formatHijriDate(
-                    makeDocumentDate(dateInputValue(document.documentDate))
-                  )}
+                  date={formatArabicDate(documentDateValue)}
+                  hijriDate={formatHijriDate(documentDateValue)}
                 />
                 <div className="pt-6">
                   {document.subject ? (
