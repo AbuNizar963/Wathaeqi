@@ -758,7 +758,10 @@ export default function DocumentStudioPage() {
                     <button
                       key={document.id}
                       type="button"
-                      onClick={() => setSelectedDocumentId(document.id)}
+                      onClick={() => {
+                        setSelectedDocumentId(document.id);
+                        setPreviewMode(true);
+                      }}
                       className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
                     >
                       <span className="block truncate font-medium">
