@@ -10,6 +10,7 @@ class DocumentPaper extends StatelessWidget {
     required this.child,
     required this.showWatermarkText,
     required this.watermarkOpacity,
+    this.watermarkText = 'وثائقي',
     this.logoUrl,
   });
 
@@ -21,6 +22,7 @@ class DocumentPaper extends StatelessWidget {
   final Widget child;
   final bool showWatermarkText;
   final double watermarkOpacity;
+  final String watermarkText;
   final String? logoUrl;
 
   @override
@@ -81,11 +83,13 @@ class DocumentPaper extends StatelessWidget {
                                   fit: StackFit.expand,
                                   children: [
                                     if (showWatermarkText)
-                                      const CustomPaint(
-                                        key: ValueKey(
+                                      CustomPaint(
+                                        key: const ValueKey(
                                           'document-watermark-pattern',
                                         ),
-                                        painter: _DocumentWatermarkPainter(),
+                                        painter: _DocumentWatermarkPainter(
+                                          watermarkText,
+                                        ),
                                       ),
                                     if (logo != null && logo.isNotEmpty)
                                       Center(
@@ -152,14 +156,16 @@ class _DocumentPageBreakPainter extends CustomPainter {
 /// Reference mosaic: 33 horizontal staggered rows and 13 columns, Aref Ruqaa
 /// 11 pt at A4 scale, 6.16 mm horizontal gap and ~3 mm page inset.
 class _DocumentWatermarkPainter extends CustomPainter {
-  const _DocumentWatermarkPainter();
+  const _DocumentWatermarkPainter(this.watermarkText);
+
+  final String watermarkText;
 
   @override
   void paint(Canvas canvas, Size size) {
     final mm = size.width / DocumentPaper.a4Width;
     final label = TextPainter(
       text: TextSpan(
-        text: 'وثائقي',
+        text: watermarkText,
         style: TextStyle(
           color: const Color(0xFF73777D),
           fontFamily: 'Aref Ruqaa',
@@ -209,5 +215,6 @@ class _DocumentWatermarkPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _DocumentWatermarkPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DocumentWatermarkPainter oldDelegate) =>
+      oldDelegate.watermarkText != watermarkText;
 }
