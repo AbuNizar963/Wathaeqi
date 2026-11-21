@@ -60,6 +60,11 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
           editor.style.display = "none";
         });
       clonedDocument
+        .querySelectorAll<HTMLElement>(".document-editor-warning")
+        .forEach(warning => {
+          warning.style.display = "none";
+        });
+      clonedDocument
         .querySelectorAll<HTMLElement>(".document-editor-print-copy")
         .forEach(copy => {
           copy.style.display = "block";

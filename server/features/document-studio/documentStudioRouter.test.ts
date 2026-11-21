@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { zipSync } from "fflate";
 import type { TrpcContext } from "../../_core/context";
+import {
+  applyFieldValues,
+  plainTextDocument,
+} from "../../../client/src/features/document-studio/documentEditorContent";
 
 const mocks = vi.hoisted(() => {
   class MockDocumentStudioConflictError extends Error {}
@@ -391,6 +395,134 @@ describe("document studio authorization and API", () => {
       ...templateInput,
       description: null,
     });
+  });
+
+  it("accepts a user-edited legacy plain-text document as canonical content", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+    const content = plainTextDocument("تحرير المستخدم\n\nالسطر الأخير\n");
+
+    await caller.updateDocument({
+      ...documentInput,
+      id: document.id,
+      expectedUpdatedAt: timestamp,
+      content,
+    });
+
+    expect(mocks.updateOfficialDocument).toHaveBeenCalledWith(
+      ownerId,
+      document.id,
+      timestamp,
+      expect.objectContaining({ content })
+    );
+  });
+
+  it("preserves legacy HTML and plain text for metadata-only saves", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+    const html = {
+      type: "legacy-html",
+      html: '<p dir="rtl"><strong>نص</strong></p>',
+    };
+    const legacyText = { type: "legacy-text", text: "نص قديم\n" };
+
+    await caller.updateDocument({
+      ...documentInput,
+      id: document.id,
+      expectedUpdatedAt: timestamp,
+      content: html,
+    });
+    await caller.updateTemplate({
+      ...templateInput,
+      id: template.id,
+      expectedRevision: template.revision,
+      content: legacyText,
+    });
+
+    expect(mocks.updateOfficialDocument).toHaveBeenCalledWith(
+      ownerId,
+      document.id,
+      timestamp,
+      expect.objectContaining({ content: html })
+    );
+    expect(mocks.updateDocumentTemplate).toHaveBeenCalledWith(
+      ownerId,
+      template.id,
+      template.revision,
+      expect.objectContaining({ content: legacyText })
+    );
+  });
+
+  it("sends rich content and field values to the server without flattening", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+    const fields = [
+      {
+        key: "employee_name",
+        label: "الاسم",
+        type: "text" as const,
+        required: true,
+      },
+    ];
+    mocks.getDocumentTemplate.mockResolvedValueOnce({ ...template, fields });
+    const rich = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: "{{employee_name}}",
+              marks: [{ type: "bold" }],
+            },
+          ],
+        },
+        { type: "image", attrs: { src: "image.png", custom: "preserved" } },
+      ],
+    };
+    const fieldValues = { employee_name: "أحمد" };
+    const content = applyFieldValues(rich, fieldValues);
+
+    await caller.createDocument({
+      ...documentInput,
+      content,
+      fieldValues,
+      templateId: template.id,
+      templateRevision: template.revision,
+    });
+
+    expect(content).toEqual({
+      ...rich,
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "أحمد", marks: [{ type: "bold" }] }],
+        },
+        rich.content[1],
+      ],
+    });
+    expect(mocks.createOfficialDocument).toHaveBeenCalledWith(
+      ownerId,
+      expect.objectContaining({
+        content,
+        fieldValues,
+        templateFieldsSnapshot: fields,
+      })
+    );
+  });
+
+  it("rejects malformed legacy and unknown root content before writing", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+    for (const content of [
+      { type: "legacy-html", html: 42 },
+      { type: "legacy-text", text: null },
+      { type: "unknown", text: "preserve" },
+      { type: "doc", content: [{ type: "text" }] },
+      { type: "doc", content: [{ type: "paragraph", content: [null] }] },
+    ]) {
+      await expect(
+        caller.createDocument({ ...documentInput, content })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
   it("snapshots template revision on document creation", async () => {
