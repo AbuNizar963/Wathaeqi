@@ -44,13 +44,12 @@ export default function PlatformDocumentSettingsPage() {
   const organizationsQuery = trpc.organizations.all.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
   const [selectedOrganizationId, setSelectedOrganizationId] = useState("");
-  const organizationSettingsQuery = trpc.organizations.settings.get.useQuery(
-    { organizationId: selectedOrganizationId || "00000000-0000-0000-0000-000000000000" },
+  const organizationLogoQuery = trpc.organizations.logo.useQuery(
+    { id: selectedOrganizationId || "00000000-0000-0000-0000-000000000000" },
     { enabled: Boolean(selectedOrganizationId) }
   );
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  const [isSavingLogo, setIsSavingLogo] = useState(false);
   const [values, setValues] = useState<SettingsForm>({
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
@@ -75,10 +74,8 @@ export default function PlatformDocumentSettingsPage() {
   ]);
 
   useEffect(() => {
-    if (organizationSettingsQuery.data) {
-      setLogoUrl(organizationSettingsQuery.data.logoUrl ?? "");
-    }
-  }, [organizationSettingsQuery.data]);
+    setLogoUrl(organizationLogoQuery.data?.dataUrl ?? "");
+  }, [organizationLogoQuery.data?.dataUrl]);
 
   const saveMutation = ownerTrpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
@@ -94,54 +91,20 @@ export default function PlatformDocumentSettingsPage() {
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
 
-  const organizationSettingsUtils = trpc.useUtils();
-  const saveOrganizationSettings = trpc.organizations.settings.update.useMutation();
-
-  const saveOrganizationLogo = async () => {
-    const current = organizationSettingsQuery.data;
-    if (!current || !selectedOrganizationId) return;
-    setIsSavingLogo(true);
-    try {
-      await saveOrganizationSettings.mutateAsync({
-        organizationId: selectedOrganizationId,
-        departmentName: current.departmentName,
-        unitName: current.unitName,
-        unitChiefRank: current.unitChiefRank,
-        unitChiefName: current.unitChiefName,
-        serialPrefix: current.serialPrefix,
-        incomingSerialPrefix: current.incomingSerialPrefix,
-        serialStart: current.serialStart,
-        incomingSerialStart: current.incomingSerialStart,
-        timezone: current.timezone,
-        dateFormat: current.dateFormat,
-        timeFormat: current.timeFormat,
-        numberSystem: current.numberSystem,
-        logoUrl: logoUrl.trim() || null,
-      });
-      await organizationSettingsUtils.organizations.settings.get.invalidate({
-        organizationId: selectedOrganizationId,
-      });
-      toast.success("تم حفظ شعار الجهة لإظهاره في ترويسة الوثائق");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر حفظ شعار الجهة");
-    } finally {
-      setIsSavingLogo(false);
-    }
-  };
-
   const handleLogoFile = async (file: File | undefined) => {
     if (!file || !selectedOrganizationId) return;
     setIsUploadingLogo(true);
     try {
       const prepared = await prepareOrganizationLogoUpload(file);
-      const uploaded = await uploadOrganizationLogoDirect({
+      await uploadOrganizationLogoDirect({
         organizationId: selectedOrganizationId,
         fileName: file.name,
         blob: prepared.blob,
         contentType: prepared.contentType,
       });
-      setLogoUrl(uploaded.url);
-      toast.success("تم رفع الشعار؛ احفظه لاعتماده في ترويسة الوثائق");
+      const refreshedLogo = await organizationLogoQuery.refetch();
+      setLogoUrl(refreshedLogo.data?.dataUrl ?? "");
+      toast.success("تم حفظ شعار الجهة في مساحة التخزين وربطه بترويسة الوثائق");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر رفع الشعار");
     } finally {
@@ -234,11 +197,11 @@ export default function PlatformDocumentSettingsPage() {
                       ))}
                     </select>
                   </label>
-                  {organizationSettingsQuery.isLoading ? (
-                    <p className="text-sm text-muted-foreground">جارٍ تحميل هوية الجهة...</p>
-                  ) : organizationSettingsQuery.isError ? (
+                  {organizationLogoQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">جارٍ تحميل شعار الجهة...</p>
+                  ) : organizationLogoQuery.isError ? (
                     <p className="text-sm text-destructive">
-                      {organizationSettingsQuery.error.message}
+                      {organizationLogoQuery.error.message}
                     </p>
                   ) : (
                     <div className="flex flex-wrap items-center gap-4">
@@ -264,7 +227,7 @@ export default function PlatformDocumentSettingsPage() {
                             type="file"
                             accept="image/png,image/jpeg"
                             className="sr-only"
-                            disabled={isUploadingLogo || isSavingLogo}
+                            disabled={isUploadingLogo}
                             onChange={event => {
                               void handleLogoFile(event.target.files?.[0]);
                               event.currentTarget.value = "";
@@ -274,19 +237,9 @@ export default function PlatformDocumentSettingsPage() {
                         <p className="text-xs text-muted-foreground">
                           PNG أو JPG، بحد أقصى 5 ميغابايت. احتفظ بخلفية شفافة عند الحاجة.
                         </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => void saveOrganizationLogo()}
-                          disabled={
-                            !organizationSettingsQuery.data ||
-                            isUploadingLogo ||
-                            isSavingLogo ||
-                            logoUrl === (organizationSettingsQuery.data.logoUrl ?? "")
-                          }
-                        >
-                          {isSavingLogo ? "جارٍ حفظ الشعار..." : "حفظ شعار الجهة"}
-                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          يُحفظ الشعار مباشرة بعد اكتمال الرفع، ويُعاد تحميل النسخة المحفوظة للتحقق منها.
+                        </p>
                       </div>
                     </div>
                   )}
