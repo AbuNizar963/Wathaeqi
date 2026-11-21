@@ -19,9 +19,7 @@ describe("rich document editing safety", () => {
     });
   });
 
-  it(
-    "supports formatted text, headings, tables, and safe embedded images",
-    () => {
+  it("supports rich formatting, tables, and images", () => {
     const document = {
       type: "doc",
       content: [
@@ -93,9 +91,7 @@ describe("rich document editing safety", () => {
     }
   });
 
-  it(
-    "does not rewrite legacy HTML and extracts its text only for display",
-    () => {
+  it("preserves legacy HTML as read-only text", () => {
     const legacyHtml = {
       type: "legacy-html",
       html: "<p><strong>محتوى</strong></p>",
