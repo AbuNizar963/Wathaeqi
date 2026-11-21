@@ -886,28 +886,6 @@ export default function DocumentStudioPage() {
               </div>
 
               <div
-                className="grid grid-cols-2 gap-2 md:hidden document-studio-no-print"
-                role="group"
-                aria-label="التبديل بين إدخال البيانات ومعاينة الوثيقة"
-              >
-                <Button
-                  type="button"
-                  variant={previewMode ? "outline" : "default"}
-                  aria-pressed={!previewMode}
-                  onClick={() => setPreviewMode(false)}
-                >
-                  إدخال البيانات
-                </Button>
-                <Button
-                  type="button"
-                  variant={previewMode ? "default" : "outline"}
-                  aria-pressed={previewMode}
-                  onClick={() => setPreviewMode(true)}
-                >
-                  معاينة A4
-                </Button>
-              </div>
-              <div
                 className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
               >
                 <div className="space-y-1">
@@ -1178,6 +1156,28 @@ export default function DocumentStudioPage() {
               </div>
 
               <div
+                className="grid grid-cols-2 gap-2 md:hidden document-studio-no-print"
+                role="group"
+                aria-label="التبديل بين إدخال البيانات ومعاينة الوثيقة"
+              >
+                <Button
+                  type="button"
+                  variant={previewMode ? "outline" : "default"}
+                  aria-pressed={!previewMode}
+                  onClick={() => setPreviewMode(false)}
+                >
+                  إدخال البيانات
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewMode ? "default" : "outline"}
+                  aria-pressed={previewMode}
+                  onClick={() => setPreviewMode(true)}
+                >
+                  معاينة A4
+                </Button>
+              </div>
+              <div
                 className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
               >
                 <div className="space-y-1">
@@ -1338,78 +1338,78 @@ export default function DocumentStudioPage() {
               ) : null}
 
               <div className={previewMode ? "" : "hidden md:block"}>
-              {selectedDocument?.file ? (
-                <section className="space-y-3 rounded-lg border p-3">
-                  <div>
-                    <h3 className="font-semibold">الملف المستورد</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {selectedDocument.file.fileName} · الأصل محفوظ دون تغيير
-                    </p>
-                  </div>
-                  {importedFileUrlQuery.isLoading ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      جارٍ تجهيز معاينة الملف...
-                    </p>
-                  ) : importedFileUrlQuery.data?.url ? (
-                    <FilePreview
-                      url={importedFileUrlQuery.data.url}
-                      fileName={selectedDocument.file.fileName}
-                      mimeType={selectedDocument.file.mimeType}
-                    />
-                  ) : (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      تعذر تجهيز معاينة الملف. أعد فتح الوثيقة.
-                    </p>
-                  )}
-                </section>
-              ) : (
-                <ResponsiveA4Preview
-                  pageRef={documentPageRef}
-                  settings={platformDocumentSettings.data}
-                >
-                  <DocumentWatermark
-                    logoUrl={logoUrl}
-                    watermarkText={
-                      platformDocumentSettings.data?.watermarkText ?? "وثائقي"
-                    }
-                    opacityPercent={
-                      platformDocumentSettings.data?.watermarkOpacityPercent ??
-                      12
-                    }
-                    showMinistryText={
-                      platformDocumentSettings.data
-                        ?.showMinistryWatermarkText ?? true
-                    }
-                  />
-                  <DocumentLetterhead
-                    organizationName={organizationName}
-                    unitName={settings?.unitName ?? ""}
-                    chiefRank={settings?.unitChiefRank ?? ""}
-                    chiefName={settings?.unitChiefName ?? ""}
-                    logoUrl={logoUrl}
-                    dividerColor={dividerColor}
-                    headerSettings={platformDocumentSettings.data}
-                    serial={selectedDocument?.serialCode || "يخصص عند الإصدار"}
-                    date={formatArabicDate(makeDocumentDate(documentDate))}
-                  />
-                  <div className="pt-6">
-                    {documentSubject ? (
-                      <p className="mb-4 text-right font-semibold">
-                        الموضوع: {documentSubject}
+                {selectedDocument?.file ? (
+                  <section className="space-y-3 rounded-lg border p-3">
+                    <div>
+                      <h3 className="font-semibold">الملف المستورد</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {selectedDocument.file.fileName} · الأصل محفوظ دون تغيير
                       </p>
-                    ) : null}
-                    <DocumentEditor
-                      content={documentContent}
-                      onChange={handleDocumentContentChange}
-                      editable={canEditDocument && !previewMode}
-                      containerClassName="rounded-none border-0 shadow-none"
+                    </div>
+                    {importedFileUrlQuery.isLoading ? (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        جارٍ تجهيز معاينة الملف...
+                      </p>
+                    ) : importedFileUrlQuery.data?.url ? (
+                      <FilePreview
+                        url={importedFileUrlQuery.data.url}
+                        fileName={selectedDocument.file.fileName}
+                        mimeType={selectedDocument.file.mimeType}
+                      />
+                    ) : (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        تعذر تجهيز معاينة الملف. أعد فتح الوثيقة.
+                      </p>
+                    )}
+                  </section>
+                ) : (
+                  <ResponsiveA4Preview
+                    pageRef={documentPageRef}
+                    settings={platformDocumentSettings.data}
+                  >
+                    <DocumentWatermark
+                      logoUrl={logoUrl}
+                      watermarkText={
+                        platformDocumentSettings.data?.watermarkText ?? "وثائقي"
+                      }
+                      opacityPercent={
+                        platformDocumentSettings.data?.watermarkOpacityPercent ??
+                        12
+                      }
+                      showMinistryText={
+                        platformDocumentSettings.data
+                          ?.showMinistryWatermarkText ?? true
+                      }
                     />
-                  </div>
-                  <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
-                    وثائقي
-                  </footer>
-                </ResponsiveA4Preview>
-              )}
+                    <DocumentLetterhead
+                      organizationName={organizationName}
+                      unitName={settings?.unitName ?? ""}
+                      chiefRank={settings?.unitChiefRank ?? ""}
+                      chiefName={settings?.unitChiefName ?? ""}
+                      logoUrl={logoUrl}
+                      dividerColor={dividerColor}
+                      headerSettings={platformDocumentSettings.data}
+                      serial={selectedDocument?.serialCode || "يخصص عند الإصدار"}
+                      date={formatArabicDate(makeDocumentDate(documentDate))}
+                    />
+                    <div className="pt-6">
+                      {documentSubject ? (
+                        <p className="mb-4 text-right font-semibold">
+                          الموضوع: {documentSubject}
+                        </p>
+                      ) : null}
+                      <DocumentEditor
+                        content={documentContent}
+                        onChange={handleDocumentContentChange}
+                        editable={canEditDocument && !previewMode}
+                        containerClassName="rounded-none border-0 shadow-none"
+                      />
+                    </div>
+                    <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
+                      وثائقي
+                    </footer>
+                  </ResponsiveA4Preview>
+                )}
               </div>
               {previewMode && selectedDocument ? (
                 <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
