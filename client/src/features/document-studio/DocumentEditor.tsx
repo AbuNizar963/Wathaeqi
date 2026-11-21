@@ -46,12 +46,11 @@ function collectText(value: unknown): string {
           ? (child as Record<string, unknown>).type
           : undefined;
       return ["paragraph", "heading", "listItem"].includes(String(childType))
-        ? \`function () { [native code] }\n\`
+        ? `${text}\n`
         : text;
     })
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\n+$/g, "");
-    .replace(/\\n+$/g, "");
 }
 
 export default function DocumentEditor({
