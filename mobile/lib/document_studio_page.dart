@@ -1963,11 +1963,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ),
         LayoutBuilder(
           builder: (context, constraints) {
+            const pageWidth = 794.0;
             final pageHeight =
-                constraints.maxWidth *
-                DocumentPaper.a4Height /
-                DocumentPaper.a4Width;
-            return DocumentPaper(
+                pageWidth * DocumentPaper.a4Height / DocumentPaper.a4Width;
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: pageWidth,
+                child: DocumentPaper(
               showWatermarkText:
                   _platformDocumentSettings['showMinistryWatermarkText'] !=
                   false,
@@ -2100,6 +2104,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     ),
                   ),
                 ],
+                ),
               ),
             );
           },
