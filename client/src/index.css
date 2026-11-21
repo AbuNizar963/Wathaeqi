@@ -545,6 +545,29 @@
   overflow-x: hidden;
 }
 
+/* The A4 preview keeps its native layout width and scales as one sheet on
+   narrow screens; printing restores the physical, unscaled page. */
+.document-a4-preview-viewport {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #eef1f5;
+}
+
+@media print {
+  .document-a4-preview-viewport {
+    height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+  }
+
+  .document-a4-preview-page {
+    position: absolute !important;
+    left: 0 !important;
+    transform: none !important;
+  }
+}
+
 .document-a4-page {
   box-sizing: border-box;
   position: relative;
