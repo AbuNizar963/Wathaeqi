@@ -268,7 +268,11 @@ export default function PlatformDocumentSettings() {
               </Button>
               <Button
                 type="button"
-                disabled={!settings.data || update.isPending}
+                disabled={
+                  !settings.data ||
+                  update.isPending ||
+                  !values.watermarkText.trim()
+                }
                 onClick={() => update.mutate(values)}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
