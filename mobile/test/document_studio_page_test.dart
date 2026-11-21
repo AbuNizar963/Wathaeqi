@@ -170,7 +170,7 @@ void main() {
     expect(find.text('تحرير الوثيقة'), findsOneWidget);
   });
 
-  testWidgets('document studio opens with its three work areas', (
+  testWidgets('document studio opens with documents and archive areas', (
     tester,
   ) async {
     final api = _DocumentStudioTestApi(includeOrganization: false);
@@ -195,24 +195,18 @@ void main() {
     await tester.tap(find.text('إنشاء وثيقة'));
     await tester.pumpAndSettle();
 
-    expect(find.text('إنشاء والكتابة في وثيقة'), findsOneWidget);
-    expect(find.text('استيراد PDF أو Word أو صورة'), findsOneWidget);
-    expect(find.text('اختيار نموذج جاهز'), findsOneWidget);
+    expect(find.text('وثيقة جديدة'), findsOneWidget);
+    expect(find.text('رفع ملف'), findsOneWidget);
+    expect(find.text('اختيار نموذج جاهز'), findsNothing);
 
     await tester.tap(find.text('إلغاء'));
     await tester.pumpAndSettle();
     expect(find.text('الوثائق'), findsOneWidget);
-    expect(find.text('القوالب'), findsOneWidget);
+    expect(find.text('القوالب'), findsNothing);
     expect(find.text('الأرشيف'), findsOneWidget);
     expect(api.calls.containsKey('documentStudio.listDocuments'), isTrue);
     expect(api.calls.containsKey('documentStudio.listTemplates'), isTrue);
     expect(api.calls['documentStudio.getLetterheadSettings'], isEmpty);
-
-    await tester.tap(find.text('القوالب'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('مكتبة النماذج'), findsOneWidget);
-    expect(find.text('نموذج جديد'), findsOneWidget);
 
     await tester.tap(find.text('الأرشيف'));
     await tester.pumpAndSettle();
