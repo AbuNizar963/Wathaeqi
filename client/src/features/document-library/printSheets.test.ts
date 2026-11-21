@@ -30,6 +30,19 @@ describe("document print sheet layout", () => {
     expect(groupPages(pages, 8)).toHaveLength(1);
   });
 
+  it("uses landscape A4 for two A5 pages side by side", () => {
+    const html = buildPrintHtml([page(1), page(2)], {
+      ...baseOptions,
+      pagesPerSheet: 2,
+    });
+    expect(html).toContain("@page { size: A4 landscape; margin: 0; }");
+    expect(html).toContain("width: 297mm;");
+    expect(html).toContain("height: 210mm;");
+    expect(html).toContain(
+      ".per-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }"
+    );
+  });
+
   it("duplicates each source page for compact copy printing", () => {
     expect(duplicatePages([page(1)], 2)).toEqual([page(1), page(1)]);
     expect(duplicatePages([page(1)], 4)).toEqual([
@@ -54,6 +67,7 @@ describe("document print sheet layout", () => {
       footerText: "نسخة أرشيفية",
     });
     expect(html).toContain("grid per-4");
+    expect(html).toContain("@page { size: A4 portrait; margin: 0; }");
     expect(html).toContain(
       ".per-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }"
     );

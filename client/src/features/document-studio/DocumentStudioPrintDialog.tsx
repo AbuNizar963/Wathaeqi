@@ -204,7 +204,7 @@ export default function DocumentStudioPrintDialog({
         <DialogHeader>
           <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4.
+            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4. وضع صفحتين يطبع أفقيًا جنبًا إلى جنب.
           </DialogDescription>
         </DialogHeader>
         <fieldset className="rounded-lg border bg-muted/30 p-3">

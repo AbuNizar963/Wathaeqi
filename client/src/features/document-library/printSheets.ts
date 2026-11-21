@@ -34,6 +34,10 @@ export function buildPrintHtml(
 ): string {
   const sheets = groupPages(pages, options.pagesPerSheet);
   const margin = Math.min(20, Math.max(0, options.marginMm));
+  const isTwoUpLandscape = options.pagesPerSheet === 2;
+  const sheetOrientation = isTwoUpLandscape ? "landscape" : "portrait";
+  const sheetWidthMm = isTwoUpLandscape ? 297 : 210;
+  const sheetHeightMm = isTwoUpLandscape ? 210 : 297;
   const header = options.headerText.trim();
   const footer = options.footerText.trim();
   const sheetMarkup = sheets
@@ -64,13 +68,13 @@ export function buildPrintHtml(
 <meta charset="utf-8" />
 <title>طباعة الوثيقة</title>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 ${sheetOrientation}; margin: 0; }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
   body { font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif; color: #0f172a; }
   .sheet {
-    width: 210mm;
-    height: 297mm;
+    width: ${sheetWidthMm}mm;
+    height: ${sheetHeightMm}mm;
     padding: ${margin}mm;
     display: flex;
     flex-direction: column;
