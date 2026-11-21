@@ -8,6 +8,8 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
@@ -555,8 +557,29 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     if (file.mimeType == DocumentFileSupport.docxMime) {
       throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
     }
+    if (file.mimeType.startsWith('image/')) {
+      final imageBytes = await widget.api.fetchDocumentFileBytes(
+        documentId: document.id,
+        mimeType: file.mimeType,
+      );
+      if (!DocumentFileSupport.matchesMime(file.mimeType, imageBytes)) {
+        throw StateError('تعذر التحقق من صيغة الصورة التي أعادها الخادم');
+      }
+      final image = pw.MemoryImage(imageBytes);
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(12),
+          build: (_) => pw.Center(
+            child: pw.Image(image, fit: pw.BoxFit.contain),
+          ),
+        ),
+      );
+      return Uint8List.fromList(await pdf.save());
+    }
     if (file.mimeType != DocumentFileSupport.pdfMime) {
-      throw StateError('إخراج PDF متاح للوثائق المنشأة وملفات PDF فقط');
+      throw StateError('صيغة الملف غير مدعومة لإخراج PDF');
     }
     final bytes = await widget.api.fetchDocumentFileBytes(
       documentId: document.id,
