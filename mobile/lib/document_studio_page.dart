@@ -1639,7 +1639,16 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
         const SizedBox(height: 10),
         if (isNativeDocument)
-          _buildA4Editor(controller: _documentEditor, editable: false)
+          InteractiveViewer(
+            minScale: 0.75,
+            maxScale: 2.5,
+            constrained: true,
+            boundaryMargin: const EdgeInsets.all(48),
+            child: _buildA4Editor(
+              controller: _documentEditor,
+              editable: false,
+            ),
+          )
         else if (isWord)
           _buildUnsupportedDocumentPreview(
             document,
