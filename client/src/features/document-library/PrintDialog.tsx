@@ -118,7 +118,7 @@ export default function PrintDialog({
         <DialogFooter className="gap-2 sm:justify-start">
           <Button
             onClick={() => void handlePrint()}
-            disabled={loading || (kind !== "pdf" && kind !== "word")}
+            disabled={loading || (kind !== "pdf" && kind !== "word" && kind !== "image")}
             className="gap-2"
           >
             {loading ? (
@@ -126,7 +126,7 @@ export default function PrintDialog({
             ) : (
               <Printer className="size-4" />
             )}
-            طباعة من الملف الأصلي
+            {kind === "image" ? "طباعة الصورة" : "طباعة من الملف الأصلي"}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             إغلاق
