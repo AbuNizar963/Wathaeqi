@@ -746,8 +746,7 @@ class _PlatformDocumentSettingsPageState
                               ? null
                               : (v) {
                                   if (v != null) {
-                                    setState(() => _headerDividerStyle = v);
-                                  }
+                                    setState(() => _frameStyle = v);
                                   }
                                 },
                         ),
@@ -759,7 +758,135 @@ class _PlatformDocumentSettingsPageState
                           ),
                           controller: TextEditingController(text: _frameColor),
                           onChanged: (v) {
-                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) {
+                            if (RegExp(r'^#[0-9a-fA-F]{6}
+                          },
+                        ),
+                        _settingsSlider(
+                          'سماكة الإطار',
+                          _frameWidthPt,
+                          .5,
+                          4,
+                          ' نقطة',
+                          (v) => setState(() => _frameWidthPt = v),
+                        ),
+                        DropdownButtonFormField<String>(
+                          initialValue: _headerDividerStyle,
+                          decoration: const InputDecoration(
+                            labelText: 'نمط الفاصل بين الرأس والمحتوى',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'solid',
+                              child: Text('متصل'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'double',
+                              child: Text('مزدوج'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'dashed',
+                              child: Text('متقطع'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'dotted',
+                              child: Text('منقط'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'tricolor-stars',
+                              child: Text('أسود وأخضر مع ثلاث نجوم'),
+                            ),
+                          ],
+                          onChanged: _saving
+                              ? null
+                              : (v) {
+                                  if (v != null) {
+                                    setState(() => _headerDividerStyle = v);
+                                  }
+                                },
+                        ),
+                        _settingsSlider(
+                          'سماكة الفاصل',
+                          _headerDividerWidthPt,
+                          .5,
+                          6,
+                          ' نقطة',
+                          (v) => setState(() => _headerDividerWidthPt = v),
+                        ),
+                        for (final item
+                            in <
+                              ({
+                                String label,
+                                double value,
+                                void Function(double) onChanged,
+                              })
+                            >[
+                              (
+                                label: 'الهامش العلوي',
+                                value: _marginTopMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginTopMm = v),
+                              ),
+                              (
+                                label: 'الهامش الأيمن',
+                                value: _marginRightMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginRightMm = v),
+                              ),
+                              (
+                                label: 'الهامش السفلي',
+                                value: _marginBottomMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginBottomMm = v),
+                              ),
+                              (
+                                label: 'الهامش الأيسر',
+                                value: _marginLeftMm,
+                                onChanged: (v) =>
+                                    setState(() => _marginLeftMm = v),
+                              ),
+                            ])
+                          _settingsSlider(
+                            item.label,
+                            item.value,
+                            0,
+                            35,
+                            ' مم',
+                            item.onChanged,
+                          ),
+                        const SizedBox(height: 8),
+                        SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'إظهار QR للتحقق في وثائق جميع الجهات',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: const Text(
+                            'إخفاء الرمز المطبوع لا يعطّل رابط التحقق أو صلاحية التحقق من البرقية.',
+                          ),
+                          value: _showVerificationQr,
+                          onChanged: _saving
+                              ? null
+                              : (value) =>
+                                    setState(() => _showVerificationQr = value),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: _saving ? null : _save,
+                          icon: const Icon(Icons.save_outlined),
+                          label: Text(
+                            _saving ? 'جارٍ الحفظ...' : 'حفظ إعدادات النظام',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    ),
+  );
+}
+).hasMatch(v)) {
                               setState(() => _frameColor = v.toLowerCase());
                             }
                           },
