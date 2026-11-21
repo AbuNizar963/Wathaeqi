@@ -67,3 +67,17 @@ export function buildDocumentWatermarkCss(opacity: number): string {
     }
   `;
 }
+
+/** Returns how many vertically stacked A4 sheets are needed for a measured preview. */
+export function getA4PreviewPageCount(width: number, contentHeight: number): number {
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(contentHeight) ||
+    width <= 0 ||
+    contentHeight <= 0
+  ) {
+    return 1;
+  }
+  const pageHeight = (width * 297) / 210;
+  return Math.max(1, Math.ceil(Math.max(0, contentHeight - 1) / pageHeight));
+}
