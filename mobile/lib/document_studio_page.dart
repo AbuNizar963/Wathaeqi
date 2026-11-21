@@ -531,11 +531,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
         'headerShowLogo': _platformDocumentSettings['headerShowLogo'] != false,
         'headerLogoSize': _platformDocumentSettings['headerLogoSize'] ?? 120,
-        'headerTopPaddingMm': _platformDocumentSettings['headerTopPaddingMm'] ?? 0,
+        'headerTopPaddingMm':
+            _platformDocumentSettings['headerTopPaddingMm'] ?? 0,
         'headerHorizontalPaddingMm':
             _platformDocumentSettings['headerHorizontalPaddingMm'] ?? 0,
-        'headerBottomPaddingMm': _platformDocumentSettings['headerBottomPaddingMm'] ?? 6,
-        'headerAlignment': _platformDocumentSettings['headerAlignment'] ?? 'spread',
+        'headerBottomPaddingMm':
+            _platformDocumentSettings['headerBottomPaddingMm'] ?? 6,
+        'headerAlignment':
+            _platformDocumentSettings['headerAlignment'] ?? 'spread',
       };
       return DocumentStudioPdf.build(
         content: document.content,
@@ -2122,7 +2125,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                     headerSubtitle,
                                     maxLines: 1,
                                     softWrap: false,
-                                    textAlign: blockAlignment ?? TextAlign.right,
+                                    textAlign:
+                                        blockAlignment ?? TextAlign.right,
                                     style: const TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold,
@@ -2136,16 +2140,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                         ),
                         SizedBox(
                           width: logoSize,
-                          child: showLogo &&
-                                  (_letterhead['logoUrl']?.toString().isNotEmpty ??
+                          child:
+                              showLogo &&
+                                  (_letterhead['logoUrl']
+                                          ?.toString()
+                                          .isNotEmpty ??
                                       false)
                               ? Image.network(
                                   _letterhead['logoUrl'].toString(),
                                   width: logoSize,
                                   height: logoSize,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, _, _) =>
-                                      SizedBox(width: logoSize, height: logoSize),
+                                  errorBuilder: (_, _, _) => SizedBox(
+                                    width: logoSize,
+                                    height: logoSize,
+                                  ),
                                 )
                               : SizedBox(width: logoSize, height: logoSize),
                         ),
