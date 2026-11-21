@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { isLegacyStarterDraft } from "../../../../shared/documentStudio";
 import type {
   DocumentTemplate,
   DocumentTemplateField,
@@ -219,10 +220,14 @@ export default function DocumentStudioPage() {
   const platformDocumentSettings = trpc.platformDocumentSettings.get.useQuery();
 
   const documents = documentsQuery.data ?? [];
+  const userDocuments = useMemo(
+    () => documents.filter(document => !isLegacyStarterDraft(document)),
+    [documents]
+  );
   const templates = templatesQuery.data ?? [];
   const selectedDocument = useMemo(
-    () => documents.find(item => item.id === selectedDocumentId) ?? null,
-    [documents, selectedDocumentId]
+    () => userDocuments.find(item => item.id === selectedDocumentId) ?? null,
+    [userDocuments, selectedDocumentId]
   );
   const selectedTemplate = useMemo(
     () => templates.find(item => item.id === selectedTemplateId) ?? null,
@@ -253,8 +258,8 @@ export default function DocumentStudioPage() {
   const visibleDocuments = useMemo(() => {
     const source =
       activeTab === "archive"
-        ? documents.filter(item => item.status === "archived")
-        : documents.filter(item => item.status !== "archived");
+        ? userDocuments.filter(item => item.status === "archived")
+        : userDocuments.filter(item => item.status !== "archived");
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
     return source.filter(item =>
@@ -263,7 +268,7 @@ export default function DocumentStudioPage() {
         .toLocaleLowerCase()
         .includes(normalizedSearch)
     );
-  }, [activeTab, documents, search]);
+  }, [activeTab, userDocuments, search]);
 
   const visibleTemplates = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -569,6 +574,7 @@ export default function DocumentStudioPage() {
   const canEditDocument =
     activeTab !== "archive" &&
     (!selectedDocument || selectedDocument.status === "draft");
+  const isNewDocumentWorkspace = isCreatingDocument && !selectedDocument;
   const canIssueDocuments =
     Boolean(letterheadSettings.data) &&
     (organizationContext.data?.isOwner === true ||
@@ -651,14 +657,24 @@ export default function DocumentStudioPage() {
                   </Button>
                 </>
               ) : null}
-              <Button
-                onClick={() => setCreationDialogOpen(true)}
-                aria-haspopup="dialog"
-                aria-expanded={creationDialogOpen}
-              >
-                <FilePlus2 className="ml-2 h-4 w-4" />
-                إنشاء وثيقة
-              </Button>
+              {isNewDocumentWorkspace ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreatingDocument(false)}
+                >
+                  <FolderOpen className="ml-2 h-4 w-4" />
+                  العودة إلى الوثائق
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setCreationDialogOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={creationDialogOpen}
+                >
+                  <FilePlus2 className="ml-2 h-4 w-4" />
+                  إنشاء وثيقة
+                </Button>
+              )}
             </>
           ) : (
             <Button onClick={startNewTemplate}>
@@ -671,125 +687,130 @@ export default function DocumentStudioPage() {
 
       <div
         className={`grid grid-cols-1 gap-4 ${
-          previewMode ? "xl:grid-cols-1" : "xl:grid-cols-[300px_minmax(0,1fr)]"
+          previewMode || isNewDocumentWorkspace
+            ? "xl:grid-cols-1"
+            : "xl:grid-cols-[300px_minmax(0,1fr)]"
         }`}
       >
-        <aside
-          className={`document-studio-no-print space-y-3 ${previewMode ? "hidden" : ""}`}
-        >
-          <Card className="p-3">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={event => setSearch(event.target.value)}
-                placeholder="ابحث..."
-                className="pr-9"
-              />
-            </div>
-          </Card>
-
-          {activeTab === "templates" ? (
-            <Card className="space-y-2 p-3">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold">مكتبة النماذج</h2>
-                <Badge variant="secondary">{visibleTemplates.length}</Badge>
+        {!isNewDocumentWorkspace ? (
+          <aside
+            className={`document-studio-no-print space-y-3 ${previewMode ? "hidden" : ""}`}
+          >
+            <Card className="p-3">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  placeholder="ابحث..."
+                  className="pr-9"
+                />
               </div>
-              {templatesQuery.isLoading ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  جارٍ تحميل النماذج...
-                </p>
-              ) : visibleTemplates.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  لا توجد نماذج بعد. أنشئ أول نموذج معتمد.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {visibleTemplates.map(template => (
-                    <div
-                      key={template.id}
-                      className={`rounded-lg border p-3 transition-colors ${editingTemplateId === template.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
-                    >
-                      <button
-                        type="button"
-                        className="w-full text-right"
-                        onClick={() => selectTemplate(template)}
+            </Card>
+  
+            {activeTab === "templates" ? (
+              <Card className="space-y-2 p-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold">مكتبة النماذج</h2>
+                  <Badge variant="secondary">{visibleTemplates.length}</Badge>
+                </div>
+                {templatesQuery.isLoading ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    جارٍ تحميل النماذج...
+                  </p>
+                ) : visibleTemplates.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    لا توجد نماذج بعد. أنشئ أول نموذج معتمد.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {visibleTemplates.map(template => (
+                      <div
+                        key={template.id}
+                        className={`rounded-lg border p-3 transition-colors ${editingTemplateId === template.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
                       >
-                        <span className="block font-medium">
-                          {template.title}
+                        <button
+                          type="button"
+                          className="w-full text-right"
+                          onClick={() => selectTemplate(template)}
+                        >
+                          <span className="block font-medium">
+                            {template.title}
+                          </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {template.category} · إصدار {template.revision}
+                          </span>
+                        </button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 w-full"
+                          onClick={() => useTemplate(template)}
+                        >
+                          استخدام النموذج
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ) : (
+              <Card className="space-y-2 p-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold">
+                    {activeTab === "archive"
+                      ? "الوثائق المؤرشفة"
+                      : "قائمة الوثائق"}
+                  </h2>
+                  <Badge variant="secondary">{visibleDocuments.length}</Badge>
+                </div>
+                {documentsQuery.isLoading ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    جارٍ تحميل الوثائق...
+                  </p>
+                ) : visibleDocuments.length === 0 ? (
+                  <div className="py-6 text-center">
+                    <FolderOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      لا توجد وثائق في هذه القائمة
+                    </p>
+                  </div>
+                ) : (
+                  <div className="max-h-[70vh] space-y-2 overflow-y-auto">
+                    {visibleDocuments.map(document => (
+                      <button
+                        key={document.id}
+                        type="button"
+                        onClick={() => {
+                          setIsCreatingDocument(false);
+                          setSelectedDocumentId(document.id);
+                          setPreviewMode(true);
+                        }}
+                        className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
+                      >
+                        <span className="block truncate font-medium">
+                          {document.title}
                         </span>
-                        <span className="mt-1 block text-xs text-muted-foreground">
-                          {template.category} · إصدار {template.revision}
+                        <span className="mt-1 block truncate text-xs text-muted-foreground">
+                          {document.subject || document.category}
+                        </span>
+                        <span className="mt-2 flex items-center justify-between gap-2">
+                          <Badge variant="outline">
+                            {statusLabel(document.status)}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatArabicDate(document.updatedAt)}
+                          </span>
                         </span>
                       </button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 w-full"
-                        onClick={() => useTemplate(template)}
-                      >
-                        استخدام النموذج
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          ) : (
-            <Card className="space-y-2 p-3">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold">
-                  {activeTab === "archive"
-                    ? "الوثائق المؤرشفة"
-                    : "قائمة الوثائق"}
-                </h2>
-                <Badge variant="secondary">{visibleDocuments.length}</Badge>
-              </div>
-              {documentsQuery.isLoading ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  جارٍ تحميل الوثائق...
-                </p>
-              ) : visibleDocuments.length === 0 ? (
-                <div className="py-6 text-center">
-                  <FolderOpen className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    لا توجد وثائق في هذه القائمة
-                  </p>
-                </div>
-              ) : (
-                <div className="max-h-[70vh] space-y-2 overflow-y-auto">
-                  {visibleDocuments.map(document => (
-                    <button
-                      key={document.id}
-                      type="button"
-                      onClick={() => {
-                        setIsCreatingDocument(false);
-                        setSelectedDocumentId(document.id);
-                        setPreviewMode(true);
-                      }}
-                      className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
-                    >
-                      <span className="block truncate font-medium">
-                        {document.title}
-                      </span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">
-                        {document.subject || document.category}
-                      </span>
-                      <span className="mt-2 flex items-center justify-between gap-2">
-                        <Badge variant="outline">
-                          {statusLabel(document.status)}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground">
-                          {formatArabicDate(document.updatedAt)}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-        </aside>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
+          </aside>
+        ) : null}
+
 
         <main className="min-w-0 space-y-3">
           {activeTab === "templates" ? (
