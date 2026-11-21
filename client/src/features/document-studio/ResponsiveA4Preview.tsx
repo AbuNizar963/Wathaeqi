@@ -33,9 +33,7 @@ export default function ResponsiveA4Preview({
     height: A4_PREVIEW_MIN_HEIGHT,
   });
   const [zoom, setZoom] = useState(1);
-  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(
-    null
-  );
+  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
 
   const clampZoom = (value: number) =>
     Math.min(2.5, Math.max(0.75, Math.round(value * 100) / 100));
