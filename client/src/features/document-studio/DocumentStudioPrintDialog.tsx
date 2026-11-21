@@ -73,9 +73,6 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
         .querySelectorAll<HTMLElement>(".batch-print-source")
         .forEach(source => {
           source.style.visibility = "visible";
-          source.style.position = "static";
-          source.style.left = "0";
-          source.style.top = "0";
           source.style.zIndex = "auto";
         });
       const clonedPage = clonedDocument.querySelector<HTMLElement>(
