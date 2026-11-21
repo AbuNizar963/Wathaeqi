@@ -57,6 +57,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   bool _previewMode = false;
   String? _loadError;
   bool _canIssueDocuments = false;
+  bool _isPlatformOwner = false;
   Map<String, dynamic> _letterhead = {};
   Map<String, dynamic> _platformDocumentSettings = {
     'showMinistryWatermarkText': true,
@@ -315,8 +316,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           _editingTemplateId = null;
           _creatingTemplate = false;
         }
+        _isPlatformOwner = context['isOwner'] == true;
         _canIssueDocuments =
-            context['isOwner'] == true ||
+            _isPlatformOwner ||
             const [
               'system_admin',
               'organization_admin',
@@ -1999,6 +2001,228 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Future<void> _editDocumentSettings() async {
+    if (!_isPlatformOwner) return;
+
+    final values = Map<String, dynamic>.from(_platformDocumentSettings);
+    final watermarkController = TextEditingController(
+      text: values['watermarkText']?.toString() ?? 'وزارة الداخلية',
+    );
+    final titleController = TextEditingController(
+      text: values['headerTitle']?.toString() ?? '',
+    );
+    final subtitleController = TextEditingController(
+      text: values['headerSubtitle']?.toString() ?? '',
+    );
+    final rankController = TextEditingController(
+      text: values['headerChiefRank']?.toString() ?? '',
+    );
+    final nameController = TextEditingController(
+      text: values['headerChiefName']?.toString() ?? '',
+    );
+    var showWatermark = values['showMinistryWatermarkText'] != false;
+    var showLogo = values['headerShowLogo'] != false;
+    var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
+    var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
+    var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
+    var horizontalPadding =
+        (values['headerHorizontalPaddingMm'] as num? ?? 0).toDouble();
+    var bottomPadding =
+        (values['headerBottomPaddingMm'] as num? ?? 6).toDouble();
+    var alignment = values['headerAlignment']?.toString() ?? 'spread';
+
+    try {
+      final updated = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('إعدادات الوثيقة الرسمية'),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('العلامة الأمنية', style: TextStyle(fontWeight: FontWeight.bold)),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار العلامة الأمنية'),
+                      value: showWatermark,
+                      onChanged: (value) => setDialogState(() => showWatermark = value),
+                    ),
+                    TextField(
+                      controller: watermarkController,
+                      maxLength: 255,
+                      decoration: const InputDecoration(
+                        labelText: 'نص العلامة الأمنية',
+                        hintText: 'وزارة الداخلية',
+                      ),
+                    ),
+                    _documentSettingSlider(
+                      label: 'شفافية العلامة الأمنية',
+                      value: opacity,
+                      min: 0,
+                      max: 60,
+                      suffix: '%',
+                      onChanged: (value) => setDialogState(() => opacity = value),
+                    ),
+                    const Divider(height: 28),
+                    const Text('رأس الصفحة', style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'العنوان الرئيسي'),
+                    ),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(labelText: 'العنوان الفرعي / الوحدة'),
+                    ),
+                    TextField(
+                      controller: rankController,
+                      decoration: const InputDecoration(labelText: 'رتبة / صفة المسؤول'),
+                    ),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'اسم المسؤول'),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار شعار الجهة'),
+                      value: showLogo,
+                      onChanged: (value) => setDialogState(() => showLogo = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'حجم الشعار',
+                      value: logoSize,
+                      min: 32,
+                      max: 128,
+                      suffix: ' px',
+                      onChanged: (value) => setDialogState(() => logoSize = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش العلوي',
+                      value: topPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) => setDialogState(() => topPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش الأفقي',
+                      value: horizontalPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) => setDialogState(() => horizontalPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش السفلي',
+                      value: bottomPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) => setDialogState(() => bottomPadding = value),
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: alignment,
+                      decoration: const InputDecoration(labelText: 'محاذاة الرأس'),
+                      items: const [
+                        DropdownMenuItem(value: 'spread', child: Text('توزيع متوازن')),
+                        DropdownMenuItem(value: 'center', child: Text('توسيط')),
+                        DropdownMenuItem(value: 'right', child: Text('إلى اليمين')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setDialogState(() => alignment = value);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, {
+                  ...values,
+                  'showMinistryWatermarkText': showWatermark,
+                  'watermarkText': watermarkController.text.trim().isEmpty
+                      ? 'وزارة الداخلية'
+                      : watermarkController.text.trim(),
+                  'watermarkOpacityPercent': opacity.round(),
+                  'headerTitle': titleController.text.trim(),
+                  'headerSubtitle': subtitleController.text.trim(),
+                  'headerChiefRank': rankController.text.trim(),
+                  'headerChiefName': nameController.text.trim(),
+                  'headerShowLogo': showLogo,
+                  'headerLogoSize': logoSize.round(),
+                  'headerTopPaddingMm': topPadding.round(),
+                  'headerHorizontalPaddingMm': horizontalPadding.round(),
+                  'headerBottomPaddingMm': bottomPadding.round(),
+                  'headerAlignment': alignment,
+                }),
+                child: const Text('حفظ الإعدادات'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (updated == null || !mounted) return;
+      await widget.api.call(
+        'platformDocumentSettings.update',
+        input: updated,
+        mutation: true,
+      );
+      if (!mounted) return;
+      setState(() => _platformDocumentSettings = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم حفظ إعدادات الوثيقة')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('تعذر حفظ الإعدادات: $error')),
+      );
+    } finally {
+      watermarkController.dispose();
+      titleController.dispose();
+      subtitleController.dispose();
+      rankController.dispose();
+      nameController.dispose();
+    }
+  }
+
+  Widget _documentSettingSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required String suffix,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text('${value.round()}$suffix'),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: (max - min).round(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
   String _headerSetting(String key, String fallback) {
     final value = _platformDocumentSettings[key]?.toString().trim();
     return value == null || value.isEmpty ? fallback : value;
@@ -2332,6 +2556,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   );
                 },
               ),
+              if (_isPlatformOwner)
+                IconButton(
+                  tooltip: 'إعدادات الوثيقة',
+                  onPressed: _editDocumentSettings,
+                  icon: const Icon(Icons.tune),
+                ),
               IconButton(
                 tooltip: 'تحديث',
                 onPressed: _refresh,
