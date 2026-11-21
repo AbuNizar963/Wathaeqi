@@ -29,6 +29,8 @@ export default function ResponsiveA4Preview({
     const page = internalPageRef.current;
     if (!viewport || !page) return;
 
+    if (pageRef) pageRef.current = page;
+
     const updateLayout = () => {
       const availableWidth = viewport.clientWidth;
       if (availableWidth <= 0) return;
@@ -39,13 +41,11 @@ export default function ResponsiveA4Preview({
         page.scrollHeight,
         page.offsetHeight,
       );
-      const height = Math.ceil(pageHeight * scale);
 
-      setLayout(current =>
-        current.scale === scale && current.height === height
-          ? current
-          : { scale, height },
-      );
+      setLayout({
+        scale,
+        height: Math.ceil(pageHeight * scale),
+      });
     };
 
     updateLayout();
@@ -53,8 +53,11 @@ export default function ResponsiveA4Preview({
     observer.observe(viewport);
     observer.observe(page);
 
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      observer.disconnect();
+      if (pageRef?.current === page) pageRef.current = null;
+    };
+  }, [pageRef]);
 
   return (
     <div
@@ -68,10 +71,7 @@ export default function ResponsiveA4Preview({
       }}
     >
       <div
-        ref={node => {
-          internalPageRef.current = node;
-          if (pageRef) pageRef.current = node;
-        }}
+        ref={internalPageRef}
         className="document-a4-page document-a4-preview-page"
         style={{
           width: A4_PREVIEW_WIDTH,
