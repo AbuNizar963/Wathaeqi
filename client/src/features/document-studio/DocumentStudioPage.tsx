@@ -144,6 +144,7 @@ export default function DocumentStudioPage() {
     string[]
   >([]);
   const [batchPrintDialogOpen, setBatchPrintDialogOpen] = useState(false);
+  const [batchPrintSourcesReady, setBatchPrintSourcesReady] = useState(false);
   const [search, setSearch] = useState("");
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -284,6 +285,15 @@ export default function DocumentStudioPage() {
   const batchPrintPageElements = selectedPrintDocuments
     .map(document => batchPrintRefs.current.get(document.id))
     .filter((element): element is HTMLDivElement => Boolean(element));
+
+  useEffect(() => {
+    const ready =
+      selectedPrintDocuments.length > 0 &&
+      selectedPrintDocuments.every(document =>
+        batchPrintRefs.current.has(document.id)
+      );
+    setBatchPrintSourcesReady(ready);
+  }, [selectedPrintDocuments]);
 
   function togglePrintDocument(id: string, checked: boolean) {
     setSelectedPrintDocumentIds(current => {
@@ -833,8 +843,9 @@ export default function DocumentStudioPage() {
                     size="sm"
                     onClick={() => setBatchPrintDialogOpen(true)}
                     disabled={
+                      !batchPrintSourcesReady ||
                       batchPrintPageElements.length !==
-                      selectedPrintDocuments.length
+                        selectedPrintDocuments.length
                     }
                   >
                     <Printer className="ml-2 h-4 w-4" />
