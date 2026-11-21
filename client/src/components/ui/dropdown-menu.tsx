@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, CircleIcon, XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,20 @@ function DropdownMenuContent({
           className
         )}
         {...props}
-      />
+      >
+        {props.children}
+        <DropdownMenuPrimitive.Separator
+          className="bg-border -mx-1 my-1 h-px"
+          aria-hidden="true"
+        />
+        <DropdownMenuPrimitive.Item
+          data-slot="dropdown-menu-close-item"
+          className="focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none"
+        >
+          <XIcon className="size-4" aria-hidden="true" />
+          إغلاق القائمة
+        </DropdownMenuPrimitive.Item>
+      </DropdownMenuPrimitive.Content>
     </DropdownMenuPrimitive.Portal>
   );
 }
