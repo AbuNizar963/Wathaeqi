@@ -2071,7 +2071,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               watermarkOpacity: opacity,
               watermarkText:
                   _platformDocumentSettings['watermarkText']?.toString() ??
-                  'وثائقي',
+                  'وزارة الداخلية',
               logoUrl: _letterhead['logoUrl']?.toString(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
