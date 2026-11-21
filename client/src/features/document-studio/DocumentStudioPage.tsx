@@ -1164,49 +1164,49 @@ export default function DocumentStudioPage() {
                 </section>
               ) : (
                 <div className="document-a4-page relative isolate mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white text-slate-900">
-                <DocumentWatermark
-                  logoUrl={logoUrl}
-                  opacityPercent={
-                    platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
-                  }
-                  showMinistryText={
-                    platformDocumentSettings.data?.showMinistryWatermarkText ??
-                    true
-                  }
-                />
-                <DocumentLetterhead
-                  organizationName={organizationName}
-                  unitName={settings?.unitName ?? ""}
-                  chiefRank={settings?.unitChiefRank ?? ""}
-                  chiefName={settings?.unitChiefName ?? ""}
-                  logoUrl={logoUrl}
-                  dividerColor={dividerColor}
-                />
-                <div className="flex items-center justify-between gap-4 px-[18mm] pt-5 text-sm">
-                  <span>
-                    الرقم: {selectedDocument?.serialCode || "يخصص عند الإصدار"}
-                  </span>
-                  <span>
-                    التاريخ: {formatArabicDate(makeDocumentDate(documentDate))}
-                  </span>
-                </div>
-                <div className="px-[18mm] pt-6">
-                  {documentSubject ? (
-                    <p className="mb-4 text-right font-semibold">
-                      الموضوع: {documentSubject}
-                    </p>
-                  ) : null}
-                  <DocumentEditor
-                    content={documentContent}
-                    onChange={handleDocumentContentChange}
-                    editable={canEditDocument && !previewMode}
-                    containerClassName="rounded-none border-0 shadow-none"
+                  <DocumentWatermark
+                    logoUrl={logoUrl}
+                    opacityPercent={
+                      platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
+                    }
+                    showMinistryText={
+                      platformDocumentSettings.data?.showMinistryWatermarkText ??
+                      true
+                    }
                   />
+                  <DocumentLetterhead
+                    organizationName={organizationName}
+                    unitName={settings?.unitName ?? ""}
+                    chiefRank={settings?.unitChiefRank ?? ""}
+                    chiefName={settings?.unitChiefName ?? ""}
+                    logoUrl={logoUrl}
+                    dividerColor={dividerColor}
+                  />
+                  <div className="flex items-center justify-between gap-4 px-[18mm] pt-5 text-sm">
+                    <span>
+                      الرقم: {selectedDocument?.serialCode || "يخصص عند الإصدار"}
+                    </span>
+                    <span>
+                      التاريخ: {formatArabicDate(makeDocumentDate(documentDate))}
+                    </span>
+                  </div>
+                  <div className="px-[18mm] pt-6">
+                    {documentSubject ? (
+                      <p className="mb-4 text-right font-semibold">
+                        الموضوع: {documentSubject}
+                      </p>
+                    ) : null}
+                    <DocumentEditor
+                      content={documentContent}
+                      onChange={handleDocumentContentChange}
+                      editable={canEditDocument && !previewMode}
+                      containerClassName="rounded-none border-0 shadow-none"
+                    />
+                  </div>
+                  <footer className="px-[18mm] pb-8 pt-4 text-center text-xs text-slate-500">
+                    وثائقي
+                  </footer>
                 </div>
-                <footer className="px-[18mm] pb-8 pt-4 text-center text-xs text-slate-500">
-                  وثائقي
-                </footer>
-              </div>
               )}
             </Card>
           )}
