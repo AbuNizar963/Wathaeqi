@@ -46,6 +46,14 @@ function isSupportedNode(value: unknown): boolean {
   if (!SUPPORTED_NODES.has(value.type)) return false;
 
   if (value.type === "text" && typeof value.text !== "string") return false;
+  if (
+    value.type === "heading" &&
+    isRecord(value.attrs) &&
+    value.attrs.level !== 1 &&
+    value.attrs.level !== 2
+  ) {
+    return false;
+  }
   if (value.type === "image") {
     const attrs = isRecord(value.attrs) ? value.attrs : {};
     if (!isSafeImageSource(attrs.src)) return false;

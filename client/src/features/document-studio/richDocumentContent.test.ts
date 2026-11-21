@@ -43,13 +43,8 @@ describe("rich document editing safety", () => {
           ],
         },
         {
-          type: "paragraph",
-          content: [
-            {
-              type: "image",
-              attrs: { src: "data:image/png;base64,aGVsbG8=", alt: "شعار" },
-            },
-          ],
+          type: "image",
+          attrs: { src: "data:image/png;base64,aGVsbG8=", alt: "شعار" },
         },
       ],
     };

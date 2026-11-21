@@ -21,7 +21,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
-import Table, {
+import {
+  Table,
   TableCell,
   TableHeader,
   TableRow,
@@ -63,7 +64,7 @@ export default function RichDocumentEditor({
       StarterKit.configure({ heading: { levels: [1, 2] } }),
       Underline,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
-      Image.configure({ allowBase64: true }),
+      Image.configure({ allowBase64: true, inline: true }),
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
