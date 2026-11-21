@@ -117,17 +117,21 @@ class DocumentStudioPdf {
                                   0,
                                 ),
                                 child: pw.Row(
-                                  mainAxisAlignment:
-                                      pw.MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: pw.MainAxisAlignment.start,
                                   children: [
                                     for (var column = 0; column < 13; column++)
-                                      pw.Text(
-                                        watermarkText,
-                                        textDirection: pw.TextDirection.rtl,
-                                        style: pw.TextStyle(
-                                          font: watermarkFont,
-                                          fontSize: 11,
-                                          color: watermarkColor,
+                                      pw.Padding(
+                                        padding: const pw.EdgeInsets.only(
+                                          right: 6.16 * PdfPageFormat.mm,
+                                        ),
+                                        child: pw.Text(
+                                          watermarkText,
+                                          textDirection: pw.TextDirection.rtl,
+                                          style: pw.TextStyle(
+                                            font: watermarkFont,
+                                            fontSize: 11,
+                                            color: watermarkColor,
+                                          ),
                                         ),
                                       ),
                                   ],
