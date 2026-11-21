@@ -108,7 +108,7 @@ export function buildPrintHtml(
     border: 0.2mm solid #e2e8f0;
     background: #ffffff;
   }
-  .cell img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+  .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
   @media screen {
     body { background: #e2e8f0; padding: 8mm 0; }
     .sheet { margin: 0 auto 8mm; box-shadow: 0 2mm 8mm rgba(15, 23, 42, 0.18); }
@@ -135,13 +135,21 @@ export async function openPrintWindow(
   printWindow.document.close();
   const images = Array.from(printWindow.document.images);
   await Promise.all(
-    images.map(image =>
-      image.complete
-        ? Promise.resolve()
-        : new Promise<void>(resolve => {
-            image.onload = () => resolve();
-            image.onerror = () => resolve();
-          })
+    images.map(
+      image =>
+        new Promise<void>(resolve => {
+          const finish = () => resolve();
+          if (!image.complete) {
+            image.addEventListener("load", finish, { once: true });
+            image.addEventListener("error", finish, { once: true });
+            return;
+          }
+          if (typeof image.decode === "function") {
+            void image.decode().then(finish, finish);
+          } else {
+            finish();
+          }
+        })
     )
   );
   await new Promise(resolve => window.setTimeout(resolve, 350));
