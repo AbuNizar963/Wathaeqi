@@ -14,6 +14,11 @@ import {
   getOfficialDocument,
 } from "./features/document-studio/documentStudioRepository";
 import { getUserOrganizationMembership } from "./features/organizations/appwriteOwnerOrganizationRepository";
+import {
+  getOrganizationLogoUrl,
+  saveOrganizationLogo,
+} from "./features/organizations/organizationService";
+import { resolveOrganizationScope } from "./features/organizations/organizationAccess";
 import { z } from "zod";
 import {
   getAllowedDocumentMimeType,
@@ -167,6 +172,90 @@ export function createApp(
       timestamp: new Date().toISOString(),
     });
   });
+
+  app.put(
+    "/api/storage/department-logo",
+    createRateLimit({
+      windowMs: 60_000,
+      maxRequests: 10,
+      message: "محاولات رفع كثيرة؛ أعد المحاولة بعد قليل",
+    }),
+    requireActiveAppwriteUser,
+    express.raw({ type: () => true, limit: "3mb" }),
+    async (req, res) => {
+      res.setHeader("Cache-Control", "private, no-store");
+      const organizationId = req.get("x-organization-id")?.trim() ?? "";
+      if (!organizationId || organizationId.length > 36) {
+        res.status(400).json({ error: "معرّف الجهة غير صالح" });
+        return;
+      }
+
+      const contentType = req.get("content-type")?.split(";")[0]?.trim();
+      if (contentType !== "image/png" && contentType !== "image/jpeg") {
+        res.status(415).json({ error: "صيغة الشعار يجب أن تكون PNG أو JPG" });
+        return;
+      }
+
+      const body = req.body;
+      if (!Buffer.isBuffer(body) || body.length < 1) {
+        res.status(400).json({ error: "لم يصل ملف الشعار" });
+        return;
+      }
+      if (body.length > 2_500_000) {
+        res.status(413).json({ error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت" });
+        return;
+      }
+
+      const isPng =
+        body.length >= 8 &&
+        body.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      const isJpeg =
+        body.length >= 3 &&
+        body[0] === 0xff &&
+        body[1] === 0xd8 &&
+        body[2] === 0xff;
+      if (
+        (contentType === "image/png" && !isPng) ||
+        (contentType === "image/jpeg" && !isJpeg)
+      ) {
+        res.status(415).json({ error: "محتوى الصورة لا يطابق صيغتها" });
+        return;
+      }
+
+      const user = res.locals.appwriteUser as NonNullable<
+        Awaited<ReturnType<typeof getAppwriteAuthenticatedUserFromRequest>>
+      >;
+      try {
+        const scope = await resolveOrganizationScope(user);
+        if (
+          !scope.canAdministrate ||
+          (!scope.isOwner && scope.organizationId !== organizationId)
+        ) {
+          res.status(403).json({ error: "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط" });
+          return;
+        }
+
+        const key = await saveOrganizationLogo(
+          organizationId,
+          body,
+          contentType
+        );
+        const url = await getOrganizationLogoUrl(organizationId);
+        if (!url) {
+          res.status(502).json({ error: "تم حفظ الشعار لكن تعذر إنشاء رابط المعاينة" });
+          return;
+        }
+        res.status(200).json({ key, url });
+      } catch (error) {
+        console.error("[organizations/logo] upload failed");
+        const message =
+          error instanceof Error && error.message.includes("غير مرتبط")
+            ? error.message
+            : "تعذر حفظ شعار الجهة";
+        res.status(502).json({ error: message });
+      }
+    }
+  );
 
   app.post(
     "/api/documents/upload",
