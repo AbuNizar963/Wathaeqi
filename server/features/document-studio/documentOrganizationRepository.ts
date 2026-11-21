@@ -3,6 +3,7 @@ import {
   getAppwriteDatabaseId,
   getAppwriteTablesDB,
 } from "../../_core/appwrite";
+import { getOrganizationLogoDataUrl } from "../organizations/organizationService";
 
 const TABLE_ID = "department_settings";
 
@@ -76,10 +77,9 @@ export async function getDocumentOrganizationSettings(
     unitName: requiredString(data.unitName, "الوحدة الإدارية", 255),
     unitChiefRank: requiredString(data.unitChiefRank, "", 120),
     unitChiefName: requiredString(data.unitChiefName, "", 255),
-    logoUrl:
-      typeof data.logoUrl === "string" && data.logoUrl.trim()
-        ? data.logoUrl.trim()
-        : null,
+    // Resolve the current logo from the organization's private storage key.
+    // Do not persist or reuse short-lived signed URLs in department settings.
+    logoUrl: await getOrganizationLogoDataUrl(organizationId),
     serialPrefix: requiredString(data.serialPrefix, "DOC", 24),
     numberSystem: requiredString(data.numberSystem, "latin", 16),
     dateFormat: requiredString(data.dateFormat, "dd/MM/yyyy", 32),
