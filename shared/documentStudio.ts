@@ -74,7 +74,23 @@ const LEGACY_STARTER_DRAFT_HTML =
  * These records remain stored for audit/data preservation, but are not user
  * documents and must not appear in the document workspace.
  */
-export function isLegacyStarterDraft(document: OfficialDocument): boolean {
+type LegacyStarterDraftCandidate = Pick<
+  OfficialDocument,
+  | "title"
+  | "category"
+  | "status"
+  | "serialNumber"
+  | "serialCode"
+  | "templateId"
+  | "templateRevision"
+  | "content"
+> & {
+  file: unknown;
+};
+
+export function isLegacyStarterDraft(
+  document: LegacyStarterDraftCandidate
+): boolean {
   return (
     document.title === "كتاب رسمي جديد" &&
     document.category === "مسودة" &&
