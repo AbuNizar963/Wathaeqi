@@ -35,6 +35,7 @@ void main() {
       },
       dividerColor: 0xFFB49A55,
       showWatermarkText: true,
+      watermarkText: 'عبارة أمنية اختبارية',
       watermarkOpacity: 0.12,
     );
 
