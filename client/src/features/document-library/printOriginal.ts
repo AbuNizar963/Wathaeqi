@@ -30,8 +30,8 @@ export async function openOriginalPrintWindow(options: {
   pagesPerSheet?: PagesPerSheet;
 }): Promise<void> {
   const kind = fileKind(options.fileName, options.mimeType);
-  if (kind !== "pdf" && kind !== "word") {
-    throw new Error("الطباعة الأصلية متاحة لملفات PDF وWord فقط");
+  if (kind !== "pdf" && kind !== "word" && kind !== "image") {
+    throw new Error("صيغة الملف غير مدعومة للطباعة");
   }
 
   const printWindow = window.open("", "_blank");
@@ -41,6 +41,53 @@ export async function openOriginalPrintWindow(options: {
     );
   }
   printWindow.opener = null;
+
+  if (kind === "image") {
+    try {
+      const response = await fetch(options.url, { credentials: "omit" });
+      if (!response.ok) throw new Error("تعذر تنزيل الصورة للطباعة");
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          typeof reader.result === "string"
+            ? resolve(reader.result)
+            : reject(new Error("تعذر قراءة الصورة"));
+        reader.onerror = () => reject(new Error("تعذر قراءة الصورة"));
+        reader.readAsDataURL(blob);
+      });
+      const image = new Image();
+      image.src = dataUrl;
+      await image.decode();
+      const canvas = window.document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) throw new Error("تعذر تجهيز الصورة للطباعة");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0);
+      const page = {
+        dataUrl: canvas.toDataURL("image/png"),
+        width: canvas.width,
+        height: canvas.height,
+      };
+      await openPrintWindow(
+        buildPrintHtml([page], {
+          pagesPerSheet: options.pagesPerSheet ?? 1,
+          marginMm: 8,
+          headerText: "",
+          footerText: "",
+          showPageNumbers: false,
+        }),
+        printWindow
+      );
+      return;
+    } catch (error) {
+      printWindow.close();
+      throw error;
+    }
+  }
 
   if (kind === "pdf" && (options.pagesPerSheet ?? 1) !== 1) {
     const pdfjs = await import("pdfjs-dist");
