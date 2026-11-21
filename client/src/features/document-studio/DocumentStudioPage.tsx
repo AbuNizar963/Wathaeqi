@@ -36,6 +36,7 @@ import type {
   DocumentTemplateFieldType,
   OfficialDocument,
 } from "../../../../shared/documentStudio";
+import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
@@ -47,7 +48,6 @@ import {
   buildDocumentWatermarkCss,
   DOCUMENT_WATERMARK_COLUMNS,
   DOCUMENT_WATERMARK_ROWS,
-  OFFICIAL_ORGANIZATION_NAME,
   getA4PreviewPageCount,
 } from "./documentWatermark";
 
@@ -1008,6 +1008,7 @@ export default function DocumentStudioPage() {
               <ResponsiveA4Preview>
                   <DocumentWatermark
                     logoUrl={logoUrl}
+                    watermarkText={platformDocumentSettings.data?.watermarkText ?? "وثائقي"}
                     opacityPercent={
                       platformDocumentSettings.data?.watermarkOpacityPercent ??
                       12
@@ -1024,6 +1025,7 @@ export default function DocumentStudioPage() {
                     chiefName={settings?.unitChiefName ?? ""}
                     logoUrl={logoUrl}
                     dividerColor={dividerColor}
+                    headerSettings={platformDocumentSettings.data}
                   />
                   <div className="py-6">
                     <DocumentEditor
@@ -1288,6 +1290,7 @@ export default function DocumentStudioPage() {
                 <ResponsiveA4Preview pageRef={documentPageRef}>
                     <DocumentWatermark
                       logoUrl={logoUrl}
+                      watermarkText={platformDocumentSettings.data?.watermarkText ?? "وثائقي"}
                       opacityPercent={
                         platformDocumentSettings.data
                           ?.watermarkOpacityPercent ?? 12
@@ -1304,6 +1307,7 @@ export default function DocumentStudioPage() {
                       chiefName={settings?.unitChiefName ?? ""}
                       logoUrl={logoUrl}
                       dividerColor={dividerColor}
+                      headerSettings={platformDocumentSettings.data}
                       serial={
                         selectedDocument?.serialCode || "يخصص عند الإصدار"
                       }
@@ -1483,10 +1487,12 @@ export default function DocumentStudioPage() {
 
 function DocumentWatermark({
   logoUrl,
+  watermarkText,
   opacityPercent,
   showMinistryText,
 }: {
   logoUrl: string | null;
+  watermarkText: string;
   opacityPercent: number;
   showMinistryText: boolean;
 }) {
@@ -1553,7 +1559,7 @@ function DocumentWatermark({
                     {Array.from(
                       { length: DOCUMENT_WATERMARK_COLUMNS },
                       (_, column) => (
-                        <span key={column}>{OFFICIAL_ORGANIZATION_NAME}</span>
+                        <span key={column}>{watermarkText}</span>
                       )
                     )}
                   </div>
@@ -1582,6 +1588,7 @@ function DocumentLetterhead({
   chiefName,
   logoUrl,
   dividerColor,
+  headerSettings,
   serial,
   date,
 }: {
@@ -1591,42 +1598,74 @@ function DocumentLetterhead({
   chiefName: string;
   logoUrl: string | null;
   dividerColor: string;
+  headerSettings?: PlatformDocumentSettings;
   serial?: string;
   date?: string;
 }) {
+  const title = headerSettings?.headerTitle.trim() || organizationName;
+  const subtitle = headerSettings?.headerSubtitle.trim() || unitName;
+  const rank = headerSettings?.headerChiefRank.trim() || chiefRank;
+  const name = headerSettings?.headerChiefName.trim() || chiefName;
+  const showLogo = headerSettings?.headerShowLogo !== false;
+  const logoSize = headerSettings?.headerLogoSize ?? 120;
+  const alignment = headerSettings?.headerAlignment ?? "spread";
+  const textAlign =
+    alignment === "center" ? "center" : alignment === "right" ? "right" : undefined;
+
   return (
     <header
-      className="flex flex-wrap items-center justify-between gap-3 border-b-2 px-4 pb-4 pt-8 sm:px-[18mm]"
-      style={{ borderColor: dividerColor }}
+      className="grid items-start gap-[2px] border-b-[3px]"
+      style={{
+        borderColor: dividerColor,
+        paddingTop: `${headerSettings?.headerTopPaddingMm ?? 0}mm`,
+        paddingInline: `${headerSettings?.headerHorizontalPaddingMm ?? 0}mm`,
+        paddingBottom: `${headerSettings?.headerBottomPaddingMm ?? 6}mm`,
+        gridTemplateColumns: `minmax(0, 1fr) ${logoSize}px minmax(0, 1fr)`,
+      }}
       dir="rtl"
     >
-      <div className="flex min-w-0 items-center gap-3">
-        {logoUrl ? (
+      <div className="min-w-0 text-right" style={{ textAlign }}>
+        <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
+          {title}
+        </p>
+        {subtitle ? (
+          <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+      <div className="flex min-w-0 items-center justify-center">
+        {showLogo && logoUrl ? (
           <img
             src={logoUrl}
-            alt="شعار الجهة"
-            className="h-16 w-16 shrink-0 object-contain"
+            alt="الشعار الرسمي"
+            className="block object-contain"
+            style={{ width: logoSize, height: logoSize }}
           />
         ) : null}
-        <div className="min-w-0">
-          <p className="truncate text-base font-bold">{organizationName}</p>
-          {unitName ? (
-            <p className="mt-1 text-sm text-slate-700">{unitName}</p>
-          ) : null}
-        </div>
       </div>
-      {chiefRank || chiefName ? (
-        <div className="shrink-0 text-center text-sm">
-          {chiefRank ? <p>{chiefRank}</p> : null}
-          {chiefName ? <p className="mt-1 font-semibold">{chiefName}</p> : null}
-        </div>
-      ) : null}
-      {serial || date ? (
-        <div className="max-w-full text-left text-xs text-slate-700" dir="rtl">
-          {serial ? <p>الرقم: {serial}</p> : null}
-          {date ? <p className="mt-1">التاريخ: {date}</p> : null}
-        </div>
-      ) : null}
+      <div
+        className="min-w-0 text-left text-[15pt] font-bold leading-[1.5] tracking-[-0.12px]"
+        style={{ textAlign }}
+        dir="rtl"
+      >
+        {serial ? (
+          <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
+            <strong>الرقم:</strong> {serial}
+          </p>
+        ) : null}
+        {date ? (
+          <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
+            <strong>التاريخ:</strong> {date}
+          </p>
+        ) : null}
+        {rank ? (
+          <p className="whitespace-nowrap text-[12pt] font-semibold">{rank}</p>
+        ) : null}
+        {name ? (
+          <p className="whitespace-nowrap text-[12pt] font-semibold">{name}</p>
+        ) : null}
+      </div>
     </header>
   );
 }
