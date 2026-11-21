@@ -345,26 +345,26 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'الأرشيف الرقمي',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'الأرشيف الرقمي',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'مكتبة الوثائق',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'مكتبة الوثائق',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
