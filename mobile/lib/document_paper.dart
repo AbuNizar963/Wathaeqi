@@ -47,38 +47,58 @@ class DocumentPaper extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: pageHeight,
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: watermarkOpacity.clamp(0.0, 0.6),
-                    child: Stack(
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, watermarkConstraints) {
+                    final pageCount = watermarkConstraints.maxHeight.isFinite
+                        ? (watermarkConstraints.maxHeight / pageHeight).ceil()
+                        : 1;
+                    return Stack(
                       fit: StackFit.expand,
                       children: [
-                        if (showWatermarkText)
-                          const CustomPaint(
-                            key: ValueKey('document-watermark-pattern'),
-                            painter: _DocumentWatermarkPainter(),
-                          ),
-                        if (logo != null && logo.isNotEmpty)
-                          Center(
-                            child: FractionallySizedBox(
-                              widthFactor: 0.9375,
-                              heightFactor: 0.9375,
-                              child: Image.network(
-                                logo,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) =>
-                                    const SizedBox.shrink(),
+                        for (var pageIndex = 0;
+                            pageIndex < pageCount;
+                            pageIndex++)
+                          Positioned(
+                            key: ValueKey('document-watermark-page-$pageIndex'),
+                            top: pageIndex * pageHeight,
+                            left: 0,
+                            right: 0,
+                            height: pageHeight,
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: watermarkOpacity.clamp(0.0, 0.6),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    if (showWatermarkText)
+                                      const CustomPaint(
+                                        key: ValueKey(
+                                          'document-watermark-pattern',
+                                        ),
+                                        painter: _DocumentWatermarkPainter(),
+                                      ),
+                                    if (logo != null && logo.isNotEmpty)
+                                      Center(
+                                        child: FractionallySizedBox(
+                                          widthFactor: 0.9375,
+                                          heightFactor: 0.9375,
+                                          child: Image.network(
+                                            logo,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, _, _) =>
+                                                const SizedBox.shrink(),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                       ],
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
               ConstrainedBox(
