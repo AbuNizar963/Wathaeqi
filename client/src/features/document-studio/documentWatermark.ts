@@ -32,8 +32,5 @@ export function getA4PreviewPageCount(
     return 1;
   }
   const pageHeight = (width * 297) / 210;
-  return Math.max(
-    1,
-    Math.ceil(Math.max(0, contentHeight - 1) / pageHeight)
-  );
+  return Math.max(1, Math.ceil(Math.max(0, contentHeight - 1) / pageHeight));
 }
