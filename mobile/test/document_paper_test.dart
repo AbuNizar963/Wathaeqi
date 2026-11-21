@@ -6,10 +6,10 @@ void main() {
   testWidgets('repeats the watermark on every A4 preview page', (
     tester,
   ) async {
-    await tester.view.setPhysicalSize(const Size(630, 900));
-    await tester.view.setDevicePixelRatio(3);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.binding.setSurfaceSize(const Size(300, 900));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
 
     await tester.pumpWidget(
       const MaterialApp(
