@@ -568,6 +568,36 @@
   }
 }
 
+.document-tricolor-stars-divider {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  min-height: 0.8rem;
+  margin-top: 0.2rem;
+  direction: ltr;
+}
+.document-tricolor-stars-divider__line {
+  height: 0.22rem;
+  flex: 1 1 0;
+  border-radius: 999px;
+}
+.document-tricolor-stars-divider__line--black {
+  background: #111827;
+}
+.document-tricolor-stars-divider__line--green {
+  background: #159447;
+}
+.document-tricolor-stars-divider__stars {
+  color: #d5232f;
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.08rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 0.02rem #8f101b;
+}
 .document-a4-page {
   box-sizing: border-box;
   position: relative;

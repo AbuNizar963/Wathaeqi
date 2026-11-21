@@ -264,7 +264,13 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(0)
           .max(MAX_WATERMARK_OPACITY_PERCENT),
         headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
-        headerDividerStyle: z.enum(["solid", "double", "dashed", "dotted"]),
+        headerDividerStyle: z.enum([
+          "solid",
+          "double",
+          "dashed",
+          "dotted",
+          "tricolor-stars",
+        ]),
         headerDividerWidthPt: z
           .number()
           .min(MIN_DIVIDER_WIDTH_PT)

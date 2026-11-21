@@ -26,7 +26,8 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
 } as const;
 
 export type DocumentHeaderAlignment = "spread" | "center" | "right";
-export type DocumentDividerStyle = "solid" | "double" | "dashed" | "dotted";
+export type DocumentDividerStyle =
+  "solid" | "double" | "dashed" | "dotted" | "tricolor-stars";
 export type DocumentFrameStyle = "none" | "single" | "double" | "ornate";
 
 export type PlatformDocumentSettings = {

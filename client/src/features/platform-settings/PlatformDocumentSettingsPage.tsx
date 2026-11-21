@@ -441,6 +441,9 @@ export default function PlatformDocumentSettingsPage() {
                     <option value="double">مزدوج</option>
                     <option value="dashed">متقطع</option>
                     <option value="dotted">منقط</option>
+                    <option value="tricolor-stars">
+                      أسود وأخضر مع ثلاث نجوم حمراء
+                    </option>
                   </select>
                 </label>
                 <label className="space-y-1 text-sm">

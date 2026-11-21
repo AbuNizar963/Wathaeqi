@@ -1597,14 +1597,12 @@ function DocumentLetterhead({
 
   return (
     <header
-      className="grid items-start gap-[2px] border-b-[3px]"
+      className="grid items-start gap-[2px]"
       style={{
-        borderColor: dividerColor,
-        borderBottomStyle:
-          headerSettings?.headerDividerStyle === "double"
-            ? "double"
-            : (headerSettings?.headerDividerStyle ?? "solid"),
-        borderBottomWidth: `${headerSettings?.headerDividerWidthPt ?? 2.25}pt`,
+        borderBottom:
+          headerSettings?.headerDividerStyle === "tricolor-stars"
+            ? "none"
+            : `${headerSettings?.headerDividerWidthPt ?? 2.25}pt ${headerSettings?.headerDividerStyle === "double" ? "double" : (headerSettings?.headerDividerStyle ?? "solid")} ${dividerColor}`,
         paddingTop: `${headerSettings?.headerTopPaddingMm ?? 0}mm`,
         paddingInline: `${headerSettings?.headerHorizontalPaddingMm ?? 0}mm`,
         paddingBottom: `${headerSettings?.headerBottomPaddingMm ?? 6}mm`,
@@ -1654,6 +1652,21 @@ function DocumentLetterhead({
           <p className="whitespace-nowrap text-[12pt] font-semibold">{name}</p>
         ) : null}
       </div>
+      {headerSettings?.headerDividerStyle === "tricolor-stars" ? (
+        <div
+          className="document-tricolor-stars-divider"
+          aria-label="فاصل أسود وأخضر مع ثلاث نجوم حمراء"
+        >
+          <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--black" />
+          <span
+            className="document-tricolor-stars-divider__stars"
+            aria-hidden="true"
+          >
+            ★ ★ ★
+          </span>
+          <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--green" />
+        </div>
+      ) : null}
     </header>
   );
 }

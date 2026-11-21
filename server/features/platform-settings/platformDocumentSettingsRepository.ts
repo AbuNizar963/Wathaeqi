@@ -70,7 +70,8 @@ function mapPlatformDocumentSettings(
       row.headerDividerStyle === "solid" ||
       row.headerDividerStyle === "double" ||
       row.headerDividerStyle === "dashed" ||
-      row.headerDividerStyle === "dotted"
+      row.headerDividerStyle === "dotted" ||
+      row.headerDividerStyle === "tricolor-stars"
         ? row.headerDividerStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerStyle,
     headerDividerWidthPt: boundedNumber(
