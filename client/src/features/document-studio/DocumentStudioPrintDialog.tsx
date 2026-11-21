@@ -52,7 +52,14 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
       sanitizeUnsupportedPrintColors(clonedDocument);
       const clonedPage =
         clonedDocument.querySelector<HTMLElement>(".document-a4-page");
-      if (clonedPage) clonedPage.style.minHeight = `${height}px`;
+      if (clonedPage) {
+        clonedPage.style.minHeight = `${height}px`;
+        clonedPage.style.transform = "none";
+        clonedPage.style.transformOrigin = "top left";
+        clonedPage.style.position = "relative";
+        clonedPage.style.left = "0";
+        clonedPage.style.top = "0";
+      }
 
       clonedDocument
         .querySelectorAll<HTMLElement>(".document-studio-no-print")
