@@ -277,12 +277,21 @@ class DocumentStudioPdf {
               textAlign: pw.TextAlign.right,
               text: pw.TextSpan(
                 children: spans.isEmpty
-                    ? [pw.TextSpan(text: ' ', style: pw.TextStyle(font: regular))]
+                    ? [
+                        pw.TextSpan(
+                          text: ' ',
+                          style: pw.TextStyle(font: regular),
+                        ),
+                      ]
                     : spans,
                 style: pw.TextStyle(
                   font: heading ? bold : regular,
                   fontSize: heading
-                      ? (level == 1 ? 18 : level == 2 ? 15 : 13)
+                      ? (level == 1
+                            ? 18
+                            : level == 2
+                            ? 15
+                            : 13)
                       : 11,
                   lineSpacing: 3,
                 ),
@@ -389,7 +398,11 @@ class DocumentStudioPdf {
       }
       if (type != 'text') {
         spans.addAll(
-          _inlineSpans(_asMapList(node['content']), regular: regular, bold: bold),
+          _inlineSpans(
+            _asMapList(node['content']),
+            regular: regular,
+            bold: bold,
+          ),
         );
         continue;
       }
