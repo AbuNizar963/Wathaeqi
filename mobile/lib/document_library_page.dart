@@ -428,35 +428,42 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                       children: [
                         ValueListenableBuilder<int>(
                           valueListenable: pagesPerSheet,
-                          builder: (context, selectedLayout, _) =>
-                              DropdownButtonFormField<int>(
-                                initialValue: selectedLayout,
-                                isExpanded: true,
-                                decoration: const InputDecoration(
-                                  labelText: 'عدد الصفحات في الورقة',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                ),
-                                items: [1, 2, 4, 6, 8]
-                                    .map(
-                                      (value) => DropdownMenuItem<int>(
-                                        value: value,
-                                        child: Text(
-                                          '$value ${value == 1 ? 'صفحة' : 'صفحات'} في الورقة',
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: isWord
-                                    ? null
-                                    : (value) {
-                                        if (value != null) {
-                                          printableBytes = null;
-                                          printableLayout = null;
-                                          pagesPerSheet.value = value;
-                                        }
-                                      },
+                          builder: (context, selectedLayout, _) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'عدد الصفحات في الورقة',
+                                style: Theme.of(context).textTheme.labelLarge,
                               ),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [1, 2, 4, 6, 8].map((value) {
+                                  final label =
+                                      '$value ${value == 1 ? 'صفحة' : 'صفحات'}';
+                                  return ChoiceChip(
+                                    label: Text(label),
+                                    selected: selectedLayout == value,
+                                    onSelected: isWord
+                                        ? null
+                                        : (_) {
+                                            printableBytes = null;
+                                            printableLayout = null;
+                                            pagesPerSheet.value = value;
+                                          },
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                isWord
+                                    ? 'ملف Word محفوظ للتنزيل والمشاركة بصيغته الأصلية.'
+                                    : 'يُستخدم الملف الأصلي، ويُنشأ توزيع A4 للطباعة فقط.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Align(
