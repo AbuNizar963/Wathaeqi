@@ -1786,6 +1786,7 @@ class PoliceApi {
         decoded['url'] is! String) {
       throw const ApiException(502, 'استجابة الخادم لرفع الشعار غير صالحة');
     }
+    await clearOrganizationLogoCache();
     return Map<String, dynamic>.from(decoded);
   }
 
