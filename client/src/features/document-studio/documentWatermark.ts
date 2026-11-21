@@ -102,7 +102,10 @@ export function buildDocumentWatermarkCss(opacity: number): string {
   `;
 }
 
-/** Returns how many vertically stacked A4 sheets are needed for a measured preview. */
+/**
+ * Returns how many vertically stacked A4 sheets are needed for a measured
+ * preview.
+ */
 export function getA4PreviewPageCount(
   width: number,
   contentHeight: number
