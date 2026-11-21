@@ -183,7 +183,7 @@ class DocumentStudioPdf {
                 ),
                 decoration: pw.BoxDecoration(
                   border: pw.Border(
-                    bottom: pw.BorderSide(color: borderColor, width: 3),
+                    bottom: pw.BorderSide(color: borderColor, width: 2.25),
                   ),
                 ),
                 child: pw.Row(
