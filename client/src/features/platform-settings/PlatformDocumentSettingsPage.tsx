@@ -421,7 +421,10 @@ export default function PlatformDocumentSettingsPage() {
             <p className="text-xs text-muted-foreground">
               معاينة مباشرة للون الترويسة ودرجة ظهور العلامة المائية.
             </p>
-            <div className="relative min-h-[360px] overflow-hidden rounded-xl border bg-white p-5 text-slate-900 shadow-sm">
+            <div
+              className="relative min-h-[360px] overflow-hidden rounded-xl border bg-white text-slate-900 shadow-sm"
+              style={{ padding: "10mm" }}
+            >
               <div
                 className="relative z-10 grid items-start gap-[2px] border-b-[3px] pb-3"
                 style={{
