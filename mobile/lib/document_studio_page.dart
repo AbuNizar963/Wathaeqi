@@ -2017,11 +2017,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                       fontSize: 16,
                                     ),
                                   ),
-                                  if ((_letterhead['unitName']?.toString() ?? '')
+                                  if ((_letterhead['unitName']?.toString() ??
+                                          '')
                                       .isNotEmpty)
                                     Text(
                                       _letterhead['unitName'].toString(),
-                                      style: const TextStyle(color: Colors.black87),
+                                      style: const TextStyle(
+                                        color: Colors.black87,
+                                      ),
                                     ),
                                 ],
                               ),
@@ -2109,7 +2112,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                         ),
                       ),
                     ],
-                      ),
+                  ),
                 ),
               ),
             );
