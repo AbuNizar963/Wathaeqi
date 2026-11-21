@@ -40,6 +40,7 @@ import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
+import ResponsiveA4Preview from "./ResponsiveA4Preview";
 import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import { downloadDocumentFile, shareDocument } from "./documentActions";
 import {
@@ -1000,8 +1001,7 @@ export default function DocumentStudioPage() {
                 )}
               </section>
 
-              <div className="document-paper-viewport">
-                <div className="document-a4-page">
+              <ResponsiveA4Preview>
                   <DocumentWatermark
                     logoUrl={logoUrl}
                     opacityPercent={
@@ -1030,8 +1030,7 @@ export default function DocumentStudioPage() {
                       placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
                     />
                   </div>
-                </div>
-              </div>
+              </ResponsiveA4Preview>
             </Card>
           ) : (
             <Card className="space-y-4 p-3 sm:p-4">
@@ -1282,8 +1281,7 @@ export default function DocumentStudioPage() {
                   )}
                 </section>
               ) : (
-                <div className="document-paper-viewport">
-                  <div className="document-a4-page" ref={documentPageRef}>
+                <ResponsiveA4Preview pageRef={documentPageRef}>
                     <DocumentWatermark
                       logoUrl={logoUrl}
                       opacityPercent={
@@ -1323,8 +1321,7 @@ export default function DocumentStudioPage() {
                     <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
                       وثائقي
                     </footer>
-                  </div>
-                </div>
+                </ResponsiveA4Preview>
               )}
               {previewMode && selectedDocument ? (
                 <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
