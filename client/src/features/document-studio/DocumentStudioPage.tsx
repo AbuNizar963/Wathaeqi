@@ -1213,10 +1213,7 @@ export default function DocumentStudioPage() {
         </main>
       </div>
 
-      <Dialog
-        open={creationDialogOpen}
-        onOpenChange={setCreationDialogOpen}
-      >
+      <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
         <DialogContent className="max-w-lg" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
