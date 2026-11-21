@@ -16,8 +16,19 @@ type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
 function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
   return {
     showMinistryWatermarkText: settings.showMinistryWatermarkText,
+    watermarkText: settings.watermarkText,
     watermarkOpacityPercent: settings.watermarkOpacityPercent,
     headerDividerColor: settings.headerDividerColor,
+    headerTitle: settings.headerTitle,
+    headerSubtitle: settings.headerSubtitle,
+    headerChiefRank: settings.headerChiefRank,
+    headerChiefName: settings.headerChiefName,
+    headerShowLogo: settings.headerShowLogo,
+    headerLogoSize: settings.headerLogoSize,
+    headerTopPaddingMm: settings.headerTopPaddingMm,
+    headerHorizontalPaddingMm: settings.headerHorizontalPaddingMm,
+    headerBottomPaddingMm: settings.headerBottomPaddingMm,
+    headerAlignment: settings.headerAlignment,
     showVerificationQr: settings.showVerificationQr,
   };
 }
@@ -126,6 +137,107 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
+            <section className="space-y-2">
+              <label htmlFor="document-watermark-text" className="font-semibold">
+                نص العلامة الأمنية
+              </label>
+              <input id="document-watermark-text" type="text" maxLength={255}
+                value={values.watermarkText}
+                onChange={event => updateValue("watermarkText", event.target.value)}
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                placeholder="اكتب العبارة التي ستتكرر خلف صفحات الوثيقة" />
+              <p className="text-xs text-muted-foreground">
+                يظهر النص وفق نمط A4 المتكرر، ويمكن تغييره من إعدادات الوثائق.
+              </p>
+            </section>
+
+            <div className="h-px bg-border" />
+
+            <section className="space-y-4">
+              <h2 className="font-semibold">تحرير رأس الصفحة</h2>
+              <p className="text-xs text-muted-foreground">
+                اترك الحقول النصية فارغة لاستخدام بيانات الجهة المسجلة.
+              </p>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium">العنوان الرئيسي</span>
+                <input value={values.headerTitle} maxLength={255}
+                  onChange={event => updateValue("headerTitle", event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium">العنوان الفرعي / اسم الوحدة</span>
+                <input value={values.headerSubtitle} maxLength={255}
+                  onChange={event => updateValue("headerSubtitle", event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium">رتبة / صفة المسؤول</span>
+                <input value={values.headerChiefRank} maxLength={120}
+                  onChange={event => updateValue("headerChiefRank", event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium">اسم المسؤول</span>
+                <input value={values.headerChiefName} maxLength={255}
+                  onChange={event => updateValue("headerChiefName", event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+              </label>
+              <label className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">إظهار شعار الجهة في الرأس</span>
+                <input type="checkbox" checked={values.headerShowLogo}
+                  onChange={event => updateValue("headerShowLogo", event.target.checked)}
+                  className="h-5 w-5 accent-primary" />
+              </label>
+              <label className="block space-y-1">
+                <span className="flex justify-between text-sm font-medium">
+                  <span>حجم الشعار</span><output>{values.headerLogoSize}px</output>
+                </span>
+                <input type="range" min={32} max={128} step={4}
+                  value={values.headerLogoSize}
+                  onChange={event => updateValue("headerLogoSize", Number(event.target.value))}
+                  className="w-full accent-primary" />
+              </label>
+              <label className="block space-y-1">
+                <span className="flex justify-between text-sm font-medium">
+                  <span>الهامش العلوي للرأس</span><output>{values.headerTopPaddingMm} مم</output>
+                </span>
+                <input type="range" min={0} max={30} step={1}
+                  value={values.headerTopPaddingMm}
+                  onChange={event => updateValue("headerTopPaddingMm", Number(event.target.value))}
+                  className="w-full accent-primary" />
+              </label>
+              <label className="block space-y-1">
+                <span className="flex justify-between text-sm font-medium">
+                  <span>الهامش الأفقي للرأس</span><output>{values.headerHorizontalPaddingMm} مم</output>
+                </span>
+                <input type="range" min={0} max={30} step={1}
+                  value={values.headerHorizontalPaddingMm}
+                  onChange={event => updateValue("headerHorizontalPaddingMm", Number(event.target.value))}
+                  className="w-full accent-primary" />
+              </label>
+              <label className="block space-y-1">
+                <span className="flex justify-between text-sm font-medium">
+                  <span>الهامش السفلي للرأس</span><output>{values.headerBottomPaddingMm} مم</output>
+                </span>
+                <input type="range" min={0} max={30} step={1}
+                  value={values.headerBottomPaddingMm}
+                  onChange={event => updateValue("headerBottomPaddingMm", Number(event.target.value))}
+                  className="w-full accent-primary" />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium">محاذاة عناصر الرأس</span>
+                <select value={values.headerAlignment}
+                  onChange={event => updateValue("headerAlignment", event.target.value as SettingsForm["headerAlignment"])}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
+                  <option value="spread">توزيع متوازن</option>
+                  <option value="center">توسيط</option>
+                  <option value="right">محاذاة إلى اليمين</option>
+                </select>
+              </label>
+            </section>
+
+            <div className="h-px bg-border" />
+
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
                 <label htmlFor="watermark-opacity" className="font-semibold">
@@ -218,8 +330,13 @@ export default function PlatformDocumentSettingsPage() {
                 className="relative z-10 border-b-2 pb-4 text-center"
                 style={{ borderColor: values.headerDividerColor }}
               >
-                <p className="text-base font-bold">وثائقي</p>
-                <p className="mt-1 text-xs text-slate-600">الوثائق الرسمية</p>
+                <p className="text-base font-bold">{values.headerTitle || "وثائقي"}</p>
+                <p className="mt-1 text-xs text-slate-600">{values.headerSubtitle || "الوثائق الرسمية"}</p>
+                {values.headerChiefRank || values.headerChiefName ? (
+                  <p className="mt-2 text-xs text-slate-600">
+                    {values.headerChiefRank} {values.headerChiefName}
+                  </p>
+                ) : null}
               </div>
               {values.showMinistryWatermarkText ? (
                 <div
@@ -227,8 +344,8 @@ export default function PlatformDocumentSettingsPage() {
                   style={{ opacity: values.watermarkOpacityPercent / 100 }}
                   aria-hidden="true"
                 >
-                  <span className="rotate-[-28deg] whitespace-nowrap text-2xl font-bold text-slate-500">
-                    وزارة الداخلية
+                  <span className="whitespace-nowrap text-sm font-normal text-slate-500">
+                    {values.watermarkText || "وثائقي"}
                   </span>
                 </div>
               ) : null}
