@@ -108,7 +108,8 @@ export default function PrintDialog({
                 ))}
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                تُقسّم الصورة إلى أجزاء متجاورة؛ اطبع الأوراق ثم رتّبها لتكوين الصورة كاملة.
+                تُقسّم الصورة إلى أجزاء متجاورة؛ اطبع الأوراق ثم رتّبها لتكوين
+                الصورة كاملة.
               </p>
             </fieldset>
           ) : (
@@ -138,7 +139,8 @@ export default function PrintDialog({
                 })}
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
-                يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من صفحة.
+                يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من
+                صفحة.
               </p>
             </fieldset>
           )}
