@@ -402,21 +402,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('إنشاء والكتابة في وثيقة'),
-              subtitle: const Text('افتح المحرر واكتب وثيقتك مباشرة'),
+              title: const Text('وثيقة جديدة'),
+              subtitle: const Text('ابدأ وثيقة رسمية جديدة على ورق A4 المعتمد'),
               onTap: () => Navigator.pop(dialogContext, 'write'),
             ),
             ListTile(
               leading: const Icon(Icons.file_open_outlined),
-              title: const Text('استيراد PDF أو Word أو صورة'),
-              subtitle: const Text('إرفاق ملف موجود وإنشاء سجل للوثيقة'),
+              title: const Text('رفع ملف'),
+              subtitle: const Text('ارفع ملف Word أو PDF أو صورة إلى مكتبتك'),
               onTap: () => Navigator.pop(dialogContext, 'import'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_customize_outlined),
-              title: const Text('اختيار نموذج جاهز'),
-              subtitle: const Text('استخدم نموذجاً محفوظاً للبدء'),
-              onTap: () => Navigator.pop(dialogContext, 'template'),
             ),
           ],
         ),
@@ -433,11 +427,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _startNewDocument();
     } else if (choice == 'import') {
       await _uploadDocumentFile();
-    } else if (choice == 'template') {
-      setState(() {
-        _selectedTemplate = null;
-        _tab = DocumentStudioTab.templates;
-      });
     }
   }
 
@@ -1109,11 +1098,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             value: DocumentStudioTab.documents,
             label: Text('الوثائق'),
             icon: Icon(Icons.description_outlined),
-          ),
-          ButtonSegment(
-            value: DocumentStudioTab.templates,
-            label: Text('القوالب'),
-            icon: Icon(Icons.dashboard_customize_outlined),
           ),
           ButtonSegment(
             value: DocumentStudioTab.archive,
