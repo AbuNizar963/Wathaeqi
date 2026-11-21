@@ -77,6 +77,7 @@ export default function DocumentLibraryPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [creationOpen, setCreationOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
 
@@ -137,13 +138,9 @@ export default function DocumentLibraryPage() {
             صفحاته وتنسيقه.
           </p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => setUploadOpen(true)}
-          className="gap-2"
-        >
-          <UploadCloud className="size-4" />
-          استيراد ملف
+        <Button onClick={() => setCreationOpen(true)} className="gap-2">
+          <Plus className="size-4" />
+          إنشاء
         </Button>
       </div>
 
@@ -324,6 +321,53 @@ export default function DocumentLibraryPage() {
         <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
         <span className="sr-only">وثيقة جديدة</span>
       </Button>
+
+      <Dialog open={creationOpen} onOpenChange={setCreationOpen}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
+            <DialogDescription className="text-right">
+              اختر إنشاء وثيقة رسمية جديدة أو رفع ملف موجود إلى مكتبتك.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 p-4 text-right"
+              onClick={() => {
+                setCreationOpen(false);
+                navigate("/studio?create=1");
+              }}
+            >
+              <FileText className="size-5 shrink-0" />
+              <span className="flex-1 text-right">
+                <span className="block font-semibold">وثيقة جديدة</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  افتح محرر الوثائق الرسمية بورق A4 وشعار الجهة والعلامة الأمنية
+                </span>
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto justify-start gap-3 p-4 text-right"
+              onClick={() => {
+                setCreationOpen(false);
+                setUploadOpen(true);
+              }}
+            >
+              <UploadCloud className="size-5 shrink-0" />
+              <span className="flex-1 text-right">
+                <span className="block font-semibold">رفع ملف</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  استيراد ملف Word أو PDF أو صورة
+                </span>
+              </span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <UploadDialog
         open={uploadOpen}
