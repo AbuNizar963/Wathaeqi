@@ -1,3 +1,4 @@
+// Document library with a full-screen A4 preview and native actions.
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
