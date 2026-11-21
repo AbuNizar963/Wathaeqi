@@ -8,6 +8,8 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
@@ -402,21 +404,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('إنشاء والكتابة في وثيقة'),
-              subtitle: const Text('افتح المحرر واكتب وثيقتك مباشرة'),
+              title: const Text('وثيقة جديدة'),
+              subtitle: const Text('ابدأ وثيقة رسمية جديدة على ورق A4 المعتمد'),
               onTap: () => Navigator.pop(dialogContext, 'write'),
             ),
             ListTile(
               leading: const Icon(Icons.file_open_outlined),
-              title: const Text('استيراد PDF أو Word أو صورة'),
-              subtitle: const Text('إرفاق ملف موجود وإنشاء سجل للوثيقة'),
+              title: const Text('رفع ملف'),
+              subtitle: const Text('ارفع ملف Word أو PDF أو صورة إلى مكتبتك'),
               onTap: () => Navigator.pop(dialogContext, 'import'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_customize_outlined),
-              title: const Text('اختيار نموذج جاهز'),
-              subtitle: const Text('استخدم نموذجاً محفوظاً للبدء'),
-              onTap: () => Navigator.pop(dialogContext, 'template'),
             ),
           ],
         ),
@@ -433,11 +429,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _startNewDocument();
     } else if (choice == 'import') {
       await _uploadDocumentFile();
-    } else if (choice == 'template') {
-      setState(() {
-        _selectedTemplate = null;
-        _tab = DocumentStudioTab.templates;
-      });
     }
   }
 
@@ -476,6 +467,40 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
   }
 
+  Future<int?> _chooseImageTiles() {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: closableDialogTitle(
+          dialogContext,
+          const Text('تقسيم الصورة للطباعة'),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('اختر عدد أوراق A4 التي ستُقسّم الصورة عليها'),
+            const SizedBox(height: 12),
+            for (final count in const [1, 4, 9, 16])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(dialogContext, count),
+                  child: Text(count == 1 ? 'ورقة واحدة' : '$count أوراق'),
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _printDocumentFile(OfficialDocument document) async {
     final file = document.file;
     if (file != null && file.mimeType == DocumentFileSupport.docxMime) {
@@ -483,12 +508,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
 
-    final pagesPerSheet = await _choosePrintPagesPerSheet();
+    final isImage = file?.mimeType.startsWith('image/') == true;
+    final imageTiles = isImage ? await _chooseImageTiles() : 1;
+    if (imageTiles == null || !mounted) return;
+    final pagesPerSheet = isImage ? 1 : await _choosePrintPagesPerSheet();
     if (pagesPerSheet == null || !mounted) return;
 
     setState(() => _saving = true);
     try {
-      final sourcePdf = await _fetchDocumentPdf(document);
+      final sourcePdf = await _fetchDocumentPdf(
+        document,
+        imageTiles: imageTiles,
+      );
       final printPdf = pagesPerSheet == 1
           ? sourcePdf
           : await DocumentStudioPrintLayout.compose(
@@ -506,7 +537,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
-  Future<Uint8List> _fetchDocumentPdf(OfficialDocument document) async {
+  Future<Uint8List> _fetchDocumentPdf(
+    OfficialDocument document, {
+    int imageTiles = 1,
+  }) async {
     final file = document.file;
     if (file == null) {
       final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
@@ -566,8 +600,80 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     if (file.mimeType == DocumentFileSupport.docxMime) {
       throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
     }
+    if (file.mimeType.startsWith('image/')) {
+      final imageBytes = await widget.api.fetchDocumentFileBytes(
+        documentId: document.id,
+        mimeType: file.mimeType,
+      );
+      if (!DocumentFileSupport.matchesMime(file.mimeType, imageBytes)) {
+        throw StateError('تعذر التحقق من صيغة الصورة التي أعادها الخادم');
+      }
+      final codec = await ui.instantiateImageCodec(imageBytes);
+      final frame = await codec.getNextFrame();
+      final sourceImage = frame.image;
+      final columns = math.sqrt(imageTiles).round();
+      final sourceTileWidth = sourceImage.width / columns;
+      final sourceTileHeight = sourceImage.height / columns;
+      final pdf = pw.Document();
+      try {
+        for (var row = 0; row < columns; row += 1) {
+          for (var column = 0; column < columns; column += 1) {
+            final recorder = ui.PictureRecorder();
+            final canvas = ui.Canvas(recorder);
+            final sourceRect = ui.Rect.fromLTWH(
+              column * sourceTileWidth,
+              row * sourceTileHeight,
+              sourceTileWidth,
+              sourceTileHeight,
+            );
+            final destinationRect = ui.Rect.fromLTWH(
+              0,
+              0,
+              sourceTileWidth,
+              sourceTileHeight,
+            );
+            canvas.drawImageRect(
+              sourceImage,
+              sourceRect,
+              destinationRect,
+              ui.Paint(),
+            );
+            final picture = recorder.endRecording();
+            final tileImage = await picture.toImage(
+              sourceTileWidth.ceil(),
+              sourceTileHeight.ceil(),
+            );
+            final tileData = await tileImage.toByteData(
+              format: ui.ImageByteFormat.png,
+            );
+            tileImage.dispose();
+            picture.dispose();
+            if (tileData == null) {
+              throw StateError('تعذر تجهيز جزء من الصورة للطباعة');
+            }
+            final tileBytes = tileData.buffer.asUint8List(
+              tileData.offsetInBytes,
+              tileData.lengthInBytes,
+            );
+            final image = pw.MemoryImage(tileBytes);
+            pdf.addPage(
+              pw.Page(
+                pageFormat: PdfPageFormat.a4,
+                margin: const pw.EdgeInsets.all(12),
+                build: (_) =>
+                    pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
+              ),
+            );
+          }
+        }
+      } finally {
+        sourceImage.dispose();
+        codec.dispose();
+      }
+      return Uint8List.fromList(await pdf.save());
+    }
     if (file.mimeType != DocumentFileSupport.pdfMime) {
-      throw StateError('إخراج PDF متاح للوثائق المنشأة وملفات PDF فقط');
+      throw StateError('صيغة الملف غير مدعومة لإخراج PDF');
     }
     final bytes = await widget.api.fetchDocumentFileBytes(
       documentId: document.id,
@@ -1109,11 +1215,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             value: DocumentStudioTab.documents,
             label: Text('الوثائق'),
             icon: Icon(Icons.description_outlined),
-          ),
-          ButtonSegment(
-            value: DocumentStudioTab.templates,
-            label: Text('القوالب'),
-            icon: Icon(Icons.dashboard_customize_outlined),
           ),
           ButtonSegment(
             value: DocumentStudioTab.archive,
