@@ -99,7 +99,7 @@ void main() {
     expect(find.text('تنزيل PDF'), findsOneWidget);
     expect(find.text('مشاركة PDF'), findsOneWidget);
     expect(find.text('طباعة'), findsOneWidget);
-    expect(find.text('تعديل الوثيقة'), findsOneWidget);
+    expect(find.byTooltip('تعديل الوثيقة'), findsOneWidget);
 
     await tester.tap(find.byTooltip('تعديل الوثيقة'));
     await tester.pumpAndSettle();
