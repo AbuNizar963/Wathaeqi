@@ -456,7 +456,9 @@ export default function DocumentLibraryPage() {
                   <Button
                     variant="outline"
                     className="h-12 gap-2"
-                    onClick={() => navigate(`/studio?document=${encodeURIComponent(selected.id)}`)}
+                    onClick={() =>
+                      navigate(`/studio?document=${encodeURIComponent(selected.id)}`)
+                    }
                   >
                     <Pencil className="size-4" />
                     تعديل
@@ -473,7 +475,11 @@ export default function DocumentLibraryPage() {
                     variant="destructive"
                     className="h-12 gap-2"
                     onClick={() => {
-                      if (window.confirm(`حذف «${selected.title}» نهائيًا من المكتبة؟`)) {
+                      if (
+                        window.confirm(
+                          `حذف «${selected.title}» نهائيًا من المكتبة؟`
+                        )
+                      ) {
                         deleteDocument.mutate({ id: selected.id });
                       }
                     }}
