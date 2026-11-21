@@ -1446,10 +1446,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               onPressed: _saving
                   ? null
                   : isWord
-                      ? () => _saveOriginalDocument(document)
-                      : canUsePdfActions
-                          ? () => _saveDocumentPdf(document)
-                          : null,
+                  ? () => _saveOriginalDocument(document)
+                  : canUsePdfActions
+                  ? () => _saveDocumentPdf(document)
+                  : null,
             ),
             _documentPreviewAction(
               icon: Icons.share_outlined,
@@ -1457,10 +1457,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               onPressed: _saving
                   ? null
                   : isWord
-                      ? () => _shareOriginalDocument(document)
-                      : canUsePdfActions
-                          ? () => _shareDocumentPdf(document)
-                          : null,
+                  ? () => _shareOriginalDocument(document)
+                  : canUsePdfActions
+                  ? () => _shareDocumentPdf(document)
+                  : null,
             ),
             _documentPreviewAction(
               icon: Icons.print_outlined,
