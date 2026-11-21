@@ -8,13 +8,11 @@ import {
 } from "./documentWatermark";
 
 describe("official document watermark", () => {
-  it("uses the reference A4 geometry and dense repeated pattern", () => {
+  it("exposes its opacity setting to the shared watermark stylesheet", () => {
     const css = buildDocumentWatermarkCss(0.12);
     expect(DOCUMENT_WATERMARK_ROWS).toBe(33);
     expect(DOCUMENT_WATERMARK_COLUMNS).toBe(13);
-    expect(css).toContain(
-      "--document-watermark-opacity: 0.12;"
-    );
+    expect(css).toContain("--document-watermark-opacity: 0.12;");
   });
 
   it("calculates one or more continuous A4 preview sheets from measured content", () => {
@@ -27,10 +25,10 @@ describe("official document watermark", () => {
   });
 
   it("clamps malformed opacity values without disabling the watermark", () => {
-    expect(buildDocumentWatermarkCss(2)).toContain("opacity: 0.6;");
-    expect(buildDocumentWatermarkCss(-1)).toContain("opacity: 0;");
+    expect(buildDocumentWatermarkCss(2)).toContain("--document-watermark-opacity: 0.6;");
+    expect(buildDocumentWatermarkCss(-1)).toContain("--document-watermark-opacity: 0;");
     expect(buildDocumentWatermarkCss(Number.NaN)).toContain(
-      `opacity: ${DOCUMENT_WATERMARK_DEFAULT_OPACITY};`
+      `--document-watermark-opacity: ${DOCUMENT_WATERMARK_DEFAULT_OPACITY};`
     );
   });
 });
