@@ -270,11 +270,7 @@ const ownerPlatformDocumentSettingsRouter = router({
           .int()
           .min(MIN_HEADER_LOGO_SIZE)
           .max(MAX_HEADER_LOGO_SIZE),
-        headerTopPaddingMm: z
-          .number()
-          .int()
-          .min(0)
-          .max(MAX_HEADER_PADDING_MM),
+        headerTopPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
         headerHorizontalPaddingMm: z
           .number()
           .int()
