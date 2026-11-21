@@ -28,6 +28,7 @@ export async function openOriginalPrintWindow(options: {
   fileName: string;
   mimeType: string;
   pagesPerSheet?: PagesPerSheet;
+  imageTiles?: 1 | 4 | 9 | 16;
 }): Promise<void> {
   const kind = fileKind(options.fileName, options.mimeType);
   if (kind !== "pdf" && kind !== "word" && kind !== "image") {
@@ -67,14 +68,44 @@ export async function openOriginalPrintWindow(options: {
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(image, 0, 0);
-      const page = {
-        dataUrl: canvas.toDataURL("image/png"),
-        width: canvas.width,
-        height: canvas.height,
-      };
+      const tileCount = options.imageTiles ?? 1;
+      const columns = Math.sqrt(tileCount);
+      const rows = columns;
+      const sourceTileWidth = canvas.width / columns;
+      const sourceTileHeight = canvas.height / rows;
+      const pages = [];
+
+      for (let row = 0; row < rows; row += 1) {
+        for (let column = 0; column < columns; column += 1) {
+          const tileCanvas = window.document.createElement("canvas");
+          tileCanvas.width = Math.ceil(sourceTileWidth);
+          tileCanvas.height = Math.ceil(sourceTileHeight);
+          const tileContext = tileCanvas.getContext("2d", { alpha: false });
+          if (!tileContext) throw new Error("تعذر تجهيز جزء الصورة للطباعة");
+          tileContext.fillStyle = "#ffffff";
+          tileContext.fillRect(0, 0, tileCanvas.width, tileCanvas.height);
+          tileContext.drawImage(
+            canvas,
+            column * sourceTileWidth,
+            row * sourceTileHeight,
+            sourceTileWidth,
+            sourceTileHeight,
+            0,
+            0,
+            tileCanvas.width,
+            tileCanvas.height
+          );
+          pages.push({
+            dataUrl: tileCanvas.toDataURL("image/png"),
+            width: tileCanvas.width,
+            height: tileCanvas.height,
+          });
+        }
+      }
+
       await openPrintWindow(
-        buildPrintHtml([page], {
-          pagesPerSheet: options.pagesPerSheet ?? 1,
+        buildPrintHtml(pages, {
+          pagesPerSheet: 1,
           marginMm: 8,
           headerText: "",
           footerText: "",
