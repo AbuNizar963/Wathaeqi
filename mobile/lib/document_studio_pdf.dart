@@ -90,7 +90,7 @@ class DocumentStudioPdf {
         maxPages: 500,
         pageTheme: pw.PageTheme(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.fromLTRB(38, 30, 38, 38),
+          margin: const pw.EdgeInsets.all(10 * PdfPageFormat.mm),
           theme: theme,
           textDirection: pw.TextDirection.rtl,
           buildBackground: (context) => pw.FullPage(
