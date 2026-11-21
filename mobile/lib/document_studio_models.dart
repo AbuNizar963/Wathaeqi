@@ -5,6 +5,9 @@
 /// authoritative for owner scope and every persisted operation.
 library;
 
+const _legacyStarterDraftHtml =
+    '<h2>بسم الله الرحمن الرحيم</h2><p>العدد: ....................</p><p>التاريخ: .... / .... / ........</p><p><strong>إلى /</strong> ................................................</p><p><strong>الموضوع /</strong> ............................................</p><p>تحية طيبة...</p><p>يرجى التفضل بالاطلاع واتخاذ ما يلزم بشأن الموضوع أعلاه، مع التقدير.</p><p>وتفضلوا بقبول فائق الاحترام.</p><p><strong>التوقيع:</strong> ............................</p>';
+
 enum DocumentTemplateFieldType {
   text,
   multiline,
@@ -197,6 +200,20 @@ class OfficialDocument {
   final DateTime updatedAt;
   final DateTime? issuedAt;
   final DateTime? archivedAt;
+
+  /// Identifies a legacy sample draft provisioned before the user workspace
+  /// was made personal. It stays in storage but is excluded from user lists.
+  bool get isLegacyStarterDraft =>
+      title == 'كتاب رسمي جديد' &&
+      category == 'مسودة' &&
+      status == 'draft' &&
+      serialNumber == 0 &&
+      serialCode.isEmpty &&
+      file == null &&
+      templateId == null &&
+      templateRevision == null &&
+      content['type'] == 'legacy-html' &&
+      content['html'] == _legacyStarterDraftHtml;
 
   /// The API requires an ISO-8601 UTC string for optimistic concurrency.
   String get expectedUpdatedAt => updatedAt.toUtc().toIso8601String();
