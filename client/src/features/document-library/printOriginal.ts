@@ -188,7 +188,7 @@ export async function openOriginalPrintWindow(options: {
   const [{ renderAsync }] = await Promise.all([import("docx-preview")]);
   printWindow.document.open();
   printWindow.document.write(
-    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة ${escapeHtml(options.fileName)}</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.docx-wrapper{background:#fff!important;padding:0!important}.docx{box-shadow:none!important;margin:0!important}.sheet{width:210mm;height:297mm;padding:8mm;display:grid;gap:3mm;page-break-after:always;break-after:page;overflow:hidden}.sheet:last-child{page-break-after:auto;break-after:auto}.sheet.per-1{grid-template-columns:1fr;grid-template-rows:1fr}.sheet.per-2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}.sheet.per-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}.sheet.per-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}.sheet.per-8{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}.cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff}.cell>.docx{position:absolute;inset:0 auto auto 0;width:210mm!important;min-height:297mm!important;transform-origin:top left;box-shadow:none!important}@media print{html,body{width:210mm}}</style></head><body><div id="docx-print-host" dir="rtl"></div></body></html>`
+    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة ${escapeHtml(options.fileName)}</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.docx-wrapper{background:#fff!important;padding:0!important}.docx{box-shadow:none!important;margin:0!important}.sheet{width:210mm;height:297mm;padding:8mm;display:grid;gap:3mm;page-break-after:always;break-after:page;overflow:hidden}.sheet:last-child{page-break-after:auto;break-after:auto}.sheet.per-1{grid-template-columns:1fr;grid-template-rows:1fr}.sheet.per-2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}.sheet.per-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}.sheet.per-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}.sheet.per-8{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}.cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff}.cell>.docx{position:absolute;inset:0 auto auto 0;width:210mm!important;min-height:297mm!important;box-shadow:none!important}@media print{html,body{width:210mm}}</style></head><body><div id="docx-print-host" dir="rtl"></div></body></html>`
   );
   printWindow.document.close();
   const host = printWindow.document.getElementById("docx-print-host");
@@ -205,9 +205,9 @@ export async function openOriginalPrintWindow(options: {
     renderFooters: true,
     useBase64URL: true,
   });
-  arrangeWordPages(printWindow.document, host, options.pagesPerSheet ?? 1);
   await printWindow.document.fonts?.ready;
   await waitForImages(printWindow.document);
+  arrangeWordPages(printWindow.document, host, options.pagesPerSheet ?? 1);
   await new Promise(resolve => printWindow.setTimeout(resolve, 250));
   printWindow.focus();
   printWindow.print();
@@ -218,18 +218,11 @@ function arrangeWordPages(
   host: HTMLElement,
   pagesPerSheet: PagesPerSheet
 ): void {
+  const wrapper = host.querySelector<HTMLElement>(".docx-wrapper");
   const pages = Array.from(
     host.querySelectorAll<HTMLElement>(".docx-wrapper > .docx")
   );
-  if (pagesPerSheet === 1 || pages.length === 0) return;
-  const rows =
-    pagesPerSheet === 2
-      ? 2
-      : pagesPerSheet === 4
-        ? 2
-        : pagesPerSheet === 6
-          ? 3
-          : 4;
+  if (pagesPerSheet === 1 || pages.length === 0 || !wrapper) return;
   const fragment = document.createDocumentFragment();
   for (let start = 0; start < pages.length; start += pagesPerSheet) {
     const sheet = document.createElement("section");
@@ -237,13 +230,25 @@ function arrangeWordPages(
     pages.slice(start, start + pagesPerSheet).forEach(page => {
       const cell = document.createElement("div");
       cell.className = "cell";
-      page.style.transform = `scale(${1 / rows})`;
       cell.append(page);
       sheet.append(cell);
     });
     fragment.append(sheet);
   }
-  host.replaceChildren(fragment);
+  // The renderer's styles are siblings of the wrapper and must be retained.
+  wrapper.replaceWith(fragment);
+  for (const page of pages) {
+    const cell = page.parentElement!;
+    const pageBounds = page.getBoundingClientRect();
+    const cellBounds = cell.getBoundingClientRect();
+    const scale = Math.min(
+      1,
+      cellBounds.width / pageBounds.width,
+      cellBounds.height / pageBounds.height
+    );
+    // Unlike transform, zoom also scales the layout before print pagination.
+    page.style.zoom = String(scale);
+  }
 }
 
 function escapeHtml(value: string): string {
