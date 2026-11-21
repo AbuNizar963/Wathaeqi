@@ -5,9 +5,13 @@ import 'package:police_telegrams/document_studio_outbox.dart';
 import 'package:police_telegrams/document_studio_page.dart';
 
 class _DocumentStudioTestApi extends PoliceApi {
-  _DocumentStudioTestApi({this.includeOrganization = true});
+  _DocumentStudioTestApi({
+    this.includeOrganization = true,
+    this.includeDocument = false,
+  });
 
   final bool includeOrganization;
+  final bool includeDocument;
   final calls = <String, Map<String, dynamic>?>{};
 
   @override
@@ -19,7 +23,37 @@ class _DocumentStudioTestApi extends PoliceApi {
   }) async {
     calls[procedure] = input;
     return switch (procedure) {
-      'documentStudio.listDocuments' => <dynamic>[],
+      'documentStudio.listDocuments' => includeDocument
+          ? <dynamic>[
+              {
+                'id': 'doc-preview-test',
+                'ownerId': 'owner-test',
+                'title': 'وثيقة تجريبية',
+                'category': 'general',
+                'subject': 'اختبار المعاينة',
+                'content': {
+                  'type': 'doc',
+                  'content': [
+                    {'type': 'paragraph'},
+                  ],
+                },
+                'fieldValues': <String, dynamic>{},
+                'serialNumber': 0,
+                'serialCode': '',
+                'documentDate': '2026-11-21T00:00:00.000Z',
+                'status': 'draft',
+                'createdAt': '2026-11-21T00:00:00.000Z',
+                'updatedAt': '2026-11-21T00:00:00.000Z',
+                'file': {
+                  'fileName': 'test.docx',
+                  'mimeType':
+                      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                  'sizeBytes': 128,
+                  'pageCount': 1,
+                },
+              },
+            ]
+          : <dynamic>[],
       'documentStudio.listTemplates' => <dynamic>[],
       'organizations.context' => {
         if (includeOrganization) 'organizationId': 'org-test',
@@ -47,6 +81,38 @@ class _DocumentStudioTestOutbox extends DocumentStudioOutbox {
 }
 
 void main() {
+  testWidgets('opening a saved document shows its preview first', (
+    tester,
+  ) async {
+    final api = _DocumentStudioTestApi(includeDocument: true);
+    final outbox = _DocumentStudioTestOutbox(api: api);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            body: DocumentStudioPage(api: api, outbox: outbox),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('وثيقة تجريبية'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('معاينة ملفات Word غير متاحة داخل التطبيق حالياً'),
+        findsOneWidget);
+    expect(find.text('تنزيل Word'), findsOneWidget);
+    expect(find.text('مشاركة Word'), findsOneWidget);
+    expect(find.text('تعديل الوثيقة'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('تعديل الوثيقة'));
+    await tester.pumpAndSettle();
+    expect(find.text('تحرير الوثيقة'), findsOneWidget);
+  });
+
   testWidgets('document studio opens with its three work areas', (
     tester,
   ) async {
