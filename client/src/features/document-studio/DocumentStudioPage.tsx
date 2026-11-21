@@ -192,9 +192,18 @@ export default function DocumentStudioPage() {
   );
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("create") === "1") {
-      setCreationDialogOpen(true);
-    }
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("create") !== "1") return;
+
+    setCreationDialogOpen(true);
+    // Consume the one-shot command so refreshing /studio never opens the
+    // creation dialog again without an explicit click on the create button.
+    url.searchParams.delete("create");
+    window.history.replaceState(
+      {},
+      "",
+      `${url.pathname}${url.search}${url.hash}`
+    );
   }, []);
 
   const utils = trpc.useUtils();
