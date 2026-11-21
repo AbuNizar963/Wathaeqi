@@ -21,11 +21,13 @@ const baseOptions: PrintOptions = {
 };
 
 describe("document print sheet layout", () => {
-  it("places one, two, or four pages on each A4 sheet", () => {
+  it("places one, two, four, six, or eight pages on each A4 sheet", () => {
     expect(groupPages(pages, 1)).toHaveLength(5);
     expect(groupPages(pages, 2)).toHaveLength(3);
     expect(groupPages(pages, 4)).toHaveLength(2);
     expect(groupPages(pages, 4).at(-1)).toHaveLength(1);
+    expect(groupPages(pages, 6)).toHaveLength(1);
+    expect(groupPages(pages, 8)).toHaveLength(1);
   });
 
   it("renders the selected grid and keeps every page in the output", () => {

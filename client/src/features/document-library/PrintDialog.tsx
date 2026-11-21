@@ -12,6 +12,7 @@ import {
 import FilePreview from "./FilePreview";
 import { openOriginalPrintWindow } from "./printOriginal";
 import { fileKind } from "./types";
+import type { PagesPerSheet } from "./types";
 
 export default function PrintDialog({
   open,
@@ -30,6 +31,7 @@ export default function PrintDialog({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
   const kind = fileKind(fileName, mimeType);
 
   useEffect(() => {
@@ -40,7 +42,12 @@ export default function PrintDialog({
     setLoading(true);
     setError(null);
     try {
-      await openOriginalPrintWindow({ url, fileName, mimeType });
+      await openOriginalPrintWindow({
+        url,
+        fileName,
+        mimeType,
+        pagesPerSheet,
+      });
     } catch (printError) {
       setError(
         printError instanceof Error
@@ -73,6 +80,22 @@ export default function PrintDialog({
               صيغة الملف غير مدعومة للطباعة الأصلية.
             </p>
           )}
+          <label className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+            <span className="shrink-0 font-medium">عدد الصفحات في الورقة</span>
+            <select
+              value={pagesPerSheet}
+              onChange={event =>
+                setPagesPerSheet(Number(event.target.value) as PagesPerSheet)
+              }
+              className="h-9 flex-1 rounded-md border bg-background px-2"
+            >
+              {[1, 2, 4, 6, 8].map(value => (
+                <option key={value} value={value}>
+                  {value} {value === 1 ? "صفحة" : "صفحات"} في الورقة
+                </option>
+              ))}
+            </select>
+          </label>
           {error ? (
             <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
               {error}

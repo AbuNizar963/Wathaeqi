@@ -140,7 +140,7 @@ export default function FilePreview({
 
   if (kind === "pdf") {
     return (
-      <div className="relative space-y-3 rounded-lg bg-slate-100 p-3">
+      <div className="relative space-y-3 overflow-x-auto rounded-lg bg-slate-100 p-2 sm:p-3">
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> جارٍ تجهيز معاينة PDF…
@@ -151,7 +151,7 @@ export default function FilePreview({
             key={index}
             src={page}
             alt={`صفحة ${index + 1}`}
-            className="mx-auto w-full max-w-[820px] bg-white shadow"
+            className="mx-auto block h-auto w-full max-w-[820px] min-w-0 bg-white shadow sm:min-w-[620px]"
           />
         ))}
       </div>
@@ -159,7 +159,7 @@ export default function FilePreview({
   }
 
   return (
-    <div className="relative rounded-lg bg-slate-100 p-3">
+    <div className="relative overflow-x-auto rounded-lg bg-slate-100 p-2 sm:p-3">
       {loading ? (
         <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> جارٍ تجهيز معاينة Word…
@@ -168,7 +168,7 @@ export default function FilePreview({
       <div
         ref={wordHost}
         dir="rtl"
-        className="document-word-preview mx-auto max-w-[820px] bg-white shadow"
+        className="document-word-preview mx-auto w-max min-w-full bg-white shadow"
       />
     </div>
   );

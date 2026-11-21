@@ -133,8 +133,8 @@ export default function DocumentLibraryPage() {
             مكتبة الوثائق
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            ارفع ملفات Word وPDF، وأرشفها، واطبعها بتوزيع صفحة أو صفحتين أو أربع
-            صفحات في الورقة.
+            ارفع ملفات Word وPDF، وأرشفها، واطبع الملف الأصلي مع الحفاظ على
+            صفحاته وتنسيقه.
           </p>
         </div>
         <Button

@@ -1,4 +1,4 @@
-export type PagesPerSheet = 1 | 2 | 4;
+export type PagesPerSheet = 1 | 2 | 4 | 6 | 8;
 
 export type DocumentFileKind = "word" | "pdf" | "image";
 

@@ -96,6 +96,8 @@ export function buildPrintHtml(
   .per-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .per-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .per-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .per-6 { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); }
+  .per-8 { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); }
   .cell {
     min-width: 0;
     min-height: 0;
