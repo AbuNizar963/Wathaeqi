@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -28,6 +29,23 @@ class DocumentStudioPdf {
     final watermarkFont = pw.Font.ttf(
       await rootBundle.load('assets/fonts/aref-ruqaa-regular.ttf'),
     );
+    pw.MemoryImage? logoImage;
+    final logoUrl = _clean(letterhead['logoUrl']);
+    final logoUri = logoUrl == null ? null : Uri.tryParse(logoUrl);
+    if (logoUri != null && logoUri.scheme == 'https') {
+      try {
+        final response = await http
+            .get(logoUri)
+            .timeout(const Duration(seconds: 8));
+        if (response.statusCode == 200 &&
+            response.bodyBytes.isNotEmpty &&
+            response.bodyBytes.length <= 5 * 1024 * 1024) {
+          logoImage = pw.MemoryImage(response.bodyBytes);
+        }
+      } catch (_) {
+        // A missing remote logo must not prevent a document from being printed.
+      }
+    }
     final theme = pw.ThemeData.withFont(
       base: regular,
       bold: bold,
@@ -81,6 +99,18 @@ class DocumentStudioPdf {
                     ],
                   ),
                 ),
+                if (logoImage != null)
+                  pw.Center(
+                    child: pw.Opacity(
+                      opacity: safeOpacity,
+                      child: pw.Image(
+                        logoImage,
+                        width: 460,
+                        height: 460,
+                        fit: pw.BoxFit.contain,
+                      ),
+                    ),
+                  ),
                 pw.Center(
                   child: pw.Text(
                     'وثائقي',
@@ -104,6 +134,16 @@ class DocumentStudioPdf {
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.center,
                 children: [
+                  if (logoImage != null)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(left: 8),
+                      child: pw.Image(
+                        logoImage,
+                        width: 44,
+                        height: 44,
+                        fit: pw.BoxFit.contain,
+                      ),
+                    ),
                   pw.Expanded(
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
