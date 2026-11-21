@@ -119,8 +119,11 @@ export function buildPrintHtml(
 </html>`;
 }
 
-export async function openPrintWindow(html: string): Promise<void> {
-  const printWindow = window.open("", "_blank");
+export async function openPrintWindow(
+  html: string,
+  targetWindow?: Window
+): Promise<void> {
+  const printWindow = targetWindow ?? window.open("", "_blank");
   if (!printWindow) {
     throw new Error(
       "منع المتصفح نافذة الطباعة؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة"
