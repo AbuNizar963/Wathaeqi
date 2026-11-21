@@ -9,6 +9,40 @@ export function buildDocumentWatermarkCss(opacity: number): string {
     ? Math.min(0.6, Math.max(0, opacity))
     : DOCUMENT_WATERMARK_DEFAULT_OPACITY;
   return `
+    .document-a4-page {
+      background-color: white;
+      background-image: linear-gradient(
+        to bottom,
+        #fff 0,
+        #fff calc(var(--document-page-height, 1122.52px) - 12px),
+        #e2e8f0 calc(var(--document-page-height, 1122.52px) - 12px),
+        #e2e8f0 var(--document-page-height, 1122.52px)
+      );
+      background-size: 100% var(--document-page-height, 1122.52px);
+      background-repeat: repeat-y;
+    }
+    @media print {
+      .document-a4-page {
+        background-image: none;
+        background-color: white;
+      }
+      .document-a4-page .document-watermark-layer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 210mm;
+        height: 297mm;
+        overflow: hidden;
+      }
+      .document-a4-page .document-watermark-layer .page-watermark:not(:first-child) {
+        display: none;
+      }
+      .document-a4-page .document-watermark-layer .page-watermark:first-child {
+        top: 0 !important;
+        width: 210mm !important;
+        height: 297mm !important;
+      }
+    }
     .page-watermark {
       position: absolute;
       inset: 0;
