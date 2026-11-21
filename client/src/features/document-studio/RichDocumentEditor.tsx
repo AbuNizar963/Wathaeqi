@@ -101,10 +101,7 @@ export default function RichDocumentEditor({
     : rootClassName;
 
   return (
-    <div
-      className={containerClass}
-      dir="rtl"
-    >
+    <div className={containerClass} dir="rtl">
       {editable && !canRoundTrip ? (
         <p
           role="status"
