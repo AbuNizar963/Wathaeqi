@@ -1002,7 +1002,8 @@ export default function DocumentStudioPage() {
                 <DocumentWatermark
                   logoUrl={logoUrl}
                   watermarkText={
-                    platformDocumentSettings.data?.watermarkText ?? "وزارة الداخلية"
+                    platformDocumentSettings.data?.watermarkText ??
+                    "وزارة الداخلية"
                   }
                   opacityPercent={
                     platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
