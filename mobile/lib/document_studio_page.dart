@@ -1972,139 +1972,144 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               child: SizedBox(
                 width: pageWidth,
                 child: DocumentPaper(
-              showWatermarkText:
-                  _platformDocumentSettings['showMinistryWatermarkText'] !=
-                  false,
-              watermarkOpacity: opacity,
-              logoUrl: _letterhead['logoUrl']?.toString(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: _documentHeaderDividerColor(),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (_letterhead['logoUrl'] is String &&
-                            (_letterhead['logoUrl'] as String).isNotEmpty)
-                          Image.network(
-                            _letterhead['logoUrl'] as String,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) =>
-                                const SizedBox(width: 52, height: 52),
-                          ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _letterhead['departmentName']?.toString() ??
-                                    'وثائقي',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              if ((_letterhead['unitName']?.toString() ?? '')
-                                  .isNotEmpty)
-                                Text(
-                                  _letterhead['unitName'].toString(),
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                            ],
-                          ),
-                        ),
-                        if ((_letterhead['unitChiefName']?.toString() ?? '')
-                            .isNotEmpty)
-                          Column(
-                            children: [
-                              Text(
-                                _letterhead['unitChiefRank']?.toString() ?? '',
-                                style: const TextStyle(color: Colors.black87),
-                              ),
-                              Text(
-                                _letterhead['unitChiefName'].toString(),
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 12,
+                  showWatermarkText:
+                      _platformDocumentSettings['showMinistryWatermarkText'] !=
+                      false,
+                  watermarkOpacity: opacity,
+                  logoUrl: _letterhead['logoUrl']?.toString(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: _documentHeaderDividerColor(),
+                              width: 2,
                             ),
                           ),
                         ),
-                        Text(
-                          'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            if (_letterhead['logoUrl'] is String &&
+                                (_letterhead['logoUrl'] as String).isNotEmpty)
+                              Image.network(
+                                _letterhead['logoUrl'] as String,
+                                width: 52,
+                                height: 52,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) =>
+                                    const SizedBox(width: 52, height: 52),
+                              ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _letterhead['departmentName']?.toString() ??
+                                        'وثائقي',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  if ((_letterhead['unitName']?.toString() ?? '')
+                                      .isNotEmpty)
+                                    Text(
+                                      _letterhead['unitName'].toString(),
+                                      style: const TextStyle(color: Colors.black87),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if ((_letterhead['unitChiefName']?.toString() ?? '')
+                                .isNotEmpty)
+                              Column(
+                                children: [
+                                  Text(
+                                    _letterhead['unitChiefRank']?.toString() ??
+                                        '',
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  Text(
+                                    _letterhead['unitChiefName'].toString(),
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Text(
+                          _subjectController.text.isEmpty
+                              ? 'الموضوع: —'
+                              : 'الموضوع: ${_subjectController.text}',
                           style: const TextStyle(
-                            color: Colors.black87,
-                            fontSize: 12,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      _subjectController.text.isEmpty
-                          ? 'الموضوع: —'
-                          : 'الموضوع: ${_subjectController.text}',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                  ),
-                  Container(
-                    constraints: BoxConstraints(
-                      minHeight: math.max(96, pageHeight - 250),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
-                    child: QuillEditor.basic(
-                      controller: controller,
-                      config: const QuillEditorConfig(padding: EdgeInsets.zero),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
-                    child: Text(
-                      'وثائقي',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54, fontSize: 11),
-                    ),
-                  ),
-                ],
-                  ),
+                      Container(
+                        constraints: BoxConstraints(
+                          minHeight: math.max(96, pageHeight - 250),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+                        child: QuillEditor.basic(
+                          controller: controller,
+                          config: const QuillEditorConfig(
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
+                        child: Text(
+                          'وثائقي',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.black54, fontSize: 11),
+                        ),
+                      ),
+                    ],
+                      ),
                 ),
               ),
             );
