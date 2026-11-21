@@ -56,19 +56,27 @@ function sanitizeDeclaration(
 
 /** Sanitizes cloned inline styles and accessible stylesheet rules in-place. */
 export function sanitizeUnsupportedPrintColors(document: Document): void {
+  const probe = document.createElement("span");
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.cssText =
+    "position:absolute;visibility:hidden;pointer-events:none;color:#000";
+  document.body.appendChild(probe);
+
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   const resolveColor = (colorFunction: string): string => {
-    if (!context) return SAFE_COLOR_FALLBACK;
-
-    context.fillStyle = "#000000";
     try {
+      probe.style.color = colorFunction;
+      const computed = document.defaultView?.getComputedStyle(probe).color;
+      if (computed && !/oklch\\s*\\(/i.test(computed)) return computed;
+
+      if (!context) return SAFE_COLOR_FALLBACK;
+      context.fillStyle = "#000000";
       context.fillStyle = colorFunction;
       const resolved = context.fillStyle;
-      if (typeof resolved !== "string" || /oklch\s*\(/i.test(resolved)) {
-        return SAFE_COLOR_FALLBACK;
-      }
-      return resolved;
+      return typeof resolved === "string" && !/oklch\\s*\\(/i.test(resolved)
+        ? resolved
+        : SAFE_COLOR_FALLBACK;
     } catch {
       return SAFE_COLOR_FALLBACK;
     }
@@ -94,6 +102,15 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
     }
   };
 
+  for (const styleElement of Array.from(
+    document.querySelectorAll<HTMLStyleElement>("style")
+  )) {
+    styleElement.textContent = replaceUnsupportedColorFunctions(
+      styleElement.textContent ?? "",
+      resolveColor
+    );
+  }
+
   for (const sheet of Array.from(document.styleSheets)) {
     try {
       visitRules(sheet.cssRules);
@@ -102,4 +119,6 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
       // rules are still sanitized before html2canvas parses the clone.
     }
   }
+
+  probe.remove();
 }
