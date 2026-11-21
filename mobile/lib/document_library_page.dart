@@ -17,11 +17,9 @@ class DocumentLibraryPage extends StatefulWidget {
   const DocumentLibraryPage({
     super.key,
     required this.api,
-    this.onCreateDocument,
   });
 
   final PoliceApi api;
-  final VoidCallback? onCreateDocument;
 
   @override
   State<DocumentLibraryPage> createState() => _DocumentLibraryPageState();
