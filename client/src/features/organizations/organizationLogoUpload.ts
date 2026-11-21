@@ -1,3 +1,5 @@
+import { appwriteApiUrl } from "@/lib/appwriteApi";
+
 const MAX_SOURCE_LOGO_BYTES = 5 * 1024 * 1024;
 const MAX_STORED_LOGO_BYTES = 2.5 * 1024 * 1024;
 const INITIAL_MAX_DIMENSION = 1600;
@@ -99,7 +101,7 @@ export async function uploadOrganizationLogoDirect(input: {
   blob: Blob;
   contentType: OrganizationLogoContentType;
 }): Promise<UploadedOrganizationLogo> {
-  const response = await fetch("/api/storage/department-logo", {
+  const response = await fetch(appwriteApiUrl("/api/storage/department-logo"), {
     method: "PUT",
     credentials: "same-origin",
     headers: {
