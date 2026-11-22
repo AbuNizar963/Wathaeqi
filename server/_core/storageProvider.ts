@@ -211,7 +211,9 @@ class LegacySupabaseStorageProvider {
     const { error } = await getSupabaseAdmin()
       .storage.from(ENV.supabaseStorageBucket)
       .remove([key]);
-    if (error) throw new Error(`Legacy storage cleanup failed: ${error.message}`);
+    if (error && !isNotFoundError(error)) {
+      throw new Error(`Legacy storage cleanup failed: ${error.message}`);
+    }
   }
 }
 
