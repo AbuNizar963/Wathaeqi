@@ -1037,6 +1037,63 @@ void main() {
   });
 
   test(
+    'recovers an attachment when upload succeeds but its response is lost',
+    () async {
+      const sessionCookie = 'sid=recovery-session';
+      const storageKey =
+          'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
+      final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\\nfixture'));
+      _secureStorageForTest['session_cookie'] = sessionCookie;
+      final requests = <String>[];
+      final client = MockClient((request) async {
+        requests.add(request.url.path);
+        expect(request.headers['cookie'], sessionCookie);
+        if (request.url.path.endsWith('/attachments/upload-url')) {
+          return http.Response(jsonEncode({'key': storageKey}), 200);
+        }
+        if (request.url.path.endsWith('/attachments/upload')) {
+          return http.Response(
+            jsonEncode({'error': 'upload response was lost'}),
+            502,
+          );
+        }
+        if (request.url.path.endsWith('/attachments/finalize')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'key': storageKey,
+              'fileName': 'report.pdf',
+              'contentType': 'application/pdf',
+              'size': bytes.length,
+            }),
+            201,
+          );
+        }
+        return http.Response('unexpected request', 404);
+      });
+      addTearDown(client.close);
+
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+      final result = await api.uploadTelegramAttachment(
+        telegramId: 7,
+        fileName: 'report.pdf',
+        contentType: 'application/pdf',
+        bytes: bytes,
+      );
+
+      expect(result['success'], isTrue);
+      expect(requests, [
+        '/api/telegrams/7/attachments/upload-url',
+        '/api/telegrams/7/attachments/upload',
+        '/api/telegrams/7/attachments/finalize',
+      ]);
+    },
+  );
+
+  test(
     'telegram attachments upload through authenticated server storage',
     () async {
       const sessionCookie = 'sid=authenticated-session';
