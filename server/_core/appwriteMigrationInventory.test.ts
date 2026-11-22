@@ -89,18 +89,18 @@ describe("Appwrite migration inventory", () => {
       expect(report.mode).toBe("read-only");
       expect(report.source.tables).toHaveLength(17);
       expect(
-        report.source.tables.find(item => item.table === "users")?.records,
+        report.source.tables.find(item => item.table === "users")?.records
       ).toBe(21);
       expect(report.source.storage).toEqual([
         { bucket: "telegram-files", objects: 2, bytes: 3072 },
       ]);
       expect(
-        report.destination.tables.find(item => item.table === "users"),
+        report.destination.tables.find(item => item.table === "users")
       ).toMatchObject({ exists: true, records: 1 });
       expect(
         report.destination.tables.find(
-          item => item.table === "auth_login_rate_limits",
-        ),
+          item => item.table === "auth_login_rate_limits"
+        )
       ).toMatchObject({ exists: false, records: null });
       expect(report.destination.authUsers).toBe(1);
       expect(report.destination.storage).toEqual({
@@ -113,7 +113,7 @@ describe("Appwrite migration inventory", () => {
       expect(serialized).not.toContain("must-not-leak");
       expect(serialized).not.toContain("private-document.docx");
       expect(serialized).not.toContain("root-image.png");
-    },
+    }
   );
 
   it("fails closed when Supabase cannot provide an exact count", async () => {
@@ -134,7 +134,7 @@ describe("Appwrite migration inventory", () => {
         users: {} as never,
         databaseId: "database",
         bucketId: "attachments",
-      }),
+      })
     ).rejects.toThrow("Invalid record count returned for Supabase.users");
   });
 });

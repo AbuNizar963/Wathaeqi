@@ -126,7 +126,7 @@ function errorCode(error: unknown): number {
 async function mapWithConcurrency<T, R>(
   items: readonly T[],
   concurrency: number,
-  mapper: (item: T) => Promise<R>,
+  mapper: (item: T) => Promise<R>
 ): Promise<R[]> {
   const results = new Array<R>(items.length);
   let nextIndex = 0;
@@ -141,15 +141,15 @@ async function mapWithConcurrency<T, R>(
   await Promise.all(
     Array.from(
       { length: Math.min(concurrency, items.length) },
-      () => worker(),
-    ),
+      () => worker()
+    )
   );
   return results;
 }
 
 async function countSupabaseTable(
   supabase: SupabaseReadClient,
-  table: string,
+  table: string
 ): Promise<TableCount> {
   const { count, error } = await supabase
     .from(table)
@@ -164,7 +164,7 @@ async function countSupabaseTable(
 
 async function countSupabaseBucket(
   supabase: SupabaseReadClient,
-  bucket: string,
+  bucket: string
 ): Promise<{ bucket: string; objects: number; bytes: number }> {
   const pendingPaths = [""];
   const visitedPaths = new Set<string>();
@@ -188,7 +188,7 @@ async function countSupabaseBucket(
 
       if (error) {
         throw new Error(
-          `Supabase Storage listing failed (${bucket}): ${error.message}`,
+          `Supabase Storage listing failed (${bucket}): ${error.message}`
         );
       }
 
@@ -216,7 +216,7 @@ async function countSupabaseBucket(
 async function countAppwriteTable(
   tables: TablesReadClient,
   databaseId: string,
-  table: string,
+  table: string
 ): Promise<DestinationTableCount> {
   try {
     await tables.getTable({ databaseId, tableId: table });
@@ -245,7 +245,7 @@ async function countAppwriteTable(
 
 async function countAppwriteBucket(
   storage: StorageReadClient,
-  bucketId: string,
+  bucketId: string
 ): Promise<{ bucket: string; objects: number; bytes: number }> {
   let offset = 0;
   let objects = 0;
@@ -280,7 +280,7 @@ async function countAppwriteBucket(
  * contents and never invokes create, update, upload, or delete operations.
  */
 export async function runAppwriteMigrationInventory(
-  dependencies: MigrationInventoryDependencies,
+  dependencies: MigrationInventoryDependencies
 ) {
   const {
     supabase,
@@ -298,34 +298,34 @@ export async function runAppwriteMigrationInventory(
 
   const [sourceTables, sourceBucketResult] = await Promise.all([
     mapWithConcurrency(SOURCE_TABLES, 4, table =>
-      countSupabaseTable(supabase, table),
+      countSupabaseTable(supabase, table)
     ),
     supabase.storage.listBuckets(),
   ]);
 
   if (sourceBucketResult.error) {
     throw new Error(
-      `Supabase bucket listing failed: ${sourceBucketResult.error.message}`,
+      `Supabase bucket listing failed: ${sourceBucketResult.error.message}`
     );
   }
 
   const sourceBuckets = await mapWithConcurrency(
     (sourceBucketResult.data ?? []).map(bucket => bucket.name),
     2,
-    bucket => countSupabaseBucket(supabase, bucket),
+    bucket => countSupabaseBucket(supabase, bucket)
   );
 
   const [destinationTables, destinationAuthUsers, destinationBucket] =
     await Promise.all([
       mapWithConcurrency(SOURCE_TABLES, 4, table =>
-        countAppwriteTable(tables, databaseId, table),
+        countAppwriteTable(tables, databaseId, table)
       ),
       users.list({ queries: [Query.limit(1)] }),
       countAppwriteBucket(storage, bucketId),
     ]);
 
   const destinationByTable = new Map(
-    destinationTables.map(table => [table.table, table]),
+    destinationTables.map(table => [table.table, table])
   );
   const comparisons = sourceTables.map(source => {
     const destination = destinationByTable.get(source.table);
