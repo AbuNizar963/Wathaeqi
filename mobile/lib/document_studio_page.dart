@@ -962,8 +962,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
     setState(() => _saving = true);
     final content = applyDocumentTemplateVariables(
-      _applyFieldValues(_documentContent, _fieldValues),
+      _documentContent,
       {
+        ..._fieldValues,
         'organization':
             (_letterhead['departmentName'] ??
                     _letterhead['organizationName'] ??
