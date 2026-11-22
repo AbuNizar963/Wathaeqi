@@ -123,6 +123,88 @@ void main() {
     },
   );
 
+  test(
+    'telegram attachments upload through the authenticated API without Appwrite JWTs',
+    () async {
+      const sessionCookie = 'sid=telegram-session';
+      const key =
+          'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
+      final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\\nfixture'));
+      _secureStorageForTest['session_cookie'] = sessionCookie;
+      final requests = <http.BaseRequest>[];
+      final client = MockClient((request) async {
+        requests.add(request);
+        expect(request.headers['cookie'], sessionCookie);
+        if (request.url.path.endsWith('/attachments/upload-url')) {
+          expect(request.method, 'POST');
+          expect(jsonDecode((request as http.Request).body), {
+            'fileName': 'report.pdf',
+            'contentType': 'application/pdf',
+            'sizeBytes': bytes.length,
+          });
+          return http.Response(jsonEncode({'key': key}), 200);
+        }
+        if (request.url.path.endsWith('/attachments/upload')) {
+          expect(request.method, 'PUT');
+          expect(
+            request.headers['content-type'],
+            'application/octet-stream',
+          );
+          expect(request.headers['x-attachment-key'], key);
+          expect(request.headers['x-attachment-file-name'], 'report.pdf');
+          expect(
+            request.headers['x-attachment-content-type'],
+            'application/pdf',
+          );
+          expect(request.bodyBytes, bytes);
+          expect(request.url.host, 'police.example.test');
+          expect(request.headers.containsKey('x-appwrite-jwt'), isFalse);
+          return http.Response(
+            jsonEncode({'success': true, 'key': key, 'size': bytes.length}),
+            201,
+          );
+        }
+        expect(request.url.path.endsWith('/attachments/finalize'), isTrue);
+        expect(request.method, 'POST');
+        expect(jsonDecode((request as http.Request).body), {
+          'key': key,
+          'fileName': 'report.pdf',
+          'contentType': 'application/pdf',
+          'sizeBytes': bytes.length,
+        });
+        return http.Response(
+          jsonEncode({
+            'success': true,
+            'key': key,
+            'fileName': 'report.pdf',
+            'contentType': 'application/pdf',
+            'size': bytes.length,
+          }),
+          201,
+        );
+      });
+      addTearDown(client.close);
+
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+      final result = await api.uploadTelegramAttachment(
+        telegramId: 7,
+        fileName: 'report.pdf',
+        contentType: 'application/pdf',
+        bytes: bytes,
+      );
+
+      expect(result['success'], isTrue);
+      expect(requests, hasLength(3));
+      expect(
+        requests.map((request) => request.url.host).toSet(),
+        {'police.example.test'},
+      );
+    },
+  );
+
   test('document upload links metadata in one request without exposing storage credentials', () async {
     const sessionCookie = 'sid=document-session';
     final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
