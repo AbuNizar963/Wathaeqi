@@ -66,5 +66,8 @@ Map<String, dynamic> applyDocumentTemplateVariables(
     };
   }
 
-  return Map<String, dynamic>.from(visit(content) as Map);
+  final result = visit(content);
+  return identical(result, content)
+      ? content
+      : Map<String, dynamic>.from(result as Map);
 }
