@@ -975,7 +975,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     _letterhead['organizationName'] ??
                     'وثائقي')
                 .toString(),
-        'date': DateFormat('yyyy/MM/dd').format(_documentDate),
+      'date': DateFormat('yyyy/MM/dd').format(_documentDate),
         'subject': _subjectController.text.trim(),
         if (_selectedDocument?.serialCode.isNotEmpty == true)
           'number': _selectedDocument!.serialCode,
