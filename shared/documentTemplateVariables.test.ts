@@ -33,7 +33,8 @@ describe("applyDocumentTemplateVariables", () => {
           content: [
             {
               type: "text",
-              text: "إلى مديرية الوثائق بتاريخ 2026/11/22 رقم DOC-00125 الموضوع اعتماد النموذج",
+              text:
+                "إلى مديرية الوثائق بتاريخ 2026/11/22 رقم DOC-00125 الموضوع اعتماد النموذج",
             },
           ],
         },
@@ -95,7 +96,8 @@ describe("applyDocumentTemplateVariables", () => {
       subject: "قرار إداري",
     });
 
-    expect(result.content[0]).toEqual({
+    const resultContent = result.content as unknown[];
+    expect(resultContent[0]).toEqual({
       type: "paragraph",
       attrs: { alignment: "right" },
       content: [
@@ -106,7 +108,7 @@ describe("applyDocumentTemplateVariables", () => {
         },
       ],
     });
-    expect(result.content[1]).toBe(content.content[1]);
+    expect(resultContent[1]).toBe(content.content[1]);
     expect(result.attrs).toEqual({ note: "{{subject}}" });
     expect(content).toEqual(snapshot);
   });
