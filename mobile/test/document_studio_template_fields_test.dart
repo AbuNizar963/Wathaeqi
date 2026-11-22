@@ -70,78 +70,80 @@ void main() {
       );
     });
 
-    test('preserves marks, attributes, unknown nodes and source immutability', () {
-      final content = <String, dynamic>{
-        'type': 'doc',
-        'attrs': {'metadata': '{{name}}'},
-        'content': [
-          {
-            'type': 'paragraph',
-            'attrs': {'id': 'p1'},
-            'content': [
-              {
-                'type': 'text',
-                'text': 'مرحبا {{name}}',
-                'marks': [
-                  {'type': 'bold'},
-                ],
-              },
-            ],
-          },
-          {
-            'type': 'unknownWidget',
-            'content': [
-              {'type': 'text', 'text': '{{name}}'},
-            ],
-            'data': 'keep',
-          },
-        ],
-      };
-      final original = Map<String, dynamic>.from(content);
+    test(
+        'preserves marks, attributes, unknown nodes and source immutability',
+        () {
+          final content = <String, dynamic>{
+          'type': 'doc',
+          'attrs': {'metadata': '{{name}}'},
+          'content': [
+            {
+              'type': 'paragraph',
+              'attrs': {'id': 'p1'},
+              'content': [
+                {
+                  'type': 'text',
+                  'text': 'مرحبا {{name}}',
+                  'marks': [
+                    {'type': 'bold'},
+                  ],
+                },
+              ],
+            },
+            {
+              'type': 'unknownWidget',
+              'content': [
+                {'type': 'text', 'text': '{{name}}'},
+              ],
+              'data': 'keep',
+            },
+          ],
+        };
+        final original = Map<String, dynamic>.from(content);
 
-      final result = DocumentStudioTemplateFields.applyFieldValues(
-        content,
-        {'name': 'أحمد'},
-      );
+        final result = DocumentStudioTemplateFields.applyFieldValues(content, {
+          'name': 'أحمد',
+        });
 
-      expect(result['attrs'], {'metadata': '{{name}}'});
-      expect((result['content'] as List)[0], {
-        'type': 'paragraph',
-        'attrs': {'id': 'p1'},
-        'content': [
-          {
-            'type': 'text',
-            'text': 'مرحبا أحمد',
-            'marks': [
-              {'type': 'bold'},
-            ],
-          },
-        ],
-      });
-      expect((result['content'] as List)[1], (content['content'] as List)[1]);
-      expect(content, original);
+        expect(result['attrs'], {'metadata': '{{name}}'});
+        expect((result['content'] as List)[0], {
+          'type': 'paragraph',
+          'attrs': {'id': 'p1'},
+          'content': [
+            {
+              'type': 'text',
+              'text': 'مرحبا أحمد',
+              'marks': [
+                {'type': 'bold'},
+              ],
+            },
+          ],
+        });
+        expect((result['content'] as List)[1], (content['content'] as List)[1]);
+        expect(content, original);
     });
 
     test('does not modify unsupported legacy HTML or malformed legacy text', () {
-      final html = <String, dynamic>{
-        'type': 'legacy-html',
-        'html': '<p>{{name}}</p>',
-      };
-      final malformed = <String, dynamic>{
-        'type': 'legacy-text',
-        'text': 7,
-      };
-      expect(
-        DocumentStudioTemplateFields.applyFieldValues(html, {'name': 'أحمد'}),
-        html,
-      );
-      expect(
-        DocumentStudioTemplateFields.applyFieldValues(malformed, {
-          'name': 'أحمد',
-        }),
-        malformed,
-      );
-    });
+        final html = <String, dynamic>{
+          'type': 'legacy-html',
+          'html': '<p>{{name}}</p>',
+        };
+        final malformed = <String, dynamic>{
+          'type': 'legacy-text',
+          'text': 7,
+        };
+        expect(
+          DocumentStudioTemplateFields.applyFieldValues(html, {'name': 'أحمد'}),
+          html,
+        );
+        expect(
+          DocumentStudioTemplateFields.applyFieldValues(malformed, {
+            'name': 'أحمد',
+          }),
+          malformed,
+        );
+      },
+    );
 
     test('substitutes only valid legacy plain-text records', () {
       expect(
