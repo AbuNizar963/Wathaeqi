@@ -118,7 +118,8 @@ void main() {
           },
         ],
       };
-      final snapshot = jsonDecode(jsonEncode(content)) as Map<String, dynamic>;
+      final snapshot =
+          jsonDecode(jsonEncode(content)) as Map<String, dynamic>;
 
       final result = applyDocumentTemplateVariables(content, {
         'subject': 'قرار إداري',
@@ -141,7 +142,10 @@ void main() {
         },
       );
       final originalChildren = content['content'] as List;
-      expect(identical((result['content'] as List)[1], originalChildren[1]), isTrue);
+      expect(
+        identical((result['content'] as List)[1], originalChildren[1]),
+        isTrue,
+      );
       expect(result['attrs'], {'note': '{{subject}}'});
       expect(content, snapshot);
     });
