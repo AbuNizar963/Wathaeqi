@@ -657,7 +657,13 @@ export const appwriteSchema: SchemaTable[] = [
     name: "Authentication login rate limits",
     description: "Hashed login keys and their temporary attempt windows.",
     columns: [
-      { key: "keyHash", type: "varchar", size: 64, required: true },
+      {
+        key: "keyHash",
+        type: "varchar",
+        size: 64,
+        required: true,
+        description: "HMAC-SHA256 digest of the normalized login identifier.",
+      },
       { key: "windowStartedAt", type: "datetime", required: true },
       { key: "attempts", type: "integer", required: true },
       { key: "blockedUntil", type: "datetime", required: false },
