@@ -243,41 +243,41 @@ describe("signed telegram attachment uploads", () => {
   it(
     "creates a one-object signed upload URL after checking telegram scope",
     async () => {
-    const { authorize, createUrl, res } =
-      createSignedTelegramAttachmentHarness();
-    const next = vi.fn();
-    const req = request({
-      fileName: "report.pdf",
-      contentType: "application/pdf",
-      sizeBytes: pdfBytes.byteLength,
-    });
-
-    await authorize(req, res, next);
-    expect(next).toHaveBeenCalledOnce();
-    await createUrl(req, res);
-
-    expect(storageCreateOrganizationAttachmentUploadUrl).toHaveBeenCalledWith(
-      testOrganizationId,
-      7,
-      {
+      const { authorize, createUrl, res } =
+        createSignedTelegramAttachmentHarness();
+      const next = vi.fn();
+      const req = request({
         fileName: "report.pdf",
         contentType: "application/pdf",
         sizeBytes: pdfBytes.byteLength,
-      },
-      user.authUserId
-    );
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        key,
-        uploadUrl: appwriteUploadUrl,
-        uploadJwt: "short-lived-jwt",
-        fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
-        sizeBytes: pdfBytes.byteLength,
-      })
-    );
-  });
+      });
+
+      await authorize(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+      await createUrl(req, res);
+
+      expect(storageCreateOrganizationAttachmentUploadUrl).toHaveBeenCalledWith(
+        testOrganizationId,
+        7,
+        {
+          fileName: "report.pdf",
+          contentType: "application/pdf",
+          sizeBytes: pdfBytes.byteLength,
+        },
+        user.authUserId
+      );
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          key,
+          uploadUrl: appwriteUploadUrl,
+          uploadJwt: "short-lived-jwt",
+          fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
+          sizeBytes: pdfBytes.byteLength,
+        })
+      );
+    };
 
   it("validates stored object size and file signature before recording metadata", async () => {
     const { authorize, finalize, res } =
