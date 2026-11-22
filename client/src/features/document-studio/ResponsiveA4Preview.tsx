@@ -131,7 +131,7 @@ export default function ResponsiveA4Preview({
         width: "100%",
         height: Math.ceil(layout.height * zoom),
         overflow: zoom > 1 ? "auto" : "hidden",
-        touchAction: "pan-y",
+        touchAction: "pan-x pan-y",
       }}
     >
       <div
@@ -140,10 +140,35 @@ export default function ResponsiveA4Preview({
         aria-label="تكبير معاينة الورقة"
         dir="ltr"
       >
-        <button type="button" className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40" aria-label="تصغير المعاينة" disabled={zoom <= 0.75} onClick={() => setZoom(current => clampZoom(current - 0.15))}>−</button>
-        <span className="min-w-12 text-center text-xs tabular-nums text-slate-700">{Math.round(zoom * 100)}%</span>
-        <button type="button" className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40" aria-label="تكبير المعاينة" disabled={zoom >= 2.5} onClick={() => setZoom(current => clampZoom(current + 0.15))}>+</button>
-        <button type="button" className="rounded-md px-2 py-1 text-xs font-medium hover:bg-slate-100" aria-label="إعادة ضبط التكبير" onClick={() => setZoom(1)}>ملاءمة</button>
+        <button
+          type="button"
+          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
+          aria-label="تصغير المعاينة"
+          disabled={zoom <= 0.75}
+          onClick={() => setZoom(current => clampZoom(current - 0.15))}
+        >
+          −
+        </button>
+        <span className="min-w-12 text-center text-xs tabular-nums text-slate-700">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
+          aria-label="تكبير المعاينة"
+          disabled={zoom >= 2.5}
+          onClick={() => setZoom(current => clampZoom(current + 0.15))}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="rounded-md px-2 py-1 text-xs font-medium hover:bg-slate-100"
+          aria-label="إعادة ضبط التكبير"
+          onClick={() => setZoom(1)}
+        >
+          ملاءمة
+        </button>
       </div>
       <div
         ref={internalPageRef}
