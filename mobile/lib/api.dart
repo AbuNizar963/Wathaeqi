@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -1496,6 +1497,14 @@ class PoliceApi {
       imageFile: imageFile,
       metadataFile: metadataFile,
     );
+  }
+
+  @visibleForTesting
+  Future<void> waitForPendingOrganizationLogoRefreshes() async {
+    final pending = List<Future<Uint8List?>>.of(
+      _organizationLogoRefreshes.values,
+    );
+    if (pending.isNotEmpty) await Future.wait(pending);
   }
 
   void _scheduleOrganizationLogoRefresh({
