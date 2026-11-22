@@ -201,7 +201,7 @@ async function uploadTelegramAttachment(
   }
 
   const storedFileName = key.split("/").pop()?.slice(37) ?? "";
-  const expectedStorageFileName = metadata.fileName.replace(/\\.\\.+/g, "_");
+  const expectedStorageFileName = metadata.fileName.replace(/\.\.+/g, "_");
   if (storedFileName !== expectedStorageFileName) {
     res.status(400).json({ error: "اسم الملف لا يطابق مفتاح التخزين" });
     return;
