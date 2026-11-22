@@ -132,7 +132,8 @@ describe("stable storage URLs", () => {
         "appwrite-user-7"
       );
       expect(upload).not.toHaveBeenCalled();
-    };
+    }
+  );
 
   it("reads object metadata without downloading file bytes", async () => {
     await expect(
@@ -173,7 +174,8 @@ describe("stable storage URLs", () => {
         contentType: "application/pdf",
         cacheControl: "3600",
       });
-    };
+    }
+  );
 
   it("rejects invalid organization or telegram identifiers before upload", async () => {
     await expect(
