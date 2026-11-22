@@ -228,7 +228,7 @@ async function countAppwriteTable(
   const result = await tables.listRows({
     databaseId,
     tableId: table,
-    queries: [Query.limit(1)],
+    queries: [Query.limit(1), Query.select(["$id"])],
     total: true,
   });
 
@@ -272,8 +272,8 @@ async function countAppwriteBucket(
 }
 
 /**
- * Produces a metadata-only inventory. It never reads row contents or file
- * contents and never invokes create, update, upload, or delete operations.
+ * Produces a count-and-size inventory. Destination table counts select only
+ * one row ID; storage listings read metadata, never file contents.
  */
 export async function runAppwriteMigrationInventory(
   dependencies: MigrationInventoryDependencies
@@ -364,7 +364,7 @@ export async function runAppwriteMigrationInventory(
     comparisons,
     warnings,
     limitations: [
-      "Counts and storage sizes only; no row values, credentials, or file contents are read into the report.",
+      "The report includes counts and sizes only; no row values, credentials, or file contents.",
       "Matching counts do not prove matching IDs, relationships, permissions, indexes, or file checksums.",
       "This inventory does not migrate, update, or delete data.",
     ],
