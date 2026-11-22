@@ -209,14 +209,6 @@ class LegacySupabaseStorageProvider {
     };
   }
 
-  async remove(key: string): Promise<void> {
-    const { error } = await getSupabaseAdmin()
-      .storage.from(ENV.supabaseStorageBucket)
-      .remove([key]);
-    if (error && !isNotFoundError(error)) {
-      throw new Error(`Legacy storage cleanup failed: ${error.message}`);
-    }
-  }
 }
 
 class HybridStorageProvider implements StorageProvider {
@@ -264,13 +256,10 @@ class HybridStorageProvider implements StorageProvider {
   }
 
   async remove(key: string): Promise<void> {
+    // Generic cleanup is limited to Appwrite objects created by this provider.
+    // Legacy Supabase objects are never deleted as a side effect of migration.
     try {
       await this.appwrite.remove?.(key);
-    } catch (error) {
-      if (!isNotFoundError(error)) throw error;
-    }
-    try {
-      await this.legacy.remove(key);
     } catch (error) {
       if (!isNotFoundError(error)) throw error;
     }
