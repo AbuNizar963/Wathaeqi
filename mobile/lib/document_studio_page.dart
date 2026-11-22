@@ -2047,10 +2047,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           _buildTemplateFieldEditor(index),
         const SizedBox(height: 12),
         const Text(
-          'المتغيرات التلقائية: {{organization}} للجهة، {{date}} للتاريخ، ' +
-              '{{number}} للرقم عند الإصدار، و{{subject}} للموضوع. ' +
-              'يمكنك أيضاً إضافة حقول تعبئة مخصصة.',
-          textDirection: TextDirection.rtl,
+          'المتغيرات التلقائية: {{organization}} للجهة، {{date}} للتاريخ، '
+          '{{number}} للرقم عند الإصدار، و{{subject}} للموضوع. '
+          'يمكنك أيضاً إضافة حقول تعبئة مخصصة.',
+          textDirection: ui.TextDirection.rtl,
         ),
         const SizedBox(height: 8),
         _buildA4Editor(controller: _templateEditor, editable: true),
