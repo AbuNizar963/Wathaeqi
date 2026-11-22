@@ -92,7 +92,8 @@
     "zod": "^4.6.7",
     "@node-projects/excelforge": "https://registry.npmjs.org/@node-projects/excelforge/-/excelforge-3.8.0.tgz",
     "officecrypto-tool": "^0.0.19",
-    "node-appwrite": "31.2.0"
+    "node-appwrite": "31.2.0",
+    "undici": "6.29.1"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
