@@ -148,6 +148,16 @@ describe("Appwrite storage provider", () => {
     );
   });
 
+  it("does not hide Appwrite service failures behind the legacy store", async () => {
+    const failure = { code: 500, message: "Appwrite unavailable" };
+    mocks.getFile.mockRejectedValueOnce(failure);
+
+    await expect(
+      getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
+    ).rejects.toEqual(failure);
+    expect(mocks.legacyFrom).not.toHaveBeenCalled();
+  });
+
   it("reads existing Supabase object metadata when Appwrite has no file", async () => {
     mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
