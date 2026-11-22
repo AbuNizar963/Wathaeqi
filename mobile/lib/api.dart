@@ -679,13 +679,32 @@ class PoliceApi {
       'sizeBytes': bytes.length,
     });
 
-    Future<http.Response> finalizeUpload() => send(
-      () => _httpClient.post(
-        finalizeUri,
-        headers: requestHeaders,
-        body: finalizeBody,
-      ),
-    );
+    Future<Map<String, dynamic>> finalizeAndRecord() async {
+      final response = await send(
+        () => _httpClient.post(
+          finalizeUri,
+          headers: requestHeaders,
+          body: finalizeBody,
+        ),
+      );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(response.statusCode, _message(response.body));
+      }
+
+      final finalizedValue = jsonDecode(response.body);
+      if (finalizedValue is! Map) {
+        throw const FormatException('استجابة اعتماد المرفق غير صالحة');
+      }
+      final result = Map<String, dynamic>.from(finalizedValue);
+      _mutationEvents.add(
+        ApiMutationEvent(
+          procedure: 'telegrams.uploadAttachment',
+          input: {'telegramId': telegramId},
+          result: result,
+        ),
+      );
+      return result;
+    }
 
     try {
       final uploadHeaders = <String, String>{
@@ -712,37 +731,17 @@ class PoliceApi {
           _message(uploadResponse.body),
         );
       }
-    } catch (_) {
+    } catch (uploadError, stackTrace) {
       try {
-        await finalizeUpload();
+        // The server may have stored the file even if the upload response was
+        // lost. Finalization is authoritative and makes this operation retry-safe.
+        return await finalizeAndRecord();
       } catch (_) {
-        // Finalization removes any object left behind by an interrupted upload.
+        Error.throwWithStackTrace(uploadError, stackTrace);
       }
-      rethrow;
     }
 
-    final finalizeResponse = await finalizeUpload();
-    if (finalizeResponse.statusCode < 200 ||
-        finalizeResponse.statusCode >= 300) {
-      throw ApiException(
-        finalizeResponse.statusCode,
-        _message(finalizeResponse.body),
-      );
-    }
-
-    final finalizedValue = jsonDecode(finalizeResponse.body);
-    if (finalizedValue is! Map) {
-      throw const FormatException('استجابة اعتماد المرفق غير صالحة');
-    }
-    final result = Map<String, dynamic>.from(finalizedValue);
-    _mutationEvents.add(
-      ApiMutationEvent(
-        procedure: 'telegrams.uploadAttachment',
-        input: {'telegramId': telegramId},
-        result: result,
-      ),
-    );
-    return result;
+    return finalizeAndRecord();
   }
 
   Future<void> _syncOfflineCacheAfterMutation(
