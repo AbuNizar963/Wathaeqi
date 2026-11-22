@@ -400,7 +400,6 @@ class _PlatformDocumentSettingsPageState
               const Text('لا توجد جهات متاحة.')
             else ...[
               DropdownButtonFormField<String>(
-                isExpanded: true,
                 initialValue: _selectedOrganizationId,
                 decoration: const InputDecoration(
                   labelText: 'الجهة',
@@ -798,10 +797,7 @@ class _PlatformDocumentSettingsPageState
                             ),
                             DropdownMenuItem(
                               value: 'tricolor-stars',
-                              child: Text(
-                                'أسود وأخضر مع ثلاث نجوم',
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              child: Text('أسود وأخضر مع ثلاث نجوم'),
                             ),
                           ],
                           onChanged: _saving
