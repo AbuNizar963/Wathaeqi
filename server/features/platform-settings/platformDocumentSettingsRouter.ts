@@ -53,11 +53,7 @@ const platformDocumentSettingsInput = z.object({
     .min(MIN_HEADER_LOGO_SIZE)
     .max(MAX_HEADER_LOGO_SIZE),
   headerTopPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
-  headerHorizontalPaddingMm: z
-    .number()
-    .int()
-    .min(0)
-    .max(MAX_HEADER_PADDING_MM),
+  headerHorizontalPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
   headerBottomPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
   headerAlignment: z.enum(["spread", "center", "right"]),
   pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
