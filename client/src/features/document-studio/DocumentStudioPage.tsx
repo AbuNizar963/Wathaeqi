@@ -1105,7 +1105,7 @@ export default function DocumentStudioPage() {
                     onChange={handleTemplateContentChange}
                     editable={!previewMode}
                     containerClassName="rounded-none border-0 shadow-none"
-                    placeholder="اكتب النص الثابت للنموذج، واستخدم مفاتيح الحقول مثل {{employee_name}}"
+                    placeholder="اكتب نص النموذج واستخدم {{employee_name}} للحقول المخصصة أو {{organization}} و{{date}} و{{number}} و{{subject}} للبيانات التلقائية."
                   />
                 </div>
               </ResponsiveA4Preview>
