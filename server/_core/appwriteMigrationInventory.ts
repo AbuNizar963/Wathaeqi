@@ -156,7 +156,9 @@ async function countSupabaseTable(
     .select("*", { count: "exact", head: true });
 
   if (error) {
-    throw new Error(`Supabase read-only count failed for ${table}: ${error.message}`);
+    throw new Error(
+      `Supabase read-only count failed for ${table}: ${error.message}`
+    );
   }
 
   return { table, records: asCount(count, `Supabase.${table}`) };
@@ -224,8 +226,10 @@ async function countAppwriteTable(
     if (errorCode(error) === 404) {
       return { table, exists: false, records: null };
     }
+    const details =
+      error instanceof Error ? error.message : "unknown error";
     throw new Error(
-      `Appwrite table inspection failed for ${table}: ${error instanceof Error ? error.message : "unknown error"}`
+      `Appwrite table inspection failed for ${table}: ${details}`
     );
   }
 
@@ -347,7 +351,8 @@ export async function runAppwriteMigrationInventory(
     }
     if (item.countDifference !== 0) {
       return [
-        `Record counts differ for ${item.table}: source ${item.sourceRecords}, destination ${item.destinationRecords}`,
+        `Record counts differ for ${item.table}: source ${item.sourceRecords}, ` +
+          `destination ${item.destinationRecords}`,
       ];
     }
     return [];
@@ -368,8 +373,14 @@ export async function runAppwriteMigrationInventory(
     comparisons,
     warnings,
     limitations: [
-      "Counts and storage sizes only; no row values, credentials, or file contents are read into the report.",
-      "Matching counts do not prove matching IDs, relationships, permissions, indexes, or file checksums.",
+      [
+        "Counts and storage sizes only; no row values, credentials, or file",
+        "contents are read into the report.",
+      ].join(" "),
+      [
+        "Matching counts do not prove matching IDs, relationships, permissions,",
+        "indexes, or file checksums.",
+      ].join(" "),
       "This inventory does not migrate, update, or delete data.",
     ],
   };
