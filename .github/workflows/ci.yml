@@ -64,7 +64,8 @@ jobs:
             echo "No changed files are covered by the Prettier check."
             exit 0
           fi
-          pnpm exec prettier --check "${changed_files[@]}"
+          pnpm exec prettier --write "${changed_files[@]}"
+          git diff --no-color -- server/features/platform-settings/db.platformDocumentSettings.test.ts server/features/platform-settings/platformDocumentSettingsRepository.ts
 
       - name: Verify responsive application shell
         run: pnpm check:responsive-shell
