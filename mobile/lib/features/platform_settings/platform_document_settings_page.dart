@@ -82,6 +82,9 @@ class _PlatformDocumentSettingsPageState
   final TextEditingController _colorController = TextEditingController(
     text: _defaultColor,
   );
+  final TextEditingController _frameColorController = TextEditingController(
+    text: _defaultColor,
+  );
 
   @override
   void initState() {
@@ -93,6 +96,7 @@ class _PlatformDocumentSettingsPageState
   @override
   void dispose() {
     _colorController.dispose();
+    _frameColorController.dispose();
     super.dispose();
   }
 
@@ -143,6 +147,7 @@ class _PlatformDocumentSettingsPageState
             .toDouble();
         _frameStyle = result['frameStyle']?.toString() ?? 'single';
         _frameColor = result['frameColor']?.toString() ?? _defaultColor;
+        _frameColorController.text = _frameColor;
         _frameWidthPt = (result['frameWidthPt'] as num? ?? 1).toDouble();
         _marginTopMm = (result['pageMarginTopMm'] as num? ?? 10).toDouble();
         _marginRightMm = (result['pageMarginRightMm'] as num? ?? 10).toDouble();
@@ -400,7 +405,6 @@ class _PlatformDocumentSettingsPageState
               const Text('لا توجد جهات متاحة.')
             else ...[
               DropdownButtonFormField<String>(
-                isExpanded: true,
                 initialValue: _selectedOrganizationId,
                 decoration: const InputDecoration(
                   labelText: 'الجهة',
@@ -758,7 +762,7 @@ class _PlatformDocumentSettingsPageState
                           decoration: const InputDecoration(
                             labelText: 'لون الإطار #RRGGBB',
                           ),
-                          controller: TextEditingController(text: _frameColor),
+                          controller: _frameColorController,
                           onChanged: (v) {
                             if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) {
                               setState(() => _frameColor = v.toLowerCase());
@@ -798,10 +802,7 @@ class _PlatformDocumentSettingsPageState
                             ),
                             DropdownMenuItem(
                               value: 'tricolor-stars',
-                              child: Text(
-                                'أسود وأخضر مع ثلاث نجوم',
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              child: Text('أسود وأخضر مع ثلاث نجوم'),
                             ),
                           ],
                           onChanged: _saving
