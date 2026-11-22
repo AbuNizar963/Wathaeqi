@@ -66,6 +66,10 @@ export const MOBILE_PUSH_TOKENS_TABLE = "mobile_push_tokens";
 export const ORGANIZATIONS_TABLE = "organizations";
 export const CONTACTS_TABLE = "contacts";
 export const COUNTERS_TABLE = "counters";
+export const USERS_TABLE = "users";
+export const ORGANIZATION_MEMBERSHIPS_TABLE = "organization_memberships";
+export const AUDIT_LOGS_TABLE = "audit_logs";
+export const APP_RECORDS_TABLE = "app_records";
 
 export const appwriteSchema: SchemaTable[] = [
   {
@@ -464,6 +468,158 @@ export const appwriteSchema: SchemaTable[] = [
     ],
   },
   {
+    id: USERS_TABLE,
+    name: "User profiles",
+    description:
+      "Application profile rows linked to native Appwrite Auth identities.",
+    columns: [
+      ID_COLUMN,
+      { key: "authUserId", type: "varchar", size: 36, required: true },
+      { key: "sessionVersion", type: "varchar", size: 64, required: false },
+      { key: "organizationId", type: "varchar", size: 36, required: true },
+      { key: "name", type: "varchar", size: 255, required: false },
+      { key: "username", type: "varchar", size: 120, required: true },
+      { key: "badgeNumber", type: "varchar", size: 80, required: false },
+      { key: "bio", type: "text", required: false },
+      { key: "phone", type: "varchar", size: 40, required: false },
+      { key: "rank", type: "varchar", size: 120, required: false },
+      { key: "unit", type: "varchar", size: 255, required: false },
+      { key: "avatarKey", type: "varchar", size: 255, required: false },
+      { key: "email", type: "varchar", size: 320, required: false },
+      { key: "loginMethod", type: "varchar", size: 32, required: false },
+      { key: "isActive", type: "boolean", required: true, default: true },
+      {
+        key: "isPlatformOwner",
+        type: "boolean",
+        required: true,
+        default: false,
+      },
+      {
+        key: "mustChangePassword",
+        type: "boolean",
+        required: true,
+        default: false,
+      },
+      { key: "role", type: "varchar", size: 16, required: true, default: "user" },
+      CREATED_AT,
+      UPDATED_AT,
+      { key: "lastSignedIn", type: "datetime", required: true },
+    ],
+    indexes: [
+      { key: "users_id_unique", type: "unique", columns: ["id"] },
+      {
+        key: "users_auth_user_unique",
+        type: "unique",
+        columns: ["authUserId"],
+      },
+      {
+        key: "users_username_unique",
+        type: "unique",
+        columns: ["username"],
+      },
+      {
+        key: "users_organization",
+        type: "key",
+        columns: ["organizationId"],
+      },
+    ],
+  },
+  {
+    id: ORGANIZATION_MEMBERSHIPS_TABLE,
+    name: "Organization memberships",
+    description: "Organization-scoped user roles and active membership state.",
+    columns: [
+      ID_COLUMN,
+      { key: "organizationId", type: "varchar", size: 36, required: true },
+      { key: "userId", type: "integer", required: true },
+      { key: "role", type: "varchar", size: 32, required: true },
+      { key: "isActive", type: "boolean", required: true, default: true },
+      CREATED_AT,
+      UPDATED_AT,
+    ],
+    indexes: [
+      {
+        key: "organization_memberships_org_user_unique",
+        type: "unique",
+        columns: ["organizationId", "userId"],
+      },
+      {
+        key: "organization_memberships_user",
+        type: "key",
+        columns: ["userId"],
+      },
+      {
+        key: "organization_memberships_org_active",
+        type: "key",
+        columns: ["organizationId", "isActive"],
+      },
+    ],
+  },
+  {
+    id: AUDIT_LOGS_TABLE,
+    name: "Audit logs",
+    description:
+      "Append-only operational audit entries with a verifiable hash chain.",
+    columns: [
+      ID_COLUMN,
+      { key: "actorUserId", type: "integer", required: true },
+      { key: "actorName", type: "varchar", size: 255, required: true },
+      { key: "action", type: "varchar", size: 80, required: true },
+      { key: "entityType", type: "varchar", size: 80, required: true },
+      { key: "entityId", type: "varchar", size: 80, required: false },
+      { key: "metadata", type: "text", required: false },
+      { key: "ipAddress", type: "varchar", size: 80, required: false },
+      { key: "userAgent", type: "varchar", size: 512, required: false },
+      { key: "deviceType", type: "varchar", size: 32, required: true },
+      { key: "actorRank", type: "varchar", size: 120, required: false },
+      { key: "actorRole", type: "varchar", size: 80, required: false },
+      { key: "organizationId", type: "varchar", size: 36, required: false },
+      { key: "reason", type: "text", required: false },
+      { key: "beforeState", type: "text", required: false },
+      { key: "afterState", type: "text", required: false },
+      { key: "previousHash", type: "varchar", size: 64, required: false },
+      { key: "entryHash", type: "varchar", size: 64, required: true },
+      CREATED_AT,
+    ],
+    indexes: [
+      { key: "audit_logs_entry_hash_unique", type: "unique", columns: ["entryHash"] },
+      {
+        key: "audit_logs_actor_created",
+        type: "key",
+        columns: ["actorUserId", "createdAt"],
+        orders: ["ASC", "DESC"],
+      },
+      {
+        key: "audit_logs_org_created",
+        type: "key",
+        columns: ["organizationId", "createdAt"],
+        orders: ["ASC", "DESC"],
+      },
+    ],
+  },
+  {
+    id: APP_RECORDS_TABLE,
+    name: "Application records",
+    description:
+      "Small keyed application records for one-time setup and audit-chain metadata.",
+    columns: [
+      { key: "recordType", type: "varchar", size: 80, required: true },
+      { key: "recordKey", type: "varchar", size: 128, required: true },
+      { key: "ownerId", type: "varchar", size: 36, required: false },
+      { key: "organizationId", type: "varchar", size: 36, required: false },
+      CREATED_AT,
+      UPDATED_AT,
+      { key: "payload", type: "text", required: true },
+    ],
+    indexes: [
+      {
+        key: "app_records_type_key_unique",
+        type: "unique",
+        columns: ["recordType", "recordKey"],
+      },
+    ],
+  },
+  {
     id: CONTACTS_TABLE,
     name: "Contacts",
     description: "Simple address book entries owned by a user.",
@@ -675,4 +831,9 @@ export const REQUIRED_TABLE_IDS = [
   NOTIFICATIONS_TABLE,
   MOBILE_PUSH_TOKENS_TABLE,
   COUNTERS_TABLE,
+  ORGANIZATIONS_TABLE,
+  USERS_TABLE,
+  ORGANIZATION_MEMBERSHIPS_TABLE,
+  AUDIT_LOGS_TABLE,
+  APP_RECORDS_TABLE,
 ] as const;
