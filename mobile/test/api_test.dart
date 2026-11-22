@@ -1044,9 +1044,9 @@ void main() {
           'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
       final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\\nfixture'));
       _secureStorageForTest['session_cookie'] = sessionCookie;
-      final requests = <String>[];
+      final requests = <Uri>[];
       final client = MockClient((request) async {
-        requests.add('${request.method} ${request.url.path}');
+        requests.add(request.url);
         expect(request.headers['cookie'], sessionCookie);
         if (request.url.path.endsWith('/attachments/upload-url')) {
           expect(request.method, 'POST');
@@ -1127,10 +1127,8 @@ void main() {
       expect(result['success'], isTrue);
       expect(requests, hasLength(3));
       expect(
-        requests.every((request) => request.startsWith(
-          request.split(' ').first + ' https://police.example.test',
-        )),
-        isFalse,
+        requests.every((uri) => uri.host == 'police.example.test'),
+        isTrue,
       );
       expect(events.single.procedure, 'telegrams.uploadAttachment');
       expect(events.single.telegramId, 7);
