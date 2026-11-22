@@ -31,13 +31,12 @@ class DocumentStudioTemplateFields {
         !(node['text'] as String).contains('\r');
 
     String replacePlaceholders(String source) {
-      return source.replaceAllMapped(
-        RegExp(r'\{\{\s*([^{}]{1,64}?)\s*\}\}'),
-        (match) {
-          final key = match.group(1)?.trim() ?? '';
-          return values.containsKey(key) ? values[key]! : match.group(0)!;
-        },
-      );
+      return source.replaceAllMapped(RegExp(r'\{\{\s*([^{}]{1,64}?)\s*\}\}'), (
+        match,
+      ) {
+        final key = match.group(1)?.trim() ?? '';
+        return values.containsKey(key) ? values[key]! : match.group(0)!;
+      });
     }
 
     dynamic visit(dynamic value) {
