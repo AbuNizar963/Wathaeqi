@@ -30,6 +30,19 @@ function rowData(row: AppwriteRow): Record<string, unknown> {
   return row.data ?? row;
 }
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return String(error);
+}
+
 async function findSettingsRow(): Promise<AppwriteRow | null> {
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
@@ -210,17 +223,8 @@ export async function updatePlatformDocumentSettings(
         ? Number((error as { code?: unknown }).code)
         : 0;
     if (code !== 409) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : error &&
-              typeof error === "object" &&
-              "message" in error &&
-              typeof error.message === "string"
-            ? error.message
-            : String(error);
       throw new Error(
-        `Failed to save platform document settings: ${message}`
+        `Failed to save platform document settings: ${errorMessage(error)}`
       );
     }
     const raced = await findSettingsRow();
