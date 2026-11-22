@@ -721,7 +721,7 @@ class _PlatformDocumentSettingsPageState
                           ),
                         ),
                         DropdownButtonFormField<String>(
-                isExpanded: true,
+                          isExpanded: true,
                           initialValue: _frameStyle,
                           decoration: const InputDecoration(
                             labelText: 'شكل الإطار',
@@ -774,7 +774,7 @@ class _PlatformDocumentSettingsPageState
                           (v) => setState(() => _frameWidthPt = v),
                         ),
                         DropdownButtonFormField<String>(
-                isExpanded: true,
+                          isExpanded: true,
                           initialValue: _headerDividerStyle,
                           decoration: const InputDecoration(
                             labelText: 'نمط الفاصل بين الرأس والمحتوى',
