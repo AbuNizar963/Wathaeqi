@@ -4,6 +4,10 @@ import type { PlatformDocumentSettings } from "@shared/features/platform-setting
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
 
+function clampPreviewZoom(value: number): number {
+  return Math.min(2.5, Math.max(0.75, Math.round(value * 100) / 100));
+}
+
 type ResponsiveA4PreviewProps = {
   children: ReactNode;
   pageRef?: { current: HTMLDivElement | null };
@@ -31,9 +35,6 @@ export default function ResponsiveA4Preview({
     null
   );
 
-  const clampZoom = (value: number) =>
-    Math.min(2.5, Math.max(0.75, Math.round(value * 100) / 100));
-
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -59,7 +60,7 @@ export default function ResponsiveA4Preview({
         second.clientY - first.clientY
       );
       if (start.distance > 0) {
-        setZoom(clampZoom(start.zoom * (distance / start.distance)));
+        setZoom(clampPreviewZoom(start.zoom * (distance / start.distance)));
       }
     };
     const handleTouchEnd = (event: TouchEvent) => {
@@ -140,7 +141,7 @@ export default function ResponsiveA4Preview({
           className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
           aria-label="تصغير المعاينة"
           disabled={zoom <= 0.75}
-          onClick={() => setZoom(current => clampZoom(current - 0.15))}
+          onClick={() => setZoom(current => clampPreviewZoom(current - 0.15))}
         >
           −
         </button>
@@ -152,7 +153,7 @@ export default function ResponsiveA4Preview({
           className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
           aria-label="تكبير المعاينة"
           disabled={zoom >= 2.5}
-          onClick={() => setZoom(current => clampZoom(current + 0.15))}
+          onClick={() => setZoom(current => clampPreviewZoom(current + 0.15))}
         >
           +
         </button>
