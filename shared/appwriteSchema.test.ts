@@ -146,7 +146,9 @@ describe("Appwrite operational schema", () => {
         "audit_org_created_idx",
       ])
     );
-    expect(records?.indexes.map(index => index.key)).toContain("record_type_key");
+    expect(records?.indexes.map(index => index.key)).toContain(
+      "record_type_key"
+    );
   });
 
   it("does not duplicate table identifiers in the provisioned schema", () => {
