@@ -184,7 +184,9 @@ describe("Appwrite storage provider", () => {
     expect(mocks.legacyDownload).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
   });
 
-  it("creates signed URLs for legacy Supabase objects only after Appwrite returns not found", async () => {
+  it(
+    "creates signed URLs for legacy Supabase objects only after Appwrite returns not found",
+    async () => {
     mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
 
     await expect(
