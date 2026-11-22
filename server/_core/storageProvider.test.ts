@@ -79,13 +79,14 @@ describe("Appwrite storage provider", () => {
   it(
     "uploads files privately using a deterministic Appwrite file ID",
     async () => {
-    const key =
-      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
-    const body = Buffer.from("report");
-    await getStorageProvider().upload(key, body, {
-      contentType: "application/pdf",
-      cacheControl: "3600",
-    });
+      const key =
+        "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
+      const body = Buffer.from("report");
+      await getStorageProvider().upload(key, body, {
+        contentType: "application/pdf",
+        cacheControl: "3600",
+        },
+  );
 
     const { createHash } = await import("node:crypto");
     const expectedId = createHash("sha256")
@@ -154,26 +155,28 @@ describe("Appwrite storage provider", () => {
   it(
     "does not hide Appwrite service failures behind the legacy store",
     async () => {
-    const failure = { code: 500, message: "Appwrite unavailable" };
-    mocks.getFile.mockRejectedValueOnce(failure);
+      const failure = { code: 500, message: "Appwrite unavailable" };
+      mocks.getFile.mockRejectedValueOnce(failure);
 
-    await expect(
-      getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
-    ).rejects.toEqual(failure);
-    expect(mocks.legacyFrom).not.toHaveBeenCalled();
-  });
+      await expect(
+        getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
+      ).rejects.toEqual(failure);
+      expect(mocks.legacyFrom).not.toHaveBeenCalled();
+    },
+  );
 
   it(
     "reads existing Supabase object metadata when Appwrite has no file",
     async () => {
-    mocks.getFile.mockRejectedValueOnce({ code: 404 });
+      mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
-    await expect(
-      getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
-    ).resolves.toEqual({
-      size: 6,
-      contentType: "application/pdf",
-    });
+      await expect(
+        getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
+      ).resolves.toEqual({
+        size: 6,
+        contentType: "application/pdf",
+        },
+  );
 
     expect(mocks.legacyFrom).toHaveBeenCalledWith("telegram-files");
     expect(mocks.legacyInfo).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
@@ -182,42 +185,43 @@ describe("Appwrite storage provider", () => {
   it(
     "downloads existing Supabase objects when Appwrite has no file",
     async () => {
-    mocks.getFile.mockRejectedValueOnce({ code: 404 });
+      mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
-    await expect(
-      getStorageProvider().download("telegrams/7/legacy.pdf")
-    ).resolves.toEqual({
-      body: Buffer.from("legacy"),
-      contentType: "application/pdf",
-    });
+      await expect(
+        getStorageProvider().download("telegrams/7/legacy.pdf")
+      ).resolves.toEqual({
+        body: Buffer.from("legacy"),
+        contentType: "application/pdf",
+        },
+  );
     expect(mocks.legacyDownload).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
   });
 
   it("uses legacy Supabase URLs for missing Appwrite files", async () => {
-      mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
+    mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
 
-      await expect(
-        getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600)
-      ).resolves.toBe("https://legacy.example/signed");
+    await expect(
+      getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600)
+    ).resolves.toBe("https://legacy.example/signed");
 
-      expect(mocks.legacyCreateSignedUrl).toHaveBeenCalledWith(
-        "telegrams/7/legacy.pdf",
-        600
-      );
-    },
-  );
+    expect(mocks.legacyCreateSignedUrl).toHaveBeenCalledWith(
+      "telegrams/7/legacy.pdf",
+      600
+    );
+  });
 
   it(
     "never deletes legacy Supabase objects during generic cleanup",
     async () => {
-    mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
+      mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
 
-    await expect(
-      getStorageProvider().remove?.("telegrams/7/legacy.pdf")
-    ).resolves.toBeUndefined();
+      await expect(
+        getStorageProvider().remove?.("telegrams/7/legacy.pdf")
+      ).resolves.toBeUndefined();
 
-    expect(mocks.legacyFrom).not.toHaveBeenCalled();
-  });
+      expect(mocks.legacyFrom).not.toHaveBeenCalled();
+    },
+  );
 
   it("rejects unsafe storage paths", async () => {
     await expect(
