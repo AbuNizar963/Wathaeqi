@@ -519,7 +519,7 @@ export const appwriteSchema: SchemaTable[] = [
         columns: ["authUserId"],
       },
       { key: "users_username_unique", type: "unique", columns: ["username"] },
-      { key: "users_organization", type: "key", columns: ["organizationId"] },
+      { key: "users_organization_idx", type: "key", columns: ["organizationId"] },
     ],
   },
   {
@@ -537,19 +537,19 @@ export const appwriteSchema: SchemaTable[] = [
     ],
     indexes: [
       {
-        key: "organization_memberships_org_user_unique",
+        key: "org_user_unique",
         type: "unique",
         columns: ["organizationId", "userId"],
       },
       {
-        key: "organization_memberships_user",
-        type: "key",
-        columns: ["userId"],
+        key: "org_membership_id_unique",
+        type: "unique",
+        columns: ["id"],
       },
       {
-        key: "organization_memberships_org_active",
+        key: "org_memberships_user_idx",
         type: "key",
-        columns: ["organizationId", "isActive"],
+        columns: ["userId"],
       },
     ],
   },
@@ -587,18 +587,23 @@ export const appwriteSchema: SchemaTable[] = [
     ],
     indexes: [
       {
+        key: "audit_logs_id_unique",
+        type: "unique",
+        columns: ["id"],
+      },
+      {
         key: "audit_logs_entry_hash_unique",
         type: "unique",
         columns: ["entryHash"],
       },
       {
-        key: "audit_logs_actor_created",
+        key: "audit_actor_created_idx",
         type: "key",
         columns: ["actorUserId", "createdAt"],
         orders: ["ASC", "DESC"],
       },
       {
-        key: "audit_logs_org_created",
+        key: "audit_org_created_idx",
         type: "key",
         columns: ["organizationId", "createdAt"],
         orders: ["ASC", "DESC"],
@@ -620,7 +625,7 @@ export const appwriteSchema: SchemaTable[] = [
     ],
     indexes: [
       {
-        key: "app_records_type_key_unique",
+        key: "record_type_key",
         type: "unique",
         columns: ["recordType", "recordKey"],
       },
