@@ -43,6 +43,7 @@ import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
 import DocumentEditor from "./DocumentEditor";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
+import { applyDocumentTemplateVariables } from "../../../../shared/documentTemplateVariables";
 import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
 import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
@@ -398,10 +399,13 @@ export default function DocumentStudioPage() {
       title: documentTitle.trim(),
       category: documentCategory,
       subject: documentSubject.trim(),
-      content: contentForSave(
-        documentContent,
-        documentFieldValues,
-        Boolean(selectedTemplateId) && !templateValuesApplied
+      content: applyDocumentTemplateVariables(
+        contentForSave(
+          documentContent,
+          documentFieldValues,
+          Boolean(selectedTemplateId) && !templateValuesApplied
+        ),
+        getDocumentSystemVariables()
       ),
       fieldValues: documentFieldValues,
       documentDate: makeDocumentDate(documentDate),
@@ -575,6 +579,25 @@ export default function DocumentStudioPage() {
       ? organizationContext.data?.organizationName
       : null) ??
     "وثائقي";
+
+  function getDocumentSystemVariables(): Record<string, string> {
+    const values: Record<string, string> = {
+      organization: organizationName,
+      date: formatArabicDate(makeDocumentDate(documentDate)),
+      subject: documentSubject.trim(),
+    };
+    if (selectedDocument?.serialCode) {
+      values.number = selectedDocument.serialCode;
+    }
+    return values;
+  }
+
+  const documentPreviewContent =
+    selectedDocument && selectedDocument.status !== "draft"
+      ? applyDocumentTemplateVariables(documentContent, {
+          number: selectedDocument.serialCode,
+        })
+      : documentContent;
   const logoUrl = settings?.logoUrl ?? null;
   const dividerColor =
     platformDocumentSettings.data?.headerDividerColor ?? "#334155";
@@ -1239,7 +1262,10 @@ export default function DocumentStudioPage() {
                       disabled={!canEditDocument}
                       onClick={() => {
                         setDocumentContent(current =>
-                          applyFieldValues(current, documentFieldValues)
+                          applyDocumentTemplateVariables(
+                            applyFieldValues(current, documentFieldValues),
+                            getDocumentSystemVariables()
+                          )
                         );
                         setTemplateValuesApplied(true);
                       }}
@@ -1376,7 +1402,7 @@ export default function DocumentStudioPage() {
                       </p>
                     ) : null}
                     <DocumentEditor
-                      content={documentContent}
+                      content={documentPreviewContent}
                       onChange={handleDocumentContentChange}
                       editable={canEditDocument && !previewMode}
                       containerClassName="rounded-none border-0 shadow-none"
