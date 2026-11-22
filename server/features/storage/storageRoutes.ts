@@ -48,7 +48,7 @@ import {
 const ORGANIZATION_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 type TelegramAttachmentRequestContext = {
   user: NonNullable<
