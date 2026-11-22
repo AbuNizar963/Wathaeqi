@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_PLATFORM_DOCUMENT_SETTINGS
-} from "../../../shared/features/platform-settings/platformDocumentSettings";
+import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
