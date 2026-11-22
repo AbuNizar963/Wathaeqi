@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main", "flutter-mobile-app"]
+    branches: ["main"]
   pull_request:
     branches: ["main"]
 
