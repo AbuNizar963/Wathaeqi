@@ -104,6 +104,10 @@ type DestinationTableCount = {
 };
 
 function asCount(value: unknown, label: string): number {
+  if (value === null || value === undefined || value === "") {
+    throw new Error(`Invalid record count returned for ${label}`);
+  }
+
   const count = Number(value);
   if (!Number.isSafeInteger(count) || count < 0) {
     throw new Error(`Invalid record count returned for ${label}`);
