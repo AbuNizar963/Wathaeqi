@@ -563,7 +563,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final content = DocumentStudioQuillCodec.normalizeLegacyText(
       document.content,
     );
-    if (document.fieldValues.isNotEmpty) return content;
+    if (document.fieldValues.isNotEmpty) {
+      if (document.serialCode.isEmpty) return content;
+      return applyDocumentTemplateVariables(content, {
+        'number': document.serialCode,
+      });
+    }
     return applyDocumentTemplateVariables(content, {
       'organization':
           (_letterhead['departmentName'] ??
