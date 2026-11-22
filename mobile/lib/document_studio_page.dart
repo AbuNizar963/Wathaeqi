@@ -22,6 +22,7 @@ import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
+import 'document_studio_image_embed_builder.dart';
 
 enum DocumentStudioTab { documents, templates, archive }
 
@@ -2770,7 +2771,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                     child: QuillEditor.basic(
                       controller: controller,
-                      config: const QuillEditorConfig(padding: EdgeInsets.zero),
+                      config: QuillEditorConfig(
+            padding: EdgeInsets.zero,
+            embedBuilders: const [DocumentStudioImageEmbedBuilder()],
+          ),
                     ),
                   ),
                   const Padding(
