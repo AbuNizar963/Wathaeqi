@@ -187,17 +187,18 @@ describe("Appwrite storage provider", () => {
   it(
     "uses legacy Supabase URLs for missing Appwrite files",
     async () => {
-    mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
+      mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
 
-    await expect(
-      getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600)
-    ).resolves.toBe("https://legacy.example/signed");
+      await expect(
+        getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600)
+      ).resolves.toBe("https://legacy.example/signed");
 
-    expect(mocks.legacyCreateSignedUrl).toHaveBeenCalledWith(
-      "telegrams/7/legacy.pdf",
-      600
-    );
-  });
+      expect(mocks.legacyCreateSignedUrl).toHaveBeenCalledWith(
+        "telegrams/7/legacy.pdf",
+        600
+      );
+    }
+  );
 
   it("never deletes legacy Supabase objects during generic cleanup", async () => {
     mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
