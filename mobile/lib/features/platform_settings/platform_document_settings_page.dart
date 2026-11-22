@@ -772,6 +772,7 @@ class _PlatformDocumentSettingsPageState
                           (v) => setState(() => _frameWidthPt = v),
                         ),
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
                           initialValue: _headerDividerStyle,
                           decoration: const InputDecoration(
                             labelText: 'نمط الفاصل بين الرأس والمحتوى',
@@ -795,7 +796,10 @@ class _PlatformDocumentSettingsPageState
                             ),
                             DropdownMenuItem(
                               value: 'tricolor-stars',
-                              child: Text('أسود وأخضر مع ثلاث نجوم'),
+                              child: Text(
+                                'أسود وأخضر مع ثلاث نجوم',
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                           onChanged: _saving
