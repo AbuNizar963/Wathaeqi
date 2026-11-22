@@ -118,6 +118,24 @@ export default function ResponsiveA4Preview({
     };
   }, [pageRef]);
 
+  const pagePadding = [
+    `${settings?.pageMarginTopMm ?? 10}mm`,
+    `${settings?.pageMarginRightMm ?? 10}mm`,
+    `${settings?.pageMarginBottomMm ?? 10}mm`,
+    `${settings?.pageMarginLeftMm ?? 10}mm`,
+  ].join(" ");
+  const pageBorder =
+    settings?.frameStyle === "none"
+      ? "none"
+      : [
+          `${settings?.frameWidthPt ?? 1}pt`,
+          settings?.frameStyle === "double" ||
+          settings?.frameStyle === "ornate"
+            ? "double"
+            : "solid",
+          settings?.frameColor ?? "#b49a55",
+        ].join(" ");
+
   return (
     <div
       ref={viewportRef}
@@ -178,12 +196,9 @@ export default function ResponsiveA4Preview({
           left: "50%",
           transform: `translateX(-50%) scale(${layout.scale * zoom})`,
           transformOrigin: "top center",
-          padding: `${settings?.pageMarginTopMm ?? 10}mm ${settings?.pageMarginRightMm ?? 10}mm ${settings?.pageMarginBottomMm ?? 10}mm ${settings?.pageMarginLeftMm ?? 10}mm`,
+          padding: pagePadding,
           boxSizing: "border-box",
-          border:
-            settings?.frameStyle === "none"
-              ? "none"
-              : `${settings?.frameWidthPt ?? 1}pt ${settings?.frameStyle === "double" ? "double" : settings?.frameStyle === "ornate" ? "double" : "solid"} ${settings?.frameColor ?? "#b49a55"}`,
+          border: pageBorder,
           boxShadow:
             settings?.frameStyle === "ornate"
               ? `inset 0 0 0 3px #fff, inset 0 0 0 4px ${settings.frameColor}`
