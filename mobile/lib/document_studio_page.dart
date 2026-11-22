@@ -1047,7 +1047,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'id': document.id,
         'expectedUpdatedAt': document.expectedUpdatedAt,
       });
-      _selectedDocument = OfficialDocument.fromJson(saved);
+      final issuedDocument = OfficialDocument.fromJson(saved);
+      _selectedDocument = issuedDocument;
+      _replaceDocumentEditor(
+        applyDocumentTemplateVariables(issuedDocument.content, {
+          'organization':
+              (_letterhead['departmentName'] ??
+                      _letterhead['organizationName'] ??
+                      'وثائقي')
+                  .toString(),
+          'date': DateFormat('yyyy/MM/dd').format(issuedDocument.documentDate),
+          'subject': issuedDocument.subject,
+          if (issuedDocument.serialCode.isNotEmpty)
+            'number': issuedDocument.serialCode,
+        }),
+      );
       await _load();
       _showMessage('تم إصدار الوثيقة بالرقم ${saved['serialCode']}');
     } catch (error) {
