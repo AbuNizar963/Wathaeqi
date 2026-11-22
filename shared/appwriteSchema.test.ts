@@ -173,6 +173,14 @@ describe("Appwrite operational schema", () => {
         "updatedAt",
       ])
     );
+    expect(rateLimits?.columns).toContainEqual(
+      expect.objectContaining({
+        key: "keyHash",
+        type: "varchar",
+        size: 64,
+        required: true,
+      })
+    );
     expect(rateLimits?.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

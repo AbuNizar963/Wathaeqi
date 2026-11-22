@@ -495,7 +495,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 512,
         required: false,
-        description: "Encrypted legacy password verifier; never store raw hashes.",
+        description: "Encrypted legacy verifier; never store raw hashes.",
       },
       { key: "isActive", type: "boolean", required: true, default: true },
       {
@@ -650,7 +650,7 @@ export const appwriteSchema: SchemaTable[] = [
     name: "Authentication login rate limits",
     description: "Hashed login keys and their temporary attempt windows.",
     columns: [
-      { key: "keyHash", type: "text", required: true },
+      { key: "keyHash", type: "varchar", size: 64, required: true },
       { key: "windowStartedAt", type: "datetime", required: true },
       { key: "attempts", type: "integer", required: true },
       { key: "blockedUntil", type: "datetime", required: false },
