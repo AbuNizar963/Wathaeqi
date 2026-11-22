@@ -367,6 +367,51 @@ async function finalizeTelegramAttachmentUpload(
         uploadedByUserId: context.user.id,
       });
     } catch (error) {
+      let committedAttachment:
+        | Awaited<ReturnType<typeof getTelegramAttachmentByStorageKey>>
+        | null = null;
+      try {
+        // A concurrent finalization or a lost database response may have
+        // committed the unique storage key even though this insert failed.
+        committedAttachment = await getTelegramAttachmentByStorageKey(key);
+      } catch (readError) {
+        console.error(
+          "[Storage] Attachment metadata could not be reconciled after a failed insert",
+          { error, readError }
+        );
+        res.status(502).json({
+          error: "تعذر التحقق من حالة تسجيل المرفق؛ أعد المحاولة",
+        });
+        return;
+      }
+
+      if (committedAttachment) {
+        const matchesRequest =
+          committedAttachment.telegramId === context.telegram.id &&
+          committedAttachment.storageOrganizationId ===
+            context.telegram.organizationId &&
+          committedAttachment.originalName === metadata.fileName &&
+          committedAttachment.mimeType === metadata.contentType &&
+          committedAttachment.sizeBytes === asset.body.byteLength;
+        if (matchesRequest) {
+          res.set("Cache-Control", "no-store");
+          res.status(200).json({
+            success: true,
+            alreadyFinalized: true,
+            key,
+            fileName: metadata.fileName,
+            contentType: metadata.contentType,
+            size: committedAttachment.sizeBytes,
+          });
+          return;
+        }
+
+        res.status(409).json({
+          error: "يوجد سجل مرفق مختلف مرتبط بمفتاح التخزين",
+        });
+        return;
+      }
+
       await removeUncommittedAttachment(key);
       console.error(
         "[Storage] Telegram attachment metadata write failed",
