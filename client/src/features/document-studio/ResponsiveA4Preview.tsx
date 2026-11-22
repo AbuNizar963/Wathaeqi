@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
 const A4_PREVIEW_WIDTH = 794;
