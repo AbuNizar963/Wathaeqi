@@ -7,6 +7,11 @@ const mocks = vi.hoisted(() => ({
   getFile: vi.fn(),
   getFileDownload: vi.fn(),
   fromBuffer: vi.fn(),
+  legacyCreateSignedUrl: vi.fn(),
+  legacyInfo: vi.fn(),
+  legacyDownload: vi.fn(),
+  legacyRemove: vi.fn(),
+  legacyFrom: vi.fn(),
 }));
 
 vi.mock("./appwrite", () => ({
@@ -19,11 +24,19 @@ vi.mock("./env", () => ({
   ENV: {
     appwriteEndpoint: "https://fra.cloud.appwrite.io/v1",
     appwriteProjectId: "wathaeqi",
+    supabaseStorageBucket: "telegram-files",
   },
 }));
 
 vi.mock("node-appwrite/file", () => ({
   InputFile: { fromBuffer: mocks.fromBuffer },
+}));
+vi.mock("./supabase", () => ({
+  getSupabaseAdmin: () => ({
+    storage: {
+      from: mocks.legacyFrom,
+    },
+  }),
 }));
 
 import {
@@ -44,6 +57,25 @@ describe("Appwrite storage provider", () => {
     });
     mocks.getFileDownload.mockResolvedValue(Uint8Array.from([1, 2, 3]).buffer);
     mocks.deleteFile.mockResolvedValue({});
+    mocks.legacyCreateSignedUrl.mockResolvedValue({
+      data: { signedUrl: "https://legacy.example/signed" },
+      error: null,
+    });
+    mocks.legacyInfo.mockResolvedValue({
+      data: { size: 6, contentType: "application/pdf" },
+      error: null,
+    });
+    mocks.legacyDownload.mockResolvedValue({
+      data: new Blob([Buffer.from("legacy")], { type: "application/pdf" }),
+      error: null,
+    });
+    mocks.legacyRemove.mockResolvedValue({ error: null });
+    mocks.legacyFrom.mockReturnValue({
+      createSignedUrl: mocks.legacyCreateSignedUrl,
+      info: mocks.legacyInfo,
+      download: mocks.legacyDownload,
+      remove: mocks.legacyRemove,
+    });
   });
 
   it("uploads files privately using a deterministic Appwrite file ID", async () => {
@@ -117,6 +149,55 @@ describe("Appwrite storage provider", () => {
         fileId: expect.any(String),
       })
     );
+  });
+
+  it("reads existing Supabase object metadata when Appwrite has no file", async () => {
+    mocks.getFile.mockRejectedValueOnce({ code: 404 });
+
+    await expect(
+      getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
+    ).resolves.toEqual({
+      size: 6,
+      contentType: "application/pdf",
+    });
+
+    expect(mocks.legacyFrom).toHaveBeenCalledWith("telegram-files");
+    expect(mocks.legacyInfo).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
+  });
+
+  it("downloads existing Supabase objects when Appwrite has no file", async () => {
+    mocks.getFile.mockRejectedValueOnce({ code: 404 });
+
+    await expect(
+      getStorageProvider().download("telegrams/7/legacy.pdf")
+    ).resolves.toEqual({
+      body: Buffer.from("legacy"),
+      contentType: "application/pdf",
+    });
+    expect(mocks.legacyDownload).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
+  });
+
+  it("creates signed URLs for legacy Supabase objects only after Appwrite returns not found", async () => {
+    mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
+
+    await expect(
+      getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600)
+    ).resolves.toBe("https://legacy.example/signed");
+
+    expect(mocks.legacyCreateSignedUrl).toHaveBeenCalledWith(
+      "telegrams/7/legacy.pdf",
+      600
+    );
+  });
+
+  it("cleans up matching keys in both stores during migration", async () => {
+    mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
+
+    await expect(
+      getStorageProvider().remove?.("telegrams/7/legacy.pdf")
+    ).resolves.toBeUndefined();
+
+    expect(mocks.legacyRemove).toHaveBeenCalledWith(["telegrams/7/legacy.pdf"]);
   });
 
   it("rejects unsafe storage paths", async () => {
