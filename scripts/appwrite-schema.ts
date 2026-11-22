@@ -129,6 +129,13 @@ async function createColumn(
           typeof column.default === "string" ? column.default : undefined,
       });
       return;
+    case "longtext":
+      await tables.createLongtextColumn({
+        ...base,
+        xdefault:
+          typeof column.default === "string" ? column.default : undefined,
+      });
+      return;
     case "integer":
       await tables.createIntegerColumn({
         ...base,
