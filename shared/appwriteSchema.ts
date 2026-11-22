@@ -618,7 +618,7 @@ export const appwriteSchema: SchemaTable[] = [
     id: APP_RECORDS_TABLE,
     name: "Application records",
     description:
-      "Small keyed application records for one-time setup and audit-chain metadata.",
+      "Keyed records for one-time setup and audit-chain metadata.",
     columns: [
       { key: "recordType", type: "varchar", size: 80, required: true },
       { key: "recordKey", type: "varchar", size: 128, required: true },
@@ -640,7 +640,7 @@ export const appwriteSchema: SchemaTable[] = [
     id: PUSH_SUBSCRIPTIONS_TABLE,
     name: "Web push subscriptions",
     description:
-      "User- and organization-scoped browser push endpoints retained during data migration.",
+      "Browser push endpoints scoped to users and organizations for migration.",
     columns: [
       ID_COLUMN,
       { key: "userId", type: "integer", required: true },
