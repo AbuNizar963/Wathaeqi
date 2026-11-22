@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -47,6 +49,7 @@ class DocumentStudioPdf {
         // A missing remote logo must not prevent a document from being printed.
       }
     }
+    final embeddedImages = await _loadEmbeddedImages(content);
     final theme = pw.ThemeData.withFont(
       base: regular,
       bold: bold,
@@ -374,6 +377,7 @@ class DocumentStudioPdf {
           _asMapList(content['content']),
           regular: regular,
           bold: bold,
+          images: embeddedImages,
         ),
       ),
     );
@@ -417,45 +421,54 @@ class DocumentStudioPdf {
     List<Map<String, dynamic>> nodes, {
     required pw.Font regular,
     required pw.Font bold,
+    required Map<String, pw.MemoryImage> images,
   }) {
     final result = <pw.Widget>[];
     for (final node in nodes) {
       final type = node['type']?.toString() ?? '';
       final children = _asMapList(node['content']);
       if (type == 'paragraph' || type == 'heading') {
-        final spans = _inlineSpans(children, regular: regular, bold: bold);
-        final level = (node['attrs'] as Map?)?['level'];
         final heading = type == 'heading';
-        result.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 7),
-            child: pw.RichText(
-              textDirection: pw.TextDirection.rtl,
-              textAlign: pw.TextAlign.right,
-              text: pw.TextSpan(
-                children: spans.isEmpty
-                    ? [
-                        pw.TextSpan(
-                          text: ' ',
-                          style: pw.TextStyle(font: regular),
-                        ),
-                      ]
-                    : spans,
-                style: pw.TextStyle(
-                  font: heading ? bold : regular,
-                  fontSize: heading
-                      ? (level == 1
-                            ? 18
-                            : level == 2
-                            ? 15
-                            : 13)
-                      : 11,
-                  lineSpacing: 3,
+        final level = (node['attrs'] as Map?)?['level'];
+        var inlineGroup = <Map<String, dynamic>>[];
+        var hasContent = false;
+        for (final child in children) {
+          if (child['type'] == 'image') {
+            if (inlineGroup.isNotEmpty) {
+              result.add(
+                _buildParagraphWidget(
+                  inlineGroup,
+                  regular: regular,
+                  bold: bold,
+                  heading: heading,
+                  level: level,
                 ),
-              ),
+              );
+              inlineGroup = <Map<String, dynamic>>[];
+            }
+            final imageWidget = _buildImageWidget(child, images);
+            if (imageWidget != null) {
+              result.add(imageWidget);
+              hasContent = true;
+            }
+          } else {
+            inlineGroup.add(child);
+          }
+        }
+        if (inlineGroup.isNotEmpty || !hasContent) {
+          result.add(
+            _buildParagraphWidget(
+              inlineGroup,
+              regular: regular,
+              bold: bold,
+              heading: heading,
+              level: level,
             ),
-          ),
-        );
+          );
+        }
+      } else if (type == 'image') {
+        final imageWidget = _buildImageWidget(node, images);
+        if (imageWidget != null) result.add(imageWidget);
       } else if (type == 'bulletList' || type == 'orderedList') {
         var index = 0;
         for (final item in children) {
@@ -514,31 +527,234 @@ class DocumentStudioPdf {
           ),
         );
       } else if (type == 'table') {
+        final tableRows = <pw.TableRow>[];
         for (final row in children) {
-          final cells = _asMapList(row['content'])
-              .map(_plainText)
-              .where((value) => value.isNotEmpty)
-              .toList();
-          if (cells.isNotEmpty) {
-            result.add(
-              pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 4),
-                child: pw.Text(
-                  cells.join('   |   '),
-                  textDirection: pw.TextDirection.rtl,
-                  textAlign: pw.TextAlign.right,
-                  style: pw.TextStyle(font: regular, fontSize: 10),
-                ),
+          final cells = _asMapList(row['content']).reversed.map((cell) {
+            final cellBlocks = _buildBlocks(
+              _asMapList(cell['content']),
+              regular: regular,
+              bold: bold,
+              images: images,
+            );
+            return pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: cellBlocks.isEmpty
+                    ? [pw.Text(' ', style: pw.TextStyle(font: regular))]
+                    : cellBlocks,
               ),
             );
-          }
+          }).toList();
+          if (cells.isNotEmpty) tableRows.add(pw.TableRow(children: cells));
+        }
+        if (tableRows.isNotEmpty) {
+          result.add(
+            pw.Table(
+              border: pw.TableBorder.all(
+                color: PdfColors.grey500,
+                width: 0.5,
+              ),
+              children: tableRows,
+            ),
+          );
         }
         result.add(pw.SizedBox(height: 6));
       } else if (children.isNotEmpty) {
-        result.addAll(_buildBlocks(children, regular: regular, bold: bold));
+        result.addAll(
+          _buildBlocks(
+            children,
+            regular: regular,
+            bold: bold,
+            images: images,
+          ),
+        );
       }
     }
     return result;
+  }
+
+  static pw.Widget _buildParagraphWidget(
+    List<Map<String, dynamic>> nodes, {
+    required pw.Font regular,
+    required pw.Font bold,
+    required bool heading,
+    required dynamic level,
+  }) {
+    final spans = _inlineSpans(nodes, regular: regular, bold: bold);
+    final headingSize = level == 1
+        ? 18.0
+        : level == 2
+            ? 15.0
+            : 13.0;
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 7),
+      child: pw.RichText(
+        textDirection: pw.TextDirection.rtl,
+        textAlign: pw.TextAlign.right,
+        text: pw.TextSpan(
+          children: spans.isEmpty
+              ? [
+                  pw.TextSpan(
+                    text: ' ',
+                    style: pw.TextStyle(font: regular),
+                  ),
+                ]
+              : spans,
+          style: pw.TextStyle(
+            font: heading ? bold : regular,
+            fontSize: heading ? headingSize : 11,
+            lineSpacing: 3,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static pw.Widget? _buildImageWidget(
+    Map<String, dynamic> node,
+    Map<String, pw.MemoryImage> images,
+  ) {
+    final attrs = node['attrs'] is Map
+        ? Map<String, dynamic>.from(node['attrs'] as Map)
+        : <String, dynamic>{};
+    final source = attrs['src']?.toString();
+    if (source == null) return null;
+    final image = images[source];
+    if (image == null) return null;
+
+    final rawWidth = attrs['width'];
+    final rawHeight = attrs['height'];
+    final width = (rawWidth is num ? rawWidth.toDouble() * 0.75 : 420.0)
+        .clamp(80.0, 460.0)
+        .toDouble();
+    final height = rawHeight is num
+        ? (rawHeight.toDouble() * 0.75).clamp(60.0, 360.0).toDouble()
+        : null;
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Center(
+        child: pw.Image(
+          image,
+          width: width,
+          height: height,
+          fit: pw.BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
+  static Future<Map<String, pw.MemoryImage>> _loadEmbeddedImages(
+    Map<String, dynamic> content,
+  ) async {
+    final sources = <String>{};
+    void collect(dynamic node) {
+      if (node is Map) {
+        if (node['type'] == 'image' && node['attrs'] is Map) {
+          final source = (node['attrs'] as Map)['src'];
+          if (source is String && source.isNotEmpty) sources.add(source);
+        }
+        final children = node['content'];
+        if (children is List) {
+          for (final child in children) {
+            collect(child);
+          }
+        }
+      } else if (node is List) {
+        for (final child in node) {
+          collect(child);
+        }
+      }
+    }
+
+    collect(content);
+    final images = <String, pw.MemoryImage>{};
+    for (final source in sources) {
+      try {
+        Uint8List? bytes;
+        final dataUri = RegExp(
+          r'^data:image/(png|jpe?g);base64,([A-Za-z0-9+/=\\s]+)
+    List<Map<String, dynamic>> nodes, {
+    required pw.Font regular,
+    required pw.Font bold,
+  }) {
+    final spans = <pw.InlineSpan>[];
+    for (final node in nodes) {
+      final type = node['type']?.toString() ?? '';
+      if (type == 'hardBreak') {
+        spans.add(pw.TextSpan(text: '\n'));
+        continue;
+      }
+      if (type != 'text') {
+        spans.addAll(
+          _inlineSpans(
+            _asMapList(node['content']),
+            regular: regular,
+            bold: bold,
+          ),
+        );
+        continue;
+      }
+      final marks = _asMapList(node['marks']);
+      final isBold = marks.any((mark) => mark['type'] == 'bold');
+      final isItalic = marks.any((mark) => mark['type'] == 'italic');
+      final isUnderline = marks.any((mark) => mark['type'] == 'underline');
+      spans.add(
+        pw.TextSpan(
+          text: node['text']?.toString() ?? '',
+          style: pw.TextStyle(
+            font: isBold ? bold : regular,
+            fontStyle: isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
+            decoration: isUnderline ? pw.TextDecoration.underline : null,
+            fontSize: 11,
+          ),
+        ),
+      );
+    }
+    return spans;
+  }
+
+  static String _plainText(Map<String, dynamic> node) {
+    final type = node['type']?.toString() ?? '';
+    if (type == 'text') return node['text']?.toString() ?? '';
+    if (type == 'hardBreak') return '\n';
+    return _asMapList(node['content']).map(_plainText).join();
+  }
+}
+,
+          caseSensitive: false,
+        ).firstMatch(source);
+        if (dataUri != null) {
+          bytes = base64Decode(
+            (dataUri.group(2) ?? '').replaceAll(RegExp(r'\\s'), ''),
+          );
+        } else {
+          final uri = Uri.tryParse(source);
+          if (uri != null && uri.scheme == 'https') {
+            final response = await http
+                .get(uri)
+                .timeout(const Duration(seconds: 8));
+            final contentType =
+                response.headers['content-type']?.toLowerCase() ?? '';
+            if (response.statusCode == 200 &&
+                (contentType.contains('image/png') ||
+                    contentType.contains('image/jpeg')) &&
+                response.bodyBytes.isNotEmpty &&
+                response.bodyBytes.length <= 5 * 1024 * 1024) {
+              bytes = response.bodyBytes;
+            }
+          }
+        }
+        if (bytes != null &&
+            bytes.isNotEmpty &&
+            bytes.length <= 5 * 1024 * 1024) {
+          images[source] = pw.MemoryImage(bytes);
+        }
+      } catch (_) {
+        // An unsupported image must not prevent the document from printing.
+      }
+    }
+    return images;
   }
 
   static List<pw.InlineSpan> _inlineSpans(
