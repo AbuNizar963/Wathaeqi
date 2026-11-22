@@ -52,7 +52,7 @@ const saved: PlatformDocumentSettings = {
 
 describe("platform document settings Appwrite persistence", () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
     mocks.listRows.mockResolvedValue({ rows: [] });
     mocks.createRow.mockResolvedValue({ $id: "1", data: saved });
     mocks.updateRow.mockResolvedValue({ $id: "1", data: saved });
