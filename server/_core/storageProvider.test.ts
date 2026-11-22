@@ -30,6 +30,7 @@ vi.mock("./env", () => ({
 vi.mock("node-appwrite/file", () => ({
   InputFile: { fromBuffer: mocks.fromBuffer },
 }));
+
 vi.mock("./supabase", () => ({
   getSupabaseAdmin: () => ({
     storage: {
@@ -75,7 +76,9 @@ describe("Appwrite storage provider", () => {
     });
   });
 
-  it("uploads files privately using a deterministic Appwrite file ID", async () => {
+  it(
+    "uploads files privately using a deterministic Appwrite file ID",
+    async () => {
     const key =
       "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/report.pdf";
     const body = Buffer.from("report");
@@ -148,7 +151,9 @@ describe("Appwrite storage provider", () => {
     );
   });
 
-  it("does not hide Appwrite service failures behind the legacy store", async () => {
+  it(
+    "does not hide Appwrite service failures behind the legacy store",
+    async () => {
     const failure = { code: 500, message: "Appwrite unavailable" };
     mocks.getFile.mockRejectedValueOnce(failure);
 
@@ -158,7 +163,9 @@ describe("Appwrite storage provider", () => {
     expect(mocks.legacyFrom).not.toHaveBeenCalled();
   });
 
-  it("reads existing Supabase object metadata when Appwrite has no file", async () => {
+  it(
+    "reads existing Supabase object metadata when Appwrite has no file",
+    async () => {
     mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
     await expect(
@@ -172,7 +179,9 @@ describe("Appwrite storage provider", () => {
     expect(mocks.legacyInfo).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
   });
 
-  it("downloads existing Supabase objects when Appwrite has no file", async () => {
+  it(
+    "downloads existing Supabase objects when Appwrite has no file",
+    async () => {
     mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
     await expect(
@@ -184,9 +193,7 @@ describe("Appwrite storage provider", () => {
     expect(mocks.legacyDownload).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
   });
 
-  it(
-    "uses legacy Supabase URLs for missing Appwrite files",
-    async () => {
+  it("uses legacy Supabase URLs for missing Appwrite files", async () => {
       mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
 
       await expect(
@@ -200,7 +207,9 @@ describe("Appwrite storage provider", () => {
     },
   );
 
-  it("never deletes legacy Supabase objects during generic cleanup", async () => {
+  it(
+    "never deletes legacy Supabase objects during generic cleanup",
+    async () => {
     mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
 
     await expect(
