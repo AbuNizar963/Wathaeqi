@@ -359,6 +359,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      node-appwrite:
+        specifier: 31.2.0
+        version: 31.2.0
       officecrypto-tool:
         specifier: ^0.0.19
         version: 0.0.19
@@ -3818,6 +3821,10 @@ packages:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
     engines: {node: '>=10.5.0'}
     deprecated: Use your platform's native DOMException instead
+
+  node-appwrite@31.2.0:
+    resolution: {integrity: sha512-E5blR/uqxyyEJ82h3mmHrgCv0XiaEtWcCMmMtBeEKF61MEWRyewJHub9hGAD5Y5hchIR0bfhUV+j2ffQXO73NA==}
+    engines: {node: '>=20.0.0'}
 
   node-fetch@3.3.2:
     resolution: {integrity: sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==}
