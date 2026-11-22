@@ -1,104 +1,160 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/platform-settings/platformDocumentSettings";
+import {
+  DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  type PlatformDocumentSettings,
+} from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
-  from: vi.fn(),
-  select: vi.fn(),
-  eq: vi.fn(),
-  maybeSingle: vi.fn(),
-  upsert: vi.fn(),
-  single: vi.fn(),
+  listRows: vi.fn(),
+  createRow: vi.fn(),
+  updateRow: vi.fn(),
+  equal: vi.fn((field: string, value: unknown) => ({
+    type: "equal",
+    field,
+    value,
+  })),
+  limit: vi.fn((value: number) => ({ type: "limit", value })),
 }));
 
-vi.mock("../../_core/supabase", () => ({
-  getSupabaseAdmin: () => ({ from: mocks.from }),
+vi.mock("node-appwrite", () => ({
+  Query: {
+    equal: mocks.equal,
+    limit: mocks.limit,
+  },
+}));
+
+vi.mock("../../_core/appwrite", () => ({
+  getAppwriteDatabaseId: () => "wathaeqi-db",
+  getAppwriteTablesDB: () => ({
+    listRows: mocks.listRows,
+    createRow: mocks.createRow,
+    updateRow: mocks.updateRow,
+  }),
 }));
 
 import {
   getPlatformDocumentSettings,
   updatePlatformDocumentSettings,
-} from "../../db";
+} from "./platformDocumentSettingsRepository";
 
-const ownerSettings = {
+const input: Omit<PlatformDocumentSettings, "updatedAt"> = {
+  ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   showMinistryWatermarkText: false,
   watermarkOpacityPercent: 0,
   headerDividerColor: "#ABCDEF",
   showVerificationQr: false,
+};
+
+const saved: PlatformDocumentSettings = {
+  ...input,
   updatedAt: "2026-10-23T00:00:00.000Z",
 };
 
-describe("platform document settings persistence", () => {
+describe("platform document settings Appwrite persistence", () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-    const builder = {
-      select: mocks.select,
-      eq: mocks.eq,
-      maybeSingle: mocks.maybeSingle,
-      upsert: mocks.upsert,
-      single: mocks.single,
-    };
-    mocks.from.mockReturnValue(builder);
-    mocks.select.mockReturnValue(builder);
-    mocks.eq.mockReturnValue(builder);
-    mocks.upsert.mockReturnValue(builder);
-    mocks.maybeSingle.mockResolvedValue({ data: ownerSettings, error: null });
-    mocks.single.mockResolvedValue({ data: ownerSettings, error: null });
+    vi.clearAllMocks();
+    mocks.listRows.mockResolvedValue({ rows: [] });
+    mocks.createRow.mockResolvedValue({ $id: "1", data: saved });
+    mocks.updateRow.mockResolvedValue({ $id: "1", data: saved });
   });
 
-  it("reads the singleton without modifying owner settings", async () => {
-    await expect(getPlatformDocumentSettings()).resolves.toEqual(ownerSettings);
-    expect(mocks.from).toHaveBeenCalledWith("platform_document_settings");
-    expect(mocks.eq).toHaveBeenCalledWith("id", 1);
-    expect(mocks.upsert).not.toHaveBeenCalled();
-  });
-
-  it("returns defaults without a write when the singleton is absent", async () => {
-    mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
+  it("reads defaults without creating a row when the singleton is absent", async () => {
     await expect(getPlatformDocumentSettings()).resolves.toEqual({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       updatedAt: null,
     });
-    expect(mocks.upsert).not.toHaveBeenCalled();
-    expect(mocks.single).not.toHaveBeenCalled();
+    expect(mocks.listRows).toHaveBeenCalledWith({
+      databaseId: "wathaeqi-db",
+      tableId: "platform_document_settings",
+      queries: [
+        { type: "equal", field: "id", value: 1 },
+        { type: "limit", value: 2 },
+      ],
+      total: false,
+    });
+    expect(mocks.createRow).not.toHaveBeenCalled();
+    expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("does not reset a concurrent owner save after an empty read", async () => {
-    mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-    const reader = getPlatformDocumentSettings();
-    const values = {
-      showMinistryWatermarkText: false,
-      watermarkOpacityPercent: 0,
-      headerDividerColor: "#ABCDEF",
-      showVerificationQr: false,
-    };
-    const writer = updatePlatformDocumentSettings(values, 1);
-    await Promise.all([reader, writer]);
-    expect(mocks.upsert).toHaveBeenCalledOnce();
-    expect(mocks.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 1, ...values, updatedByUserId: 1 }),
-      { onConflict: "id" }
+  it("maps the existing singleton and preserves explicit false and zero values", async () => {
+    mocks.listRows.mockResolvedValueOnce({
+      rows: [{ $id: "1", data: saved }],
+    });
+
+    await expect(getPlatformDocumentSettings()).resolves.toEqual(saved);
+  });
+
+  it("updates the existing singleton row", async () => {
+    mocks.listRows.mockResolvedValueOnce({
+      rows: [{ $id: "1", data: saved }],
+    });
+
+    await expect(updatePlatformDocumentSettings(input, 42)).resolves.toEqual(
+      saved
+    );
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "wathaeqi-db",
+        tableId: "platform_document_settings",
+        rowId: "1",
+        data: expect.objectContaining({
+          id: 1,
+          ...input,
+          updatedByUserId: 42,
+        }),
+      })
+    );
+    expect(mocks.createRow).not.toHaveBeenCalled();
+  });
+
+  it("creates the singleton when it does not exist", async () => {
+    await expect(updatePlatformDocumentSettings(input, 42)).resolves.toEqual(
+      saved
+    );
+    expect(mocks.createRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "wathaeqi-db",
+        tableId: "platform_document_settings",
+        rowId: "1",
+        data: expect.objectContaining({
+          id: 1,
+          ...input,
+          updatedByUserId: 42,
+        }),
+      })
     );
   });
 
-  it("surfaces database errors rather than pretending defaults were loaded", async () => {
-    mocks.maybeSingle.mockResolvedValue({
-      data: null,
-      error: { message: "relation does not exist" },
+  it("retries a first-save conflict by updating the winning singleton row", async () => {
+    mocks.listRows
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ $id: "1", data: saved }] });
+    mocks.createRow.mockRejectedValueOnce({ code: 409 });
+
+    await expect(updatePlatformDocumentSettings(input, 42)).resolves.toEqual(
+      saved
+    );
+    expect(mocks.createRow).toHaveBeenCalledOnce();
+    expect(mocks.updateRow).toHaveBeenCalledOnce();
+  });
+
+  it("rejects duplicate singleton rows instead of selecting an arbitrary row", async () => {
+    mocks.listRows.mockResolvedValueOnce({
+      rows: [
+        { $id: "1", data: saved },
+        { $id: "2", data: saved },
+      ],
     });
+
     await expect(getPlatformDocumentSettings()).rejects.toThrow(
-      "Failed to load platform document settings: relation does not exist"
+      "Platform document settings contains duplicate singleton rows"
     );
-    expect(mocks.upsert).not.toHaveBeenCalled();
   });
 
-  it("surfaces failed saves", async () => {
-    mocks.single.mockResolvedValue({
-      data: null,
-      error: { message: "permission denied" },
-    });
-    await expect(
-      updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 1)
-    ).rejects.toThrow(
+  it("surfaces failed first-time saves", async () => {
+    mocks.createRow.mockRejectedValueOnce(new Error("permission denied"));
+
+    await expect(updatePlatformDocumentSettings(input, 42)).rejects.toThrow(
       "Failed to save platform document settings: permission denied"
     );
   });

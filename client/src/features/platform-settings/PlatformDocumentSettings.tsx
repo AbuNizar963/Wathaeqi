@@ -6,44 +6,33 @@ import { trpc } from "@/lib/trpc";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   MAX_WATERMARK_OPACITY_PERCENT,
+  type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
+
+type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
+
+function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
+  const { updatedAt: _updatedAt, ...values } = settings;
+  return values;
+}
 
 export default function PlatformDocumentSettings() {
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
-  const organizationContext = trpc.organizations.context.useQuery(undefined, {
-    enabled: Boolean(me.data),
-  });
-  const isOwner =
-    me.data?.isPlatformOwner === true ||
-    organizationContext.data?.isOwner === true;
+  const isPlatformOwner = me.data?.isPlatformOwner === true;
   const [open, setOpen] = useState(false);
-  const [showMinistryWatermarkText, setShowMinistryWatermarkText] =
-    useState<boolean>(
-      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.showMinistryWatermarkText
-    );
-  const [watermarkOpacityPercent, setWatermarkOpacityPercent] =
-    useState<number>(
-      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkOpacityPercent
-    );
-  const [headerDividerColor, setHeaderDividerColor] = useState<string>(
-    DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerColor
-  );
-  const [showVerificationQr, setShowVerificationQr] = useState<boolean>(
-    DEFAULT_PLATFORM_DOCUMENT_SETTINGS.showVerificationQr
-  );
+  const [values, setValues] = useState<SettingsForm>({
+    ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  });
   const utils = trpc.useUtils();
   const settings = trpc.platformDocumentSettings.get.useQuery(undefined, {
-    enabled: open && isOwner,
+    enabled: open && isPlatformOwner,
     retry: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
   const update = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
-      setShowMinistryWatermarkText(saved.showMinistryWatermarkText);
-      setWatermarkOpacityPercent(saved.watermarkOpacityPercent);
-      setHeaderDividerColor(saved.headerDividerColor);
-      setShowVerificationQr(saved.showVerificationQr);
+      setValues(toFormSettings(saved));
       await utils.platformDocumentSettings.get.invalidate();
       toast.success("تم حفظ إعدادات وثائق النظام");
       setOpen(false);
@@ -53,25 +42,27 @@ export default function PlatformDocumentSettings() {
 
   useEffect(() => {
     const handler = () => {
-      if (isOwner) setOpen(true);
+      if (isPlatformOwner) setOpen(true);
     };
     window.addEventListener("open-platform-document-settings", handler);
     return () =>
       window.removeEventListener("open-platform-document-settings", handler);
-  }, [isOwner]);
+  }, [isPlatformOwner]);
 
   useEffect(() => {
     if (!open || !settings.data) return;
-    setShowMinistryWatermarkText(settings.data.showMinistryWatermarkText);
-    setWatermarkOpacityPercent(settings.data.watermarkOpacityPercent);
-    setHeaderDividerColor(settings.data.headerDividerColor);
-    setShowVerificationQr(settings.data.showVerificationQr);
+    setValues(toFormSettings(settings.data));
   }, [open, settings.data]);
 
-  if (!open || !isOwner) return null;
+  const updateValue = <K extends keyof SettingsForm>(
+    key: K,
+    value: SettingsForm[K]
+  ) => setValues(current => ({ ...current, [key]: value }));
+
+  if (!open || !isPlatformOwner) return null;
 
   return (
-    <div className="telegram-print-modal fixed inset-0 z-[90] overflow-y-auto bg-black/55 p-3 sm:p-6">
+    <div className="document-print-modal fixed inset-0 z-[90] overflow-y-auto bg-black/55 p-3 sm:p-6">
       <section
         role="dialog"
         aria-modal="true"
@@ -126,91 +117,206 @@ export default function PlatformDocumentSettings() {
             <label className="flex items-start gap-3 rounded-xl border p-4">
               <input
                 type="checkbox"
-                checked={showMinistryWatermarkText}
+                checked={values.showMinistryWatermarkText}
                 onChange={event =>
-                  setShowMinistryWatermarkText(event.target.checked)
+                  updateValue("showMinistryWatermarkText", event.target.checked)
                 }
                 className="mt-1 h-4 w-4 accent-[#10233f]"
               />
-              <span>
-                <span className="block text-sm font-bold">
-                  إظهار عبارة «وزارة الداخلية» كعلامة مائية
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  يتحكم هذا الخيار بالعبارات المتكررة خلف محتوى الوثيقة، ولا
-                  يغيّر الترويسة الرسمية.
-                </span>
+              <span className="text-sm font-bold">
+                إظهار العلامة الأمنية النصية خلف صفحات الوثيقة
               </span>
             </label>
 
             <label className="block rounded-xl border p-4">
+              <span className="mb-2 block text-sm font-bold">
+                نص العلامة الأمنية
+              </span>
+              <input
+                type="text"
+                maxLength={255}
+                value={values.watermarkText}
+                onChange={event =>
+                  updateValue("watermarkText", event.target.value)
+                }
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              />
+            </label>
+
+            <label className="block rounded-xl border p-4">
               <span className="flex items-center justify-between gap-3 text-sm font-bold">
-                <span>شفافية العلامة المائية</span>
-                <span className="tabular-nums">{watermarkOpacityPercent}%</span>
+                <span>شفافية العلامة الأمنية</span>
+                <span className="tabular-nums">
+                  {values.watermarkOpacityPercent}%
+                </span>
               </span>
               <input
                 type="range"
                 min={0}
                 max={MAX_WATERMARK_OPACITY_PERCENT}
                 step={1}
-                value={watermarkOpacityPercent}
+                value={values.watermarkOpacityPercent}
                 onChange={event =>
-                  setWatermarkOpacityPercent(Number(event.target.value))
+                  updateValue(
+                    "watermarkOpacityPercent",
+                    Number(event.target.value)
+                  )
                 }
-                aria-label="نسبة شفافية العلامة المائية"
+                aria-label="نسبة شفافية العلامة الأمنية"
                 className="mt-3 w-full accent-[#10233f]"
               />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                تطبّق النسبة نفسها على عبارة الوزارة وشعار الجهة؛ الحد الأعلى
-                {` ${MAX_WATERMARK_OPACITY_PERCENT}% `}لضمان بقاء نص البرقية
-                واضحًا.
-              </span>
             </label>
 
-            <label className="flex items-center justify-between gap-4 rounded-xl border p-4">
-              <span>
-                <span className="block text-sm font-bold">
-                  لون الخط الفاصل في ترويسة البرقية
+            <div className="rounded-xl border p-4">
+              <h3 className="font-bold">تحرير رأس الصفحة</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                اترك أي حقل فارغًا لاستخدام بيانات الجهة المسجلة.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-sm">
+                  العنوان الرئيسي
+                  <input
+                    value={values.headerTitle}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerTitle", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  العنوان الفرعي / الوحدة
+                  <input
+                    value={values.headerSubtitle}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerSubtitle", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  رتبة / صفة المسؤول
+                  <input
+                    value={values.headerChiefRank}
+                    maxLength={120}
+                    onChange={event =>
+                      updateValue("headerChiefRank", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  اسم المسؤول
+                  <input
+                    value={values.headerChiefName}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerChiefName", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={values.headerShowLogo}
+                    onChange={event =>
+                      updateValue("headerShowLogo", event.target.checked)
+                    }
+                  />
+                  إظهار شعار الجهة
+                </label>
+                <label className="space-y-1 text-sm">
+                  محاذاة الرأس
+                  <select
+                    value={values.headerAlignment}
+                    onChange={event =>
+                      updateValue(
+                        "headerAlignment",
+                        event.target.value as SettingsForm["headerAlignment"]
+                      )
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2"
+                  >
+                    <option value="spread">توزيع متوازن</option>
+                    <option value="center">توسيط</option>
+                    <option value="right">إلى اليمين</option>
+                  </select>
+                </label>
+              </div>
+              <label className="mt-4 block space-y-1 text-sm">
+                <span className="flex justify-between">
+                  حجم الشعار <output>{values.headerLogoSize}px</output>
                 </span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  اختر لونًا متناسقًا مع الهوية البصرية للوثائق.
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2">
-                <code dir="ltr" className="text-xs font-semibold">
-                  {headerDividerColor.toUpperCase()}
-                </code>
+                <input
+                  type="range"
+                  min={32}
+                  max={128}
+                  step={4}
+                  value={values.headerLogoSize}
+                  onChange={event =>
+                    updateValue("headerLogoSize", Number(event.target.value))
+                  }
+                  className="w-full accent-[#10233f]"
+                />
+              </label>
+              {(
+                [
+                  ["headerTopPaddingMm", "الهامش العلوي"],
+                  ["headerHorizontalPaddingMm", "الهامش الأفقي"],
+                  ["headerBottomPaddingMm", "الهامش السفلي"],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key} className="mt-3 block space-y-1 text-sm">
+                  <span className="flex justify-between">
+                    {label} <output>{values[key]} مم</output>
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={30}
+                    step={1}
+                    value={values[key]}
+                    onChange={event =>
+                      updateValue(key, Number(event.target.value))
+                    }
+                    className="w-full accent-[#10233f]"
+                  />
+                </label>
+              ))}
+              <label className="mt-4 flex items-center justify-between gap-4 text-sm">
+                لون الخط الفاصل
                 <input
                   type="color"
-                  value={headerDividerColor}
-                  onChange={event => setHeaderDividerColor(event.target.value)}
-                  aria-label="اختيار لون الخط الفاصل"
+                  value={values.headerDividerColor}
+                  onChange={event =>
+                    updateValue("headerDividerColor", event.target.value)
+                  }
                   className="h-10 w-12 cursor-pointer rounded-md border bg-background p-1"
                 />
-              </span>
-            </label>
+              </label>
+            </div>
 
             <label className="flex items-start gap-3 rounded-xl border p-4">
               <input
                 type="checkbox"
-                checked={showVerificationQr}
-                onChange={event => setShowVerificationQr(event.target.checked)}
+                checked={values.showVerificationQr}
+                onChange={event =>
+                  updateValue("showVerificationQr", event.target.checked)
+                }
                 className="mt-1 h-4 w-4 accent-[#10233f]"
               />
-              <span>
-                <span className="block text-sm font-bold">
-                  إظهار QR للتحقق في وثائق جميع الجهات
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  إخفاء الرمز المطبوع لا يعطّل رابط التحقق أو صلاحية التحقق من
-                  البرقية.
-                </span>
+              <span className="text-sm font-bold">
+                إظهار QR للتحقق في وثائق جميع الجهات
               </span>
             </label>
 
             <p className="rounded-lg bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
-              تسري التغييرات على الوثائق التي تُنشأ بعد الحفظ. النسخ التي سبق
-              تنزيلها لا تتغير.
+              تُطبّق التغييرات على معاينات ومخرجات الوثائق عند فتحها بعد الحفظ؛
+              أما النسخ التي سبق تنزيلها فلا تتغير.
             </p>
             <div className="flex justify-end gap-2 pt-1">
               <Button
@@ -222,16 +328,13 @@ export default function PlatformDocumentSettings() {
               </Button>
               <Button
                 type="button"
-                disabled={!settings.data || update.isPending}
-                onClick={() =>
-                  update.mutate({
-                    showMinistryWatermarkText,
-                    watermarkOpacityPercent,
-                    headerDividerColor,
-                    showVerificationQr,
-                  })
+                disabled={
+                  !settings.data ||
+                  update.isPending ||
+                  !values.watermarkText.trim()
                 }
-                className="bg-[#10233f] text-white hover:bg-[#18375f]"
+                onClick={() => update.mutate(values)}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {update.isPending ? "جارٍ الحفظ…" : "حفظ الإعدادات"}
               </Button>
