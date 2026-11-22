@@ -94,45 +94,45 @@ describe("stable storage URLs", () => {
   it(
     "creates a signed upload URL scoped to one organization and telegram",
     async () => {
-    const organizationId = "550e8400-e29b-41d4-a716-446655440000";
-    const result = await storageCreateOrganizationAttachmentUploadUrl(
-      organizationId,
-      7,
-      {
-        fileName: "report.pdf",
-        contentType: "application/pdf",
-        sizeBytes: 12,
-      },
-      "appwrite-user-7"
-    );
+      const organizationId = "550e8400-e29b-41d4-a716-446655440000";
+      const result = await storageCreateOrganizationAttachmentUploadUrl(
+        organizationId,
+        7,
+        {
+          fileName: "report.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 12,
+        },
+        "appwrite-user-7"
+      );
 
-    expect(result.key).toMatch(
-      new RegExp(
-        "^organizations/" +
-          organizationId +
-          "/telegrams/7/attachments/[0-9a-f-]{36}-report\\.pdf$",
-        "i"
-      )
-    );
-    expect(result.uploadUrl).toBe(
-      "https://storage.example/signed-upload?project=wathaeqi"
-    );
-    expect(result.uploadJwt).toBe("short-lived-jwt");
-    expect(result.fileId).toBe("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-    expect(result.folder).toBe(
-      `organizations/${organizationId}/telegrams/7/attachments`
-    );
-    expect(createSignedUploadUrl).toHaveBeenCalledWith(
-      result.key,
-      {
-        fileName: "report.pdf",
-        contentType: "application/pdf",
-        sizeBytes: 12,
-      },
-      "appwrite-user-7"
-    );
-    expect(upload).not.toHaveBeenCalled();
-  });
+      expect(result.key).toMatch(
+        new RegExp(
+          "^organizations/" +
+            organizationId +
+            "/telegrams/7/attachments/[0-9a-f-]{36}-report\\.pdf$",
+          "i"
+        )
+      );
+      expect(result.uploadUrl).toBe(
+        "https://storage.example/signed-upload?project=wathaeqi"
+      );
+      expect(result.uploadJwt).toBe("short-lived-jwt");
+      expect(result.fileId).toBe("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+      expect(result.folder).toBe(
+        `organizations/${organizationId}/telegrams/7/attachments`
+      );
+      expect(createSignedUploadUrl).toHaveBeenCalledWith(
+        result.key,
+        {
+          fileName: "report.pdf",
+          contentType: "application/pdf",
+          sizeBytes: 12,
+        },
+        "appwrite-user-7"
+      );
+      expect(upload).not.toHaveBeenCalled();
+    };
 
   it("reads object metadata without downloading file bytes", async () => {
     await expect(
@@ -149,31 +149,31 @@ describe("stable storage URLs", () => {
   it(
     "stores new attachments below their immutable organization and telegram path",
     async () => {
-    const organizationId = "550e8400-e29b-41d4-a716-446655440000";
-    const result = await storagePutOrganizationAttachment(
-      organizationId,
-      7,
-      "report.pdf",
-      Buffer.from("attachment"),
-      "application/pdf"
-    );
+      const organizationId = "550e8400-e29b-41d4-a716-446655440000";
+      const result = await storagePutOrganizationAttachment(
+        organizationId,
+        7,
+        "report.pdf",
+        Buffer.from("attachment"),
+        "application/pdf"
+      );
 
-    expect(result.key).toMatch(
-      new RegExp(
-        `^organizations/${organizationId}/telegrams/7/attachments/[0-9a-f-]{36}-report\\.pdf$`,
-        "i"
-      )
-    );
-    expect(parseOrganizationAttachmentKey(result.key)).toEqual({
-      organizationId,
-      telegramId: 7,
-    });
-    expect(result.url).toBe(`/api/storage/${result.key}`);
-    expect(upload).toHaveBeenCalledWith(result.key, Buffer.from("attachment"), {
-      contentType: "application/pdf",
-      cacheControl: "3600",
-    });
-  });
+      expect(result.key).toMatch(
+        new RegExp(
+          `^organizations/${organizationId}/telegrams/7/attachments/[0-9a-f-]{36}-report\\.pdf$`,
+          "i"
+        )
+      );
+      expect(parseOrganizationAttachmentKey(result.key)).toEqual({
+        organizationId,
+        telegramId: 7,
+      });
+      expect(result.url).toBe(`/api/storage/${result.key}`);
+      expect(upload).toHaveBeenCalledWith(result.key, Buffer.from("attachment"), {
+        contentType: "application/pdf",
+        cacheControl: "3600",
+      });
+    };
 
   it("rejects invalid organization or telegram identifiers before upload", async () => {
     await expect(
