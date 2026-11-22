@@ -1,11 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getRequestAuditContext } from "../../auditContext";
-import {
-  getPlatformDocumentSettings,
-  updatePlatformDocumentSettings,
-  writeAuditLog,
-} from "../../db";
+import { updatePlatformDocumentSettings, writeAuditLog } from "../../db";
 import { isPlatformOwner } from "../../ownerAccess";
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
@@ -19,7 +15,6 @@ import {
   MIN_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MIN_HEADER_LOGO_SIZE,
-  type PlatformDocumentSettings,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const platformDocumentSettingsInput = z
@@ -86,14 +81,7 @@ export const platformDocumentSettingsRouter = router({
         });
       }
 
-      const current = await getPlatformDocumentSettings();
-      const currentValues = { ...current };
-      delete currentValues.updatedAt;
-      const settings: Omit<PlatformDocumentSettings, "updatedAt"> = {
-        ...currentValues,
-        ...input,
-      };
-      const saved = await updatePlatformDocumentSettings(settings, ctx.user.id);
+      const saved = await updatePlatformDocumentSettings(input, ctx.user.id);
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
