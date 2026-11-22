@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   type ReactNode,
-  type TouchEvent as ReactTouchEvent,
 } from "react";
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -40,35 +39,56 @@ export default function ResponsiveA4Preview({
   const clampZoom = (value: number) =>
     Math.min(2.5, Math.max(0.75, Math.round(value * 100) / 100));
 
-  const handleTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
-    if (event.touches.length !== 2) return;
-    const [first, second] = Array.from(event.touches);
-    pinchStartRef.current = {
-      distance: Math.hypot(
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 2) return;
+      const [first, second] = Array.from(event.touches);
+      pinchStartRef.current = {
+        distance: Math.hypot(
+          second.clientX - first.clientX,
+          second.clientY - first.clientY
+        ),
+        zoom,
+      };
+    };
+    const handleTouchMove = (event: TouchEvent) => {
+      const start = pinchStartRef.current;
+      if (!start || event.touches.length !== 2) return;
+      event.preventDefault();
+      const [first, second] = Array.from(event.touches);
+      const distance = Math.hypot(
         second.clientX - first.clientX,
         second.clientY - first.clientY
-      ),
-      zoom,
+      );
+      if (start.distance > 0) {
+        setZoom(clampZoom(start.zoom * (distance / start.distance)));
+      }
     };
-  };
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length < 2) pinchStartRef.current = null;
+    };
 
-  const handleTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
-    const start = pinchStartRef.current;
-    if (!start || event.touches.length !== 2) return;
-    event.preventDefault();
-    const [first, second] = Array.from(event.touches);
-    const distance = Math.hypot(
-      second.clientX - first.clientX,
-      second.clientY - first.clientY
-    );
-    if (start.distance > 0) {
-      setZoom(clampZoom(start.zoom * (distance / start.distance)));
-    }
-  };
+    viewport.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    viewport.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    viewport.addEventListener("touchend", handleTouchEnd, { passive: true });
+    viewport.addEventListener("touchcancel", handleTouchEnd, {
+      passive: true,
+    });
 
-  const handleTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
-    if (event.touches.length < 2) pinchStartRef.current = null;
-  };
+    return () => {
+      viewport.removeEventListener("touchstart", handleTouchStart);
+      viewport.removeEventListener("touchmove", handleTouchMove);
+      viewport.removeEventListener("touchend", handleTouchEnd);
+      viewport.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, [zoom]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -113,10 +133,6 @@ export default function ResponsiveA4Preview({
         overflow: zoom > 1 ? "auto" : "hidden",
         touchAction: "pan-y",
       }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
     >
       <div
         className="document-studio-no-print absolute left-2 top-2 z-20 flex items-center gap-1 rounded-lg border bg-white/95 p-1 shadow-sm"
