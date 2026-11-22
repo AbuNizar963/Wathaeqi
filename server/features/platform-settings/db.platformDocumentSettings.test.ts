@@ -110,9 +110,28 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.createRow).not.toHaveBeenCalled();
   });
 
-  it("creates the singleton when it does not exist", async () => {
+  it("updates only supplied fields so concurrent partial saves do not overwrite each other", async () => {
+    await updatePlatformDocumentSettings({ watermarkOpacityPercent: 24 }, 1);
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "database-1",
+        tableId: "platform_document_settings",
+        rowId: "1",
+        data: expect.objectContaining({
+          watermarkOpacityPercent: 24,
+          updatedByUserId: 1,
+        }),
+      })
+    );
+    const payload = mocks.updateRow.mock.calls[0][0].data;
+    expect(payload).not.toHaveProperty("headerDividerColor");
+    expect(payload).not.toHaveProperty("showVerificationQr");
+    expect(mocks.createRow).not.toHaveBeenCalled();
+  });
+
+  it("creates the singleton with defaults when it does not exist", async () => {
     mocks.listRows.mockResolvedValue({ rows: [] });
-    await updatePlatformDocumentSettings(ownerSettings, 1);
+    await updatePlatformDocumentSettings({ watermarkOpacityPercent: 24 }, 1);
     expect(mocks.createRow).toHaveBeenCalledWith(
       expect.objectContaining({
         databaseId: "database-1",
@@ -120,7 +139,8 @@ describe("platform document settings Appwrite persistence", () => {
         rowId: "1",
         data: expect.objectContaining({
           id: 1,
-          ...ownerSettings,
+          ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+          watermarkOpacityPercent: 24,
           updatedByUserId: 1,
         }),
       })
