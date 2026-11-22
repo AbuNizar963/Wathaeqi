@@ -1,4 +1,4 @@
-name: Police Telegrams Flutter Mobile
+name: Wathaeqi Flutter Mobile
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
       - "mobile/**"
       - "server/**"
       - "shared/**"
-      - "supabase/**"
       - ".github/workflows/flutter-mobile.yml"
   pull_request:
     branches:
@@ -17,7 +16,6 @@ on:
       - "mobile/**"
       - "server/**"
       - "shared/**"
-      - "supabase/**"
       - ".github/workflows/flutter-mobile.yml"
   workflow_dispatch:
 
@@ -89,7 +87,7 @@ jobs:
       - name: Upload Android preview APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: police-telegrams-android-preview
+          name: wathaeqi-android-preview
           path: mobile/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7
@@ -213,7 +211,7 @@ jobs:
             fi
           done
 
-          keystore_path="$RUNNER_TEMP/police-telegrams-release.jks"
+          keystore_path="$RUNNER_TEMP/wathaeqi-release.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
           chmod 600 "$keystore_path"
           test -s "$keystore_path"
@@ -301,12 +299,12 @@ jobs:
 
       - name: Remove temporary signing material
         if: always()
-        run: rm -f "$RUNNER_TEMP/police-telegrams-release.jks"
+        run: rm -f "$RUNNER_TEMP/wathaeqi-release.jks"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: police-telegrams-android-apk
+          name: wathaeqi-android-apk
           path: |
             mobile/build/app/outputs/flutter-apk/app-release.apk
             mobile/build/app/outputs/flutter-apk/SHA256SUMS.txt
@@ -316,7 +314,7 @@ jobs:
       - name: Upload private Android obfuscation symbols
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: police-telegrams-android-symbols
+          name: wathaeqi-android-symbols
           path: mobile/build/symbols/android
           if-no-files-found: error
           retention-days: 14
@@ -368,7 +366,7 @@ jobs:
       - name: Download signed APK
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: police-telegrams-android-apk
+          name: wathaeqi-android-apk
           path: release-assets
 
       - name: Verify downloaded APK and checksum
@@ -384,7 +382,7 @@ jobs:
         with:
           tag_name: ${{ needs.build-android-apk.outputs.release_tag }}
           target_commitish: ${{ github.sha }}
-          name: Police Telegrams ${{ needs.build-android-apk.outputs.release_version }} (build ${{ github.run_number }})
+          name: Wathaeqi ${{ needs.build-android-apk.outputs.release_version }} (build ${{ github.run_number }})
           # Prefer the actual triggering commit message over GitHub's generated
           # Full Changelog boilerplate, which can be the only release-note text
           # when changes were pushed directly to the mobile branch.
@@ -400,14 +398,14 @@ jobs:
       - name: Notify mobile devices about the new release
         if: needs.build-android-apk.outputs.push_backend_state == 'ready'
         env:
-          RELEASE_NOTIFICATION_URL: ${{ vars.RELEASE_NOTIFICATION_URL || 'https://police-telegrams-platform.vercel.app' }}
+          RELEASE_NOTIFICATION_URL: ${{ vars.RELEASE_NOTIFICATION_URL }}
           RELEASE_NOTIFICATION_SECRET: ${{ secrets.RELEASE_NOTIFICATION_SECRET }}
           RELEASE_VERSION: ${{ needs.build-android-apk.outputs.release_version }}
           RELEASE_TAG: ${{ needs.build-android-apk.outputs.release_tag }}
         run: |
           set -euo pipefail
-          if [ -z "${RELEASE_NOTIFICATION_SECRET:-}" ]; then
-            echo "::warning::RELEASE_NOTIFICATION_SECRET is not configured; skipping mobile release notification."
+          if [ -z "${RELEASE_NOTIFICATION_SECRET:-}" ] || [ -z "${RELEASE_NOTIFICATION_URL:-}" ]; then
+            echo "::warning::Release notification is not configured; set RELEASE_NOTIFICATION_SECRET and RELEASE_NOTIFICATION_URL to enable it."
             exit 0
           fi
           release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
@@ -415,8 +413,8 @@ jobs:
             --arg version "$RELEASE_VERSION" \
             --arg buildNumber "$GITHUB_RUN_NUMBER" \
             --arg releaseUrl "$release_url" \
-            --arg title "تحديث جديد لتطبيق برقيات الشرطة" \
-            --arg body "الإصدار ${RELEASE_VERSION} متوفر الآن. اضغط لمعرفة التفاصيل." \
+            --arg title "تحديث جديد لتطبيق وثائقي" \
+            --arg body "الإصدار ${RELEASE_VERSION} من وثائقي متوفر الآن. اضغط لمعرفة التفاصيل." \
             '{version:$version, buildNumber:($buildNumber|tonumber), releaseUrl:$releaseUrl, title:$title, body:$body}')"
           curl --fail-with-body --silent --show-error \
             --retry 3 --retry-delay 2 --max-time 30 \
