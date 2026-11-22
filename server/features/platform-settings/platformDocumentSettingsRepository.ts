@@ -198,9 +198,7 @@ function boundedNumber(
     : fallback;
 }
 
-export async function getPlatformDocumentSettings(): Promise<
-  PlatformDocumentSettings
-> {
+export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSettings> {
   const row = await findSettingsRow();
   if (!row) {
     // A read must not create defaults or overwrite an owner's concurrent save.
