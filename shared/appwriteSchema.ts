@@ -70,7 +70,6 @@ export const USERS_TABLE = "users";
 export const ORGANIZATION_MEMBERSHIPS_TABLE = "organization_memberships";
 export const AUDIT_LOGS_TABLE = "audit_logs";
 export const APP_RECORDS_TABLE = "app_records";
-export const PUSH_SUBSCRIPTIONS_TABLE = "push_subscriptions";
 
 export const appwriteSchema: SchemaTable[] = [
   {
@@ -628,48 +627,6 @@ export const appwriteSchema: SchemaTable[] = [
     ],
   },
   {
-    id: PUSH_SUBSCRIPTIONS_TABLE,
-    name: "Web push subscriptions",
-    description:
-      "Browser push endpoints scoped to users and organizations for migration.",
-    columns: [
-      ID_COLUMN,
-      { key: "userId", type: "integer", required: true },
-      { key: "organizationId", type: "varchar", size: 36, required: true },
-      { key: "endpoint", type: "varchar", size: 768, required: true },
-      { key: "p256dh", type: "varchar", size: 255, required: true },
-      { key: "auth", type: "varchar", size: 255, required: true },
-      { key: "userAgent", type: "varchar", size: 512, required: false },
-      { key: "lastUsedAt", type: "datetime", required: true },
-      CREATED_AT,
-      UPDATED_AT,
-    ],
-    indexes: [
-      {
-        key: "push_subscriptions_endpoint_unique",
-        type: "unique",
-        columns: ["endpoint"],
-      },
-      {
-        key: "push_subscriptions_user_endpoint_unique",
-        type: "unique",
-        columns: ["userId", "endpoint"],
-      },
-      {
-        key: "push_subscriptions_org_last_used",
-        type: "key",
-        columns: ["organizationId", "lastUsedAt"],
-        orders: ["ASC", "DESC"],
-      },
-      {
-        key: "push_subscriptions_user_last_used",
-        type: "key",
-        columns: ["userId", "lastUsedAt"],
-        orders: ["ASC", "DESC"],
-      },
-    ],
-  },
-  {
     id: CONTACTS_TABLE,
     name: "Contacts",
     description: "Simple address book entries owned by a user.",
@@ -886,5 +843,4 @@ export const REQUIRED_TABLE_IDS = [
   ORGANIZATION_MEMBERSHIPS_TABLE,
   AUDIT_LOGS_TABLE,
   APP_RECORDS_TABLE,
-  PUSH_SUBSCRIPTIONS_TABLE,
 ] as const;
