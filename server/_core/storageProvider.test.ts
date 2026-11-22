@@ -10,7 +10,6 @@ const mocks = vi.hoisted(() => ({
   legacyCreateSignedUrl: vi.fn(),
   legacyInfo: vi.fn(),
   legacyDownload: vi.fn(),
-  legacyRemove: vi.fn(),
   legacyFrom: vi.fn(),
 }));
 
@@ -69,12 +68,10 @@ describe("Appwrite storage provider", () => {
       data: new Blob([Buffer.from("legacy")], { type: "application/pdf" }),
       error: null,
     });
-    mocks.legacyRemove.mockResolvedValue({ error: null });
     mocks.legacyFrom.mockReturnValue({
       createSignedUrl: mocks.legacyCreateSignedUrl,
       info: mocks.legacyInfo,
       download: mocks.legacyDownload,
-      remove: mocks.legacyRemove,
     });
   });
 
@@ -190,14 +187,14 @@ describe("Appwrite storage provider", () => {
     );
   });
 
-  it("cleans up matching keys in both stores during migration", async () => {
+  it("never deletes legacy Supabase objects during generic cleanup", async () => {
     mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
 
     await expect(
       getStorageProvider().remove?.("telegrams/7/legacy.pdf")
     ).resolves.toBeUndefined();
 
-    expect(mocks.legacyRemove).toHaveBeenCalledWith(["telegrams/7/legacy.pdf"]);
+    expect(mocks.legacyFrom).not.toHaveBeenCalled();
   });
 
   it("rejects unsafe storage paths", async () => {
