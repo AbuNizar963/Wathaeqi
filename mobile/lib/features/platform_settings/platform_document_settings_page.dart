@@ -400,6 +400,7 @@ class _PlatformDocumentSettingsPageState
               const Text('لا توجد جهات متاحة.')
             else ...[
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _selectedOrganizationId,
                 decoration: const InputDecoration(
                   labelText: 'الجهة',
@@ -720,6 +721,7 @@ class _PlatformDocumentSettingsPageState
                           ),
                         ),
                         DropdownButtonFormField<String>(
+                isExpanded: true,
                           initialValue: _frameStyle,
                           decoration: const InputDecoration(
                             labelText: 'شكل الإطار',
@@ -772,6 +774,7 @@ class _PlatformDocumentSettingsPageState
                           (v) => setState(() => _frameWidthPt = v),
                         ),
                         DropdownButtonFormField<String>(
+                isExpanded: true,
                           initialValue: _headerDividerStyle,
                           decoration: const InputDecoration(
                             labelText: 'نمط الفاصل بين الرأس والمحتوى',
