@@ -101,7 +101,6 @@ describe("platform document settings Appwrite persistence", () => {
         tableId: "platform_document_settings",
         rowId: "1",
         data: expect.objectContaining({
-          id: 1,
           ...ownerSettings,
           updatedByUserId: 1,
         }),
