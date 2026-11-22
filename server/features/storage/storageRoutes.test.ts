@@ -183,6 +183,10 @@ function createSignedTelegramAttachmentHarness() {
 }
 
 const testOrganizationId = "550e8400-e29b-41d4-a716-446655440000";
+const appwriteUploadUrl = new URL(
+  "/v1/storage/buckets/attachments/files?project=wathaeqi",
+  "https://storage.example"
+).toString();
 const validPngBytes = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
@@ -209,7 +213,7 @@ describe("signed telegram attachment uploads", () => {
     canAccessTelegramScope.mockResolvedValue(true);
     storageCreateOrganizationAttachmentUploadUrl.mockResolvedValue({
       key,
-      uploadUrl: "https://storage.example/v1/storage/buckets/attachments/files?project=wathaeqi",
+      uploadUrl: appwriteUploadUrl,
       uploadJwt: "short-lived-jwt",
       fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
@@ -236,7 +240,9 @@ describe("signed telegram attachment uploads", () => {
     };
   }
 
-  it("creates a one-object signed upload URL after checking telegram scope", async () => {
+  it(
+    "creates a one-object signed upload URL after checking telegram scope",
+    async () => {
     const { authorize, createUrl, res } =
       createSignedTelegramAttachmentHarness();
     const next = vi.fn();
@@ -264,7 +270,7 @@ describe("signed telegram attachment uploads", () => {
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         key,
-        uploadUrl: "https://storage.example/v1/storage/buckets/attachments/files?project=wathaeqi",
+        uploadUrl: appwriteUploadUrl,
         uploadJwt: "short-lived-jwt",
         fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
