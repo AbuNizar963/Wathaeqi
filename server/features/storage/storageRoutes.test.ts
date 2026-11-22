@@ -247,7 +247,7 @@ describe("signed telegram attachment uploads", () => {
   }
 
   it(
-    "creates a one-object signed upload URL after checking telegram scope",
+    "creates an upload key after checking telegram scope",
     async () => {
       const { authorize, createUrl, res } =
         createSignedTelegramAttachmentHarness();
@@ -262,27 +262,45 @@ describe("signed telegram attachment uploads", () => {
       expect(next).toHaveBeenCalledOnce();
       await createUrl(req, res);
 
-      expect(storageCreateOrganizationAttachmentUploadUrl).toHaveBeenCalledWith(
+      expect(storageCreateOrganizationAttachmentUploadKey).toHaveBeenCalledWith(
         testOrganizationId,
         7,
-        {
-          fileName: "report.pdf",
-          contentType: "application/pdf",
-          sizeBytes: pdfBytes.byteLength,
-        },
-        user.authUserId
+        "report.pdf"
       );
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          key,
-          uploadUrl: appwriteUploadUrl,
-          uploadJwt: "short-lived-jwt",
-          fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-          folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
-          sizeBytes: pdfBytes.byteLength,
-        })
+      expect(res.json).toHaveBeenCalledWith({ key });
+    }
+  );
+
+  it(
+    "accepts a binary upload only after authenticating telegram scope and validating file bytes",
+    async () => {
+      const { authorize, upload, res } =
+        createSignedTelegramAttachmentHarness();
+      const next = vi.fn();
+      const req = request(pdfBytes, {
+        "x-attachment-key": key,
+        "x-attachment-file-name": "report.pdf",
+        "x-attachment-content-type": "application/pdf",
+      });
+
+      await authorize(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+      await upload(req, res);
+
+      expect(storagePutOrganizationAttachmentAtKey).toHaveBeenCalledWith(
+        key,
+        "report.pdf",
+        pdfBytes,
+        "application/pdf"
       );
+      expect(res.set).toHaveBeenCalledWith("Cache-Control", "no-store");
+      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res.json).toHaveBeenCalledWith({
+        success: true,
+        key,
+        size: pdfBytes.byteLength,
+      });
     }
   );
 
@@ -342,7 +360,7 @@ describe("signed telegram attachment uploads", () => {
 
     expect(res.status).toHaveBeenCalledWith(403);
     expect(next).not.toHaveBeenCalled();
-    expect(storageCreateOrganizationAttachmentUploadUrl).not.toHaveBeenCalled();
+    expect(storageCreateOrganizationAttachmentUploadKey).not.toHaveBeenCalled();
   });
 
   it("rejects an object whose stored size differs and removes it", async () => {
