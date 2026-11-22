@@ -5,7 +5,6 @@ import {
   getAppwriteBucketId,
   getAppwriteStorage,
   getAppwriteTokens,
-  getAppwriteUsers,
 } from "./appwrite";
 
 export interface StorageProvider {
@@ -15,16 +14,6 @@ export interface StorageProvider {
     options: { contentType: string; cacheControl: string }
   ): Promise<void>;
   createSignedUrl(key: string, expiresInSeconds: number): Promise<string>;
-  createSignedUploadUrl(
-    key: string,
-    metadata: { fileName: string; contentType: string; sizeBytes: number },
-    authUserId: string
-  ): Promise<{
-    uploadUrl: string;
-    uploadJwt: string;
-    fileId: string;
-    folder: string;
-  }>;
   getObjectInfo(key: string): Promise<{ size: number; contentType: string }>;
   download(key: string): Promise<{ body: Buffer; contentType: string }>;
   remove?(key: string): Promise<void>;
@@ -105,65 +94,6 @@ class AppwriteStorageProvider implements StorageProvider {
     }
 
     return getAppwriteFileTokenUrl(fileId, token.secret);
-  }
-
-  async createSignedUploadUrl(
-    key: string,
-    metadata: { fileName: string; contentType: string; sizeBytes: number },
-    authUserId: string
-  ): Promise<{
-    uploadUrl: string;
-    uploadJwt: string;
-    fileId: string;
-    folder: string;
-  }> {
-    if (
-      !authUserId.trim() ||
-      !metadata.contentType.trim() ||
-      !Number.isSafeInteger(metadata.sizeBytes) ||
-      metadata.sizeBytes < 1
-    ) {
-      throw new Error("Valid Appwrite upload authorization is required");
-    }
-
-    const { fileId, folder } = parseStorageKey(key);
-    const match = key.match(
-      new RegExp(
-        [
-          "^organizations/[0-9a-f-]{36}/telegrams/[1-9]\\d*/attachments/",
-          "[0-9a-f-]{36}-(.+)$",
-        ].join(""),
-        "i"
-      )
-    );
-    if (!match || match[1] !== metadata.fileName) {
-      throw new Error("Invalid organization attachment storage key");
-    }
-
-    const endpoint = new URL(ENV.appwriteEndpoint);
-    const basePath = endpoint.pathname.replace(/\/+$/, "");
-    const uploadUrl = new URL(
-      `${basePath}/storage/buckets/${encodeURIComponent(
-        getAppwriteBucketId()
-      )}/files`,
-      endpoint.origin
-    );
-    uploadUrl.searchParams.set("project", ENV.appwriteProjectId);
-
-    const jwt = await getAppwriteUsers().createJWT({
-      userId: authUserId,
-      duration: 300,
-    });
-    if (!jwt.jwt) {
-      throw new Error("Appwrite did not return a user upload JWT");
-    }
-
-    return {
-      uploadUrl: uploadUrl.toString(),
-      uploadJwt: jwt.jwt,
-      fileId,
-      folder,
-    };
   }
 
   async getObjectInfo(
