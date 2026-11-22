@@ -719,8 +719,7 @@ class PoliceApi {
         () => _httpClient.put(uploadUri, headers: uploadHeaders, body: bytes),
         timeout: const Duration(seconds: 60),
       );
-      if (uploadResponse.statusCode < 200 ||
-          uploadResponse.statusCode >= 300) {
+      if (uploadResponse.statusCode < 200 || uploadResponse.statusCode >= 300) {
         throw ApiException(
           uploadResponse.statusCode,
           _message(uploadResponse.body),
