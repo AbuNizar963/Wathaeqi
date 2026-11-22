@@ -80,12 +80,19 @@ function mapPlatformDocumentSettings(
         ? storedColor
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerColor,
     headerDividerStyle:
-      row.headerDividerStyle === "solid" || row.headerDividerStyle === "double" ||
-      row.headerDividerStyle === "dashed" || row.headerDividerStyle === "dotted" ||
+      row.headerDividerStyle === "solid" ||
+      row.headerDividerStyle === "double" ||
+      row.headerDividerStyle === "dashed" ||
+      row.headerDividerStyle === "dotted" ||
       row.headerDividerStyle === "tricolor-stars"
         ? row.headerDividerStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerStyle,
-    headerDividerWidthPt: boundedNumber(row.headerDividerWidthPt, MIN_DIVIDER_WIDTH_PT, MAX_DIVIDER_WIDTH_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerWidthPt),
+    headerDividerWidthPt: boundedNumber(
+      row.headerDividerWidthPt,
+      MIN_DIVIDER_WIDTH_PT,
+      MAX_DIVIDER_WIDTH_PT,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerWidthPt
+    ),
     watermarkText:
       typeof row.watermarkText === "string" && row.watermarkText.trim()
         ? row.watermarkText.trim().slice(0, 255)
@@ -139,8 +146,14 @@ function mapPlatformDocumentSettings(
         ? row.headerAlignment
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerAlignment,
     pageMarginTopMm: boundedInteger(row.pageMarginTopMm, MAX_PAGE_MARGIN_MM),
-    pageMarginRightMm: boundedInteger(row.pageMarginRightMm, MAX_PAGE_MARGIN_MM),
-    pageMarginBottomMm: boundedInteger(row.pageMarginBottomMm, MAX_PAGE_MARGIN_MM),
+    pageMarginRightMm: boundedInteger(
+      row.pageMarginRightMm,
+      MAX_PAGE_MARGIN_MM
+    ),
+    pageMarginBottomMm: boundedInteger(
+      row.pageMarginBottomMm,
+      MAX_PAGE_MARGIN_MM
+    ),
     pageMarginLeftMm: boundedInteger(row.pageMarginLeftMm, MAX_PAGE_MARGIN_MM),
     frameStyle:
       row.frameStyle === "none" || row.frameStyle === "single" ||
@@ -148,10 +161,16 @@ function mapPlatformDocumentSettings(
         ? row.frameStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle,
     frameColor:
-      typeof row.frameColor === "string" && HEX_COLOR_PATTERN.test(row.frameColor)
+      typeof row.frameColor === "string" &&
+      HEX_COLOR_PATTERN.test(row.frameColor)
         ? row.frameColor
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameColor,
-    frameWidthPt: boundedNumber(row.frameWidthPt, MIN_FRAME_WIDTH_PT, MAX_FRAME_WIDTH_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameWidthPt),
+    frameWidthPt: boundedNumber(
+      row.frameWidthPt,
+      MIN_FRAME_WIDTH_PT,
+      MAX_FRAME_WIDTH_PT,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameWidthPt
+    ),
     showVerificationQr:
       typeof row.showVerificationQr === "boolean"
         ? row.showVerificationQr
@@ -169,12 +188,21 @@ function boundedInteger(value: unknown, max: number): number {
     ? number
     : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm;
 }
-function boundedNumber(value: unknown, min: number, max: number, fallback: number): number {
+function boundedNumber(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number
+): number {
   const number = Number(value);
-  return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
+  return Number.isFinite(number) && number >= min && number <= max
+    ? number
+    : fallback;
 }
 
-export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSettings> {
+export async function getPlatformDocumentSettings(): Promise<
+  PlatformDocumentSettings
+> {
   const row = await findSettingsRow();
   if (!row) {
     // A read must not create defaults or overwrite an owner's concurrent save.
