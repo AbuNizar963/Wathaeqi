@@ -6,6 +6,7 @@ import {
   getAppwriteStorage,
   getAppwriteTokens,
 } from "./appwrite";
+import { getSupabaseAdmin } from "./supabase";
 
 export interface StorageProvider {
   upload(
@@ -47,9 +48,21 @@ function parseStorageKey(key: string): StorageKeyParts {
   return { fileId, fileName, folder };
 }
 
+function isNotFoundError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const value = error as Record<string, unknown>;
+  return (
+    value.code === 404 ||
+    value.status === 404 ||
+    value.statusCode === 404 ||
+    value.code === "404" ||
+    value.code === "not_found"
+  );
+}
+
 function getAppwriteFileTokenUrl(fileId: string, token: string): string {
   const endpoint = new URL(ENV.appwriteEndpoint);
-  const basePath = endpoint.pathname.replace(/\/+$/, "");
+  const basePath = endpoint.pathname.replace(/\\/+$/, "");
   const url = new URL(
     `${basePath}/storage/buckets/${encodeURIComponent(
       getAppwriteBucketId()
@@ -140,10 +153,130 @@ class AppwriteStorageProvider implements StorageProvider {
   }
 }
 
+/**
+ * Supabase is retained as a read/cleanup fallback for objects created before
+ * Appwrite became the write target. New objects are never written to Supabase.
+ */
+class LegacySupabaseStorageProvider {
+  async createSignedUrl(
+    key: string,
+    expiresInSeconds: number
+  ): Promise<string> {
+    const { data, error } = await getSupabaseAdmin()
+      .storage.from(ENV.supabaseStorageBucket)
+      .createSignedUrl(key, expiresInSeconds);
+
+    if (error || !data?.signedUrl) {
+      throw new Error(
+        `Legacy storage signed URL failed: ${error?.message ?? "empty URL"}`
+      );
+    }
+    return data.signedUrl;
+  }
+
+  async getObjectInfo(
+    key: string
+  ): Promise<{ size: number; contentType: string }> {
+    const { data, error } = await getSupabaseAdmin()
+      .storage.from(ENV.supabaseStorageBucket)
+      .info(key);
+    const size = Number(data?.size);
+    if (error || !data || !Number.isSafeInteger(size) || size < 0) {
+      throw new Error(
+        `Legacy storage object info failed: ${error?.message ?? "invalid metadata"}`
+      );
+    }
+    return {
+      size,
+      contentType: data.contentType || "application/octet-stream",
+    };
+  }
+
+  async download(key: string): Promise<{ body: Buffer; contentType: string }> {
+    const { data, error } = await getSupabaseAdmin()
+      .storage.from(ENV.supabaseStorageBucket)
+      .download(key);
+    if (error || !data) {
+      throw new Error(
+        `Legacy storage download failed: ${error?.message ?? "empty object"}`
+      );
+    }
+    return {
+      body: Buffer.from(await data.arrayBuffer()),
+      contentType: data.type || "application/octet-stream",
+    };
+  }
+
+  async remove(key: string): Promise<void> {
+    const { error } = await getSupabaseAdmin()
+      .storage.from(ENV.supabaseStorageBucket)
+      .remove([key]);
+    if (error) throw new Error(`Legacy storage cleanup failed: ${error.message}`);
+  }
+}
+
+class HybridStorageProvider implements StorageProvider {
+  private readonly appwrite = new AppwriteStorageProvider();
+  private readonly legacy = new LegacySupabaseStorageProvider();
+
+  upload(
+    key: string,
+    body: Buffer,
+    options: { contentType: string; cacheControl: string }
+  ): Promise<void> {
+    return this.appwrite.upload(key, body, options);
+  }
+
+  async createSignedUrl(
+    key: string,
+    expiresInSeconds: number
+  ): Promise<string> {
+    try {
+      return await this.appwrite.createSignedUrl(key, expiresInSeconds);
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error;
+      return this.legacy.createSignedUrl(key, expiresInSeconds);
+    }
+  }
+
+  async getObjectInfo(
+    key: string
+  ): Promise<{ size: number; contentType: string }> {
+    try {
+      return await this.appwrite.getObjectInfo(key);
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error;
+      return this.legacy.getObjectInfo(key);
+    }
+  }
+
+  async download(key: string): Promise<{ body: Buffer; contentType: string }> {
+    try {
+      return await this.appwrite.download(key);
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error;
+      return this.legacy.download(key);
+    }
+  }
+
+  async remove(key: string): Promise<void> {
+    try {
+      await this.appwrite.remove?.(key);
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error;
+    }
+    try {
+      await this.legacy.remove(key);
+    } catch (error) {
+      if (!isNotFoundError(error)) throw error;
+    }
+  }
+}
+
 let provider: StorageProvider | undefined;
 
 export function getStorageProvider(): StorageProvider {
-  provider ??= new AppwriteStorageProvider();
+  provider ??= new HybridStorageProvider();
   return provider;
 }
 
