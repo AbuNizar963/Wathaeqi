@@ -218,8 +218,15 @@ export function organizationAttachmentKeyMatches(
 export async function storageCreateOrganizationAttachmentUploadUrl(
   organizationId: string,
   telegramId: number,
-  fileName: string
-): Promise<{ key: string; uploadUrl: string }> {
+  metadata: { fileName: string; contentType: string; sizeBytes: number },
+  authUserId: string
+): Promise<{
+  key: string;
+  uploadUrl: string;
+  uploadJwt: string;
+  fileId: string;
+  folder: string;
+}> {
   const safeOrganizationId = organizationId.trim();
   if (
     !UUID_PATTERN.test(safeOrganizationId) ||
@@ -229,12 +236,18 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
     throw new StorageAccessDeniedError();
   }
 
-  const safeFileName = sanitizeFileName(fileName);
+  const safeFileName = sanitizeFileName(metadata.fileName);
   const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  const uploadUrl = validateStorageProviderUrl(
-    await getStorageProvider().createSignedUploadUrl(key)
+  const authorization = await getStorageProvider().createSignedUploadUrl(
+    key,
+    { ...metadata, fileName: safeFileName },
+    authUserId
   );
-  return { key, uploadUrl };
+  return {
+    key,
+    ...authorization,
+    uploadUrl: validateStorageProviderUrl(authorization.uploadUrl),
+  };
 }
 
 export async function storageGetObjectInfo(
