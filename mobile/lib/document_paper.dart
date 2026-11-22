@@ -12,6 +12,7 @@ class DocumentPaper extends StatelessWidget {
     required this.watermarkOpacity,
     this.watermarkText = 'وزارة الداخلية',
     this.logoUrl,
+    this.fixedWidth,
   });
 
   static const double a4Width = 210;
@@ -24,14 +25,15 @@ class DocumentPaper extends StatelessWidget {
   final double watermarkOpacity;
   final String watermarkText;
   final String? logoUrl;
+  final double? fixedWidth;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final pageWidth = constraints.hasBoundedWidth
-            ? constraints.maxWidth
-            : a4Width;
+        final pageWidth =
+            fixedWidth ??
+            (constraints.hasBoundedWidth ? constraints.maxWidth : a4Width);
         final pageHeight = pageWidth * a4Height / a4Width;
         final logo = logoUrl?.trim();
         return Container(
