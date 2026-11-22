@@ -22,49 +22,54 @@ import {
   type PlatformDocumentSettings,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
-const platformDocumentSettingsInput = z.object({
-  showMinistryWatermarkText: z.boolean(),
-  watermarkText: z.string().max(255),
-  watermarkOpacityPercent: z
-    .number()
-    .int()
-    .min(0)
-    .max(MAX_WATERMARK_OPACITY_PERCENT),
-  headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
-  headerDividerStyle: z.enum([
-    "solid",
-    "double",
-    "dashed",
-    "dotted",
-    "tricolor-stars",
-  ]),
-  headerDividerWidthPt: z
-    .number()
-    .min(MIN_DIVIDER_WIDTH_PT)
-    .max(MAX_DIVIDER_WIDTH_PT),
-  headerTitle: z.string().max(255),
-  headerSubtitle: z.string().max(255),
-  headerChiefRank: z.string().max(120),
-  headerChiefName: z.string().max(255),
-  headerShowLogo: z.boolean(),
-  headerLogoSize: z
-    .number()
-    .int()
-    .min(MIN_HEADER_LOGO_SIZE)
-    .max(MAX_HEADER_LOGO_SIZE),
-  headerTopPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
-  headerHorizontalPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
-  headerBottomPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
-  headerAlignment: z.enum(["spread", "center", "right"]),
-  pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
-  pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
-  pageMarginBottomMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
-  pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
-  frameStyle: z.enum(["none", "single", "double", "ornate"]),
-  frameColor: z.string().regex(HEX_COLOR_PATTERN),
-  frameWidthPt: z.number().min(MIN_FRAME_WIDTH_PT).max(MAX_FRAME_WIDTH_PT),
-  showVerificationQr: z.boolean(),
-})
+const platformDocumentSettingsInput = z
+  .object({
+    showMinistryWatermarkText: z.boolean(),
+    watermarkText: z.string().max(255),
+    watermarkOpacityPercent: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_WATERMARK_OPACITY_PERCENT),
+    headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
+    headerDividerStyle: z.enum([
+      "solid",
+      "double",
+      "dashed",
+      "dotted",
+      "tricolor-stars",
+    ]),
+    headerDividerWidthPt: z
+      .number()
+      .min(MIN_DIVIDER_WIDTH_PT)
+      .max(MAX_DIVIDER_WIDTH_PT),
+    headerTitle: z.string().max(255),
+    headerSubtitle: z.string().max(255),
+    headerChiefRank: z.string().max(120),
+    headerChiefName: z.string().max(255),
+    headerShowLogo: z.boolean(),
+    headerLogoSize: z
+      .number()
+      .int()
+      .min(MIN_HEADER_LOGO_SIZE)
+      .max(MAX_HEADER_LOGO_SIZE),
+    headerTopPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
+    headerHorizontalPaddingMm: z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_HEADER_PADDING_MM),
+    headerBottomPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
+    headerAlignment: z.enum(["spread", "center", "right"]),
+    pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+    pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+    pageMarginBottomMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+    pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
+    frameStyle: z.enum(["none", "single", "double", "ornate"]),
+    frameColor: z.string().regex(HEX_COLOR_PATTERN),
+    frameWidthPt: z.number().min(MIN_FRAME_WIDTH_PT).max(MAX_FRAME_WIDTH_PT),
+    showVerificationQr: z.boolean(),
+  })
   .partial()
   .refine(values => Object.keys(values).length > 0);
 
