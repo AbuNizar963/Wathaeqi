@@ -23,7 +23,9 @@ try {
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 } catch (error) {
   const message =
-    error instanceof Error ? error.message : "Unknown migration inventory error";
+    error instanceof Error
+      ? error.message
+      : "Unknown migration inventory error";
   process.stderr.write(`Migration inventory failed: ${message}\n`);
   process.exitCode = 1;
 }

@@ -79,9 +79,7 @@ type StorageReadClient = {
 };
 
 type UsersReadClient = {
-  list: (input: {
-    queries: string[];
-  }) => Promise<{ total: number }>;
+  list: (input: { queries: string[] }) => Promise<{ total: number }>;
 };
 
 export type MigrationInventoryDependencies = {
@@ -139,10 +137,7 @@ async function mapWithConcurrency<T, R>(
   }
 
   await Promise.all(
-    Array.from(
-      { length: Math.min(concurrency, items.length) },
-      () => worker()
-    )
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
   );
   return results;
 }
@@ -178,13 +173,11 @@ async function countSupabaseBucket(
 
     let offset = 0;
     while (true) {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .list(path, {
-          limit: PAGE_SIZE,
-          offset,
-          sortBy: { column: "name", order: "asc" },
-        });
+      const { data, error } = await supabase.storage.from(bucket).list(path, {
+        limit: PAGE_SIZE,
+        offset,
+        sortBy: { column: "name", order: "asc" },
+      });
 
       if (error) {
         throw new Error(
@@ -224,8 +217,7 @@ async function countAppwriteTable(
     if (errorCode(error) === 404) {
       return { table, exists: false, records: null };
     }
-    const details =
-      error instanceof Error ? error.message : "unknown error";
+    const details = error instanceof Error ? error.message : "unknown error";
     throw new Error(`Appwrite table check failed (${table}): ${details}`);
   }
 
