@@ -215,18 +215,11 @@ export function organizationAttachmentKeyMatches(
   );
 }
 
-export async function storageCreateOrganizationAttachmentUploadUrl(
+export async function storageCreateOrganizationAttachmentUploadKey(
   organizationId: string,
   telegramId: number,
-  metadata: { fileName: string; contentType: string; sizeBytes: number },
-  authUserId: string
-): Promise<{
-  key: string;
-  uploadUrl: string;
-  uploadJwt: string;
-  fileId: string;
-  folder: string;
-}> {
+  fileName: string
+): Promise<string> {
   const safeOrganizationId = organizationId.trim();
   if (
     !UUID_PATTERN.test(safeOrganizationId) ||
@@ -236,18 +229,8 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
     throw new StorageAccessDeniedError();
   }
 
-  const safeFileName = sanitizeFileName(metadata.fileName);
-  const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  const authorization = await getStorageProvider().createSignedUploadUrl(
-    key,
-    { ...metadata, fileName: safeFileName },
-    authUserId
-  );
-  return {
-    key,
-    ...authorization,
-    uploadUrl: validateStorageProviderUrl(authorization.uploadUrl),
-  };
+  const safeFileName = sanitizeFileName(fileName);
+  return `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
 }
 
 export async function storageGetObjectInfo(
@@ -263,6 +246,32 @@ export async function storageGetObjectInfo(
     throw new StorageAccessDeniedError();
   }
   return getStorageProvider().getObjectInfo(key);
+}
+
+export async function storagePutOrganizationAttachmentAtKey(
+  key: string,
+  fileName: string,
+  data: Buffer | Uint8Array,
+  contentType: AllowedAttachmentType
+): Promise<{ key: string; url: string }> {
+  const parts = parseOrganizationAttachmentKey(key);
+  const safeFileName = sanitizeFileName(fileName);
+  const storedFileName = key.split("/").pop() ?? "";
+  if (
+    !parts ||
+    storedFileName.slice(37) !== safeFileName ||
+    storedFileName.length <= 37
+  ) {
+    throw new StorageAccessDeniedError();
+  }
+
+  const body = Buffer.from(data);
+  await getStorageProvider().upload(key, body, {
+    contentType,
+    cacheControl: "3600",
+  });
+
+  return { key, url: storageStableUrl(key) };
 }
 
 export async function storagePutOrganizationAttachment(
