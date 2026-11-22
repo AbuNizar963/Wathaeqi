@@ -478,7 +478,13 @@ export const appwriteSchema: SchemaTable[] = [
     columns: [
       ID_COLUMN,
       { key: "authUserId", type: "varchar", size: 36, required: true },
-      { key: "sessionVersion", type: "varchar", size: 36, required: true },
+      {
+        key: "sessionVersion",
+        type: "varchar",
+        size: 36,
+        required: true,
+        description: "Generated during migration to invalidate legacy sessions.",
+      },
       { key: "organizationId", type: "varchar", size: 36, required: true },
       { key: "name", type: "varchar", size: 255, required: false },
       { key: "username", type: "varchar", size: 120, required: false },
