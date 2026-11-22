@@ -576,7 +576,7 @@ export const appwriteSchema: SchemaTable[] = [
       { key: "entityId", type: "varchar", size: 80, required: false },
       { key: "metadata", type: "text", required: false },
       { key: "ipAddress", type: "varchar", size: 80, required: false },
-      { key: "userAgent", type: "varchar", size: 512, required: false },
+      { key: "userAgent", type: "text", required: false },
       {
         key: "deviceType",
         type: "varchar",
@@ -645,7 +645,7 @@ export const appwriteSchema: SchemaTable[] = [
       ID_COLUMN,
       { key: "userId", type: "integer", required: true },
       { key: "organizationId", type: "varchar", size: 36, required: true },
-      { key: "endpoint", type: "varchar", size: 4096, required: true },
+      { key: "endpoint", type: "varchar", size: 768, required: true },
       { key: "p256dh", type: "varchar", size: 255, required: true },
       { key: "auth", type: "varchar", size: 255, required: true },
       { key: "userAgent", type: "varchar", size: 512, required: false },
