@@ -557,6 +557,25 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
+  Map<String, dynamic> _documentContentForDisplay(
+    OfficialDocument document,
+  ) {
+    final content = DocumentStudioQuillCodec.normalizeLegacyText(
+      document.content,
+    );
+    if (document.fieldValues.isNotEmpty) return content;
+    return applyDocumentTemplateVariables(content, {
+      'organization':
+          (_letterhead['departmentName'] ??
+                  _letterhead['organizationName'] ??
+                  'وثائقي')
+              .toString(),
+      'date': DateFormat('yyyy/MM/dd').format(document.documentDate),
+      'subject': document.subject,
+      if (document.serialCode.isNotEmpty) 'number': document.serialCode,
+    });
+  }
+
   Future<Uint8List> _fetchDocumentPdf(
     OfficialDocument document, {
     int imageTiles = 1,
@@ -612,19 +631,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'frameWidthPt': _platformDocumentSettings['frameWidthPt'] ?? 1,
       };
       return DocumentStudioPdf.build(
-        content: applyDocumentTemplateVariables(
-          DocumentStudioQuillCodec.normalizeLegacyText(document.content),
-          {
-            'organization':
-                (_letterhead['departmentName'] ??
-                        _letterhead['organizationName'] ??
-                        'وثائقي')
-                    .toString(),
-            'date': DateFormat('yyyy/MM/dd').format(document.documentDate),
-            'subject': document.subject,
-            if (document.serialCode.isNotEmpty) 'number': document.serialCode,
-          },
-        ),
+        content: _documentContentForDisplay(document),
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
@@ -916,19 +923,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       document.templateFieldsSnapshot,
       document.fieldValues,
     );
-    final displayContent = applyDocumentTemplateVariables(
-      DocumentStudioQuillCodec.normalizeLegacyText(document.content),
-      {
-        'organization':
-            (_letterhead['departmentName'] ??
-                    _letterhead['organizationName'] ??
-                    'وثائقي')
-                .toString(),
-        'date': DateFormat('yyyy/MM/dd').format(document.documentDate),
-        'subject': document.subject,
-        if (document.serialCode.isNotEmpty) 'number': document.serialCode,
-      },
-    );
+    final displayContent = _documentContentForDisplay(document);
     _replaceDocumentEditor(displayContent);
     setState(
       () => _tab = document.status == 'archived'
@@ -1058,15 +1053,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _selectedDocument = issuedDocument;
       _replaceDocumentEditor(
         applyDocumentTemplateVariables(issuedDocument.content, {
-          'organization':
-              (_letterhead['departmentName'] ??
-                      _letterhead['organizationName'] ??
-                      'وثائقي')
-                  .toString(),
-          'date': DateFormat('yyyy/MM/dd').format(issuedDocument.documentDate),
-          'subject': issuedDocument.subject,
-          if (issuedDocument.serialCode.isNotEmpty)
-            'number': issuedDocument.serialCode,
+          'number': issuedDocument.serialCode,
         }),
       );
       await _load();
