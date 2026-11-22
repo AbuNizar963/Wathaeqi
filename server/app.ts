@@ -77,6 +77,8 @@ function requiresAuthenticatedLargeBody(path: string): boolean {
     path.includes("/api/trpc/telegrams.importRows") ||
     path.includes("/api/trpc/telegrams.importWorkbookPreview") ||
     path.includes("/api/trpc/telegrams.uploadAttachment") ||
+    (path.startsWith("/api/telegrams/") &&
+      path.endsWith("/attachments/upload")) ||
     path.includes("/api/trpc/settings.uploadLogo")
   );
 }
