@@ -64,7 +64,7 @@ function isNotFoundError(error: unknown): boolean {
 
 function getAppwriteFileTokenUrl(fileId: string, token: string): string {
   const endpoint = new URL(ENV.appwriteEndpoint);
-  const basePath = endpoint.pathname.replace(/\\/+$/, "");
+  const basePath = endpoint.pathname.replace(/\/+$/, "");
   const url = new URL(
     `${basePath}/storage/buckets/${encodeURIComponent(
       getAppwriteBucketId()
@@ -156,7 +156,7 @@ class AppwriteStorageProvider implements StorageProvider {
 }
 
 /**
- * Supabase is retained as a read/cleanup fallback for objects created before
+ * Supabase is retained as a read fallback for objects created before
  * Appwrite became the write target. New objects are never written to Supabase.
  */
 class LegacySupabaseStorageProvider {
