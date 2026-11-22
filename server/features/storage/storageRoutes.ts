@@ -147,7 +147,8 @@ async function createTelegramAttachmentUploadUrl(
     const upload = await storageCreateOrganizationAttachmentUploadUrl(
       context.telegram.organizationId,
       context.telegram.id,
-      metadata.fileName
+      metadata,
+      context.user.authUserId
     );
     res.set("Cache-Control", "no-store");
     res.status(200).json({
