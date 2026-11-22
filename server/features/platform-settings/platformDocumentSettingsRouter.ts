@@ -87,8 +87,10 @@ export const platformDocumentSettingsRouter = router({
       }
 
       const current = await getPlatformDocumentSettings();
+      const currentValues = { ...current };
+      delete currentValues.updatedAt;
       const settings: Omit<PlatformDocumentSettings, "updatedAt"> = {
-        ...current,
+        ...currentValues,
         ...input,
       };
       const saved = await updatePlatformDocumentSettings(settings, ctx.user.id);
