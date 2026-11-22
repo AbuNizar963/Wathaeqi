@@ -1210,8 +1210,42 @@ void main() {
     );
   });
 
-  test('binary logo upload surfaces server authorization errors', () async {
+  test('organization logo upload requires a saved session cookie', () async {
+    var requestStarted = false;
     final client = MockClient((request) async {
+      requestStarted = true;
+      fail('logo upload must not be sent without a saved session cookie');
+    });
+    addTearDown(client.close);
+    final api = PoliceApi(
+      baseUrl: 'https://police.example.test',
+      httpClient: client,
+    );
+
+    await expectLater(
+      api.uploadOrganizationLogo(
+        organizationId: '550e8400-e29b-41d4-a716-446655440000',
+        fileName: 'badge.png',
+        contentType: 'image/png',
+        bytes: Uint8List.fromList([1, 2, 3]),
+      ),
+      throwsA(
+        isA<ApiException>()
+            .having((error) => error.statusCode, 'statusCode', 401)
+            .having(
+              (error) => error.message,
+              'message',
+              'انتهت الجلسة؛ سجّل الدخول مجددًا',
+            ),
+      ),
+    );
+    expect(requestStarted, isFalse);
+  });
+
+  test('binary logo upload surfaces server authorization errors', () async {
+    _secureStorageForTest['session_cookie'] = 'sid=valid-session';
+    final client = MockClient((request) async {
+      expect(request.headers['cookie'], 'sid=valid-session');
       return http.Response(
         jsonEncode({'error': 'لا تملك صلاحية رفع شعار هذه الجهة'}),
         403,
@@ -1242,6 +1276,45 @@ void main() {
       ),
     );
   });
+
+  test(
+    'binary logo upload surfaces an expired server session clearly',
+    () async {
+      const sessionCookie = 'police_telegrams_session=expired-session';
+      _secureStorageForTest['session_cookie'] = sessionCookie;
+      final client = MockClient((request) async {
+        expect(request.headers['cookie'], sessionCookie);
+        return http.Response(
+          jsonEncode({'error': 'انتهت الجلسة؛ سجّل الدخول مجددًا'}),
+          401,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      addTearDown(client.close);
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+
+      await expectLater(
+        api.uploadOrganizationLogo(
+          organizationId: '550e8400-e29b-41d4-a716-446655440000',
+          fileName: 'badge.png',
+          contentType: 'image/png',
+          bytes: Uint8List.fromList([1, 2, 3]),
+        ),
+        throwsA(
+          isA<ApiException>()
+              .having((error) => error.statusCode, 'statusCode', 401)
+              .having(
+                (error) => error.message,
+                'message',
+                'انتهت الجلسة؛ سجّل الدخول مجددًا',
+              ),
+        ),
+      );
+    },
+  );
 
   test(
     'renders official telegram PDF through authenticated Chromium endpoint',
