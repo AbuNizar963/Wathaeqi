@@ -93,7 +93,7 @@ describe("Appwrite operational schema", () => {
     );
   });
 
-  it("preserves browser push subscription records and their lookup keys", () => {
+  it("preserves web push records and lookup keys", () => {
     const subscriptions = findSchemaTable("push_subscriptions");
     const keys = subscriptions?.columns.map(column => column.key) ?? [];
 
