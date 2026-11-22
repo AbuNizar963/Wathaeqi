@@ -519,16 +519,8 @@ export const appwriteSchema: SchemaTable[] = [
         type: "unique",
         columns: ["authUserId"],
       },
-      {
-        key: "users_username_unique",
-        type: "unique",
-        columns: ["username"],
-      },
-      {
-        key: "users_organization",
-        type: "key",
-        columns: ["organizationId"],
-      },
+      { key: "users_username_unique", type: "unique", columns: ["username"] },
+      { key: "users_organization", type: "key", columns: ["organizationId"] },
     ],
   },
   {
