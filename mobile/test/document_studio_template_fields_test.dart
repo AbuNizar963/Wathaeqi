@@ -30,10 +30,7 @@ void main() {
             {
               'type': 'paragraph',
               'content': [
-                {
-                  'type': 'text',
-                  'text': 'إلى مديرية الشرطة بتاريخ 2026-11-22',
-                },
+                {'type': 'text', 'text': 'إلى مديرية الشرطة بتاريخ 2026-11-22'},
               ],
             },
           ],
@@ -71,9 +68,9 @@ void main() {
     });
 
     test(
-        'preserves marks, attributes, unknown nodes and source immutability',
-        () {
-          final content = <String, dynamic>{
+      'preserves marks, attributes, unknown nodes and source immutability',
+      () {
+        final content = <String, dynamic>{
           'type': 'doc',
           'attrs': {'metadata': '{{name}}'},
           'content': [
@@ -121,17 +118,17 @@ void main() {
         });
         expect((result['content'] as List)[1], (content['content'] as List)[1]);
         expect(content, original);
-    });
+      },
+    );
 
-    test('does not modify unsupported legacy HTML or malformed legacy text', () {
+    test(
+      'does not modify unsupported legacy HTML or malformed legacy text',
+      () {
         final html = <String, dynamic>{
           'type': 'legacy-html',
           'html': '<p>{{name}}</p>',
         };
-        final malformed = <String, dynamic>{
-          'type': 'legacy-text',
-          'text': 7,
-        };
+        final malformed = <String, dynamic>{'type': 'legacy-text', 'text': 7};
         expect(
           DocumentStudioTemplateFields.applyFieldValues(html, {'name': 'أحمد'}),
           html,
