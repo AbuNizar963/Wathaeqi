@@ -642,8 +642,7 @@ class PoliceApi {
         }),
       ),
     );
-    if (prepareResponse.statusCode < 200 ||
-        prepareResponse.statusCode >= 300) {
+    if (prepareResponse.statusCode < 200 || prepareResponse.statusCode >= 300) {
       throw ApiException(
         prepareResponse.statusCode,
         _message(prepareResponse.body),
@@ -717,11 +716,7 @@ class PoliceApi {
       if (cookie != null) uploadHeaders['cookie'] = cookie;
 
       final uploadResponse = await send(
-        () => _httpClient.put(
-          uploadUri,
-          headers: uploadHeaders,
-          body: bytes,
-        ),
+        () => _httpClient.put(uploadUri, headers: uploadHeaders, body: bytes),
         timeout: const Duration(seconds: 60),
       );
       if (uploadResponse.statusCode < 200 ||
