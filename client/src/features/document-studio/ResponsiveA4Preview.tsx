@@ -31,9 +31,7 @@ export default function ResponsiveA4Preview({
     height: A4_PREVIEW_MIN_HEIGHT,
   });
   const [zoom, setZoom] = useState(1);
-  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(
-    null
-  );
+  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -129,8 +127,7 @@ export default function ResponsiveA4Preview({
       ? "none"
       : [
           `${settings?.frameWidthPt ?? 1}pt`,
-          settings?.frameStyle === "double" ||
-          settings?.frameStyle === "ornate"
+          settings?.frameStyle === "double" || settings?.frameStyle === "ornate"
             ? "double"
             : "solid",
           settings?.frameColor ?? "#b49a55",
