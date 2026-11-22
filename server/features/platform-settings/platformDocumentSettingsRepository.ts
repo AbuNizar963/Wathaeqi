@@ -156,8 +156,10 @@ function mapPlatformDocumentSettings(
     ),
     pageMarginLeftMm: boundedInteger(row.pageMarginLeftMm, MAX_PAGE_MARGIN_MM),
     frameStyle:
-      row.frameStyle === "none" || row.frameStyle === "single" ||
-      row.frameStyle === "double" || row.frameStyle === "ornate"
+      row.frameStyle === "none" ||
+      row.frameStyle === "single" ||
+      row.frameStyle === "double" ||
+      row.frameStyle === "ornate"
         ? row.frameStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle,
     frameColor:
@@ -180,7 +182,6 @@ function mapPlatformDocumentSettings(
       : null,
   };
 }
-
 
 function boundedInteger(value: unknown, max: number): number {
   const number = Number(value);
