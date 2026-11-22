@@ -1,0 +1,40 @@
+name: Temporary Prettier repair for platform settings
+on:
+  push:
+    branches:
+      - fix/platform-settings-null-defaults-web-20261122
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pull request branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/platform-settings-null-defaults-web-20261122
+          persist-credentials: true
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Format only the two changed settings files
+        run: >-
+          pnpm exec prettier --write
+          server/features/platform-settings/platformDocumentSettingsRepository.ts
+          server/features/platform-settings/platformDocumentSettingsRepository.test.ts
+      - name: Commit and push formatter output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/features/platform-settings/platformDocumentSettingsRepository.ts server/features/platform-settings/platformDocumentSettingsRepository.test.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "style(settings): apply Prettier to nullable settings fix"
+            git push origin HEAD:fix/platform-settings-null-defaults-web-20261122
+          fi
