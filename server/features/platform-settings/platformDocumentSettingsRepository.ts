@@ -193,11 +193,7 @@ function mapPlatformDocumentSettings(
   };
 }
 
-function boundedInteger(
-  value: unknown,
-  max: number,
-  fallback: number
-): number {
+function boundedInteger(value: unknown, max: number, fallback: number): number {
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 && number <= max
     ? number
