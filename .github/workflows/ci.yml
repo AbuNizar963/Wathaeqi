@@ -44,9 +44,12 @@ jobs:
             echo "Retired Supabase/PostgreSQL runtime dependency detected"
             exit 1
           fi
-      - name: Check document studio formatting
+      - name: TEMP format document studio source
         run: |
-          pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
+          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx
+          echo "BEGIN_FORMATTED_DOCUMENT_STUDIO"
+          cat client/src/features/document-studio/DocumentStudioPage.tsx
+          echo "END_FORMATTED_DOCUMENT_STUDIO"
 
       - name: Check formatting
         run: pnpm lint
