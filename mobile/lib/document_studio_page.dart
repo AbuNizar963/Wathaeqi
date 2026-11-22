@@ -2619,12 +2619,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             config: const QuillSimpleToolbarConfig(),
           ),
         LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (context, _) {
+            const pageWidth = 794.0;
             final pageHeight =
-                constraints.maxWidth *
-                DocumentPaper.a4Height /
-                DocumentPaper.a4Width;
-            return DocumentPaper(
+                pageWidth * DocumentPaper.a4Height / DocumentPaper.a4Width;
+            final paper = DocumentPaper(
+              fixedWidth: pageWidth,
               showWatermarkText:
                   _platformDocumentSettings['showMinistryWatermarkText'] !=
                   false,
@@ -2814,6 +2814,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   ),
                 ],
               ),
+            );
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: paper,
             );
           },
         ),
