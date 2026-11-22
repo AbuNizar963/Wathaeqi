@@ -1115,16 +1115,10 @@ void main() {
       }
       if (request.url.path.endsWith('/attachments/upload')) {
         expect(request.method, 'PUT');
-        expect(
-          request.headers['content-type'],
-          'application/octet-stream',
-        );
+        expect(request.headers['content-type'], 'application/octet-stream');
         expect(request.headers['x-attachment-key'], storageKey);
         expect(request.headers['x-attachment-file-name'], 'report.pdf');
-        expect(
-          request.headers['x-attachment-content-type'],
-          'application/pdf',
-        );
+        expect(request.headers['x-attachment-content-type'], 'application/pdf');
         expect(request.bodyBytes, bytes);
         expect(request.url.host, 'police.example.test');
         expect(request.headers.containsKey('x-appwrite-jwt'), isFalse);
@@ -1178,10 +1172,7 @@ void main() {
 
     expect(result['success'], isTrue);
     expect(requests, hasLength(3));
-    expect(
-      requests.every((uri) => uri.host == 'police.example.test'),
-      isTrue,
-    );
+    expect(requests.every((uri) => uri.host == 'police.example.test'), isTrue);
     expect(events.single.procedure, 'telegrams.uploadAttachment');
     expect(events.single.telegramId, 7);
   });
