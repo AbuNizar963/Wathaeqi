@@ -194,6 +194,7 @@ function mapPlatformDocumentSettings(
 }
 
 function boundedInteger(value: unknown, max: number, fallback: number): number {
+  if (value === null || value === undefined || value === "") return fallback;
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 && number <= max
     ? number
