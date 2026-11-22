@@ -30,6 +30,19 @@ function rowData(row: AppwriteRow): Record<string, unknown> {
   return row.data ?? row;
 }
 
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+  return String(error);
+}
+
 async function findSettingsRow(): Promise<AppwriteRow | null> {
   const result = await getAppwriteTablesDB().listRows({
     databaseId: getAppwriteDatabaseId(),
@@ -67,12 +80,19 @@ function mapPlatformDocumentSettings(
         ? storedColor
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerColor,
     headerDividerStyle:
-      row.headerDividerStyle === "solid" || row.headerDividerStyle === "double" ||
-      row.headerDividerStyle === "dashed" || row.headerDividerStyle === "dotted" ||
+      row.headerDividerStyle === "solid" ||
+      row.headerDividerStyle === "double" ||
+      row.headerDividerStyle === "dashed" ||
+      row.headerDividerStyle === "dotted" ||
       row.headerDividerStyle === "tricolor-stars"
         ? row.headerDividerStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerStyle,
-    headerDividerWidthPt: boundedNumber(row.headerDividerWidthPt, MIN_DIVIDER_WIDTH_PT, MAX_DIVIDER_WIDTH_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerWidthPt),
+    headerDividerWidthPt: boundedNumber(
+      row.headerDividerWidthPt,
+      MIN_DIVIDER_WIDTH_PT,
+      MAX_DIVIDER_WIDTH_PT,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerWidthPt
+    ),
     watermarkText:
       typeof row.watermarkText === "string" && row.watermarkText.trim()
         ? row.watermarkText.trim().slice(0, 255)
@@ -125,20 +145,44 @@ function mapPlatformDocumentSettings(
       row.headerAlignment === "center" || row.headerAlignment === "right"
         ? row.headerAlignment
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerAlignment,
-    pageMarginTopMm: boundedInteger(row.pageMarginTopMm, MAX_PAGE_MARGIN_MM),
-    pageMarginRightMm: boundedInteger(row.pageMarginRightMm, MAX_PAGE_MARGIN_MM),
-    pageMarginBottomMm: boundedInteger(row.pageMarginBottomMm, MAX_PAGE_MARGIN_MM),
-    pageMarginLeftMm: boundedInteger(row.pageMarginLeftMm, MAX_PAGE_MARGIN_MM),
+    pageMarginTopMm: boundedInteger(
+      row.pageMarginTopMm,
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm
+    ),
+    pageMarginRightMm: boundedInteger(
+      row.pageMarginRightMm,
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginRightMm
+    ),
+    pageMarginBottomMm: boundedInteger(
+      row.pageMarginBottomMm,
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginBottomMm
+    ),
+    pageMarginLeftMm: boundedInteger(
+      row.pageMarginLeftMm,
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginLeftMm
+    ),
     frameStyle:
-      row.frameStyle === "none" || row.frameStyle === "single" ||
-      row.frameStyle === "double" || row.frameStyle === "ornate"
+      row.frameStyle === "none" ||
+      row.frameStyle === "single" ||
+      row.frameStyle === "double" ||
+      row.frameStyle === "ornate"
         ? row.frameStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle,
     frameColor:
-      typeof row.frameColor === "string" && HEX_COLOR_PATTERN.test(row.frameColor)
+      typeof row.frameColor === "string" &&
+      HEX_COLOR_PATTERN.test(row.frameColor)
         ? row.frameColor
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameColor,
-    frameWidthPt: boundedNumber(row.frameWidthPt, MIN_FRAME_WIDTH_PT, MAX_FRAME_WIDTH_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameWidthPt),
+    frameWidthPt: boundedNumber(
+      row.frameWidthPt,
+      MIN_FRAME_WIDTH_PT,
+      MAX_FRAME_WIDTH_PT,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameWidthPt
+    ),
     showVerificationQr:
       typeof row.showVerificationQr === "boolean"
         ? row.showVerificationQr
@@ -149,16 +193,22 @@ function mapPlatformDocumentSettings(
   };
 }
 
-
-function boundedInteger(value: unknown, max: number): number {
+function boundedInteger(value: unknown, max: number, fallback: number): number {
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 && number <= max
     ? number
-    : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm;
+    : fallback;
 }
-function boundedNumber(value: unknown, min: number, max: number, fallback: number): number {
+function boundedNumber(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number
+): number {
   const number = Number(value);
-  return Number.isFinite(number) && number >= min && number <= max ? number : fallback;
+  return Number.isFinite(number) && number >= min && number <= max
+    ? number
+    : fallback;
 }
 
 export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSettings> {
@@ -171,12 +221,11 @@ export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSet
 }
 
 export async function updatePlatformDocumentSettings(
-  values: Omit<PlatformDocumentSettings, "updatedAt">,
+  values: Partial<Omit<PlatformDocumentSettings, "updatedAt">>,
   updatedByUserId: number
 ): Promise<PlatformDocumentSettings> {
   const now = new Date().toISOString();
-  const data = {
-    id: 1,
+  const updateData = {
     ...values,
     updatedByUserId,
     updatedAt: now,
@@ -185,35 +234,43 @@ export async function updatePlatformDocumentSettings(
   const existing = await findSettingsRow();
 
   if (existing) {
+    // Appwrite updateRow applies only the supplied columns. Keeping this
+    // payload partial prevents concurrent saves of different settings from
+    // overwriting one another with stale values read by another request.
     const updated = await tables.updateRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: TABLE_ID,
       rowId: existing.$id,
-      data,
+      data: updateData,
     });
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
+
+  const createData = {
+    id: 1,
+    ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+    ...updateData,
+  };
 
   try {
     const created = await tables.createRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: TABLE_ID,
       rowId: ROW_ID,
-      data,
+      data: createData,
     });
     return mapPlatformDocumentSettings(rowData(created as AppwriteRow));
   } catch (error) {
     // If two first-time saves race, the unique id index lets one win. Reload
-    // the winning row and apply this owner's requested values to that row.
+    // the winning row and apply only this request's fields to preserve the
+    // other request's values.
     const code =
       error && typeof error === "object" && "code" in error
         ? Number((error as { code?: unknown }).code)
         : 0;
     if (code !== 409) {
       throw new Error(
-        `Failed to save platform document settings: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Failed to save platform document settings: ${errorMessage(error)}`
       );
     }
     const raced = await findSettingsRow();
@@ -222,7 +279,7 @@ export async function updatePlatformDocumentSettings(
       databaseId: getAppwriteDatabaseId(),
       tableId: TABLE_ID,
       rowId: raced.$id,
-      data,
+      data: updateData,
     });
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }

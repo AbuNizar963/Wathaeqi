@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'offline_vault.dart';
@@ -643,7 +642,8 @@ class PoliceApi {
         }),
       ),
     );
-    if (prepareResponse.statusCode < 200 || prepareResponse.statusCode >= 300) {
+    if (prepareResponse.statusCode < 200 ||
+        prepareResponse.statusCode >= 300) {
       throw ApiException(
         prepareResponse.statusCode,
         _message(prepareResponse.body),
@@ -651,33 +651,24 @@ class PoliceApi {
     }
 
     final preparedValue = jsonDecode(prepareResponse.body);
-    if (preparedValue is! Map ||
-        preparedValue['key'] is! String ||
-        preparedValue['uploadUrl'] is! String ||
-        preparedValue['uploadJwt'] is! String ||
-        preparedValue['fileId'] is! String ||
-        preparedValue['folder'] is! String) {
-      throw const FormatException('لم يُرجع الخادم بيانات رفع Appwrite صالحة');
+    if (preparedValue is! Map || preparedValue['key'] is! String) {
+      throw const FormatException('لم يُرجع الخادم مفتاح تخزين صالحًا');
     }
 
     final key = preparedValue['key'] as String;
-    final uploadUri = Uri.tryParse(preparedValue['uploadUrl'] as String);
-    final uploadJwt = preparedValue['uploadJwt'] as String;
-    final fileId = preparedValue['fileId'] as String;
-    final folder = preparedValue['folder'] as String;
-    final projectId = uploadUri?.queryParameters['project'];
-    if (uploadUri == null ||
-        uploadUri.scheme != 'https' ||
-        uploadUri.host.isEmpty ||
-        projectId == null ||
-        projectId.isEmpty ||
-        uploadJwt.isEmpty ||
-        !RegExp(r'^[a-f0-9]{32}$').hasMatch(fileId) ||
-        !folder.startsWith('organizations/') ||
-        !folder.endsWith('/attachments')) {
-      throw const FormatException('بيانات الاتصال بمخزن Appwrite غير صالحة');
+    final expectedKeyPrefix = RegExp(
+      '^organizations/[0-9a-f-]{36}/telegrams/$telegramId/attachments/',
+      caseSensitive: false,
+    );
+    if (!expectedKeyPrefix.hasMatch(key) ||
+        !key.contains('/attachments/') ||
+        key.length > 512) {
+      throw const FormatException('مفتاح تخزين المرفق غير صالح');
     }
 
+    final uploadUri = Uri.parse(
+      '$baseUrl/api/telegrams/$telegramId/attachments/upload',
+    );
     final finalizeUri = Uri.parse(
       '$baseUrl/api/telegrams/$telegramId/attachments/finalize',
     );
@@ -696,54 +687,34 @@ class PoliceApi {
       ),
     );
 
-    const chunkSize = 5 * 1024 * 1024;
-    final chunkedUpload = bytes.length > chunkSize;
     try {
-      for (var offset = 0; offset < bytes.length; offset += chunkSize) {
-        final endExclusive = (offset + chunkSize < bytes.length)
-            ? offset + chunkSize
-            : bytes.length;
-        final chunk = Uint8List.fromList(bytes.sublist(offset, endExclusive));
-        final storageRequest = http.MultipartRequest('POST', uploadUri);
-        storageRequest.headers.addAll({
-          'X-Appwrite-Project': projectId,
-          'X-Appwrite-JWT': uploadJwt,
-          if (chunkedUpload)
-            'Content-Range':
-                'bytes $offset-${endExclusive - 1}/${bytes.length}',
-          if (offset > 0) 'X-Appwrite-ID': fileId,
-        });
-        storageRequest.fields['permissions'] = '[]';
-        if (offset == 0) {
-          storageRequest.fields['fileId'] = fileId;
-          storageRequest.fields['folder'] = folder;
-        }
-        storageRequest.files.add(
-          http.MultipartFile.fromBytes(
-            'file',
-            chunk,
-            filename: fileName,
-            contentType: MediaType.parse(contentType),
-          ),
+      final uploadResponse = await send(
+        () => _httpClient.put(
+          uploadUri,
+          headers: {
+            'accept': 'application/json',
+            'content-type': 'application/octet-stream',
+            'x-attachment-key': key,
+            'x-attachment-file-name': Uri.encodeComponent(fileName),
+            'x-attachment-content-type': contentType,
+            if (cookie != null) 'cookie': cookie,
+          },
+          body: bytes,
+        ),
+        timeout: const Duration(seconds: 60),
+      );
+      if (uploadResponse.statusCode < 200 ||
+          uploadResponse.statusCode >= 300) {
+        throw ApiException(
+          uploadResponse.statusCode,
+          _message(uploadResponse.body),
         );
-
-        final storageResponse = await send(() async {
-          final streamedResponse = await _httpClient.send(storageRequest);
-          return http.Response.fromStream(streamedResponse);
-        }, timeout: const Duration(seconds: 60));
-        if (storageResponse.statusCode < 200 ||
-            storageResponse.statusCode >= 300) {
-          throw ApiException(
-            storageResponse.statusCode,
-            _message(storageResponse.body),
-          );
-        }
       }
     } catch (_) {
       try {
         await finalizeUpload();
       } catch (_) {
-        // Finalization removes any partial object when no metadata was committed.
+        // Finalization removes any object left behind by an interrupted upload.
       }
       rethrow;
     }
