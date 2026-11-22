@@ -23,6 +23,7 @@ import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
 import 'document_studio_image_embed_builder.dart';
+import 'document_studio_docx_importer.dart';
 
 enum DocumentStudioTab { documents, templates, archive }
 
@@ -1061,6 +1062,1953 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
+  Future<void> _importDocxTemplate() async {
+    final selection = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['docx'],
+      allowMultiple: false,
+      withData: true,
+    );
+    if (selection == null || selection.files.isEmpty || !mounted) return;
+
+    final file = selection.files.single;
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      _showMessage('تعذر قراءة ملف Word من الجهاز');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final imported = DocumentStudioDocxImporter.importBytes(bytes);
+      _startNewTemplate();
+      _templateTitleController.text = file.name.replaceFirst(
+        RegExp(r'\.docx
+    _editingTemplateId = null;
+    _editingTemplateRevision = 1;
+    _selectedTemplate = null;
+    _creatingTemplate = true;
+    _templateTitleController.clear();
+    _templateDescriptionController.clear();
+    _templateCategory = 'general';
+    _templateFields = [];
+    _replaceTemplateEditor({
+      'type': 'doc',
+      'content': [
+        {'type': 'paragraph'},
+      ],
+    });
+    setState(() => _tab = DocumentStudioTab.templates);
+  }
+
+  void _selectTemplate(DocumentTemplate template) {
+    _selectedTemplate = template;
+    _creatingTemplate = false;
+    _editingTemplateId = template.id;
+    _editingTemplateRevision = template.revision;
+    _templateTitleController.text = template.title;
+    _templateDescriptionController.text = template.description ?? '';
+    _templateCategory = template.category;
+    _templateFields = List<DocumentTemplateField>.from(template.fields);
+    _replaceTemplateEditor(template.content);
+    setState(() => _tab = DocumentStudioTab.templates);
+  }
+
+  void _updateTemplateField(
+    int index, {
+    String? key,
+    String? label,
+    DocumentTemplateFieldType? type,
+    bool? isRequired,
+    List<DocumentTemplateFieldOption>? options,
+  }) {
+    final current = _templateFields[index];
+    final updated = DocumentTemplateField(
+      key: key ?? current.key,
+      label: label ?? current.label,
+      type: type ?? current.type,
+      required: isRequired ?? current.required,
+      maxLength: current.maxLength,
+      options: options ?? current.options,
+      defaultValue: current.defaultValue,
+    );
+    setState(() {
+      _templateFields = [
+        for (var i = 0; i < _templateFields.length; i++)
+          if (i == index) updated else _templateFields[i],
+      ];
+    });
+  }
+
+  void _addTemplateField() {
+    setState(() {
+      _templateFields = [
+        ..._templateFields,
+        DocumentTemplateField(
+          key: 'field_${_templateFields.length + 1}',
+          label: 'حقل جديد',
+          type: DocumentTemplateFieldType.text,
+          required: false,
+        ),
+      ];
+    });
+  }
+
+  Future<void> _saveTemplate() async {
+    if (_templateTitleController.text.trim().isEmpty) {
+      _showMessage('أدخل اسم النموذج أولاً');
+      return;
+    }
+    setState(() => _saving = true);
+    final input = <String, dynamic>{
+      'title': _templateTitleController.text.trim(),
+      'category': _templateCategory,
+      'description': _templateDescriptionController.text.trim().isEmpty
+          ? null
+          : _templateDescriptionController.text.trim(),
+      'content': _templateContentDirty
+          ? _templateContent
+          : DocumentStudioQuillCodec.normalizeLegacyText(
+              _selectedTemplate?.content ?? _templateContent,
+            ),
+      'fields': _templateFields.map((field) => field.toJson()).toList(),
+    };
+    try {
+      final saved = _editingTemplateId == null
+          ? await _outbox.createTemplate(input)
+          : await _outbox.updateTemplate({
+              ...input,
+              'id': _editingTemplateId,
+              'expectedRevision': _editingTemplateRevision,
+            });
+      if (!mounted) return;
+      final template = DocumentTemplate.fromJson(saved);
+      _selectedTemplate = template;
+      _editingTemplateId = template.id;
+      _editingTemplateRevision = template.revision;
+      _replaceTemplateEditor(template.content);
+      await _load();
+      _showMessage(
+        template.id.startsWith('local_')
+            ? 'حُفظ النموذج محلياً وستتم مزامنته لاحقاً'
+            : 'تم حفظ النموذج',
+      );
+    } catch (error) {
+      _showMessage('تعذر حفظ النموذج: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _deactivateTemplate() async {
+    final template = _selectedTemplate;
+    if (template == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: closableDialogTitle(dialogContext, const Text('إيقاف النموذج')),
+        content: const Text(
+          'سيُخفى النموذج عن الاستخدام الجديد مع الاحتفاظ بالوثائق المرتبطة به.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('إيقاف'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _saving = true);
+    try {
+      await _outbox.deactivateTemplate({
+        'id': template.id,
+        'expectedRevision': _editingTemplateRevision,
+      });
+      await _load();
+      setState(() {
+        _selectedTemplate = null;
+        _editingTemplateId = null;
+        _creatingTemplate = false;
+      });
+      _showMessage('تم إيقاف النموذج مع الاحتفاظ بسجلاته');
+    } catch (error) {
+      _showMessage('تعذر إيقاف النموذج: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Map<String, dynamic> _applyFieldValues(
+    Map<String, dynamic> content,
+    Map<String, String> values,
+  ) {
+    dynamic visit(dynamic value) {
+      if (value is List) return value.map(visit).toList();
+      if (value is! Map) return value;
+      final node = Map<String, dynamic>.from(value);
+      if (node['type'] == 'text' && node['text'] is String) {
+        var text = node['text'] as String;
+        for (final entry in values.entries) {
+          text = text.replaceAll('{{${entry.key}}}', entry.value);
+        }
+        node['text'] = text;
+        return node;
+      }
+      return node.map((key, child) => MapEntry(key, visit(child)));
+    }
+
+    return Map<String, dynamic>.from(visit(content) as Map);
+  }
+
+  Widget _buildTabSelector() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: SegmentedButton<DocumentStudioTab>(
+        segments: const [
+          ButtonSegment(
+            value: DocumentStudioTab.documents,
+            label: Text('الوثائق'),
+            icon: Icon(Icons.description_outlined),
+          ),
+          ButtonSegment(
+            value: DocumentStudioTab.templates,
+            label: Text('النماذج'),
+            icon: Icon(Icons.library_books_outlined),
+          ),
+          ButtonSegment(
+            value: DocumentStudioTab.archive,
+            label: Text('الأرشيف'),
+            icon: Icon(Icons.archive_outlined),
+          ),
+        ],
+        selected: {_tab},
+        onSelectionChanged: (selection) {
+          setState(() {
+            _tab = selection.first;
+            if (_tab == DocumentStudioTab.archive) {
+              _selectedDocument = null;
+              _creatingDocument = false;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildDocumentList({required bool archived}) {
+    final items = _documents
+        .where(
+          (document) =>
+              !document.isLegacyStarterDraft &&
+              (document.status == (archived ? 'archived' : 'draft') ||
+                  (!archived && document.status == 'issued')),
+        )
+        .toList();
+    if (items.isEmpty) {
+      return _emptyState(
+        archived ? 'لا توجد وثائق مؤرشفة' : 'لا توجد وثائق بعد',
+        archived ? Icons.archive_outlined : Icons.description_outlined,
+      );
+    }
+    return Column(
+      children: [
+        for (final document in items)
+          Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.description_outlined),
+              ),
+              title: Text(
+                document.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                [
+                  if (document.serialCode.isNotEmpty) document.serialCode,
+                  document.subject,
+                  if (document.file != null) document.file!.fileName,
+                  _formatDate(document.updatedAt),
+                ].where((value) => value.isNotEmpty).join(' · '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: _statusChip(document.status),
+              onTap: () => _selectDocument(document),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDocumentForm() {
+    if (_previewMode && _selectedDocument != null) {
+      return _buildDocumentPreview(_selectedDocument!);
+    }
+
+    final canEdit =
+        _selectedDocument == null || _selectedDocument!.status == 'draft';
+    final matchingTemplates = _templates
+        .where((template) => template.id == _selectedTemplateId)
+        .toList();
+    final documentFields =
+        _selectedDocument?.templateFieldsSnapshot ??
+        const <DocumentTemplateField>[];
+    final fields = documentFields.isNotEmpty
+        ? documentFields
+        : (matchingTemplates.isNotEmpty
+              ? matchingTemplates.first.fields
+              : const <DocumentTemplateField>[]);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'قائمة الوثائق',
+              onPressed: () => setState(() {
+                _selectedDocument = null;
+                _creatingDocument = false;
+              }),
+              icon: const Icon(Icons.arrow_back),
+            ),
+            Expanded(
+              child: Text(
+                _selectedDocument == null ? 'وثيقة جديدة' : 'تحرير الوثيقة',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            if (_selectedDocument != null) ...[
+              _statusChip(_selectedDocument!.status),
+              const SizedBox(width: 6),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _previewMode = true),
+                icon: const Icon(Icons.visibility_outlined, size: 18),
+                label: const Text('معاينة'),
+              ),
+            ],
+          ],
+        ),
+        TextField(
+          controller: _titleController,
+          enabled: canEdit,
+          decoration: const InputDecoration(
+            labelText: 'عنوان الوثيقة',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          initialValue: _documentCategory,
+          decoration: const InputDecoration(
+            labelText: 'التصنيف',
+            border: OutlineInputBorder(),
+          ),
+          items: _categories.entries
+              .map(
+                (entry) => DropdownMenuItem(
+                  value: entry.key,
+                  child: Text(entry.value),
+                ),
+              )
+              .toList(),
+          onChanged: canEdit
+              ? (value) {
+                  if (value != null) setState(() => _documentCategory = value);
+                }
+              : null,
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _subjectController,
+          enabled: canEdit,
+          decoration: const InputDecoration(
+            labelText: 'الموضوع',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: canEdit ? _chooseDocumentDate : null,
+          icon: const Icon(Icons.calendar_month_outlined),
+          label: Text(
+            'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String?>(
+          initialValue: _selectedTemplateId,
+          decoration: const InputDecoration(
+            labelText: 'النموذج الأساسي',
+            border: OutlineInputBorder(),
+          ),
+          items: [
+            const DropdownMenuItem<String?>(
+              value: null,
+              child: Text('بدون نموذج'),
+            ),
+            ..._templates
+                .where((template) => template.isActive)
+                .map(
+                  (template) => DropdownMenuItem<String?>(
+                    value: template.id,
+                    child: Text(template.title),
+                  ),
+                ),
+          ],
+          onChanged: canEdit
+              ? (value) {
+                  if (value == null) {
+                    setState(() {
+                      _selectedTemplateId = null;
+                      _selectedTemplateRevision = null;
+                      _resetFieldControllers(const [], {});
+                    });
+                  } else {
+                    final template = _templates.firstWhere(
+                      (item) => item.id == value,
+                    );
+                    _useTemplate(template);
+                  }
+                }
+              : null,
+        ),
+        if (fields.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Card(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'حقول تعبئة النموذج',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: canEdit
+                            ? () {
+                                final filled = _applyFieldValues(
+                                  _templateBaseContent,
+                                  _fieldValues,
+                                );
+                                _replaceDocumentEditor(filled);
+                              }
+                            : null,
+                        child: const Text('تطبيق في النص'),
+                      ),
+                    ],
+                  ),
+                  for (final field in fields)
+                    _buildDocumentField(field, canEdit),
+                ],
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (_selectedDocument case final document?)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'معاينة وإخراج الوثيقة الرسمية',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    document.file == null
+                        ? 'ملف PDF سيُجهّز من محرك الوثائق عند الطلب'
+                        : document.file!.mimeType ==
+                              DocumentFileSupport.docxMime
+                        ? 'معاينة Word غير مدعومة محلياً؛ استخدم الملف الأصلي للتنزيل أو المشاركة.'
+                        : 'تتم معاينة PDF وتنزيله وطباعته من bytes الملف الأصلي.',
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (document.file?.mimeType ==
+                          DocumentFileSupport.docxMime) ...[
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _saveOriginalDocument(document),
+                          icon: const Icon(Icons.download_outlined),
+                          label: const Text('تنزيل Word الأصلي'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _shareOriginalDocument(document),
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('مشاركة Word الأصلي'),
+                        ),
+                      ] else ...[
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _saveDocumentPdf(document),
+                          icon: const Icon(Icons.download_outlined),
+                          label: const Text('تنزيل PDF'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _shareDocumentPdf(document),
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('مشاركة PDF'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _printDocumentFile(document),
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('طباعة'),
+                        ),
+                      ],
+                      if (document.file != null) ...[
+                        Text(
+                          document.file!.fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (_saving)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 10),
+                      child: LinearProgressIndicator(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        if (_selectedDocument?.file == null)
+          _buildA4Editor(controller: _documentEditor, editable: canEdit),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              onPressed: _saving || !canEdit ? null : _saveDocument,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('حفظ الوثيقة'),
+            ),
+            if (_selectedDocument?.status == 'draft' &&
+                _canIssueDocuments &&
+                !_selectedDocument!.id.startsWith('local_'))
+              FilledButton.tonalIcon(
+                onPressed: _saving ? null : _issueDocument,
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('إصدار'),
+              ),
+            if (_selectedDocument?.status == 'issued')
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _archiveDocument,
+                icon: const Icon(Icons.archive_outlined),
+                label: const Text('أرشفة'),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDocumentPreview(OfficialDocument document) {
+    final mimeType = document.file?.mimeType;
+    final isWord = mimeType == DocumentFileSupport.docxMime;
+    final isPdf = mimeType == DocumentFileSupport.pdfMime;
+    final isNativeDocument = document.file == null;
+    final canUsePdfActions = isPdf || isNativeDocument;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'قائمة الوثائق',
+              onPressed: () => setState(() {
+                _previewMode = false;
+                _selectedDocument = null;
+                _creatingDocument = false;
+              }),
+              icon: const Icon(Icons.arrow_back),
+            ),
+            Expanded(
+              child: Text(
+                document.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            _statusChip(document.status),
+          ],
+        ),
+        const SizedBox(height: 10),
+        if (isNativeDocument)
+          InteractiveViewer(
+            minScale: 0.75,
+            maxScale: 2.5,
+            constrained: true,
+            boundaryMargin: const EdgeInsets.all(48),
+            child: _buildA4Editor(controller: _documentEditor, editable: false),
+          )
+        else if (isWord)
+          _buildUnsupportedDocumentPreview(
+            document,
+            'معاينة ملفات Word غير متاحة داخل التطبيق حالياً',
+          )
+        else if (isPdf)
+          SizedBox(
+            height: 620,
+            child: PdfPreview(
+              build: (_) => _fetchDocumentPdf(document),
+              allowPrinting: false,
+              allowSharing: false,
+              canChangePageFormat: false,
+              canChangeOrientation: false,
+            ),
+          )
+        else
+          _buildUnsupportedDocumentPreview(
+            document,
+            'نوع الملف هذا لا يدعم المعاينة داخل التطبيق حالياً',
+          ),
+        const SizedBox(height: 12),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.55,
+          children: [
+            _documentPreviewAction(
+              icon: Icons.download_outlined,
+              label: isWord ? 'تنزيل Word' : 'تنزيل PDF',
+              onPressed: _saving
+                  ? null
+                  : isWord
+                  ? () => _saveOriginalDocument(document)
+                  : canUsePdfActions
+                  ? () => _saveDocumentPdf(document)
+                  : null,
+            ),
+            _documentPreviewAction(
+              icon: Icons.share_outlined,
+              label: isWord ? 'مشاركة Word' : 'مشاركة PDF',
+              onPressed: _saving
+                  ? null
+                  : isWord
+                  ? () => _shareOriginalDocument(document)
+                  : canUsePdfActions
+                  ? () => _shareDocumentPdf(document)
+                  : null,
+            ),
+            _documentPreviewAction(
+              icon: Icons.print_outlined,
+              label: 'طباعة',
+              onPressed: _saving || !canUsePdfActions
+                  ? null
+                  : () => _printDocumentFile(document),
+            ),
+            _documentPreviewAction(
+              icon: Icons.edit_outlined,
+              label: 'تعديل الوثيقة',
+              onPressed: _saving
+                  ? null
+                  : () => setState(() => _previewMode = false),
+            ),
+          ],
+        ),
+        if (_saving) ...[
+          const SizedBox(height: 10),
+          const LinearProgressIndicator(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildUnsupportedDocumentPreview(
+    OfficialDocument document,
+    String message,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Icon(Icons.description_outlined, size: 42),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 4),
+            Text(
+              document.file?.fileName ?? document.title,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _documentPreviewAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+  }) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 21),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentField(DocumentTemplateField field, bool canEdit) {
+    final controller = _fieldControllers.putIfAbsent(
+      field.key,
+      () => TextEditingController(text: _fieldValues[field.key] ?? ''),
+    );
+    final label = '${field.label}${field.required ? ' *' : ''}';
+    if (field.type == DocumentTemplateFieldType.select) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: DropdownButtonFormField<String>(
+          initialValue: _fieldValues[field.key]?.isEmpty == true
+              ? null
+              : _fieldValues[field.key],
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+          ),
+          items: field.options
+              .map(
+                (option) => DropdownMenuItem(
+                  value: option.value,
+                  child: Text(option.label),
+                ),
+              )
+              .toList(),
+          onChanged: canEdit
+              ? (value) {
+                  if (value == null) return;
+                  _fieldValues[field.key] = value;
+                  controller.text = value;
+                }
+              : null,
+        ),
+      );
+    }
+    if (field.type == DocumentTemplateFieldType.date) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: TextField(
+          controller: controller,
+          readOnly: true,
+          enabled: canEdit,
+          decoration: InputDecoration(
+            labelText: label,
+            border: const OutlineInputBorder(),
+            suffixIcon: const Icon(Icons.calendar_today_outlined),
+          ),
+          onTap: canEdit
+              ? () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate:
+                        DateTime.tryParse(controller.text) ?? DateTime.now(),
+                    firstDate: DateTime(1950),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked == null) return;
+                  final value = DateFormat('yyyy-MM-dd').format(picked);
+                  controller.text = value;
+                  _fieldValues[field.key] = value;
+                }
+              : null,
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: TextField(
+        controller: controller,
+        enabled: canEdit,
+        maxLines: field.type == DocumentTemplateFieldType.multiline ? 3 : 1,
+        keyboardType: field.type == DocumentTemplateFieldType.number
+            ? TextInputType.number
+            : TextInputType.text,
+        maxLength: field.maxLength,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        onChanged: (value) => _fieldValues[field.key] = value,
+      ),
+    );
+  }
+
+  Future<void> _chooseDocumentDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _documentDate,
+      firstDate: DateTime(1950),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _documentDate = picked);
+  }
+
+  Widget _buildTemplateLibrary() {
+    final activeTemplates = _templates.where((template) => template.isActive);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'مكتبة النماذج',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : _importDocxTemplate,
+                  icon: const Icon(Icons.file_open_outlined),
+                  label: const Text('استيراد Word'),
+                ),
+                FilledButton.icon(
+                  onPressed: _saving ? null : _startNewTemplate,
+                  icon: const Icon(Icons.add),
+                  label: const Text('نموذج جديد'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (!_creatingTemplate && _selectedTemplate == null)
+          for (final template in activeTemplates)
+            Card(
+              child: ListTile(
+                title: Text(template.title),
+                subtitle: Text(
+                  '${_categories[template.category] ?? template.category} · إصدار ${template.revision}',
+                ),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') _selectTemplate(template);
+                    if (value == 'use') _useTemplate(template);
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('تعديل النموذج')),
+                    PopupMenuItem(value: 'use', child: Text('استخدام النموذج')),
+                  ],
+                ),
+                onTap: () => _selectTemplate(template),
+              ),
+            ),
+        if (_creatingTemplate || _selectedTemplate != null)
+          _buildTemplateForm(),
+      ],
+    );
+  }
+
+  Widget _buildTemplateForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            IconButton(
+              tooltip: 'قائمة النماذج',
+              onPressed: () {
+                setState(() {
+                  _selectedTemplate = null;
+                  _editingTemplateId = null;
+                  _creatingTemplate = false;
+                });
+              },
+              icon: const Icon(Icons.arrow_back),
+            ),
+            const Expanded(
+              child: Text(
+                'محرر النموذج',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (_selectedTemplate != null)
+              IconButton(
+                tooltip: 'إيقاف النموذج',
+                onPressed: _saving ? null : _deactivateTemplate,
+                icon: const Icon(Icons.archive_outlined),
+              ),
+          ],
+        ),
+        TextField(
+          controller: _templateTitleController,
+          decoration: const InputDecoration(
+            labelText: 'اسم النموذج',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _templateCategory,
+          decoration: const InputDecoration(
+            labelText: 'التصنيف',
+            border: OutlineInputBorder(),
+          ),
+          items: _categories.entries
+              .map(
+                (entry) => DropdownMenuItem(
+                  value: entry.key,
+                  child: Text(entry.value),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value != null) setState(() => _templateCategory = value);
+          },
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _templateDescriptionController,
+          maxLines: 2,
+          decoration: const InputDecoration(
+            labelText: 'وصف النموذج',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'حقول التعبئة',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _addTemplateField,
+              icon: const Icon(Icons.add),
+              label: const Text('إضافة حقل'),
+            ),
+          ],
+        ),
+        for (var index = 0; index < _templateFields.length; index++)
+          _buildTemplateFieldEditor(index),
+        const SizedBox(height: 12),
+        _buildA4Editor(controller: _templateEditor, editable: true),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: _saving ? null : _saveTemplate,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('حفظ النموذج'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTemplateFieldEditor(int index) {
+    final field = _templateFields[index];
+    final optionsText = field.options.map((option) => option.label).join(', ');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            TextFormField(
+              key: ValueKey('field-label-${field.key}'),
+              initialValue: field.label,
+              decoration: const InputDecoration(
+                labelText: 'اسم الحقل',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => _updateTemplateField(index, label: value),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              key: ValueKey('field-key-${field.key}'),
+              initialValue: field.key,
+              textAlign: TextAlign.left,
+              decoration: const InputDecoration(
+                labelText: 'المفتاح البرمجي',
+                hintText: 'employee_name',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => _updateTemplateField(
+                index,
+                key: value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<DocumentTemplateFieldType>(
+              initialValue: field.type,
+              decoration: const InputDecoration(
+                labelText: 'نوع الحقل',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: DocumentTemplateFieldType.text,
+                  child: Text('نص'),
+                ),
+                DropdownMenuItem(
+                  value: DocumentTemplateFieldType.multiline,
+                  child: Text('نص متعدد الأسطر'),
+                ),
+                DropdownMenuItem(
+                  value: DocumentTemplateFieldType.date,
+                  child: Text('تاريخ'),
+                ),
+                DropdownMenuItem(
+                  value: DocumentTemplateFieldType.number,
+                  child: Text('رقم'),
+                ),
+                DropdownMenuItem(
+                  value: DocumentTemplateFieldType.select,
+                  child: Text('قائمة اختيار'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                _updateTemplateField(
+                  index,
+                  type: value,
+                  options: value == DocumentTemplateFieldType.select
+                      ? (field.options.isNotEmpty
+                            ? field.options
+                            : const [
+                                DocumentTemplateFieldOption(
+                                  value: 'yes',
+                                  label: 'نعم',
+                                ),
+                                DocumentTemplateFieldOption(
+                                  value: 'no',
+                                  label: 'لا',
+                                ),
+                              ])
+                      : const [],
+                );
+              },
+            ),
+            if (field.type == DocumentTemplateFieldType.select) ...[
+              const SizedBox(height: 8),
+              TextFormField(
+                key: ValueKey('field-options-${field.key}'),
+                initialValue: optionsText,
+                decoration: const InputDecoration(
+                  labelText: 'الخيارات مفصولة بفواصل',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  final labels = value
+                      .split(',')
+                      .map((item) => item.trim())
+                      .where((item) => item.isNotEmpty)
+                      .toList();
+                  _updateTemplateField(
+                    index,
+                    options: [
+                      for (var i = 0; i < labels.length; i++)
+                        DocumentTemplateFieldOption(
+                          value: 'option_${i + 1}',
+                          label: labels[i],
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+            Row(
+              children: [
+                Checkbox(
+                  value: field.required,
+                  onChanged: (value) =>
+                      _updateTemplateField(index, isRequired: value ?? false),
+                ),
+                const Text('حقل مطلوب'),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'حذف الحقل',
+                  onPressed: () {
+                    setState(() {
+                      _templateFields.removeAt(index);
+                    });
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editDocumentSettings() async {
+    if (!_isPlatformOwner) return;
+
+    final values = Map<String, dynamic>.from(_platformDocumentSettings);
+    final watermarkController = TextEditingController(
+      text: values['watermarkText']?.toString() ?? 'وزارة الداخلية',
+    );
+    final titleController = TextEditingController(
+      text: values['headerTitle']?.toString() ?? '',
+    );
+    final subtitleController = TextEditingController(
+      text: values['headerSubtitle']?.toString() ?? '',
+    );
+    final rankController = TextEditingController(
+      text: values['headerChiefRank']?.toString() ?? '',
+    );
+    final nameController = TextEditingController(
+      text: values['headerChiefName']?.toString() ?? '',
+    );
+    var showWatermark = values['showMinistryWatermarkText'] != false;
+    var showLogo = values['headerShowLogo'] != false;
+    var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
+    var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
+    var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
+    var horizontalPadding = (values['headerHorizontalPaddingMm'] as num? ?? 0)
+        .toDouble();
+    var bottomPadding = (values['headerBottomPaddingMm'] as num? ?? 6)
+        .toDouble();
+    var alignment = values['headerAlignment']?.toString() ?? 'spread';
+    var dividerStyle = values['headerDividerStyle']?.toString() ?? 'double';
+    var frameStyle = values['frameStyle']?.toString() ?? 'single';
+    var frameColor = values['frameColor']?.toString() ?? '#b49a55';
+    var dividerWidth = (values['headerDividerWidthPt'] as num? ?? 2.25)
+        .toDouble();
+    var frameWidth = (values['frameWidthPt'] as num? ?? 1).toDouble();
+    var marginTop = (values['pageMarginTopMm'] as num? ?? 10).toDouble();
+    var marginRight = (values['pageMarginRightMm'] as num? ?? 10).toDouble();
+    var marginBottom = (values['pageMarginBottomMm'] as num? ?? 10).toDouble();
+    var marginLeft = (values['pageMarginLeftMm'] as num? ?? 10).toDouble();
+
+    try {
+      final updated = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: closableDialogTitle(
+              dialogContext,
+              const Text('إعدادات الوثيقة الرسمية'),
+            ),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'العلامة الأمنية',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار العلامة الأمنية'),
+                      value: showWatermark,
+                      onChanged: (value) =>
+                          setDialogState(() => showWatermark = value),
+                    ),
+                    TextField(
+                      controller: watermarkController,
+                      maxLength: 255,
+                      decoration: const InputDecoration(
+                        labelText: 'نص العلامة الأمنية',
+                        hintText: 'وزارة الداخلية',
+                      ),
+                    ),
+                    _documentSettingSlider(
+                      label: 'شفافية العلامة الأمنية',
+                      value: opacity,
+                      min: 0,
+                      max: 60,
+                      suffix: '%',
+                      onChanged: (value) =>
+                          setDialogState(() => opacity = value),
+                    ),
+                    const Divider(height: 28),
+                    const Text(
+                      'رأس الصفحة',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الرئيسي',
+                      ),
+                    ),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الفرعي / الوحدة',
+                      ),
+                    ),
+                    TextField(
+                      controller: rankController,
+                      decoration: const InputDecoration(
+                        labelText: 'رتبة / صفة المسؤول',
+                      ),
+                    ),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم المسؤول',
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('إظهار شعار الجهة'),
+                      value: showLogo,
+                      onChanged: (value) =>
+                          setDialogState(() => showLogo = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'حجم الشعار',
+                      value: logoSize,
+                      min: 32,
+                      max: 128,
+                      suffix: ' px',
+                      onChanged: (value) =>
+                          setDialogState(() => logoSize = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش العلوي',
+                      value: topPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => topPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش الأفقي',
+                      value: horizontalPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => horizontalPadding = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'الهامش السفلي',
+                      value: bottomPadding,
+                      min: 0,
+                      max: 30,
+                      suffix: ' مم',
+                      onChanged: (value) =>
+                          setDialogState(() => bottomPadding = value),
+                    ),
+                    const Divider(height: 28),
+                    const Text(
+                      'صفحة الوثيقة والإطار',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    for (final item
+                        in <
+                          ({
+                            String label,
+                            double value,
+                            void Function(double) onChanged,
+                          })
+                        >[
+                          (
+                            label: 'الهامش العلوي',
+                            value: marginTop,
+                            onChanged: (v) =>
+                                setDialogState(() => marginTop = v),
+                          ),
+                          (
+                            label: 'الهامش الأيمن',
+                            value: marginRight,
+                            onChanged: (v) =>
+                                setDialogState(() => marginRight = v),
+                          ),
+                          (
+                            label: 'الهامش السفلي',
+                            value: marginBottom,
+                            onChanged: (v) =>
+                                setDialogState(() => marginBottom = v),
+                          ),
+                          (
+                            label: 'الهامش الأيسر',
+                            value: marginLeft,
+                            onChanged: (v) =>
+                                setDialogState(() => marginLeft = v),
+                          ),
+                        ])
+                      _documentSettingSlider(
+                        label: item.label,
+                        value: item.value,
+                        min: 0,
+                        max: 35,
+                        suffix: ' مم',
+                        onChanged: item.onChanged,
+                      ),
+                    DropdownButtonFormField<String>(
+                      initialValue: frameStyle,
+                      decoration: const InputDecoration(
+                        labelText: 'شكل الإطار',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'none',
+                          child: Text('بدون إطار'),
+                        ),
+                        DropdownMenuItem(value: 'single', child: Text('مفرد')),
+                        DropdownMenuItem(value: 'double', child: Text('مزدوج')),
+                        DropdownMenuItem(value: 'ornate', child: Text('زخرفي')),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => frameStyle = v);
+                      },
+                    ),
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'لون الإطار #RRGGBB',
+                      ),
+                      controller: TextEditingController(text: frameColor),
+                      onChanged: (v) => frameColor = v,
+                    ),
+                    _documentSettingSlider(
+                      label: 'سماكة الإطار',
+                      value: frameWidth,
+                      min: .5,
+                      max: 4,
+                      suffix: ' نقطة',
+                      onChanged: (v) => setDialogState(() => frameWidth = v),
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: dividerStyle,
+                      decoration: const InputDecoration(
+                        labelText: 'نمط الفاصل',
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'solid', child: Text('متصل')),
+                        DropdownMenuItem(value: 'double', child: Text('مزدوج')),
+                        DropdownMenuItem(value: 'dashed', child: Text('متقطع')),
+                        DropdownMenuItem(value: 'dotted', child: Text('منقط')),
+                        DropdownMenuItem(
+                          value: 'tricolor-stars',
+                          child: Text('أسود وأخضر مع ثلاث نجوم'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => dividerStyle = v);
+                      },
+                    ),
+                    _documentSettingSlider(
+                      label: 'سماكة الفاصل',
+                      value: dividerWidth,
+                      min: .5,
+                      max: 6,
+                      suffix: ' نقطة',
+                      onChanged: (v) => setDialogState(() => dividerWidth = v),
+                    ),
+                    DropdownButtonFormField<String>(
+                      initialValue: alignment,
+                      decoration: const InputDecoration(
+                        labelText: 'محاذاة الرأس',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'spread',
+                          child: Text('توزيع متوازن'),
+                        ),
+                        DropdownMenuItem(value: 'center', child: Text('توسيط')),
+                        DropdownMenuItem(
+                          value: 'right',
+                          child: Text('إلى اليمين'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() => alignment = value);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('إلغاء'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, {
+                  ...values,
+                  'showMinistryWatermarkText': showWatermark,
+                  'watermarkText': watermarkController.text.trim().isEmpty
+                      ? 'وزارة الداخلية'
+                      : watermarkController.text.trim(),
+                  'watermarkOpacityPercent': opacity.round(),
+                  'headerTitle': titleController.text.trim(),
+                  'headerSubtitle': subtitleController.text.trim(),
+                  'headerChiefRank': rankController.text.trim(),
+                  'headerChiefName': nameController.text.trim(),
+                  'headerShowLogo': showLogo,
+                  'headerLogoSize': logoSize.round(),
+                  'headerTopPaddingMm': topPadding.round(),
+                  'headerHorizontalPaddingMm': horizontalPadding.round(),
+                  'headerBottomPaddingMm': bottomPadding.round(),
+                  'headerAlignment': alignment,
+                  'headerDividerStyle': dividerStyle,
+                  'headerDividerWidthPt': dividerWidth,
+                  'pageMarginTopMm': marginTop.round(),
+                  'pageMarginRightMm': marginRight.round(),
+                  'pageMarginBottomMm': marginBottom.round(),
+                  'pageMarginLeftMm': marginLeft.round(),
+                  'frameStyle': frameStyle,
+                  'frameColor': frameColor,
+                  'frameWidthPt': frameWidth,
+                }),
+                child: const Text('حفظ الإعدادات'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (updated == null || !mounted) return;
+      await widget.api.call(
+        'platformDocumentSettings.update',
+        input: updated,
+        mutation: true,
+      );
+      if (!mounted) return;
+      setState(() => _platformDocumentSettings = updated);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم حفظ إعدادات الوثيقة')));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('تعذر حفظ الإعدادات: $error')));
+    } finally {
+      watermarkController.dispose();
+      titleController.dispose();
+      subtitleController.dispose();
+      rankController.dispose();
+      nameController.dispose();
+    }
+  }
+
+  Widget _documentSettingSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required String suffix,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text('${value.round()}$suffix'),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: (max - min).round(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  String _headerSetting(String key, String fallback) {
+    final value = _platformDocumentSettings[key]?.toString().trim();
+    return value == null || value.isEmpty ? fallback : value;
+  }
+
+  double _headerMillimeters(String key, double fallback) {
+    final value = _platformDocumentSettings[key];
+    final parsed = value is num ? value.toDouble() : double.tryParse('$value');
+    return (parsed ?? fallback).clamp(0, 30).toDouble();
+  }
+
+  Widget _buildA4Editor({
+    required QuillController controller,
+    required bool editable,
+  }) {
+    controller.readOnly = !editable;
+    final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
+    final opacity =
+        (rawOpacity is num
+            ? rawOpacity.toDouble()
+            : double.tryParse('$rawOpacity') ?? 12) /
+        100;
+    const pixelsPerMillimeter = 794 / 210;
+    final headerTitle = _headerSetting(
+      'headerTitle',
+      _letterhead['departmentName']?.toString() ?? 'وثائقي',
+    );
+    final headerSubtitle = _headerSetting(
+      'headerSubtitle',
+      _letterhead['unitName']?.toString() ?? '',
+    );
+    final chiefRank = _headerSetting(
+      'headerChiefRank',
+      _letterhead['unitChiefRank']?.toString() ?? '',
+    );
+    final chiefName = _headerSetting(
+      'headerChiefName',
+      _letterhead['unitChiefName']?.toString() ?? '',
+    );
+    final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
+    final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
+    final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
+        .clamp(32.0, 128.0)
+        .toDouble();
+    final headerAlignment =
+        _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
+    final blockAlignment = switch (headerAlignment) {
+      'center' => TextAlign.center,
+      'right' => TextAlign.right,
+      _ => null,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (editable)
+          QuillSimpleToolbar(
+            controller: controller,
+            config: const QuillSimpleToolbarConfig(),
+          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final pageHeight =
+                constraints.maxWidth *
+                DocumentPaper.a4Height /
+                DocumentPaper.a4Width;
+            return DocumentPaper(
+              showWatermarkText:
+                  _platformDocumentSettings['showMinistryWatermarkText'] !=
+                  false,
+              watermarkOpacity: opacity,
+              watermarkText:
+                  _platformDocumentSettings['watermarkText']?.toString() ??
+                  'وزارة الداخلية',
+              logoUrl: _letterhead['logoUrl']?.toString(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: EdgeInsets.fromLTRB(
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerTopPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerHorizontalPaddingMm', 0) *
+                          pixelsPerMillimeter,
+                      _headerMillimeters('headerBottomPaddingMm', 6) *
+                          pixelsPerMillimeter,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _documentHeaderDividerColor(),
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      textDirection: ui.TextDirection.rtl,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Transform.scale(
+                                scaleX: 0.86,
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  headerTitle,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.right,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                              if (headerSubtitle.isNotEmpty)
+                                Transform.scale(
+                                  scaleX: 0.86,
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    headerSubtitle,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign:
+                                        blockAlignment ?? TextAlign.right,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: logoSize,
+                          child:
+                              showLogo &&
+                                  (_letterhead['logoUrl']
+                                          ?.toString()
+                                          .isNotEmpty ??
+                                      false)
+                              ? Image.network(
+                                  _letterhead['logoUrl'].toString(),
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => SizedBox(
+                                    width: logoSize,
+                                    height: logoSize,
+                                  ),
+                                )
+                              : SizedBox(width: logoSize, height: logoSize),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
+                                ),
+                              ),
+                              Text(
+                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: blockAlignment ?? TextAlign.left,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
+                                ),
+                              ),
+                              if (chiefRank.isNotEmpty)
+                                Text(
+                                  chiefRank,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              if (chiefName.isNotEmpty)
+                                Text(
+                                  chiefName,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: blockAlignment ?? TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      _subjectController.text.isEmpty
+                          ? 'الموضوع: —'
+                          : 'الموضوع: ${_subjectController.text}',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    constraints: BoxConstraints(
+                      minHeight: math.max(96, pageHeight - 350),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+                    child: QuillEditor.basic(
+                      controller: controller,
+                      config: QuillEditorConfig(
+            padding: EdgeInsets.zero,
+            embedBuilders: const [DocumentStudioImageEmbedBuilder()],
+          ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Text(
+                      'وثائقي',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black54, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Color _documentHeaderDividerColor() {
+    final value = _platformDocumentSettings['headerDividerColor']
+        ?.toString()
+        .replaceFirst('#', '');
+    final parsed = int.tryParse(value ?? '', radix: 16);
+    return Color(0xFF000000 | (parsed ?? 0xFFB49A55));
+  }
+
+  Widget _statusChip(String status) {
+    final label = switch (status) {
+      'issued' => 'صادرة',
+      'archived' => 'مؤرشفة',
+      _ => 'مسودة',
+    };
+    final color = switch (status) {
+      'issued' => Colors.green,
+      'archived' => Colors.blueGrey,
+      _ => Colors.orange,
+    };
+    return Chip(
+      label: Text(label),
+      backgroundColor: color.withValues(alpha: 0.12),
+      side: BorderSide(color: color.withValues(alpha: 0.35)),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _emptyState(String message, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        children: [
+          Icon(icon, size: 44, color: Theme.of(context).disabledColor),
+          const SizedBox(height: 10),
+          Text(message, style: Theme.of(context).textTheme.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime value) =>
+      DateFormat('yyyy/MM/dd').format(value.toLocal());
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingCountFuture = _outbox.pendingCount();
+    return Column(
+      children: [
+        _buildTabSelector(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(switch (_tab) {
+                  DocumentStudioTab.documents => 'إعداد الوثائق الرسمية',
+                  DocumentStudioTab.templates => 'النماذج الإدارية',
+                  DocumentStudioTab.archive => 'أرشيف الوثائق',
+                }, style: Theme.of(context).textTheme.titleMedium),
+              ),
+              FutureBuilder<int>(
+                future: pendingCountFuture,
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  return OutlinedButton.icon(
+                    onPressed: count == 0 ? null : _syncLocalChanges,
+                    icon: const Icon(Icons.sync, size: 18),
+                    label: Text('المزامنة ${count > 0 ? '($count)' : ''}'),
+                  );
+                },
+              ),
+              if (_isPlatformOwner)
+                IconButton(
+                  tooltip: 'إعدادات الوثيقة',
+                  onPressed: _editDocumentSettings,
+                  icon: const Icon(Icons.tune),
+                ),
+              IconButton(
+                tooltip: 'تحديث',
+                onPressed: _refresh,
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
+          ),
+        ),
+        if (_loading)
+          const Expanded(child: Center(child: CircularProgressIndicator()))
+        else if (_loadError != null && _documents.isEmpty && _templates.isEmpty)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_outlined, size: 44),
+                    const SizedBox(height: 12),
+                    Text(
+                      'تعذر تحميل البيانات: $_loadError',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton(
+                      onPressed: _refresh,
+                      child: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
+                children: [
+                  if (_tab == DocumentStudioTab.documents)
+                    if (_selectedDocument == null && !_creatingDocument) ...[
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: _saving
+                                  ? null
+                                  : _showCreateDocumentOptions,
+                              icon: const Icon(Icons.add),
+                              label: const Text('إنشاء وثيقة'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildDocumentList(archived: false),
+                    ] else
+                      _buildDocumentForm()
+                  else if (_tab == DocumentStudioTab.templates)
+                    _buildTemplateLibrary()
+                  else if (_selectedDocument == null)
+                    _buildDocumentList(archived: true)
+                  else
+                    _buildDocumentForm(),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+, caseSensitive: false),
+        '',
+      );
+      _templateDescriptionController.text = 'قالب مستورد من Word';
+      setState(() {
+        _templateFields = imported.fields;
+      });
+      _replaceTemplateEditor(imported.content);
+      setState(() => _templateContentDirty = true);
+      _showMessage(
+        imported.fields.isEmpty
+            ? 'تم استيراد محتوى Word. يمكنك حفظه كقالب قابل للتعديل.'
+            : 'تم استيراد Word واكتشاف ${imported.fields.length} حقول ديناميكية.',
+      );
+    } on FormatException catch (error) {
+      _showMessage(error.message.toString());
+    } catch (error) {
+      _showMessage('تعذر استيراد ملف Word: $error');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
   void _startNewTemplate() {
     _editingTemplateId = null;
     _editingTemplateRevision = 1;
@@ -1253,6 +3201,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             value: DocumentStudioTab.documents,
             label: Text('الوثائق'),
             icon: Icon(Icons.description_outlined),
+          ),
+          ButtonSegment(
+            value: DocumentStudioTab.templates,
+            label: Text('النماذج'),
+            icon: Icon(Icons.library_books_outlined),
           ),
           ButtonSegment(
             value: DocumentStudioTab.archive,
