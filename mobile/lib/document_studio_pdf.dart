@@ -65,7 +65,7 @@ class DocumentStudioPdf {
               .clamp(0.0, 35.0)
               .toDouble() *
           PdfPageFormat.mm;
-    };
+    }
     final frameStyle = _clean(letterhead['frameStyle']) ?? 'single';
     final frameColor =
         _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
