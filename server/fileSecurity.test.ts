@@ -5,6 +5,18 @@ describe("uploaded file security", () => {
   it("detects binary signatures instead of trusting MIME metadata", () => {
     expect(detectFileType(Buffer.from("%PDF-1.7\n"))).toBe("application/pdf");
     expect(detectFileType(Buffer.from("not a pdf"))).toBeNull();
+    expect(detectFileType([0x25, 0x50, 0x44, 0x46] as never)).toBeNull();
+  });
+
+  it("rejects tampered values that are not Buffers", () => {
+    expect(() =>
+      validateUploadedFile({
+        bytes: [0x25, 0x50, 0x44, 0x46] as never,
+        declaredType: "application/pdf",
+        fileName: "report.pdf",
+        maxBytes: 10_000,
+      })
+    ).toThrow("حجم الملف غير صالح");
   });
 
   it.each([

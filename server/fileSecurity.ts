@@ -18,6 +18,7 @@ function startsWithBytes(bytes: Buffer, signature: number[]): boolean {
 
 /** Identify the binary signature rather than trusting the browser supplied MIME. */
 export function detectFileType(bytes: Buffer): AllowedAttachmentType | null {
+  if (!Buffer.isBuffer(bytes)) return null;
   if (startsWithBytes(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg";
   if (startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
     return "image/png";
@@ -48,7 +49,11 @@ export function validateUploadedFile(input: {
   fileName: string;
   maxBytes: number;
 }): void {
-  if (input.bytes.length === 0 || input.bytes.length > input.maxBytes) {
+  if (
+    !Buffer.isBuffer(input.bytes) ||
+    input.bytes.length === 0 ||
+    input.bytes.length > input.maxBytes
+  ) {
     throw new Error("حجم الملف غير صالح");
   }
   if (
