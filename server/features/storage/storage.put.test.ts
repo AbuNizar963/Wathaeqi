@@ -1,11 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  upload,
-  createSignedUrl,
-  getObjectInfo,
-  provider,
-} = vi.hoisted(() => {
+const { upload, createSignedUrl, getObjectInfo, provider } = vi.hoisted(() => {
   const upload = vi.fn();
   const createSignedUrl = vi.fn();
   const getObjectInfo = vi.fn();
@@ -111,35 +106,32 @@ describe("stable storage URLs", () => {
     );
   });
 
-  it(
-    "stores new attachments below their immutable organization and telegram path",
-    async () => {
-      const organizationId = "550e8400-e29b-41d4-a716-446655440000";
-      const result = await storagePutOrganizationAttachment(
-        organizationId,
-        7,
-        "report.pdf",
-        Buffer.from("attachment"),
-        "application/pdf"
-      );
+  it("stores new attachments below their immutable organization and telegram path", async () => {
+    const organizationId = "550e8400-e29b-41d4-a716-446655440000";
+    const result = await storagePutOrganizationAttachment(
+      organizationId,
+      7,
+      "report.pdf",
+      Buffer.from("attachment"),
+      "application/pdf"
+    );
 
-      expect(result.key).toMatch(
-        new RegExp(
-          `^organizations/${organizationId}/telegrams/7/attachments/[0-9a-f-]{36}-report\\.pdf$`,
-          "i"
-        )
-      );
-      expect(parseOrganizationAttachmentKey(result.key)).toEqual({
-        organizationId,
-        telegramId: 7,
-      });
-      expect(result.url).toBe(`/api/storage/${result.key}`);
-      expect(upload).toHaveBeenCalledWith(result.key, Buffer.from("attachment"), {
-        contentType: "application/pdf",
-        cacheControl: "3600",
-      });
-    }
-  );
+    expect(result.key).toMatch(
+      new RegExp(
+        `^organizations/${organizationId}/telegrams/7/attachments/[0-9a-f-]{36}-report\\.pdf$`,
+        "i"
+      )
+    );
+    expect(parseOrganizationAttachmentKey(result.key)).toEqual({
+      organizationId,
+      telegramId: 7,
+    });
+    expect(result.url).toBe(`/api/storage/${result.key}`);
+    expect(upload).toHaveBeenCalledWith(result.key, Buffer.from("attachment"), {
+      contentType: "application/pdf",
+      cacheControl: "3600",
+    });
+  });
 
   it("uploads attachment bytes only to a valid pre-scoped key", async () => {
     const key =

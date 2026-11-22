@@ -246,84 +246,73 @@ describe("signed telegram attachment uploads", () => {
     };
   }
 
-  it(
-    "creates an upload key after checking telegram scope",
-    async () => {
-      const { authorize, createUrl, res } =
-        createSignedTelegramAttachmentHarness();
-      const next = vi.fn();
-      const req = request({
-        fileName: "report.pdf",
-        contentType: "application/pdf",
-        sizeBytes: pdfBytes.byteLength,
-      });
+  it("creates an upload key after checking telegram scope", async () => {
+    const { authorize, createUrl, res } =
+      createSignedTelegramAttachmentHarness();
+    const next = vi.fn();
+    const req = request({
+      fileName: "report.pdf",
+      contentType: "application/pdf",
+      sizeBytes: pdfBytes.byteLength,
+    });
 
-      await authorize(req, res, next);
-      expect(next).toHaveBeenCalledOnce();
-      await createUrl(req, res);
+    await authorize(req, res, next);
+    expect(next).toHaveBeenCalledOnce();
+    await createUrl(req, res);
 
-      expect(storageCreateOrganizationAttachmentUploadKey).toHaveBeenCalledWith(
-        testOrganizationId,
-        7,
-        "report.pdf"
-      );
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ key });
-    }
-  );
+    expect(storageCreateOrganizationAttachmentUploadKey).toHaveBeenCalledWith(
+      testOrganizationId,
+      7,
+      "report.pdf"
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ key });
+  });
 
-  it(
-    "accepts a binary upload only after authenticating telegram scope and validating file bytes",
-    async () => {
-      const { authorize, upload, res } =
-        createSignedTelegramAttachmentHarness();
-      const next = vi.fn();
-      const req = request(pdfBytes, {
-        "x-attachment-key": key,
-        "x-attachment-file-name": "report.pdf",
-        "x-attachment-content-type": "application/pdf",
-      });
+  it("accepts a binary upload only after authenticating telegram scope and validating file bytes", async () => {
+    const { authorize, upload, res } = createSignedTelegramAttachmentHarness();
+    const next = vi.fn();
+    const req = request(pdfBytes, {
+      "x-attachment-key": key,
+      "x-attachment-file-name": "report.pdf",
+      "x-attachment-content-type": "application/pdf",
+    });
 
-      await authorize(req, res, next);
-      expect(next).toHaveBeenCalledOnce();
-      await upload(req, res);
+    await authorize(req, res, next);
+    expect(next).toHaveBeenCalledOnce();
+    await upload(req, res);
 
-      expect(storagePutOrganizationAttachmentAtKey).toHaveBeenCalledWith(
-        key,
-        "report.pdf",
-        pdfBytes,
-        "application/pdf"
-      );
-      expect(res.set).toHaveBeenCalledWith("Cache-Control", "no-store");
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        key,
-        size: pdfBytes.byteLength,
-      });
-    }
-  );
+    expect(storagePutOrganizationAttachmentAtKey).toHaveBeenCalledWith(
+      key,
+      "report.pdf",
+      pdfBytes,
+      "application/pdf"
+    );
+    expect(res.set).toHaveBeenCalledWith("Cache-Control", "no-store");
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      key,
+      size: pdfBytes.byteLength,
+    });
+  });
 
-  it(
-    "rejects an attachment key owned by another telegram before writing bytes",
-    async () => {
-      const { authorize, upload, res } =
-        createSignedTelegramAttachmentHarness();
-      const next = vi.fn();
-      const otherTelegramKey = key.replace("/telegrams/7/", "/telegrams/8/");
-      const req = request(pdfBytes, {
-        "x-attachment-key": otherTelegramKey,
-        "x-attachment-file-name": "report.pdf",
-        "x-attachment-content-type": "application/pdf",
-      });
+  it("rejects an attachment key owned by another telegram before writing bytes", async () => {
+    const { authorize, upload, res } = createSignedTelegramAttachmentHarness();
+    const next = vi.fn();
+    const otherTelegramKey = key.replace("/telegrams/7/", "/telegrams/8/");
+    const req = request(pdfBytes, {
+      "x-attachment-key": otherTelegramKey,
+      "x-attachment-file-name": "report.pdf",
+      "x-attachment-content-type": "application/pdf",
+    });
 
-      await authorize(req, res, next);
-      await upload(req, res);
+    await authorize(req, res, next);
+    await upload(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(storagePutOrganizationAttachmentAtKey).not.toHaveBeenCalled();
-    }
-  );
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(storagePutOrganizationAttachmentAtKey).not.toHaveBeenCalled();
+  });
 
   it("validates stored object size and file signature before recording metadata", async () => {
     const { authorize, finalize, res } =
