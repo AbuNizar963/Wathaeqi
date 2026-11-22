@@ -210,10 +210,17 @@ export async function updatePlatformDocumentSettings(
         ? Number((error as { code?: unknown }).code)
         : 0;
     if (code !== 409) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : error &&
+              typeof error === "object" &&
+              "message" in error &&
+              typeof error.message === "string"
+            ? error.message
+            : String(error);
       throw new Error(
-        `Failed to save platform document settings: ${
-          error instanceof Error ? error.message : String(error)
-        }`
+        `Failed to save platform document settings: ${message}`
       );
     }
     const raced = await findSettingsRow();
