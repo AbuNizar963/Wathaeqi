@@ -64,7 +64,9 @@ const platformDocumentSettingsInput = z.object({
   frameColor: z.string().regex(HEX_COLOR_PATTERN),
   frameWidthPt: z.number().min(MIN_FRAME_WIDTH_PT).max(MAX_FRAME_WIDTH_PT),
   showVerificationQr: z.boolean(),
-}).partial().refine(values => Object.keys(values).length > 0);
+})
+  .partial()
+  .refine(values => Object.keys(values).length > 0);
 
 export const platformDocumentSettingsRouter = router({
   get: protectedProcedure.query(() => getPlatformDocumentSettings()),
