@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/document_studio_template_variables.dart';
 
@@ -116,7 +118,7 @@ void main() {
           },
         ],
       };
-      final snapshot = Map<String, dynamic>.from(content);
+      final snapshot = jsonDecode(jsonEncode(content)) as Map<String, dynamic>;
 
       final result = applyDocumentTemplateVariables(content, {
         'subject': 'قرار إداري',
@@ -138,7 +140,8 @@ void main() {
           ],
         },
       );
-      expect(identical((result['content'] as List)[1], content['content'] is List ? (content['content'] as List)[1] : null), isTrue);
+      final originalChildren = content['content'] as List;
+      expect(identical((result['content'] as List)[1], originalChildren[1]), isTrue);
       expect(result['attrs'], {'note': '{{subject}}'});
       expect(content, snapshot);
     });
