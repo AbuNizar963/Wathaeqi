@@ -11,8 +11,7 @@ describe("applyDocumentTemplateVariables", () => {
           content: [
             {
               type: "text",
-              text:
-                "إلى {{ organization }} {{date}} {{number}} {{subject}}",
+              text: "إلى {{ organization }} {{date}} {{number}} {{subject}}",
             },
           ],
         },
@@ -34,8 +33,7 @@ describe("applyDocumentTemplateVariables", () => {
           content: [
             {
               type: "text",
-              text:
-                "إلى مديرية الوثائق 2026/11/22 DOC-00125 اعتماد النموذج",
+              text: "إلى مديرية الوثائق 2026/11/22 DOC-00125 اعتماد النموذج",
             },
           ],
         },
@@ -124,8 +122,8 @@ describe("applyDocumentTemplateVariables", () => {
 
   it("does not traverse unsupported legacy HTML", () => {
     const content = { type: "legacy-html", html: "<p>{{subject}}</p>" };
-    expect(
-      applyDocumentTemplateVariables(content, { subject: "قيمة" })
-    ).toBe(content);
+    expect(applyDocumentTemplateVariables(content, { subject: "قيمة" })).toBe(
+      content
+    );
   });
 });
