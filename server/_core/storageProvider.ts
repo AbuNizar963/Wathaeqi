@@ -54,7 +54,9 @@ function isNotFoundError(error: unknown): boolean {
   return (
     value.code === 404 ||
     value.status === 404 ||
+    value.status === "404" ||
     value.statusCode === 404 ||
+    value.statusCode === "404" ||
     value.code === "404" ||
     value.code === "not_found"
   );
