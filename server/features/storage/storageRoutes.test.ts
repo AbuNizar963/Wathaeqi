@@ -304,6 +304,27 @@ describe("signed telegram attachment uploads", () => {
     }
   );
 
+  it(
+    "rejects an attachment key owned by another telegram before writing bytes",
+    async () => {
+      const { authorize, upload, res } =
+        createSignedTelegramAttachmentHarness();
+      const next = vi.fn();
+      const otherTelegramKey = key.replace("/telegrams/7/", "/telegrams/8/");
+      const req = request(pdfBytes, {
+        "x-attachment-key": otherTelegramKey,
+        "x-attachment-file-name": "report.pdf",
+        "x-attachment-content-type": "application/pdf",
+      });
+
+      await authorize(req, res, next);
+      await upload(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(storagePutOrganizationAttachmentAtKey).not.toHaveBeenCalled();
+    }
+  );
+
   it("validates stored object size and file signature before recording metadata", async () => {
     const { authorize, finalize, res } =
       createSignedTelegramAttachmentHarness();
