@@ -1042,7 +1042,7 @@ void main() {
       const sessionCookie = 'sid=recovery-session';
       const storageKey =
           'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
-      final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\\nfixture'));
+      final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
       _secureStorageForTest['session_cookie'] = sessionCookie;
       final requests = <String>[];
       final client = MockClient((request) async {
