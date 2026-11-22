@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/platform-settings/platformDocumentSettings";
+import {
+  DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+} from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
@@ -82,7 +84,7 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("returns defaults without a write when the singleton is absent", async () => {
+  it("returns defaults when no singleton exists", async () => {
     mocks.listRows.mockResolvedValue({ rows: [] });
     await expect(getPlatformDocumentSettings()).resolves.toEqual({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
@@ -128,7 +130,7 @@ describe("platform document settings Appwrite persistence", () => {
     expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("retries the update when concurrent first-time creation wins", async () => {
+  it("retries concurrent singleton creation", async () => {
     mocks.listRows
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [row()] });
