@@ -209,7 +209,10 @@ describe("signed telegram attachment uploads", () => {
     canAccessTelegramScope.mockResolvedValue(true);
     storageCreateOrganizationAttachmentUploadUrl.mockResolvedValue({
       key,
-      uploadUrl: "https://storage.example/upload?token=opaque",
+      uploadUrl: "https://storage.example/v1/storage/buckets/attachments/files?project=wathaeqi",
+      uploadJwt: "short-lived-jwt",
+      fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
     });
     getTelegramAttachmentByStorageKey.mockResolvedValue(null);
     storageGetObjectInfo.mockResolvedValue({
@@ -250,13 +253,21 @@ describe("signed telegram attachment uploads", () => {
     expect(storageCreateOrganizationAttachmentUploadUrl).toHaveBeenCalledWith(
       testOrganizationId,
       7,
-      "report.pdf"
+      {
+        fileName: "report.pdf",
+        contentType: "application/pdf",
+        sizeBytes: pdfBytes.byteLength,
+      },
+      user.authUserId
     );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         key,
-        uploadUrl: "https://storage.example/upload?token=opaque",
+        uploadUrl: "https://storage.example/v1/storage/buckets/attachments/files?project=wathaeqi",
+        uploadJwt: "short-lived-jwt",
+        fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
         sizeBytes: pdfBytes.byteLength,
       })
     );
