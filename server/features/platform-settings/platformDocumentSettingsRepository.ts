@@ -145,16 +145,26 @@ function mapPlatformDocumentSettings(
       row.headerAlignment === "center" || row.headerAlignment === "right"
         ? row.headerAlignment
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerAlignment,
-    pageMarginTopMm: boundedInteger(row.pageMarginTopMm, MAX_PAGE_MARGIN_MM),
+    pageMarginTopMm: boundedInteger(
+      row.pageMarginTopMm,
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm
+    ),
     pageMarginRightMm: boundedInteger(
       row.pageMarginRightMm,
-      MAX_PAGE_MARGIN_MM
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginRightMm
     ),
     pageMarginBottomMm: boundedInteger(
       row.pageMarginBottomMm,
-      MAX_PAGE_MARGIN_MM
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginBottomMm
     ),
-    pageMarginLeftMm: boundedInteger(row.pageMarginLeftMm, MAX_PAGE_MARGIN_MM),
+    pageMarginLeftMm: boundedInteger(
+      row.pageMarginLeftMm,
+      MAX_PAGE_MARGIN_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginLeftMm
+    ),
     frameStyle:
       row.frameStyle === "none" ||
       row.frameStyle === "single" ||
@@ -183,11 +193,15 @@ function mapPlatformDocumentSettings(
   };
 }
 
-function boundedInteger(value: unknown, max: number): number {
+function boundedInteger(
+  value: unknown,
+  max: number,
+  fallback: number
+): number {
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 && number <= max
     ? number
-    : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm;
+    : fallback;
 }
 function boundedNumber(
   value: unknown,
