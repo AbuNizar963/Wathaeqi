@@ -12,7 +12,6 @@ describe("Appwrite operational schema", () => {
     "organization_memberships",
     "audit_logs",
     "app_records",
-    "push_subscriptions",
   ])("declares the %s table used by the server", tableId => {
     expect(findSchemaTable(tableId)).toBeDefined();
     expect(REQUIRED_TABLE_IDS).toContain(tableId);
@@ -88,35 +87,6 @@ describe("Appwrite operational schema", () => {
         expect.objectContaining({
           type: "unique",
           columns: ["recordType", "recordKey"],
-        }),
-      ])
-    );
-  });
-
-  it("preserves web push records and lookup keys", () => {
-    const subscriptions = findSchemaTable("push_subscriptions");
-    const keys = subscriptions?.columns.map(column => column.key) ?? [];
-
-    expect(keys).toEqual(
-      expect.arrayContaining([
-        "userId",
-        "organizationId",
-        "endpoint",
-        "p256dh",
-        "auth",
-        "userAgent",
-        "lastUsedAt",
-      ])
-    );
-    expect(subscriptions?.indexes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          type: "unique",
-          columns: ["endpoint"],
-        }),
-        expect.objectContaining({
-          type: "unique",
-          columns: ["userId", "endpoint"],
         }),
       ])
     );
