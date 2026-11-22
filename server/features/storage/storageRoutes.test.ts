@@ -277,7 +277,8 @@ describe("signed telegram attachment uploads", () => {
           sizeBytes: pdfBytes.byteLength,
         })
       );
-    };
+    }
+  );
 
   it("validates stored object size and file signature before recording metadata", async () => {
     const { authorize, finalize, res } =
