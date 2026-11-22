@@ -103,7 +103,7 @@ export async function uploadOrganizationLogoDirect(input: {
 }): Promise<UploadedOrganizationLogo> {
   const response = await fetch(appwriteApiUrl("/api/storage/department-logo"), {
     method: "PUT",
-    credentials: "same-origin",
+    credentials: "include",
     headers: {
       "Content-Type": input.contentType,
       "X-Organization-Id": input.organizationId,
