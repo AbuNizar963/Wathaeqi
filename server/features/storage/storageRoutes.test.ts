@@ -17,7 +17,8 @@ const {
   canAccessTelegramScope,
   createTelegramAttachment,
   writeAuditLog,
-  storageCreateOrganizationAttachmentUploadUrl,
+  storageCreateOrganizationAttachmentUploadKey,
+  storagePutOrganizationAttachmentAtKey,
   storageGetObjectInfo,
   storageDelete,
 } = vi.hoisted(() => ({
@@ -37,7 +38,8 @@ const {
   canAccessTelegramScope: vi.fn(),
   createTelegramAttachment: vi.fn(),
   writeAuditLog: vi.fn(),
-  storageCreateOrganizationAttachmentUploadUrl: vi.fn(),
+  storageCreateOrganizationAttachmentUploadKey: vi.fn(),
+  storagePutOrganizationAttachmentAtKey: vi.fn(),
   storageGetObjectInfo: vi.fn(),
   storageDelete: vi.fn(),
 }));
@@ -61,7 +63,8 @@ vi.mock("./storage", async () => {
     storageGetSignedUrl,
     storageCreateSignedUrl,
     storagePutDepartmentLogo,
-    storageCreateOrganizationAttachmentUploadUrl,
+    storageCreateOrganizationAttachmentUploadKey,
+    storagePutOrganizationAttachmentAtKey,
     storageGetObjectInfo,
     storageDelete,
   };
@@ -153,7 +156,9 @@ function createSignedTelegramAttachmentHarness() {
   const routes = new Map<string, Array<(...args: any[]) => any>>();
   const app = {
     get: vi.fn(),
-    put: vi.fn(),
+    put: vi.fn((path: string, ...handlers: Array<(...args: any[]) => any>) => {
+      routes.set(path, handlers);
+    }),
     post: vi.fn((path: string, ...handlers: Array<(...args: any[]) => any>) => {
       routes.set(path, handlers);
     }),
@@ -165,11 +170,14 @@ function createSignedTelegramAttachmentHarness() {
   const createUrl = routes.get(
     "/api/telegrams/:telegramId/attachments/upload-url"
   )?.[1];
+  const upload = routes.get(
+    "/api/telegrams/:telegramId/attachments/upload"
+  )?.[3];
   const finalize = routes.get(
     "/api/telegrams/:telegramId/attachments/finalize"
   )?.[1];
-  if (!authorize || !createUrl || !finalize) {
-    throw new Error("Signed telegram attachment routes were not registered");
+  if (!authorize || !createUrl || !upload || !finalize) {
+    throw new Error("Telegram attachment routes were not registered");
   }
   const res: FakeResponse = {
     status: vi.fn().mockReturnThis(),
@@ -179,14 +187,10 @@ function createSignedTelegramAttachmentHarness() {
     redirect: vi.fn().mockReturnThis(),
     locals: {},
   };
-  return { authorize, createUrl, finalize, res };
+  return { authorize, createUrl, upload, finalize, res };
 }
 
 const testOrganizationId = "550e8400-e29b-41d4-a716-446655440000";
-const appwriteUploadUrl = new URL(
-  "/v1/storage/buckets/attachments/files?project=wathaeqi",
-  "https://storage.example"
-).toString();
 const validPngBytes = Buffer.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
 ]);
@@ -211,12 +215,10 @@ describe("signed telegram attachment uploads", () => {
     getAuthenticatedUserFromRequest.mockResolvedValue(user);
     getTelegramById.mockResolvedValue(telegram);
     canAccessTelegramScope.mockResolvedValue(true);
-    storageCreateOrganizationAttachmentUploadUrl.mockResolvedValue({
+    storageCreateOrganizationAttachmentUploadKey.mockResolvedValue(key);
+    storagePutOrganizationAttachmentAtKey.mockResolvedValue({
       key,
-      uploadUrl: appwriteUploadUrl,
-      uploadJwt: "short-lived-jwt",
-      fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      folder: `organizations/${testOrganizationId}/telegrams/7/attachments`,
+      url: `/api/storage/${key}`,
     });
     getTelegramAttachmentByStorageKey.mockResolvedValue(null);
     storageGetObjectInfo.mockResolvedValue({
@@ -231,11 +233,15 @@ describe("signed telegram attachment uploads", () => {
     writeAuditLog.mockResolvedValue(undefined);
   });
 
-  function request(body: Record<string, unknown>) {
+  function request(
+    body: Record<string, unknown> | Buffer,
+    headers: Record<string, string> = {}
+  ) {
     return {
       params: { telegramId: "7" },
       body,
-      headers: {},
+      headers,
+      get: (name: string) => headers[name.toLowerCase()],
       ip: "127.0.0.1",
     };
   }
