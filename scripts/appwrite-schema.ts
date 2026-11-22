@@ -83,19 +83,31 @@ async function waitForColumns(
   timeoutMs = 90_000
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
-  let pending = expectedKeys;
+  let pending = [...expectedKeys];
+  let lastStatuses = new Map<string, string>();
+
   while (pending.length > 0 && Date.now() < deadline) {
-    const statuses = await listColumnKeys(tables, databaseId, tableId);
+    lastStatuses = await listColumnKeys(tables, databaseId, tableId);
     pending = expectedKeys.filter(
-      key => statuses.get(key) !== "available" && statuses.has(key)
+      key => lastStatuses.get(key) !== "available"
     );
-    const missing = expectedKeys.filter(key => !statuses.has(key));
-    if (missing.length === 0 && pending.length === 0) return;
-    await sleep(1_500);
+
+    if (pending.length === 0) return;
+
+    const remainingMs = deadline - Date.now();
+    if (remainingMs > 0) {
+      await sleep(Math.min(1_500, remainingMs));
+    }
   }
+
   if (pending.length > 0) {
-    console.warn(
-      `  ! columns still processing in ${tableId}: ${pending.join(", ")}`
+    const details = pending.map(key => {
+      const status = lastStatuses.get(key);
+      return status ? `${key} (${status})` : `${key} (not found)`;
+    });
+
+    throw new Error(
+      `Timed out waiting for Appwrite columns in table ${tableId}: ${details.join(", ")}`
     );
   }
 }
