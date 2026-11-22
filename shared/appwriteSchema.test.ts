@@ -69,6 +69,31 @@ describe("Appwrite operational schema", () => {
     );
   });
 
+  it("requires login identifiers and preserves large audit payloads", () => {
+    const users = findSchemaTable("users");
+    const audit = findSchemaTable("audit_logs");
+    const records = findSchemaTable("app_records");
+
+    expect(users?.columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "username", required: true }),
+        expect.objectContaining({ key: "email", required: true }),
+      ])
+    );
+    expect(audit?.columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "metadata", type: "longtext" }),
+        expect.objectContaining({ key: "beforeState", type: "longtext" }),
+        expect.objectContaining({ key: "afterState", type: "longtext" }),
+      ])
+    );
+    expect(records?.columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "payload", type: "longtext" }),
+      ])
+    );
+  });
+
   it("stores the audit hash chain and keyed application records", () => {
     const audit = findSchemaTable("audit_logs");
     const records = findSchemaTable("app_records");
