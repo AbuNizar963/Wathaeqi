@@ -5,7 +5,7 @@ import 'package:police_telegrams/document_studio_template_variables.dart';
 
 void main() {
   group('applyDocumentTemplateVariables', () {
-    test('resolves Arabic and English system variables with whitespace', () {
+    test('resolves system variables with whitespace', () {
       final content = {
         'type': 'doc',
         'content': [
@@ -14,8 +14,7 @@ void main() {
             'content': [
               {
                 'type': 'text',
-                'text':
-                    'إلى {{ organization }} بتاريخ {{date}} رقم {{number}} الموضوع {{subject}}',
+                'text': 'إلى {{ organization }} بتاريخ {{date}} رقم {{number}} الموضوع {{subject}}',
               },
             ],
           },
@@ -37,8 +36,7 @@ void main() {
               'content': [
                 {
                   'type': 'text',
-                  'text':
-                      'إلى مديرية الوثائق بتاريخ 2026/11/22 رقم DOC-00125 الموضوع اعتماد النموذج',
+                  'text': 'إلى مديرية الوثائق بتاريخ 2026/11/22 رقم DOC-00125 الموضوع اعتماد النموذج',
                 },
               ],
             },
@@ -92,7 +90,7 @@ void main() {
       );
     });
 
-    test('preserves marks, attributes, unknown nodes, and original content', () {
+    test('preserves marks, unknown nodes, and input', () {
       final content = {
         'type': 'doc',
         'attrs': {'note': '{{subject}}'},
@@ -125,22 +123,19 @@ void main() {
         'subject': 'قرار إداري',
       });
 
-      expect(
-        (result['content'] as List).first,
-        {
-          'type': 'paragraph',
-          'attrs': {'alignment': 'right'},
-          'content': [
-            {
-              'type': 'text',
-              'text': 'قرار إداري',
-              'marks': [
-                {'type': 'bold'},
-              ],
-            },
-          ],
-        },
-      );
+      expect((result['content'] as List).first, {
+        'type': 'paragraph',
+        'attrs': {'alignment': 'right'},
+        'content': [
+          {
+            'type': 'text',
+            'text': 'قرار إداري',
+            'marks': [
+              {'type': 'bold'},
+            ],
+          },
+        ],
+      });
       final originalChildren = content['content'] as List;
       expect(
         identical((result['content'] as List)[1], originalChildren[1]),
