@@ -373,51 +373,48 @@ describe("signed telegram attachment uploads", () => {
     expect(storageCreateOrganizationAttachmentUploadKey).not.toHaveBeenCalled();
   });
 
-  it(
-    "keeps a committed object when a concurrent finalization wins the unique insert",
-    async () => {
-      const committedAttachment = {
-        id: 100,
-        telegramId: 7,
-        storageOrganizationId: testOrganizationId,
-        storageKey: key,
-        originalName: "report.pdf",
-        mimeType: "application/pdf",
-        sizeBytes: pdfBytes.byteLength,
-      };
-      getTelegramAttachmentByStorageKey
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(committedAttachment);
-      createTelegramAttachment.mockRejectedValueOnce(
-        new Error("duplicate storage key")
-      );
+  it("keeps a committed object when a concurrent finalization wins the unique insert", async () => {
+    const committedAttachment = {
+      id: 100,
+      telegramId: 7,
+      storageOrganizationId: testOrganizationId,
+      storageKey: key,
+      originalName: "report.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: pdfBytes.byteLength,
+    };
+    getTelegramAttachmentByStorageKey
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(committedAttachment);
+    createTelegramAttachment.mockRejectedValueOnce(
+      new Error("duplicate storage key")
+    );
 
-      const { authorize, finalize, res } =
-        createSignedTelegramAttachmentHarness();
-      const next = vi.fn();
-      const req = request({
-        key,
-        fileName: "report.pdf",
-        contentType: "application/pdf",
-        sizeBytes: pdfBytes.byteLength,
-      });
+    const { authorize, finalize, res } =
+      createSignedTelegramAttachmentHarness();
+    const next = vi.fn();
+    const req = request({
+      key,
+      fileName: "report.pdf",
+      contentType: "application/pdf",
+      sizeBytes: pdfBytes.byteLength,
+    });
 
-      await authorize(req, res, next);
-      await finalize(req, res);
+    await authorize(req, res, next);
+    await finalize(req, res);
 
-      expect(getTelegramAttachmentByStorageKey).toHaveBeenCalledTimes(2);
-      expect(storageDelete).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        alreadyFinalized: true,
-        key,
-        fileName: "report.pdf",
-        contentType: "application/pdf",
-        size: pdfBytes.byteLength,
-      });
-    }
-  );
+    expect(getTelegramAttachmentByStorageKey).toHaveBeenCalledTimes(2);
+    expect(storageDelete).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      success: true,
+      alreadyFinalized: true,
+      key,
+      fileName: "report.pdf",
+      contentType: "application/pdf",
+      size: pdfBytes.byteLength,
+    });
+  });
 
   it("rejects an object whose stored size differs and removes it", async () => {
     storageGetObjectInfo.mockResolvedValueOnce({

@@ -367,9 +367,9 @@ async function finalizeTelegramAttachmentUpload(
         uploadedByUserId: context.user.id,
       });
     } catch (error) {
-      let committedAttachment:
-        | Awaited<ReturnType<typeof getTelegramAttachmentByStorageKey>>
-        | null = null;
+      let committedAttachment: Awaited<
+        ReturnType<typeof getTelegramAttachmentByStorageKey>
+      > | null = null;
       try {
         // A concurrent finalization or a lost database response may have
         // committed the unique storage key even though this insert failed.
