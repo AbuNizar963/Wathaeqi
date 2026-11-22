@@ -720,7 +720,6 @@ class _PlatformDocumentSettingsPageState
                           ),
                         ),
                         DropdownButtonFormField<String>(
-                          isExpanded: true,
                           initialValue: _frameStyle,
                           decoration: const InputDecoration(
                             labelText: 'شكل الإطار',
@@ -746,9 +745,8 @@ class _PlatformDocumentSettingsPageState
                           onChanged: _saving
                               ? null
                               : (v) {
-                                  if (v != null) {
+                                  if (v != null)
                                     setState(() => _frameStyle = v);
-                                  }
                                 },
                         ),
                         TextField(
@@ -759,9 +757,8 @@ class _PlatformDocumentSettingsPageState
                           ),
                           controller: TextEditingController(text: _frameColor),
                           onChanged: (v) {
-                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v)) {
+                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(v))
                               setState(() => _frameColor = v.toLowerCase());
-                            }
                           },
                         ),
                         _settingsSlider(
@@ -773,7 +770,6 @@ class _PlatformDocumentSettingsPageState
                           (v) => setState(() => _frameWidthPt = v),
                         ),
                         DropdownButtonFormField<String>(
-                          isExpanded: true,
                           initialValue: _headerDividerStyle,
                           decoration: const InputDecoration(
                             labelText: 'نمط الفاصل بين الرأس والمحتوى',
@@ -803,9 +799,8 @@ class _PlatformDocumentSettingsPageState
                           onChanged: _saving
                               ? null
                               : (v) {
-                                  if (v != null) {
+                                  if (v != null)
                                     setState(() => _headerDividerStyle = v);
-                                  }
                                 },
                         ),
                         _settingsSlider(

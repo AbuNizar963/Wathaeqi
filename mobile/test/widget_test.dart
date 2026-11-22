@@ -651,15 +651,6 @@ void main() {
       'showMinistryWatermarkText': true,
       'watermarkOpacityPercent': 16,
       'headerDividerColor': '#b49a55',
-      'headerDividerStyle': 'double',
-      'headerDividerWidthPt': 2.25,
-      'pageMarginTopMm': 10,
-      'pageMarginRightMm': 10,
-      'pageMarginBottomMm': 10,
-      'pageMarginLeftMm': 10,
-      'frameStyle': 'single',
-      'frameColor': '#b49a55',
-      'frameWidthPt': 1.0,
       'showVerificationQr': true,
     });
     expect(find.text('تم حفظ إعدادات وثائق النظام'), findsOneWidget);

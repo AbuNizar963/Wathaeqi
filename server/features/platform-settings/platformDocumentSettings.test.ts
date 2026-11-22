@@ -2,10 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appRouter } from "../../routers";
 import type { TrpcContext } from "../../_core/context";
 import { ENV } from "../../_core/env";
-import {
-  DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-  type PlatformDocumentSettings,
-} from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
   getPlatformDocumentSettings: vi.fn(),
@@ -13,13 +9,7 @@ const mocks = vi.hoisted(() => ({
   writeAuditLog: vi.fn(),
 }));
 
-vi.mock("../../db", () => ({
-  writeAuditLog: mocks.writeAuditLog,
-}));
-vi.mock("./platformDocumentSettingsRepository", () => ({
-  getPlatformDocumentSettings: mocks.getPlatformDocumentSettings,
-  updatePlatformDocumentSettings: mocks.updatePlatformDocumentSettings,
-}));
+vi.mock("../../db", () => mocks);
 
 function context(input: {
   id: number;
@@ -45,15 +35,14 @@ function context(input: {
   };
 }
 
-const input: Omit<PlatformDocumentSettings, "updatedAt"> = {
-  ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+const input = {
   showMinistryWatermarkText: false,
   watermarkOpacityPercent: 24,
   headerDividerColor: "#2457a6",
   showVerificationQr: false,
 };
 
-const saved: PlatformDocumentSettings = {
+const saved = {
   ...input,
   updatedAt: "2026-10-23T00:00:00.000Z",
 };

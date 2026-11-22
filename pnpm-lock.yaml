@@ -359,9 +359,6 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      node-appwrite:
-        specifier: 31.2.0
-        version: 31.2.0
       officecrypto-tool:
         specifier: ^0.0.19
         version: 0.0.19
@@ -4589,15 +4586,6 @@ packages:
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
-
-
-  node-appwrite@31.2.0:
-    resolution: {integrity: sha512-E5blR/uqxyyEJ82h3mmHrgCv0XiaEtWcCMmMtBeEKF61MEWRyewJHub9hGAD5Y5hchIR0bfhUV+j2ffQXO73NA==}
-    engines: {node: '>=20.0.0'}
-
-  undici@6.29.1:
-    resolution: {integrity: sha512-EvRlUt/QqAEvXdQeRMYUfwOQsfzpDztykrG2owGEE/rBOBoYv9uF39ZzsNDh4lTFHhTr2XOZjKkYgueD12ZmGA==}
-    engines: {node: '>=18.17'}
 
 snapshots:
 
@@ -8891,10 +8879,3 @@ snapshots:
   zod@4.6.7: {}
 
   zwitch@2.0.4: {}
-
-  node-appwrite@31.2.0:
-    dependencies:
-      json-bigint: 1.0.0
-      undici: 6.29.1
-
-  undici@6.29.1: {}

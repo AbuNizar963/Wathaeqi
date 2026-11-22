@@ -9,12 +9,10 @@ import {
 } from "./platformDocumentSettings";
 
 const ownerSettings: PlatformDocumentSettings = {
-  ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   showMinistryWatermarkText: false,
   watermarkOpacityPercent: 0,
   headerDividerColor: "#2457a6",
   showVerificationQr: false,
-  updatedAt: "2026-10-23T00:00:00.000Z",
 };
 
 describe("document settings for export", () => {
