@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   createFile: vi.fn(),
   createFileToken: vi.fn(),
-  createJWT: vi.fn(),
   deleteFile: vi.fn(),
   getFile: vi.fn(),
   getFileDownload: vi.fn(),
@@ -14,7 +13,6 @@ vi.mock("./appwrite", () => ({
   getAppwriteBucketId: () => "document-attachments",
   getAppwriteStorage: () => mocks,
   getAppwriteTokens: () => mocks,
-  getAppwriteUsers: () => mocks,
 }));
 
 vi.mock("./env", () => ({
@@ -40,7 +38,6 @@ describe("Appwrite storage provider", () => {
     mocks.fromBuffer.mockReturnValue({ kind: "input-file" });
     mocks.createFile.mockResolvedValue({ $id: "file-id" });
     mocks.createFileToken.mockResolvedValue({ secret: "short-lived-token" });
-    mocks.createJWT.mockResolvedValue({ jwt: "short-lived-upload-jwt" });
     mocks.getFile.mockResolvedValue({
       sizeOriginal: 12,
       mimeType: "application/pdf",
@@ -93,34 +90,6 @@ describe("Appwrite storage provider", () => {
     );
     expect(url.searchParams.get("project")).toBe("wathaeqi");
     expect(url.searchParams.get("token")).toBe("short-lived-token");
-  });
-
-  it("creates a short-lived Appwrite user JWT for direct upload", async () => {
-    const key =
-      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
-    const authorization = await getStorageProvider().createSignedUploadUrl(
-      key,
-      {
-        fileName: "report.pdf",
-        contentType: "application/pdf",
-        sizeBytes: 12,
-      },
-      "appwrite-user-7"
-    );
-    const url = new URL(authorization.uploadUrl);
-
-    expect(mocks.createJWT).toHaveBeenCalledWith({
-      userId: "appwrite-user-7",
-      duration: 300,
-    });
-    expect(authorization.uploadJwt).toBe("short-lived-upload-jwt");
-    expect(authorization.fileId).toMatch(/^[a-f0-9]{32}$/);
-    expect(authorization.folder).toBe(
-      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments"
-    );
-    expect(url.origin).toBe("https://fra.cloud.appwrite.io");
-    expect(url.pathname).toBe("/v1/storage/buckets/document-attachments/files");
-    expect(url.searchParams.get("project")).toBe("wathaeqi");
   });
 
   it("reads metadata and downloads bytes from Appwrite", async () => {
