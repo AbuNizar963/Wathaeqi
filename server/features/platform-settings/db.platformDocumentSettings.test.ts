@@ -2,16 +2,31 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
-  from: vi.fn(),
-  select: vi.fn(),
-  eq: vi.fn(),
-  maybeSingle: vi.fn(),
-  upsert: vi.fn(),
-  single: vi.fn(),
+  listRows: vi.fn(),
+  createRow: vi.fn(),
+  updateRow: vi.fn(),
+  getAppwriteTablesDB: vi.fn(),
+  getAppwriteDatabaseId: vi.fn(() => "database-1"),
+}));
+
+vi.mock("node-appwrite", () => ({
+  Query: {
+    equal: vi.fn((field: string, value: unknown) => ({
+      method: "equal",
+      field,
+      value,
+    })),
+    limit: vi.fn((value: number) => ({ method: "limit", value })),
+  },
+}));
+
+vi.mock("../../_core/appwrite", () => ({
+  getAppwriteTablesDB: mocks.getAppwriteTablesDB,
+  getAppwriteDatabaseId: mocks.getAppwriteDatabaseId,
 }));
 
 vi.mock("../../_core/supabase", () => ({
-  getSupabaseAdmin: () => ({ from: mocks.from }),
+  getSupabaseAdmin: vi.fn(),
 }));
 
 import {
@@ -20,84 +35,174 @@ import {
 } from "../../db";
 
 const ownerSettings = {
+  ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   showMinistryWatermarkText: false,
   watermarkOpacityPercent: 0,
   headerDividerColor: "#ABCDEF",
   showVerificationQr: false,
-  updatedAt: "2026-10-23T00:00:00.000Z",
 };
 
-describe("platform document settings persistence", () => {
+const row = (data: Record<string, unknown> = ownerSettings) => ({
+  $id: "1",
+  data: {
+    ...data,
+    updatedAt: "2026-10-23T00:00:00.000Z",
+  },
+});
+
+describe("platform document settings Appwrite persistence", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    const builder = {
-      select: mocks.select,
-      eq: mocks.eq,
-      maybeSingle: mocks.maybeSingle,
-      upsert: mocks.upsert,
-      single: mocks.single,
-    };
-    mocks.from.mockReturnValue(builder);
-    mocks.select.mockReturnValue(builder);
-    mocks.eq.mockReturnValue(builder);
-    mocks.upsert.mockReturnValue(builder);
-    mocks.maybeSingle.mockResolvedValue({ data: ownerSettings, error: null });
-    mocks.single.mockResolvedValue({ data: ownerSettings, error: null });
+    mocks.getAppwriteDatabaseId.mockReturnValue("database-1");
+    mocks.getAppwriteTablesDB.mockReturnValue({
+      listRows: mocks.listRows,
+      createRow: mocks.createRow,
+      updateRow: mocks.updateRow,
+    });
+    mocks.listRows.mockResolvedValue({ rows: [row()] });
+    mocks.createRow.mockResolvedValue(row());
+    mocks.updateRow.mockResolvedValue(row());
   });
 
   it("reads the singleton without modifying owner settings", async () => {
-    await expect(getPlatformDocumentSettings()).resolves.toEqual(ownerSettings);
-    expect(mocks.from).toHaveBeenCalledWith("platform_document_settings");
-    expect(mocks.eq).toHaveBeenCalledWith("id", 1);
-    expect(mocks.upsert).not.toHaveBeenCalled();
+    await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+      ...ownerSettings,
+      updatedAt: "2026-10-23T00:00:00.000Z",
+    });
+    expect(mocks.listRows).toHaveBeenCalledWith({
+      databaseId: "database-1",
+      tableId: "platform_document_settings",
+      queries: [
+        { method: "equal", field: "id", value: 1 },
+        { method: "limit", value: 2 },
+      ],
+      total: false,
+    });
+    expect(mocks.createRow).not.toHaveBeenCalled();
+    expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("returns defaults without a write when the singleton is absent", async () => {
-    mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
+  it("returns defaults when no singleton exists", async () => {
+    mocks.listRows.mockResolvedValue({ rows: [] });
     await expect(getPlatformDocumentSettings()).resolves.toEqual({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       updatedAt: null,
     });
-    expect(mocks.upsert).not.toHaveBeenCalled();
-    expect(mocks.single).not.toHaveBeenCalled();
+    expect(mocks.createRow).not.toHaveBeenCalled();
+    expect(mocks.updateRow).not.toHaveBeenCalled();
   });
 
-  it("does not reset a concurrent owner save after an empty read", async () => {
-    mocks.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-    const reader = getPlatformDocumentSettings();
-    const values = {
-      showMinistryWatermarkText: false,
-      watermarkOpacityPercent: 0,
-      headerDividerColor: "#ABCDEF",
-      showVerificationQr: false,
-    };
-    const writer = updatePlatformDocumentSettings(values, 1);
-    await Promise.all([reader, writer]);
-    expect(mocks.upsert).toHaveBeenCalledOnce();
-    expect(mocks.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 1, ...values, updatedByUserId: 1 }),
-      { onConflict: "id" }
+  it("updates the existing singleton row", async () => {
+    await updatePlatformDocumentSettings(ownerSettings, 1);
+    expect(mocks.updateRow).toHaveBeenCalledOnce();
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "database-1",
+        tableId: "platform_document_settings",
+        rowId: "1",
+        data: expect.objectContaining({
+          ...ownerSettings,
+          updatedByUserId: 1,
+        }),
+      })
     );
+    expect(mocks.createRow).not.toHaveBeenCalled();
   });
 
-  it("surfaces database errors rather than pretending defaults were loaded", async () => {
-    mocks.maybeSingle.mockResolvedValue({
-      data: null,
-      error: { message: "relation does not exist" },
-    });
+  it("updates only supplied fields so concurrent partial saves do not overwrite each other", async () => {
+    await updatePlatformDocumentSettings({ watermarkOpacityPercent: 24 }, 1);
+    expect(mocks.updateRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "database-1",
+        tableId: "platform_document_settings",
+        rowId: "1",
+        data: expect.objectContaining({
+          watermarkOpacityPercent: 24,
+          updatedByUserId: 1,
+        }),
+      })
+    );
+    const payload = mocks.updateRow.mock.calls[0][0].data;
+    expect(payload).not.toHaveProperty("headerDividerColor");
+    expect(payload).not.toHaveProperty("showVerificationQr");
+    expect(mocks.createRow).not.toHaveBeenCalled();
+  });
+
+  it("creates the singleton with defaults when it does not exist", async () => {
+    mocks.listRows.mockResolvedValue({ rows: [] });
+    await updatePlatformDocumentSettings({ watermarkOpacityPercent: 24 }, 1);
+    expect(mocks.createRow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        databaseId: "database-1",
+        tableId: "platform_document_settings",
+        rowId: "1",
+        data: expect.objectContaining({
+          id: 1,
+          ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+          watermarkOpacityPercent: 24,
+          updatedByUserId: 1,
+        }),
+      })
+    );
+    expect(mocks.updateRow).not.toHaveBeenCalled();
+  });
+
+  it("retries concurrent singleton creation", async () => {
+    mocks.listRows
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [row()] });
+    mocks.createRow.mockRejectedValueOnce({ code: 409 });
+    await updatePlatformDocumentSettings(ownerSettings, 1);
+    expect(mocks.createRow).toHaveBeenCalledOnce();
+    expect(mocks.updateRow).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    {
+      field: "pageMarginTopMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm,
+    },
+    {
+      field: "pageMarginRightMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginRightMm,
+    },
+    {
+      field: "pageMarginBottomMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginBottomMm,
+    },
+    {
+      field: "pageMarginLeftMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginLeftMm,
+    },
+  ])(
+    "uses the field-specific default when $field contains an invalid value",
+    async ({ field, fallback }) => {
+      mocks.listRows.mockResolvedValue({
+        rows: [row({ ...ownerSettings, [field]: "invalid" })],
+      });
+
+      await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+        [field]: fallback,
+      });
+    }
+  );
+
+  it("surfaces database read errors", async () => {
+    mocks.listRows.mockRejectedValue(new Error("relation does not exist"));
     await expect(getPlatformDocumentSettings()).rejects.toThrow(
-      "Failed to load platform document settings: relation does not exist"
+      "relation does not exist"
     );
-    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(mocks.createRow).not.toHaveBeenCalled();
   });
 
   it("surfaces failed saves", async () => {
-    mocks.single.mockResolvedValue({
-      data: null,
-      error: { message: "permission denied" },
+    mocks.listRows.mockResolvedValue({ rows: [] });
+    mocks.createRow.mockRejectedValue({
+      code: 403,
+      message: "permission denied",
     });
     await expect(
-      updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 1)
+      updatePlatformDocumentSettings(ownerSettings, 1)
     ).rejects.toThrow(
       "Failed to save platform document settings: permission denied"
     );
