@@ -961,10 +961,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
     setState(() => _saving = true);
+    final customFieldValues = Map<String, String>.from(_fieldValues)
+      ..remove('organization')
+      ..remove('date')
+      ..remove('number')
+      ..remove('subject');
     final content = applyDocumentTemplateVariables(
       _documentContent,
       {
-        ..._fieldValues,
+        ...customFieldValues,
         'organization':
             (_letterhead['departmentName'] ??
                     _letterhead['organizationName'] ??
