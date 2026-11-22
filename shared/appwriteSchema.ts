@@ -208,8 +208,8 @@ export const appwriteSchema: SchemaTable[] = [
       { key: "action", type: "varchar", size: 80, required: true },
       { key: "fromStatus", type: "varchar", size: 24, required: false },
       { key: "toStatus", type: "varchar", size: 24, required: false },
-      { key: "reason", type: "longtext", required: false },
-      { key: "metadata", type: "longtext", required: false },
+      { key: "reason", type: "text", required: false },
+      { key: "metadata", type: "text", required: false },
       CREATED_AT,
     ],
     indexes: [
@@ -565,7 +565,7 @@ export const appwriteSchema: SchemaTable[] = [
       { key: "action", type: "varchar", size: 80, required: true },
       { key: "entityType", type: "varchar", size: 80, required: true },
       { key: "entityId", type: "varchar", size: 80, required: false },
-      { key: "metadata", type: "text", required: false },
+      { key: "metadata", type: "longtext", required: false },
       { key: "ipAddress", type: "varchar", size: 80, required: false },
       { key: "userAgent", type: "text", required: false },
       {
@@ -578,7 +578,7 @@ export const appwriteSchema: SchemaTable[] = [
       { key: "actorRank", type: "varchar", size: 120, required: false },
       { key: "actorRole", type: "varchar", size: 80, required: false },
       { key: "organizationId", type: "varchar", size: 36, required: false },
-      { key: "reason", type: "text", required: false },
+      { key: "reason", type: "longtext", required: false },
       { key: "beforeState", type: "longtext", required: false },
       { key: "afterState", type: "longtext", required: false },
       { key: "previousHash", type: "varchar", size: 64, required: false },
