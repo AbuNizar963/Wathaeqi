@@ -38,16 +38,17 @@ import {
   storageDownload,
   storageGetSignedUrl,
   storageKeyFromStoredUrl,
-  storageCreateOrganizationAttachmentUploadUrl,
+  storageCreateOrganizationAttachmentUploadKey,
   storageDelete,
   storageGetObjectInfo,
   storagePutDepartmentLogo,
+  storagePutOrganizationAttachmentAtKey,
 } from "./storage";
 
 const ORGANIZATION_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 type TelegramAttachmentRequestContext = {
   user: NonNullable<
@@ -144,21 +145,102 @@ async function createTelegramAttachmentUploadUrl(
   }
 
   try {
-    const upload = await storageCreateOrganizationAttachmentUploadUrl(
+    const key = await storageCreateOrganizationAttachmentUploadKey(
       context.telegram.organizationId,
       context.telegram.id,
       metadata.fileName
     );
     res.set("Cache-Control", "no-store");
-    res.status(200).json({
-      ...upload,
-      fileName: metadata.fileName,
-      contentType: metadata.contentType,
-      sizeBytes: metadata.sizeBytes,
-    });
+    res.status(200).json({ key });
   } catch (error) {
     console.error("[Storage] Telegram attachment upload URL failed", error);
     res.status(502).json({ error: "تعذر تجهيز رابط رفع المرفق" });
+  }
+}
+
+async function uploadTelegramAttachment(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const context = res.locals.telegramAttachmentRequest as
+    TelegramAttachmentRequestContext | undefined;
+  if (!context || !Buffer.isBuffer(req.body)) {
+    res.status(400).json({ error: "لم يتم استلام بيانات المرفق" });
+    return;
+  }
+
+  let fileName: string;
+  try {
+    fileName = decodeURIComponent(req.get("x-attachment-file-name") ?? "");
+  } catch {
+    res.status(400).json({ error: "اسم ملف المرفق غير صالح" });
+    return;
+  }
+
+  const key = req.get("x-attachment-key")?.trim() ?? "";
+  const contentType =
+    req.get("x-attachment-content-type")?.trim().toLowerCase() ?? "";
+  const metadata = parseTelegramAttachmentMetadata({
+    fileName,
+    contentType,
+    sizeBytes: req.body.byteLength,
+  });
+
+  if (
+    !metadata ||
+    !key ||
+    key.length > 512 ||
+    !organizationAttachmentKeyMatches(
+      key,
+      context.telegram.organizationId,
+      context.telegram.id
+    )
+  ) {
+    res.status(400).json({ error: "بيانات رفع المرفق غير صالحة" });
+    return;
+  }
+
+  const storedFileName = key.split("/").pop()?.slice(37) ?? "";
+  const expectedStorageFileName = metadata.fileName.replace(/\.\.+/g, "_");
+  if (storedFileName !== expectedStorageFileName) {
+    res.status(400).json({ error: "اسم الملف لا يطابق مفتاح التخزين" });
+    return;
+  }
+
+  try {
+    validateUploadedFile({
+      bytes: req.body,
+      declaredType: metadata.contentType,
+      fileName: metadata.fileName,
+      maxBytes: MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
+    });
+    await storagePutOrganizationAttachmentAtKey(
+      key,
+      metadata.fileName,
+      req.body,
+      metadata.contentType
+    );
+    res.set("Cache-Control", "no-store");
+    res.status(201).json({
+      success: true,
+      key,
+      size: req.body.byteLength,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "تعذر التحقق من المرفق";
+    const invalidFileMessages = new Set([
+      "حجم الملف غير صالح",
+      "اسم الملف غير صالح",
+      "نوع الملف لا يطابق محتواه الحقيقي",
+      "هذا الامتداد غير مسموح به",
+    ]);
+    if (invalidFileMessages.has(message)) {
+      res.status(400).json({ error: message });
+      return;
+    }
+    console.error("[Storage] Telegram attachment upload failed", error);
+    res.status(502).json({ error: "تعذر رفع المرفق إلى مساحة التخزين" });
   }
 }
 
@@ -285,6 +367,51 @@ async function finalizeTelegramAttachmentUpload(
         uploadedByUserId: context.user.id,
       });
     } catch (error) {
+      let committedAttachment: Awaited<
+        ReturnType<typeof getTelegramAttachmentByStorageKey>
+      > | null = null;
+      try {
+        // A concurrent finalization or a lost database response may have
+        // committed the unique storage key even though this insert failed.
+        committedAttachment = await getTelegramAttachmentByStorageKey(key);
+      } catch (readError) {
+        console.error(
+          "[Storage] Attachment metadata could not be reconciled after a failed insert",
+          { error, readError }
+        );
+        res.status(502).json({
+          error: "تعذر التحقق من حالة تسجيل المرفق؛ أعد المحاولة",
+        });
+        return;
+      }
+
+      if (committedAttachment) {
+        const matchesRequest =
+          committedAttachment.telegramId === context.telegram.id &&
+          committedAttachment.storageOrganizationId ===
+            context.telegram.organizationId &&
+          committedAttachment.originalName === metadata.fileName &&
+          committedAttachment.mimeType === metadata.contentType &&
+          committedAttachment.sizeBytes === asset.body.byteLength;
+        if (matchesRequest) {
+          res.set("Cache-Control", "no-store");
+          res.status(200).json({
+            success: true,
+            alreadyFinalized: true,
+            key,
+            fileName: metadata.fileName,
+            contentType: metadata.contentType,
+            size: committedAttachment.sizeBytes,
+          });
+          return;
+        }
+
+        res.status(409).json({
+          error: "يوجد سجل مرفق مختلف مرتبط بمفتاح التخزين",
+        });
+        return;
+      }
+
       await removeUncommittedAttachment(key);
       console.error(
         "[Storage] Telegram attachment metadata write failed",
@@ -534,6 +661,16 @@ export function registerStorageRoutes(app: Express): void {
     "/api/telegrams/:telegramId/attachments/upload-url",
     authorizeTelegramAttachmentRequest,
     createTelegramAttachmentUploadUrl
+  );
+
+  app.put(
+    "/api/telegrams/:telegramId/attachments/upload",
+    authorizeTelegramAttachmentRequest,
+    express.raw({
+      type: "application/octet-stream",
+      limit: MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
+    }),
+    uploadTelegramAttachment
   );
 
   app.post(

@@ -18,25 +18,29 @@ function startsWithBytes(bytes: Buffer, signature: number[]): boolean {
 
 /** Identify the binary signature rather than trusting the browser supplied MIME. */
 export function detectFileType(bytes: Buffer): AllowedAttachmentType | null {
-  if (startsWithBytes(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg";
-  if (startsWithBytes(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+  if (!Buffer.isBuffer(bytes)) return null;
+  const content = Buffer.from(bytes);
+  if (startsWithBytes(content, [0xff, 0xd8, 0xff])) return "image/jpeg";
+  if (
+    startsWithBytes(content, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  )
     return "image/png";
   if (
-    bytes.length >= 12 &&
-    bytes.subarray(0, 4).toString() === "RIFF" &&
-    bytes.subarray(8, 12).toString() === "WEBP"
+    content.length >= 12 &&
+    content.subarray(0, 4).toString() === "RIFF" &&
+    content.subarray(8, 12).toString() === "WEBP"
   )
     return "image/webp";
-  if (bytes.subarray(0, 5).toString() === "%PDF-") return "application/pdf";
+  if (content.subarray(0, 5).toString() === "%PDF-") return "application/pdf";
   if (
-    bytes.subarray(0, 4).toString() === "RIFF" &&
-    bytes.subarray(8, 12).toString() === "WAVE"
+    content.subarray(0, 4).toString() === "RIFF" &&
+    content.subarray(8, 12).toString() === "WAVE"
   )
     return "audio/wav";
-  if (startsWithBytes(bytes, [0x1a, 0x45, 0xdf, 0xa3])) return "audio/webm";
+  if (startsWithBytes(content, [0x1a, 0x45, 0xdf, 0xa3])) return "audio/webm";
   if (
-    bytes.subarray(0, 3).toString() === "ID3" ||
-    (bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
+    content.subarray(0, 3).toString() === "ID3" ||
+    (content[0] === 0xff && (content[1] & 0xe0) === 0xe0)
   )
     return "audio/mpeg";
   return null;
@@ -48,7 +52,8 @@ export function validateUploadedFile(input: {
   fileName: string;
   maxBytes: number;
 }): void {
-  if (input.bytes.length === 0 || input.bytes.length > input.maxBytes) {
+  const bytes = Buffer.isBuffer(input.bytes) ? Buffer.from(input.bytes) : null;
+  if (!bytes || bytes.length === 0 || bytes.length > input.maxBytes) {
     throw new Error("حجم الملف غير صالح");
   }
   if (
@@ -57,7 +62,7 @@ export function validateUploadedFile(input: {
   ) {
     throw new Error("اسم الملف غير صالح");
   }
-  const actualType = detectFileType(input.bytes);
+  const actualType = detectFileType(bytes);
   if (!actualType || actualType !== input.declaredType) {
     throw new Error("نوع الملف لا يطابق محتواه الحقيقي");
   }

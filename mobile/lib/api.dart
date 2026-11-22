@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'offline_vault.dart';
@@ -651,33 +651,24 @@ class PoliceApi {
     }
 
     final preparedValue = jsonDecode(prepareResponse.body);
-    if (preparedValue is! Map ||
-        preparedValue['key'] is! String ||
-        preparedValue['uploadUrl'] is! String ||
-        preparedValue['uploadJwt'] is! String ||
-        preparedValue['fileId'] is! String ||
-        preparedValue['folder'] is! String) {
-      throw const FormatException('لم يُرجع الخادم بيانات رفع Appwrite صالحة');
+    if (preparedValue is! Map || preparedValue['key'] is! String) {
+      throw const FormatException('لم يُرجع الخادم مفتاح تخزين صالحًا');
     }
 
     final key = preparedValue['key'] as String;
-    final uploadUri = Uri.tryParse(preparedValue['uploadUrl'] as String);
-    final uploadJwt = preparedValue['uploadJwt'] as String;
-    final fileId = preparedValue['fileId'] as String;
-    final folder = preparedValue['folder'] as String;
-    final projectId = uploadUri?.queryParameters['project'];
-    if (uploadUri == null ||
-        uploadUri.scheme != 'https' ||
-        uploadUri.host.isEmpty ||
-        projectId == null ||
-        projectId.isEmpty ||
-        uploadJwt.isEmpty ||
-        !RegExp(r'^[a-f0-9]{32}$').hasMatch(fileId) ||
-        !folder.startsWith('organizations/') ||
-        !folder.endsWith('/attachments')) {
-      throw const FormatException('بيانات الاتصال بمخزن Appwrite غير صالحة');
+    final expectedKeyPrefix = RegExp(
+      '^organizations/[0-9a-f-]{36}/telegrams/$telegramId/attachments/',
+      caseSensitive: false,
+    );
+    if (!expectedKeyPrefix.hasMatch(key) ||
+        !key.contains('/attachments/') ||
+        key.length > 512) {
+      throw const FormatException('مفتاح تخزين المرفق غير صالح');
     }
 
+    final uploadUri = Uri.parse(
+      '$baseUrl/api/telegrams/$telegramId/attachments/upload',
+    );
     final finalizeUri = Uri.parse(
       '$baseUrl/api/telegrams/$telegramId/attachments/finalize',
     );
@@ -688,88 +679,64 @@ class PoliceApi {
       'sizeBytes': bytes.length,
     });
 
-    Future<http.Response> finalizeUpload() => send(
-      () => _httpClient.post(
-        finalizeUri,
-        headers: requestHeaders,
-        body: finalizeBody,
-      ),
-    );
-
-    const chunkSize = 5 * 1024 * 1024;
-    final chunkedUpload = bytes.length > chunkSize;
-    try {
-      for (var offset = 0; offset < bytes.length; offset += chunkSize) {
-        final endExclusive = (offset + chunkSize < bytes.length)
-            ? offset + chunkSize
-            : bytes.length;
-        final chunk = Uint8List.fromList(bytes.sublist(offset, endExclusive));
-        final storageRequest = http.MultipartRequest('POST', uploadUri);
-        storageRequest.headers.addAll({
-          'X-Appwrite-Project': projectId,
-          'X-Appwrite-JWT': uploadJwt,
-          if (chunkedUpload)
-            'Content-Range':
-                'bytes $offset-${endExclusive - 1}/${bytes.length}',
-          if (offset > 0) 'X-Appwrite-ID': fileId,
-        });
-        storageRequest.fields['permissions'] = '[]';
-        if (offset == 0) {
-          storageRequest.fields['fileId'] = fileId;
-          storageRequest.fields['folder'] = folder;
-        }
-        storageRequest.files.add(
-          http.MultipartFile.fromBytes(
-            'file',
-            chunk,
-            filename: fileName,
-            contentType: MediaType.parse(contentType),
-          ),
-        );
-
-        final storageResponse = await send(() async {
-          final streamedResponse = await _httpClient.send(storageRequest);
-          return http.Response.fromStream(streamedResponse);
-        }, timeout: const Duration(seconds: 60));
-        if (storageResponse.statusCode < 200 ||
-            storageResponse.statusCode >= 300) {
-          throw ApiException(
-            storageResponse.statusCode,
-            _message(storageResponse.body),
-          );
-        }
-      }
-    } catch (_) {
-      try {
-        await finalizeUpload();
-      } catch (_) {
-        // Finalization removes any partial object when no metadata was committed.
-      }
-      rethrow;
-    }
-
-    final finalizeResponse = await finalizeUpload();
-    if (finalizeResponse.statusCode < 200 ||
-        finalizeResponse.statusCode >= 300) {
-      throw ApiException(
-        finalizeResponse.statusCode,
-        _message(finalizeResponse.body),
+    Future<Map<String, dynamic>> finalizeAndRecord() async {
+      final response = await send(
+        () => _httpClient.post(
+          finalizeUri,
+          headers: requestHeaders,
+          body: finalizeBody,
+        ),
       );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(response.statusCode, _message(response.body));
+      }
+
+      final finalizedValue = jsonDecode(response.body);
+      if (finalizedValue is! Map) {
+        throw const FormatException('استجابة اعتماد المرفق غير صالحة');
+      }
+      final result = Map<String, dynamic>.from(finalizedValue);
+      _mutationEvents.add(
+        ApiMutationEvent(
+          procedure: 'telegrams.uploadAttachment',
+          input: {'telegramId': telegramId},
+          result: result,
+        ),
+      );
+      return result;
     }
 
-    final finalizedValue = jsonDecode(finalizeResponse.body);
-    if (finalizedValue is! Map) {
-      throw const FormatException('استجابة اعتماد المرفق غير صالحة');
+    try {
+      final uploadHeaders = <String, String>{
+        'accept': 'application/json',
+        'content-type': 'application/octet-stream',
+        'x-attachment-key': key,
+        'x-attachment-file-name': Uri.encodeComponent(fileName),
+        'x-attachment-content-type': contentType,
+      };
+      if (cookie != null) uploadHeaders['cookie'] = cookie;
+
+      final uploadResponse = await send(
+        () => _httpClient.put(uploadUri, headers: uploadHeaders, body: bytes),
+        timeout: const Duration(seconds: 60),
+      );
+      if (uploadResponse.statusCode < 200 || uploadResponse.statusCode >= 300) {
+        throw ApiException(
+          uploadResponse.statusCode,
+          _message(uploadResponse.body),
+        );
+      }
+    } catch (uploadError, stackTrace) {
+      try {
+        // The server may have stored the file even if the upload response was
+        // lost. Finalization is authoritative and makes this operation retry-safe.
+        return await finalizeAndRecord();
+      } catch (_) {
+        Error.throwWithStackTrace(uploadError, stackTrace);
+      }
     }
-    final result = Map<String, dynamic>.from(finalizedValue);
-    _mutationEvents.add(
-      ApiMutationEvent(
-        procedure: 'telegrams.uploadAttachment',
-        input: {'telegramId': telegramId},
-        result: result,
-      ),
-    );
-    return result;
+
+    return finalizeAndRecord();
   }
 
   Future<void> _syncOfflineCacheAfterMutation(
@@ -1530,6 +1497,12 @@ class PoliceApi {
       imageFile: imageFile,
       metadataFile: metadataFile,
     );
+  }
+
+  @visibleForTesting
+  Future<void> waitForPendingOrganizationLogoRefreshes() async {
+    final pending = List<Future<void>>.of(_organizationLogoRefreshes.values);
+    if (pending.isNotEmpty) await Future.wait(pending);
   }
 
   void _scheduleOrganizationLogoRefresh({
