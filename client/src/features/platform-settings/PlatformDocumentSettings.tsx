@@ -225,7 +225,6 @@ export default function PlatformDocumentSettings() {
                 disabled={!settings.data || update.isPending}
                 onClick={() =>
                   update.mutate({
-                    ...settings.data,
                     showMinistryWatermarkText,
                     watermarkOpacityPercent,
                     headerDividerColor,
