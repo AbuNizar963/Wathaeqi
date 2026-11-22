@@ -60,10 +60,7 @@ Map<String, dynamic> applyDocumentTemplateVariables(
       }
     }
     if (!changed) return node;
-    return {
-      ...Map<String, dynamic>.from(node),
-      'content': nextChildren,
-    };
+    return {...Map<String, dynamic>.from(node), 'content': nextChildren};
   }
 
   final result = visit(content);
