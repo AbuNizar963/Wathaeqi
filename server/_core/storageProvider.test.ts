@@ -196,7 +196,7 @@ describe("Appwrite storage provider", () => {
         contentType: "application/pdf",
       });
       expect(mocks.legacyDownload).toHaveBeenCalledWith(
-        "telegrams/7/legacy.pdf",
+        "telegrams/7/legacy.pdf"
       );
     }
   );
@@ -229,7 +229,7 @@ describe("Appwrite storage provider", () => {
 
   it("rejects unsafe storage paths", async () => {
     await expect(
-      getStorageProvider().getObjectInfo("department/../secret.txt"),
+      getStorageProvider().getObjectInfo("department/../secret.txt")
     ).rejects.toThrow("Invalid Appwrite storage key");
   });
 });
