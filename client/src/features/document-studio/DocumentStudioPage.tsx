@@ -859,7 +859,8 @@ export default function DocumentStudioPage() {
                     إلغاء التحديد
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    يمكن تحديد الوثائق المنشأة داخل النظام؛ الملفات المرفوعة تُطبع منفردة.
+                    يمكن تحديد الوثائق المنشأة داخل النظام؛ الملفات المرفوعة
+                    تُطبع منفردة.
                   </span>
                 </div>
               ) : null}
@@ -877,10 +878,7 @@ export default function DocumentStudioPage() {
               ) : (
                 <div className="max-h-[70vh] space-y-2 overflow-y-auto">
                   {visibleDocuments.map(document => (
-                    <div
-                      key={document.id}
-                      className="flex items-start gap-2"
-                    >
+                    <div key={document.id} className="flex items-start gap-2">
                       <input
                         type="checkbox"
                         className="mt-4 size-4 shrink-0 accent-primary"
