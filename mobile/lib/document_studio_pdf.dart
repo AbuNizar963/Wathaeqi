@@ -59,13 +59,13 @@ class DocumentStudioPdf {
         : 0.12;
     final watermarkColor = PdfColor(0.42, 0.44, 0.47, safeOpacity);
     final borderColor = PdfColor.fromInt(dividerColor);
-    double pageMargin(String key, double fallback) {
+    final pageMargin = (key, fallback) {
       final value = letterhead[key];
       return (value is num ? value.toDouble() : fallback)
               .clamp(0.0, 35.0)
               .toDouble() *
           PdfPageFormat.mm;
-    }
+    };
     final frameStyle = _clean(letterhead['frameStyle']) ?? 'single';
     final frameColor =
         _parseHexColor(_clean(letterhead['frameColor'])) ?? borderColor;
@@ -391,204 +391,8 @@ class DocumentStudioPdf {
   }
 
   static PdfColor? _parseHexColor(String? value) {
-    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}
-    return PdfColor.fromInt(
-      int.parse(value.substring(1), radix: 16) | 0xFF000000,
-    );
-  }
-
-  static String? _clean(dynamic value) {
-    if (value is! String || value.trim().isEmpty) return null;
-    return value.trim();
-  }
-
-  static List<Map<String, dynamic>> _asMapList(dynamic value) {
-    if (value is! List) return const [];
-    return value
-        .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList(growable: false);
-  }
-
-  static List<pw.Widget> _buildBlocks(
-    List<Map<String, dynamic>> nodes, {
-    required pw.Font regular,
-    required pw.Font bold,
-  }) {
-    final result = <pw.Widget>[];
-    for (final node in nodes) {
-      final type = node['type']?.toString() ?? '';
-      final children = _asMapList(node['content']);
-      if (type == 'paragraph' || type == 'heading') {
-        final spans = _inlineSpans(children, regular: regular, bold: bold);
-        final level = (node['attrs'] as Map?)?['level'];
-        final heading = type == 'heading';
-        result.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 7),
-            child: pw.RichText(
-              textDirection: pw.TextDirection.rtl,
-              textAlign: pw.TextAlign.right,
-              text: pw.TextSpan(
-                children: spans.isEmpty
-                    ? [
-                        pw.TextSpan(
-                          text: ' ',
-                          style: pw.TextStyle(font: regular),
-                        ),
-                      ]
-                    : spans,
-                style: pw.TextStyle(
-                  font: heading ? bold : regular,
-                  fontSize: heading
-                      ? (level == 1
-                            ? 18
-                            : level == 2
-                            ? 15
-                            : 13)
-                      : 11,
-                  lineSpacing: 3,
-                ),
-              ),
-            ),
-          ),
-        );
-      } else if (type == 'bulletList' || type == 'orderedList') {
-        var index = 0;
-        for (final item in children) {
-          index++;
-          result.add(
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(right: 12, bottom: 4),
-              child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.SizedBox(
-                    width: 18,
-                    child: pw.Text(
-                      type == 'orderedList' ? '$index.' : '•',
-                      style: pw.TextStyle(font: bold, fontSize: 11),
-                    ),
-                  ),
-                  pw.Expanded(
-                    child: pw.Text(
-                      _plainText(item),
-                      textDirection: pw.TextDirection.rtl,
-                      textAlign: pw.TextAlign.right,
-                      style: pw.TextStyle(font: regular, fontSize: 11),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-        result.add(pw.SizedBox(height: 4));
-      } else if (type == 'blockquote') {
-        result.add(
-          pw.Container(
-            margin: const pw.EdgeInsets.only(bottom: 8),
-            padding: const pw.EdgeInsets.all(8),
-            decoration: const pw.BoxDecoration(
-              border: pw.Border(
-                right: pw.BorderSide(color: PdfColors.grey500, width: 2),
-              ),
-              color: PdfColors.grey100,
-            ),
-            child: pw.Text(
-              _plainText(node),
-              textDirection: pw.TextDirection.rtl,
-              textAlign: pw.TextAlign.right,
-              style: pw.TextStyle(font: regular, fontSize: 10),
-            ),
-          ),
-        );
-      } else if (type == 'horizontalRule') {
-        result.add(
-          pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(vertical: 8),
-            child: pw.Divider(color: PdfColors.grey400),
-          ),
-        );
-      } else if (type == 'table') {
-        for (final row in children) {
-          final cells = _asMapList(row['content'])
-              .map(_plainText)
-              .where((value) => value.isNotEmpty)
-              .toList();
-          if (cells.isNotEmpty) {
-            result.add(
-              pw.Padding(
-                padding: const pw.EdgeInsets.only(bottom: 4),
-                child: pw.Text(
-                  cells.join('   |   '),
-                  textDirection: pw.TextDirection.rtl,
-                  textAlign: pw.TextAlign.right,
-                  style: pw.TextStyle(font: regular, fontSize: 10),
-                ),
-              ),
-            );
-          }
-        }
-        result.add(pw.SizedBox(height: 6));
-      } else if (children.isNotEmpty) {
-        result.addAll(_buildBlocks(children, regular: regular, bold: bold));
-      }
-    }
-    return result;
-  }
-
-  static List<pw.InlineSpan> _inlineSpans(
-    List<Map<String, dynamic>> nodes, {
-    required pw.Font regular,
-    required pw.Font bold,
-  }) {
-    final spans = <pw.InlineSpan>[];
-    for (final node in nodes) {
-      final type = node['type']?.toString() ?? '';
-      if (type == 'hardBreak') {
-        spans.add(pw.TextSpan(text: '\n'));
-        continue;
-      }
-      if (type != 'text') {
-        spans.addAll(
-          _inlineSpans(
-            _asMapList(node['content']),
-            regular: regular,
-            bold: bold,
-          ),
-        );
-        continue;
-      }
-      final marks = _asMapList(node['marks']);
-      final isBold = marks.any((mark) => mark['type'] == 'bold');
-      final isItalic = marks.any((mark) => mark['type'] == 'italic');
-      final isUnderline = marks.any((mark) => mark['type'] == 'underline');
-      spans.add(
-        pw.TextSpan(
-          text: node['text']?.toString() ?? '',
-          style: pw.TextStyle(
-            font: isBold ? bold : regular,
-            fontStyle: isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
-            decoration: isUnderline ? pw.TextDecoration.underline : null,
-            fontSize: 11,
-          ),
-        ),
-      );
-    }
-    return spans;
-  }
-
-  static String _plainText(Map<String, dynamic> node) {
-    final type = node['type']?.toString() ?? '';
-    if (type == 'text') return node['text']?.toString() ?? '';
-    if (type == 'hardBreak') return '\n';
-    return _asMapList(node['content']).map(_plainText).join();
-  }
-}
-).hasMatch(value)) {
+    if (value == null || !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value))
       return null;
-    }
     return PdfColor.fromInt(
       int.parse(value.substring(1), radix: 16) | 0xFF000000,
     );
