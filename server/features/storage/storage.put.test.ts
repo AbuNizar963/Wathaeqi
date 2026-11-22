@@ -48,7 +48,13 @@ describe("stable storage URLs", () => {
       uploadUrl: "https://storage.example/signed-upload?project=wathaeqi",
       uploadJwt: "short-lived-jwt",
       fileId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      folder: "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments",
+      folder: [
+        "organizations",
+        "550e8400-e29b-41d4-a716-446655440000",
+        "telegrams",
+        "7",
+        "attachments",
+      ].join("/"),
     });
     getObjectInfo.mockResolvedValue({
       size: 12,
@@ -85,7 +91,9 @@ describe("stable storage URLs", () => {
     expect(productionUrl).toBe("https://storage.example/upload");
   });
 
-  it("creates a signed upload URL scoped to one organization and telegram", async () => {
+  it(
+    "creates a signed upload URL scoped to one organization and telegram",
+    async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
     const result = await storageCreateOrganizationAttachmentUploadUrl(
       organizationId,
@@ -138,7 +146,9 @@ describe("stable storage URLs", () => {
     );
   });
 
-  it("stores new attachments below their immutable organization and telegram path", async () => {
+  it(
+    "stores new attachments below their immutable organization and telegram path",
+    async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
     const result = await storagePutOrganizationAttachment(
       organizationId,
