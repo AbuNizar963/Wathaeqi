@@ -886,7 +886,7 @@ void main() {
         headers: {'content-type': 'image/png'},
       ),
     );
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await api.waitForPendingOrganizationLogoRefreshes();
   });
 
   test(
