@@ -8,17 +8,21 @@ import {
   getAppwriteUsers,
 } from "../server/_core/appwrite.ts";
 import { getSupabaseAdmin } from "../server/_core/supabase.ts";
-import { runAppwriteMigrationInventory } from "../server/_core/appwriteMigrationInventory.ts";
+import {
+  runAppwriteMigrationInventory,
+  type MigrationInventoryDependencies,
+} from "../server/_core/appwriteMigrationInventory.ts";
 
 try {
-  const report = await runAppwriteMigrationInventory({
-    supabase: getSupabaseAdmin(),
-    tables: getAppwriteTablesDB(),
-    storage: getAppwriteStorage(),
-    users: getAppwriteUsers(),
+  const dependencies: MigrationInventoryDependencies = {
+    supabase: getSupabaseAdmin() as unknown as MigrationInventoryDependencies["supabase"],
+    tables: getAppwriteTablesDB() as unknown as MigrationInventoryDependencies["tables"],
+    storage: getAppwriteStorage() as unknown as MigrationInventoryDependencies["storage"],
+    users: getAppwriteUsers() as unknown as MigrationInventoryDependencies["users"],
     databaseId: getAppwriteDatabaseId(),
     bucketId: getAppwriteBucketId(),
-  });
+  };
+  const report = await runAppwriteMigrationInventory(dependencies);
 
   process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 } catch (error) {
