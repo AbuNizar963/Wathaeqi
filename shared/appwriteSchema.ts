@@ -483,7 +483,8 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 36,
         required: true,
-        description: "Generated during migration to invalidate legacy sessions.",
+        description:
+          "Generated during migration to invalidate legacy sessions.",
       },
       { key: "organizationId", type: "varchar", size: 36, required: true },
       { key: "name", type: "varchar", size: 255, required: false },
