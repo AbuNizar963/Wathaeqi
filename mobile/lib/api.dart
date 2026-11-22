@@ -688,17 +688,19 @@ class PoliceApi {
     );
 
     try {
+      final uploadHeaders = <String, String>{
+        'accept': 'application/json',
+        'content-type': 'application/octet-stream',
+        'x-attachment-key': key,
+        'x-attachment-file-name': Uri.encodeComponent(fileName),
+        'x-attachment-content-type': contentType,
+      };
+      if (cookie != null) uploadHeaders['cookie'] = cookie;
+
       final uploadResponse = await send(
         () => _httpClient.put(
           uploadUri,
-          headers: {
-            'accept': 'application/json',
-            'content-type': 'application/octet-stream',
-            'x-attachment-key': key,
-            'x-attachment-file-name': Uri.encodeComponent(fileName),
-            'x-attachment-content-type': contentType,
-            if (cookie != null) 'cookie': cookie,
-          },
+          headers: uploadHeaders,
           body: bytes,
         ),
         timeout: const Duration(seconds: 60),
