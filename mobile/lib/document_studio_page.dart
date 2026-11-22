@@ -14,6 +14,8 @@ import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
+import 'document_studio_template_fields.dart';
+import 'document_studio_template_variables.dart';
 import 'closable_dialog_title.dart';
 import 'document_studio_outbox.dart';
 import 'document_studio_pdf.dart';
@@ -555,6 +557,28 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
+  Map<String, dynamic> _documentContentForDisplay(OfficialDocument document) {
+    final content = DocumentStudioQuillCodec.normalizeLegacyText(
+      document.content,
+    );
+    if (document.fieldValues.isNotEmpty) {
+      if (document.serialCode.isEmpty) return content;
+      return applyDocumentTemplateVariables(content, {
+        'number': document.serialCode,
+      });
+    }
+    return applyDocumentTemplateVariables(content, {
+      'organization':
+          (_letterhead['departmentName'] ??
+                  _letterhead['organizationName'] ??
+                  'وثائقي')
+              .toString(),
+      'date': DateFormat('yyyy/MM/dd').format(document.documentDate),
+      'subject': document.subject,
+      if (document.serialCode.isNotEmpty) 'number': document.serialCode,
+    });
+  }
+
   Future<Uint8List> _fetchDocumentPdf(
     OfficialDocument document, {
     int imageTiles = 1,
@@ -610,7 +634,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'frameWidthPt': _platformDocumentSettings['frameWidthPt'] ?? 1,
       };
       return DocumentStudioPdf.build(
-        content: DocumentStudioQuillCodec.normalizeLegacyText(document.content),
+        content: _documentContentForDisplay(document),
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
@@ -902,7 +926,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       document.templateFieldsSnapshot,
       document.fieldValues,
     );
-    _replaceDocumentEditor(document.content);
+    final displayContent = _documentContentForDisplay(document);
+    _replaceDocumentEditor(displayContent);
     setState(
       () => _tab = document.status == 'archived'
           ? DocumentStudioTab.archive
@@ -934,7 +959,23 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
     setState(() => _saving = true);
-    final content = _applyFieldValues(_documentContent, _fieldValues);
+    final customFieldValues = Map<String, String>.from(_fieldValues)
+      ..remove('organization')
+      ..remove('date')
+      ..remove('number')
+      ..remove('subject');
+    final content = applyDocumentTemplateVariables(_documentContent, {
+      ...customFieldValues,
+      'organization':
+          (_letterhead['departmentName'] ??
+                  _letterhead['organizationName'] ??
+                  'وثائقي')
+              .toString(),
+      'date': DateFormat('yyyy/MM/dd').format(_documentDate),
+      'subject': _subjectController.text.trim(),
+      if (_selectedDocument?.serialCode.isNotEmpty == true)
+        'number': _selectedDocument!.serialCode,
+    });
     final input = <String, dynamic>{
       'title': _titleController.text.trim(),
       'category': _documentCategory,
@@ -1008,7 +1049,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'id': document.id,
         'expectedUpdatedAt': document.expectedUpdatedAt,
       });
-      _selectedDocument = OfficialDocument.fromJson(saved);
+      final issuedDocument = OfficialDocument.fromJson(saved);
+      _selectedDocument = issuedDocument;
+      _replaceDocumentEditor(
+        applyDocumentTemplateVariables(issuedDocument.content, {
+          'number': issuedDocument.serialCode,
+        }),
+      );
       await _load();
       _showMessage('تم إصدار الوثيقة بالرقم ${saved['serialCode']}');
     } catch (error) {
@@ -1224,24 +1271,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Map<String, dynamic> _applyFieldValues(
     Map<String, dynamic> content,
     Map<String, String> values,
-  ) {
-    dynamic visit(dynamic value) {
-      if (value is List) return value.map(visit).toList();
-      if (value is! Map) return value;
-      final node = Map<String, dynamic>.from(value);
-      if (node['type'] == 'text' && node['text'] is String) {
-        var text = node['text'] as String;
-        for (final entry in values.entries) {
-          text = text.replaceAll('{{${entry.key}}}', entry.value);
-        }
-        node['text'] = text;
-        return node;
-      }
-      return node.map((key, child) => MapEntry(key, visit(child)));
-    }
-
-    return Map<String, dynamic>.from(visit(content) as Map);
-  }
+  ) => DocumentStudioTemplateFields.applyFieldValues(content, values);
 
   Widget _buildTabSelector() {
     return Padding(
@@ -1639,13 +1669,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
         const SizedBox(height: 10),
         if (isNativeDocument)
-          InteractiveViewer(
-            minScale: 0.75,
-            maxScale: 2.5,
-            constrained: true,
-            boundaryMargin: const EdgeInsets.all(48),
-            child: _buildA4Editor(controller: _documentEditor, editable: false),
-          )
+          _buildA4Editor(controller: _documentEditor, editable: false)
         else if (isWord)
           _buildUnsupportedDocumentPreview(
             document,
@@ -1999,6 +2023,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         for (var index = 0; index < _templateFields.length; index++)
           _buildTemplateFieldEditor(index),
         const SizedBox(height: 12),
+        const Text(
+          'المتغيرات التلقائية: {{organization}} للجهة، {{date}} للتاريخ، '
+          '{{number}} للرقم عند الإصدار، و{{subject}} للموضوع. '
+          'يمكنك أيضاً إضافة حقول تعبئة مخصصة.',
+          textDirection: ui.TextDirection.rtl,
+        ),
+        const SizedBox(height: 8),
         _buildA4Editor(controller: _templateEditor, editable: true),
         const SizedBox(height: 12),
         FilledButton.icon(
@@ -2588,12 +2619,12 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             config: const QuillSimpleToolbarConfig(),
           ),
         LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (context, _) {
+            const pageWidth = 794.0;
             final pageHeight =
-                constraints.maxWidth *
-                DocumentPaper.a4Height /
-                DocumentPaper.a4Width;
-            return DocumentPaper(
+                pageWidth * DocumentPaper.a4Height / DocumentPaper.a4Width;
+            final paper = DocumentPaper(
+              fixedWidth: pageWidth,
               showWatermarkText:
                   _platformDocumentSettings['showMinistryWatermarkText'] !=
                   false,
@@ -2783,6 +2814,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   ),
                 ],
               ),
+            );
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.topCenter,
+              child: paper,
             );
           },
         ),

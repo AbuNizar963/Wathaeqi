@@ -234,6 +234,10 @@ void main() {
   testWidgets('opening a saved document shows its preview first', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     final api = _DocumentStudioTestApi(includeDocument: true);
     final outbox = _DocumentStudioTestOutbox(api: api);
 
@@ -262,7 +266,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
 
-    expect(find.byKey(const ValueKey('document-a4-paper')), findsOneWidget);
+    final paper = find.byKey(const ValueKey('document-a4-paper'));
+    expect(paper, findsOneWidget);
+    expect(
+      find.ancestor(of: paper, matching: find.byType(FittedBox)),
+      findsOneWidget,
+    );
+    expect(tester.getSize(paper).width, 794);
+    expect(tester.getRect(paper).width, lessThanOrEqualTo(390));
     expect(
       tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkText,
       'عبارة أمنية تجريبية',

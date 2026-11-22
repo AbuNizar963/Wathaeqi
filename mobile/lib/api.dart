@@ -1725,15 +1725,18 @@ class PoliceApi {
       );
     }
 
-    final cookie = await _storage.read(key: 'session_cookie');
+    final cookie = (await _storage.read(key: 'session_cookie'))?.trim();
+    if (cookie == null || cookie.isEmpty) {
+      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
+    }
     final uri = Uri.parse('$baseUrl/api/storage/department-logo');
     final headers = <String, String>{
       'content-type': contentType,
       'accept': 'application/json',
       'x-organization-id': organizationId,
       'x-file-name': Uri.encodeComponent(fileName),
+      'cookie': cookie,
     };
-    if (cookie != null) headers['cookie'] = cookie;
 
     late final http.Response response;
     try {

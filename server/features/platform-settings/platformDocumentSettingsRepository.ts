@@ -135,12 +135,11 @@ function mapPlatformDocumentSettings(
       Number(row.headerHorizontalPaddingMm) <= MAX_HEADER_PADDING_MM
         ? Number(row.headerHorizontalPaddingMm)
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerHorizontalPaddingMm,
-    headerBottomPaddingMm:
-      Number.isInteger(Number(row.headerBottomPaddingMm)) &&
-      Number(row.headerBottomPaddingMm) >= 0 &&
-      Number(row.headerBottomPaddingMm) <= MAX_HEADER_PADDING_MM
-        ? Number(row.headerBottomPaddingMm)
-        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm,
+    headerBottomPaddingMm: boundedInteger(
+      row.headerBottomPaddingMm,
+      MAX_HEADER_PADDING_MM,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm
+    ),
     headerAlignment:
       row.headerAlignment === "center" || row.headerAlignment === "right"
         ? row.headerAlignment
@@ -194,6 +193,7 @@ function mapPlatformDocumentSettings(
 }
 
 function boundedInteger(value: unknown, max: number, fallback: number): number {
+  if (value === null || value === undefined || value === "") return fallback;
   const number = Number(value);
   return Number.isInteger(number) && number >= 0 && number <= max
     ? number
