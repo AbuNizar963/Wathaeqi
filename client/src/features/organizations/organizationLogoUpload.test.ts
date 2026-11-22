@@ -4,9 +4,11 @@ import { uploadOrganizationLogoDirect } from "./organizationLogoUpload";
 describe("direct organization logo upload", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
-  it("sends the prepared image as a binary same-origin request", async () => {
+  it("sends the prepared image with credentials to the configured API origin", async () => {
+    vi.stubEnv("VITE_APPWRITE_API_URL", "https://api.example.test/");
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -35,10 +37,10 @@ describe("direct organization logo upload", () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/storage/department-logo");
+    expect(url).toBe("https://api.example.test/api/storage/department-logo");
     expect(options).toMatchObject({
       method: "PUT",
-      credentials: "same-origin",
+      credentials: "include",
       headers: {
         "Content-Type": "image/png",
         "X-Organization-Id": "550e8400-e29b-41d4-a716-446655440000",
