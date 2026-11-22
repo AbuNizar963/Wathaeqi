@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
 const A4_PREVIEW_WIDTH = 794;
@@ -26,6 +32,43 @@ export default function ResponsiveA4Preview({
     scale: 1,
     height: A4_PREVIEW_MIN_HEIGHT,
   });
+  const [zoom, setZoom] = useState(1);
+  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(
+    null
+  );
+
+  const clampZoom = (value: number) =>
+    Math.min(2.5, Math.max(0.75, Math.round(value * 100) / 100));
+
+  const handleTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (event.touches.length !== 2) return;
+    const [first, second] = Array.from(event.touches);
+    pinchStartRef.current = {
+      distance: Math.hypot(
+        second.clientX - first.clientX,
+        second.clientY - first.clientY
+      ),
+      zoom,
+    };
+  };
+
+  const handleTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    const start = pinchStartRef.current;
+    if (!start || event.touches.length !== 2) return;
+    event.preventDefault();
+    const [first, second] = Array.from(event.touches);
+    const distance = Math.hypot(
+      second.clientX - first.clientX,
+      second.clientY - first.clientY
+    );
+    if (start.distance > 0) {
+      setZoom(clampZoom(start.zoom * (distance / start.distance)));
+    }
+  };
+
+  const handleTouchEnd = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (event.touches.length < 2) pinchStartRef.current = null;
+  };
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -66,10 +109,51 @@ export default function ResponsiveA4Preview({
       style={{
         position: "relative",
         width: "100%",
-        height: layout.height,
-        overflow: "hidden",
+        height: Math.ceil(layout.height * zoom),
+        overflow: zoom > 1 ? "auto" : "hidden",
+        touchAction: "pan-y",
       }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
+      <div
+        className="document-studio-no-print absolute left-2 top-2 z-20 flex items-center gap-1 rounded-lg border bg-white/95 p-1 shadow-sm"
+        role="group"
+        aria-label="تكبير معاينة الورقة"
+        dir="ltr"
+      >
+        <button
+          type="button"
+          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
+          aria-label="تصغير المعاينة"
+          disabled={zoom <= 0.75}
+          onClick={() => setZoom(current => clampZoom(current - 0.15))}
+        >
+          −
+        </button>
+        <span className="min-w-12 text-center text-xs tabular-nums text-slate-700">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          type="button"
+          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
+          aria-label="تكبير المعاينة"
+          disabled={zoom >= 2.5}
+          onClick={() => setZoom(current => clampZoom(current + 0.15))}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="rounded-md px-2 py-1 text-xs font-medium hover:bg-slate-100"
+          aria-label="إعادة ضبط التكبير"
+          onClick={() => setZoom(1)}
+        >
+          ملاءمة
+        </button>
+      </div>
       <div
         ref={internalPageRef}
         className="document-a4-page document-a4-preview-page"
@@ -80,7 +164,7 @@ export default function ResponsiveA4Preview({
           minHeight: A4_PREVIEW_MIN_HEIGHT,
           position: "absolute",
           left: "50%",
-          transform: `translateX(-50%) scale(${layout.scale})`,
+          transform: `translateX(-50%) scale(${layout.scale * zoom})`,
           transformOrigin: "top center",
           padding: `${settings?.pageMarginTopMm ?? 10}mm ${settings?.pageMarginRightMm ?? 10}mm ${settings?.pageMarginBottomMm ?? 10}mm ${settings?.pageMarginLeftMm ?? 10}mm`,
           boxSizing: "border-box",

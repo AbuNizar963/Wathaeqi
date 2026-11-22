@@ -180,6 +180,57 @@ describe("template substitutions", () => {
     expect(contentForSave(applied, values, false)).toBe(applied);
   });
 
+  it("substitutes fields inside Word tables", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "table",
+          content: [
+            {
+              type: "tableRow",
+              content: [
+                {
+                  type: "tableCell",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "الموضوع: {{الموضوع}}" }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(applyFieldValues(doc, { الموضوع: "طلب رسمي" })).toEqual({
+      type: "doc",
+      content: [
+        {
+          type: "table",
+          content: [
+            {
+              type: "tableRow",
+              content: [
+                {
+                  type: "tableCell",
+                  content: [
+                    {
+                      type: "paragraph",
+                      content: [{ type: "text", text: "الموضوع: طلب رسمي" }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
   it("substitutes Arabic Word-style placeholder keys", () => {
     const doc = {
       type: "doc",

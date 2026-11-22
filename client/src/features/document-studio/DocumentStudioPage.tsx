@@ -41,7 +41,7 @@ import type { PlatformDocumentSettings } from "@shared/features/platform-setting
 import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
-import DocumentEditor from "./DocumentEditor";
+import RichDocumentEditor from "./RichDocumentEditor";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
@@ -86,6 +86,24 @@ function formatArabicDate(value: string): string {
   }).format(date);
 }
 
+function formatHijriDate(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+  try {
+    return new Intl.DateTimeFormat(
+      "ar-SA-u-ca-islamic-umalqura",
+      options
+    ).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("ar-SA-u-ca-islamic", options).format(date);
+  }
+}
+
 function dateInputValue(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime()))
@@ -121,6 +139,12 @@ export default function DocumentStudioPage() {
   const [importPrintOpen, setImportPrintOpen] = useState(false);
   const [nativePrintOpen, setNativePrintOpen] = useState(false);
   const documentPageRef = useRef<HTMLDivElement>(null);
+  const batchPrintRefs = useRef(new Map<string, HTMLDivElement>());
+  const [selectedPrintDocumentIds, setSelectedPrintDocumentIds] = useState<
+    string[]
+  >([]);
+  const [batchPrintDialogOpen, setBatchPrintDialogOpen] = useState(false);
+  const [batchPrintSourcesReady, setBatchPrintSourcesReady] = useState(false);
   const [search, setSearch] = useState("");
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
@@ -236,12 +260,49 @@ export default function DocumentStudioPage() {
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
     return source.filter(item =>
-      [item.title, item.subject, item.serialCode, item.category]
+      [
+        item.title,
+        item.subject,
+        item.serialCode,
+        item.category,
+        item.documentDate,
+        ...Object.values(item.fieldValues ?? {}),
+      ]
         .join(" ")
         .toLocaleLowerCase()
         .includes(normalizedSearch)
     );
   }, [activeTab, userDocuments, search]);
+
+  const selectedPrintDocuments = useMemo(
+    () =>
+      userDocuments.filter(
+        document =>
+          selectedPrintDocumentIds.includes(document.id) && !document.file
+      ),
+    [userDocuments, selectedPrintDocumentIds]
+  );
+  const batchPrintPageElements = selectedPrintDocuments
+    .map(document => batchPrintRefs.current.get(document.id))
+    .filter((element): element is HTMLDivElement => Boolean(element));
+
+  useEffect(() => {
+    const ready =
+      selectedPrintDocuments.length > 0 &&
+      selectedPrintDocuments.every(document =>
+        batchPrintRefs.current.has(document.id)
+      );
+    setBatchPrintSourcesReady(ready);
+  }, [selectedPrintDocuments]);
+
+  function togglePrintDocument(id: string, checked: boolean) {
+    setSelectedPrintDocumentIds(current => {
+      if (checked) {
+        return current.includes(id) ? current : [...current, id];
+      }
+      return current.filter(selectedId => selectedId !== id);
+    });
+  }
 
   const visibleTemplates = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -776,6 +837,33 @@ export default function DocumentStudioPage() {
                 </h2>
                 <Badge variant="secondary">{visibleDocuments.length}</Badge>
               </div>
+              {selectedPrintDocuments.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/40 p-2">
+                  <Button
+                    size="sm"
+                    onClick={() => setBatchPrintDialogOpen(true)}
+                    disabled={
+                      !batchPrintSourcesReady ||
+                      batchPrintPageElements.length !==
+                        selectedPrintDocuments.length
+                    }
+                  >
+                    <Printer className="ml-2 h-4 w-4" />
+                    طباعة المحدد ({selectedPrintDocuments.length})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedPrintDocumentIds([])}
+                  >
+                    إلغاء التحديد
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    يمكن تحديد الوثائق المنشأة داخل النظام؛ الملفات المرفوعة
+                    تُطبع منفردة.
+                  </span>
+                </div>
+              ) : null}
               {documentsQuery.isLoading ? (
                 <p className="py-4 text-center text-sm text-muted-foreground">
                   جارٍ تحميل الوثائق...
@@ -790,31 +878,51 @@ export default function DocumentStudioPage() {
               ) : (
                 <div className="max-h-[70vh] space-y-2 overflow-y-auto">
                   {visibleDocuments.map(document => (
-                    <button
-                      key={document.id}
-                      type="button"
-                      onClick={() => {
-                        setIsCreatingDocument(false);
-                        setSelectedDocumentId(document.id);
-                        setPreviewMode(true);
-                      }}
-                      className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
-                    >
-                      <span className="block truncate font-medium">
-                        {document.title}
-                      </span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">
-                        {document.subject || document.category}
-                      </span>
-                      <span className="mt-2 flex items-center justify-between gap-2">
-                        <Badge variant="outline">
-                          {statusLabel(document.status)}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground">
-                          {formatArabicDate(document.updatedAt)}
+                    <div key={document.id} className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        className="mt-4 size-4 shrink-0 accent-primary"
+                        checked={selectedPrintDocumentIds.includes(document.id)}
+                        disabled={Boolean(document.file)}
+                        aria-label={"تحديد " + document.title + " للطباعة"}
+                        title={
+                          document.file
+                            ? "الملفات المرفوعة تُطبع منفردة"
+                            : "تحديد الوثيقة للطباعة المجمعة"
+                        }
+                        onChange={event =>
+                          togglePrintDocument(document.id, event.target.checked)
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCreatingDocument(false);
+                          setSelectedDocumentId(document.id);
+                          setPreviewMode(true);
+                        }}
+                        className={`min-w-0 w-full rounded-lg border p-3 text-right transition-colors ${
+                          selectedDocumentId === document.id
+                            ? "border-primary bg-primary/5"
+                            : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <span className="block truncate font-medium">
+                          {document.title}
                         </span>
-                      </span>
-                    </button>
+                        <span className="mt-1 block truncate text-xs text-muted-foreground">
+                          {document.subject || document.category}
+                        </span>
+                        <span className="mt-2 flex items-center justify-between gap-2">
+                          <Badge variant="outline">
+                            {statusLabel(document.status)}
+                          </Badge>
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatArabicDate(document.updatedAt)}
+                          </span>
+                        </span>
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1077,7 +1185,7 @@ export default function DocumentStudioPage() {
                   headerSettings={platformDocumentSettings.data}
                 />
                 <div className="py-6">
-                  <DocumentEditor
+                  <RichDocumentEditor
                     content={templateContent}
                     onChange={handleTemplateContentChange}
                     editable={!previewMode}
@@ -1155,6 +1263,29 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
+              {/* prettier-ignore */}
+              <div
+                className="grid grid-cols-2 gap-2 md:hidden document-studio-no-print"
+                role="group"
+                aria-label="التبديل بين إدخال البيانات ومعاينة الوثيقة"
+              >
+                <Button
+                  type="button"
+                  variant={previewMode ? "outline" : "default"}
+                  aria-pressed={!previewMode}
+                  onClick={() => setPreviewMode(false)}
+                >
+                  إدخال البيانات
+                </Button>
+                <Button
+                  type="button"
+                  variant={previewMode ? "default" : "outline"}
+                  aria-pressed={previewMode}
+                  onClick={() => setPreviewMode(true)}
+                >
+                  معاينة A4
+                </Button>
+              </div>
               <div
                 className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
               >
@@ -1315,78 +1446,86 @@ export default function DocumentStudioPage() {
                 </section>
               ) : null}
 
-              {selectedDocument?.file ? (
-                <section className="space-y-3 rounded-lg border p-3">
-                  <div>
-                    <h3 className="font-semibold">الملف المستورد</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {selectedDocument.file.fileName} · الأصل محفوظ دون تغيير
-                    </p>
-                  </div>
-                  {importedFileUrlQuery.isLoading ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      جارٍ تجهيز معاينة الملف...
-                    </p>
-                  ) : importedFileUrlQuery.data?.url ? (
-                    <FilePreview
-                      url={importedFileUrlQuery.data.url}
-                      fileName={selectedDocument.file.fileName}
-                      mimeType={selectedDocument.file.mimeType}
-                    />
-                  ) : (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      تعذر تجهيز معاينة الملف. أعد فتح الوثيقة.
-                    </p>
-                  )}
-                </section>
-              ) : (
-                <ResponsiveA4Preview
-                  pageRef={documentPageRef}
-                  settings={platformDocumentSettings.data}
-                >
-                  <DocumentWatermark
-                    logoUrl={logoUrl}
-                    watermarkText={
-                      platformDocumentSettings.data?.watermarkText ?? "وثائقي"
-                    }
-                    opacityPercent={
-                      platformDocumentSettings.data?.watermarkOpacityPercent ??
-                      12
-                    }
-                    showMinistryText={
-                      platformDocumentSettings.data
-                        ?.showMinistryWatermarkText ?? true
-                    }
-                  />
-                  <DocumentLetterhead
-                    organizationName={organizationName}
-                    unitName={settings?.unitName ?? ""}
-                    chiefRank={settings?.unitChiefRank ?? ""}
-                    chiefName={settings?.unitChiefName ?? ""}
-                    logoUrl={logoUrl}
-                    dividerColor={dividerColor}
-                    headerSettings={platformDocumentSettings.data}
-                    serial={selectedDocument?.serialCode || "يخصص عند الإصدار"}
-                    date={formatArabicDate(makeDocumentDate(documentDate))}
-                  />
-                  <div className="pt-6">
-                    {documentSubject ? (
-                      <p className="mb-4 text-right font-semibold">
-                        الموضوع: {documentSubject}
+              {/* prettier-ignore */}
+              <div className={previewMode ? "" : "hidden md:block"}>
+                {selectedDocument?.file ? (
+                  <section className="space-y-3 rounded-lg border p-3">
+                    <div>
+                      <h3 className="font-semibold">الملف المستورد</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {selectedDocument.file.fileName} · الأصل محفوظ دون تغيير
                       </p>
-                    ) : null}
-                    <DocumentEditor
-                      content={documentContent}
-                      onChange={handleDocumentContentChange}
-                      editable={canEditDocument && !previewMode}
-                      containerClassName="rounded-none border-0 shadow-none"
+                    </div>
+                    {importedFileUrlQuery.isLoading ? (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        جارٍ تجهيز معاينة الملف...
+                      </p>
+                    ) : importedFileUrlQuery.data?.url ? (
+                      <FilePreview
+                        url={importedFileUrlQuery.data.url}
+                        fileName={selectedDocument.file.fileName}
+                        mimeType={selectedDocument.file.mimeType}
+                      />
+                    ) : (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        تعذر تجهيز معاينة الملف. أعد فتح الوثيقة.
+                      </p>
+                    )}
+                  </section>
+                ) : (
+                  <ResponsiveA4Preview
+                    pageRef={documentPageRef}
+                    settings={platformDocumentSettings.data}
+                  >
+                    <DocumentWatermark
+                      logoUrl={logoUrl}
+                      watermarkText={
+                        platformDocumentSettings.data?.watermarkText ?? "وثائقي"
+                      }
+                      opacityPercent={
+                        platformDocumentSettings.data?.watermarkOpacityPercent ??
+                        12
+                      }
+                      showMinistryText={
+                        platformDocumentSettings.data
+                          ?.showMinistryWatermarkText ?? true
+                      }
                     />
-                  </div>
-                  <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
-                    وثائقي
-                  </footer>
-                </ResponsiveA4Preview>
-              )}
+                    <DocumentLetterhead
+                      organizationName={organizationName}
+                      unitName={settings?.unitName ?? ""}
+                      chiefRank={settings?.unitChiefRank ?? ""}
+                      chiefName={settings?.unitChiefName ?? ""}
+                      logoUrl={logoUrl}
+                      dividerColor={dividerColor}
+                      headerSettings={platformDocumentSettings.data}
+                      serial={
+                        selectedDocument?.serialCode || "يخصص عند الإصدار"
+                      }
+                      date={formatArabicDate(makeDocumentDate(documentDate))}
+                      hijriDate={formatHijriDate(
+                        makeDocumentDate(documentDate)
+                      )}
+                    />
+                    <div className="pt-6">
+                      {documentSubject ? (
+                        <p className="mb-4 text-right font-semibold">
+                          الموضوع: {documentSubject}
+                        </p>
+                      ) : null}
+                      <RichDocumentEditor
+                        content={documentContent}
+                        onChange={handleDocumentContentChange}
+                        editable={canEditDocument && !previewMode}
+                        containerClassName="rounded-none border-0 shadow-none"
+                      />
+                    </div>
+                    <footer className="pb-8 pt-4 text-center text-xs text-slate-500">
+                      وثائقي
+                    </footer>
+                  </ResponsiveA4Preview>
+                )}
+              </div>
               {previewMode && selectedDocument ? (
                 <div className="document-preview-actions document-studio-no-print mt-4 grid grid-cols-3 gap-2 border-t pt-4">
                   <Button
@@ -1448,6 +1587,121 @@ export default function DocumentStudioPage() {
         title={(selectedDocument?.title ?? documentTitle) || "وثيقة جديدة"}
         pageElement={documentPageRef.current}
       />
+      <DocumentStudioPrintDialog
+        open={batchPrintDialogOpen}
+        onOpenChange={setBatchPrintDialogOpen}
+        title={"طباعة " + selectedPrintDocuments.length + " وثائق"}
+        pageElement={null}
+        pageElements={batchPrintPageElements}
+      />
+      {selectedPrintDocuments.length > 0 ? (
+        <div
+          className="batch-print-source"
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: 794,
+            visibility: "hidden",
+            zIndex: -1,
+            pointerEvents: "none",
+          }}
+        >
+          {selectedPrintDocuments.map(document => {
+            const pageSettings = platformDocumentSettings.data;
+            const pagePadding = [
+              pageSettings?.pageMarginTopMm ?? 10,
+              pageSettings?.pageMarginRightMm ?? 10,
+              pageSettings?.pageMarginBottomMm ?? 10,
+              pageSettings?.pageMarginLeftMm ?? 10,
+            ]
+              .map(value => value + "mm")
+              .join(" ");
+            const frameStyle = pageSettings?.frameStyle ?? "single";
+            const frameBorderStyle =
+              frameStyle === "double" || frameStyle === "ornate"
+                ? "double"
+                : "solid";
+            const frameBorder =
+              frameStyle === "none"
+                ? "none"
+                : (pageSettings?.frameWidthPt ?? 1) +
+                  "pt " +
+                  frameBorderStyle +
+                  " " +
+                  (pageSettings?.frameColor ?? "#b49a55");
+            const frameShadow =
+              frameStyle === "ornate"
+                ? "inset 0 0 0 3px #fff, inset 0 0 0 4px " +
+                  (pageSettings?.frameColor ?? "#b49a55")
+                : undefined;
+            const documentDateValue = makeDocumentDate(
+              dateInputValue(document.documentDate)
+            );
+
+            return (
+              <div
+                key={document.id}
+                ref={element => {
+                  if (element) {
+                    batchPrintRefs.current.set(document.id, element);
+                  } else {
+                    batchPrintRefs.current.delete(document.id);
+                  }
+                }}
+                className="document-a4-page"
+                dir="rtl"
+                style={{
+                  width: 794,
+                  minWidth: 794,
+                  maxWidth: "none",
+                  minHeight: 1123,
+                  position: "relative",
+                  padding: pagePadding,
+                  boxSizing: "border-box",
+                  border: frameBorder,
+                  boxShadow: frameShadow,
+                }}
+              >
+                <DocumentWatermark
+                  logoUrl={logoUrl}
+                  watermarkText={pageSettings?.watermarkText ?? "وثائقي"}
+                  opacityPercent={pageSettings?.watermarkOpacityPercent ?? 12}
+                  showMinistryText={
+                    pageSettings?.showMinistryWatermarkText ?? true
+                  }
+                />
+                <DocumentLetterhead
+                  organizationName={organizationName}
+                  unitName={settings?.unitName ?? ""}
+                  chiefRank={settings?.unitChiefRank ?? ""}
+                  chiefName={settings?.unitChiefName ?? ""}
+                  logoUrl={logoUrl}
+                  dividerColor={dividerColor}
+                  headerSettings={pageSettings}
+                  serial={document.serialCode || "غير مرقم"}
+                  date={formatArabicDate(documentDateValue)}
+                  hijriDate={formatHijriDate(documentDateValue)}
+                />
+                <div className="pt-6">
+                  {document.subject ? (
+                    <p className="mb-4 text-right font-semibold">
+                      الموضوع: {document.subject}
+                    </p>
+                  ) : null}
+                  <RichDocumentEditor
+                    content={document.content}
+                    onChange={() => undefined}
+                    editable={false}
+                    containerClassName="rounded-none border-0 shadow-none"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
         <DialogContent
           className="w-[calc(100%-1rem)] max-h-[min(90dvh,42rem)] max-w-lg overflow-y-auto p-4 sm:p-6"
@@ -1632,6 +1886,7 @@ function DocumentLetterhead({
   headerSettings,
   serial,
   date,
+  hijriDate,
 }: {
   organizationName: string;
   unitName: string;
@@ -1642,6 +1897,7 @@ function DocumentLetterhead({
   headerSettings?: PlatformDocumentSettings;
   serial?: string;
   date?: string;
+  hijriDate?: string;
 }) {
   const title = headerSettings?.headerTitle.trim() || organizationName;
   const subtitle = headerSettings?.headerSubtitle.trim() || unitName;
@@ -1705,6 +1961,11 @@ function DocumentLetterhead({
         {date ? (
           <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
             <strong>التاريخ:</strong> {date}
+          </p>
+        ) : null}
+        {hijriDate ? (
+          <p className="whitespace-nowrap text-[12pt] font-semibold [transform:scaleX(0.86)] [transform-origin:left_center]">
+            <strong>الموافق هجريًا:</strong> {hijriDate}
           </p>
         ) : null}
         {rank ? (

@@ -11,12 +11,21 @@ import {
 } from "@/components/ui/dialog";
 import {
   buildPrintHtml,
+  duplicatePages,
   openPrintWindow,
 } from "../document-library/printSheets";
 import type { PagesPerSheet, SourcePage } from "../document-library/types";
 import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
+const COPY_COUNTS = [1, 2, 4] as const;
+let printCaptureSequence = 0;
+
+function copyCountLabel(value: (typeof COPY_COUNTS)[number]): string {
+  if (value === 1) return "نسخة واحدة";
+  if (value === 2) return "نسختان";
+  return "أربع نسخ";
+}
 
 async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const width = element.clientWidth;
@@ -36,41 +45,73 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   }
 
   const { default: html2canvas } = await import("html2canvas");
-  const canvas = await html2canvas(element, {
-    backgroundColor: "#ffffff",
-    allowTaint: false,
-    useCORS: true,
-    logging: false,
-    scale: 2,
-    width,
-    height,
-    windowWidth: Math.max(document.documentElement.clientWidth, width),
-    windowHeight: Math.max(window.innerHeight, height),
-    scrollX: 0,
-    scrollY: 0,
-    onclone: clonedDocument => {
-      sanitizeUnsupportedPrintColors(clonedDocument);
-      const clonedPage =
-        clonedDocument.querySelector<HTMLElement>(".document-a4-page");
-      if (clonedPage) clonedPage.style.minHeight = `${height}px`;
+  const captureId = "document-print-" + ++printCaptureSequence;
+  element.dataset.printCaptureId = captureId;
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(element, {
+      backgroundColor: "#ffffff",
+      allowTaint: false,
+      useCORS: true,
+      logging: false,
+      scale: 2,
+      width,
+      height,
+      windowWidth: Math.max(document.documentElement.clientWidth, width),
+      windowHeight: Math.max(window.innerHeight, height),
+      scrollX: 0,
+      scrollY: 0,
+      onclone: clonedDocument => {
+        sanitizeUnsupportedPrintColors(clonedDocument);
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-a4-preview-viewport")
+          .forEach(viewport => {
+            viewport.style.height = "auto";
+            viewport.style.overflow = "visible";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".batch-print-source")
+          .forEach(source => {
+            source.style.visibility = "visible";
+            source.style.zIndex = "auto";
+          });
+        const clonedPage = clonedDocument.querySelector<HTMLElement>(
+          '[data-print-capture-id="' + captureId + '"]'
+        );
+        if (clonedPage) {
+          clonedPage.style.minHeight = `${height}px`;
+          clonedPage.style.transform = "none";
+          clonedPage.style.transformOrigin = "top left";
+          clonedPage.style.position = "relative";
+          clonedPage.style.left = "0";
+          clonedPage.style.top = "0";
+        }
 
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-input")
-        .forEach(editor => {
-          editor.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-warning")
-        .forEach(warning => {
-          warning.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-print-copy")
-        .forEach(copy => {
-          copy.style.display = "block";
-        });
-    },
-  });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-studio-no-print")
+          .forEach(control => {
+            control.style.display = "none";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-editor-input")
+          .forEach(editor => {
+            editor.style.display = "none";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-editor-warning")
+          .forEach(warning => {
+            warning.style.display = "none";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-editor-print-copy")
+          .forEach(copy => {
+            copy.style.display = "block";
+          });
+      },
+    });
+  } finally {
+    delete element.dataset.printCaptureId;
+  }
 
   const scale = canvas.width / width;
   const pageHeight = (width * 297) / 210;
@@ -123,13 +164,17 @@ export default function DocumentStudioPrintDialog({
   onOpenChange,
   title,
   pageElement,
+  pageElements,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   pageElement: HTMLElement | null;
+  pageElements?: HTMLElement[];
 }) {
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
+  const [copiesPerPage, setCopiesPerPage] =
+    useState<(typeof COPY_COUNTS)[number]>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,10 +190,14 @@ export default function DocumentStudioPrintDialog({
     setLoading(true);
     setError(null);
     try {
-      if (!pageElement || !pageElement.isConnected) {
-        throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
+      const elements = (
+        pageElements?.length ? pageElements : pageElement ? [pageElement] : []
+      ).filter(element => element.isConnected);
+      if (elements.length === 0) {
+        throw new Error("تعذر العثور على صفحات الوثائق المحددة للطباعة");
       }
-      const pages = await renderA4Pages(pageElement);
+      const pageGroups = await Promise.all(elements.map(renderA4Pages));
+      const pages = duplicatePages(pageGroups.flat(), copiesPerPage);
       const html = buildPrintHtml(pages, {
         pagesPerSheet,
         marginMm: 8,
@@ -184,9 +233,43 @@ export default function DocumentStudioPrintDialog({
         <DialogHeader>
           <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — اختر عدد صفحات الوثيقة التي تريد وضعها في كل ورقة A4.
+            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4. وضع
+            صفحتين يطبع أفقيًا جنبًا إلى جنب.
           </DialogDescription>
         </DialogHeader>
+        <fieldset className="rounded-lg border bg-muted/30 p-3">
+          <legend className="px-1 text-sm font-medium">
+            عدد النسخ من كل صفحة
+          </legend>
+          <div
+            className="grid grid-cols-3 gap-2"
+            role="radiogroup"
+            aria-label="عدد النسخ من كل صفحة"
+          >
+            {COPY_COUNTS.map(value => {
+              const selected = copiesPerPage === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setCopiesPerPage(value)}
+                  className={`rounded-md border px-2 py-3 text-sm font-semibold transition ${
+                    selected
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                  }`}
+                >
+                  {value}
+                  <span className="mt-1 block text-[11px] font-normal">
+                    {copyCountLabel(value)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
         <fieldset className="rounded-lg border bg-muted/30 p-3">
           <legend className="px-1 text-sm font-medium">
             عدد الصفحات في الورقة
