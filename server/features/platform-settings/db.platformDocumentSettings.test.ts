@@ -187,6 +187,40 @@ describe("platform document settings Appwrite persistence", () => {
     }
   );
 
+  it.each([
+    {
+      field: "pageMarginTopMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm,
+    },
+    {
+      field: "pageMarginRightMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginRightMm,
+    },
+    {
+      field: "pageMarginBottomMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginBottomMm,
+    },
+    {
+      field: "pageMarginLeftMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginLeftMm,
+    },
+    {
+      field: "headerBottomPaddingMm",
+      fallback: DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm,
+    },
+  ])(
+    "uses the field-specific default when nullable $field is null",
+    async ({ field, fallback }) => {
+      mocks.listRows.mockResolvedValue({
+        rows: [row({ ...ownerSettings, [field]: null })],
+      });
+
+      await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+        [field]: fallback,
+      });
+    }
+  );
+
   it("surfaces database read errors", async () => {
     mocks.listRows.mockRejectedValue(new Error("relation does not exist"));
     await expect(getPlatformDocumentSettings()).rejects.toThrow(

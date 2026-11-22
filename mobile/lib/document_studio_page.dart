@@ -14,6 +14,8 @@ import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
 import 'document_studio_models.dart';
+import 'document_studio_template_fields.dart';
+import 'document_studio_template_variables.dart';
 import 'closable_dialog_title.dart';
 import 'document_studio_outbox.dart';
 import 'document_studio_pdf.dart';
@@ -22,7 +24,6 @@ import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
-import 'document_studio_template_fields.dart';
 
 enum DocumentStudioTab { documents, templates, archive }
 
@@ -556,6 +557,28 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
+  Map<String, dynamic> _documentContentForDisplay(OfficialDocument document) {
+    final content = DocumentStudioQuillCodec.normalizeLegacyText(
+      document.content,
+    );
+    if (document.fieldValues.isNotEmpty) {
+      if (document.serialCode.isEmpty) return content;
+      return applyDocumentTemplateVariables(content, {
+        'number': document.serialCode,
+      });
+    }
+    return applyDocumentTemplateVariables(content, {
+      'organization':
+          (_letterhead['departmentName'] ??
+                  _letterhead['organizationName'] ??
+                  'وثائقي')
+              .toString(),
+      'date': DateFormat('yyyy/MM/dd').format(document.documentDate),
+      'subject': document.subject,
+      if (document.serialCode.isNotEmpty) 'number': document.serialCode,
+    });
+  }
+
   Future<Uint8List> _fetchDocumentPdf(
     OfficialDocument document, {
     int imageTiles = 1,
@@ -611,7 +634,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'frameWidthPt': _platformDocumentSettings['frameWidthPt'] ?? 1,
       };
       return DocumentStudioPdf.build(
-        content: DocumentStudioQuillCodec.normalizeLegacyText(document.content),
+        content: _documentContentForDisplay(document),
         title: document.title,
         subject: document.subject,
         serialCode: document.serialCode,
@@ -903,7 +926,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       document.templateFieldsSnapshot,
       document.fieldValues,
     );
-    _replaceDocumentEditor(document.content);
+    final displayContent = _documentContentForDisplay(document);
+    _replaceDocumentEditor(displayContent);
     setState(
       () => _tab = document.status == 'archived'
           ? DocumentStudioTab.archive
@@ -935,7 +959,23 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       return;
     }
     setState(() => _saving = true);
-    final content = _applyFieldValues(_documentContent, _fieldValues);
+    final customFieldValues = Map<String, String>.from(_fieldValues)
+      ..remove('organization')
+      ..remove('date')
+      ..remove('number')
+      ..remove('subject');
+    final content = applyDocumentTemplateVariables(_documentContent, {
+      ...customFieldValues,
+      'organization':
+          (_letterhead['departmentName'] ??
+                  _letterhead['organizationName'] ??
+                  'وثائقي')
+              .toString(),
+      'date': DateFormat('yyyy/MM/dd').format(_documentDate),
+      'subject': _subjectController.text.trim(),
+      if (_selectedDocument?.serialCode.isNotEmpty == true)
+        'number': _selectedDocument!.serialCode,
+    });
     final input = <String, dynamic>{
       'title': _titleController.text.trim(),
       'category': _documentCategory,
@@ -1009,7 +1049,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'id': document.id,
         'expectedUpdatedAt': document.expectedUpdatedAt,
       });
-      _selectedDocument = OfficialDocument.fromJson(saved);
+      final issuedDocument = OfficialDocument.fromJson(saved);
+      _selectedDocument = issuedDocument;
+      _replaceDocumentEditor(
+        applyDocumentTemplateVariables(issuedDocument.content, {
+          'number': issuedDocument.serialCode,
+        }),
+      );
       await _load();
       _showMessage('تم إصدار الوثيقة بالرقم ${saved['serialCode']}');
     } catch (error) {
@@ -1977,6 +2023,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         for (var index = 0; index < _templateFields.length; index++)
           _buildTemplateFieldEditor(index),
         const SizedBox(height: 12),
+        const Text(
+          'المتغيرات التلقائية: {{organization}} للجهة، {{date}} للتاريخ، '
+          '{{number}} للرقم عند الإصدار، و{{subject}} للموضوع. '
+          'يمكنك أيضاً إضافة حقول تعبئة مخصصة.',
+          textDirection: ui.TextDirection.rtl,
+        ),
+        const SizedBox(height: 8),
         _buildA4Editor(controller: _templateEditor, editable: true),
         const SizedBox(height: 12),
         FilledButton.icon(
