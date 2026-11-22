@@ -22,6 +22,7 @@ import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
+import 'document_studio_template_fields.dart';
 
 enum DocumentStudioTab { documents, templates, archive }
 
@@ -1224,24 +1225,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Map<String, dynamic> _applyFieldValues(
     Map<String, dynamic> content,
     Map<String, String> values,
-  ) {
-    dynamic visit(dynamic value) {
-      if (value is List) return value.map(visit).toList();
-      if (value is! Map) return value;
-      final node = Map<String, dynamic>.from(value);
-      if (node['type'] == 'text' && node['text'] is String) {
-        var text = node['text'] as String;
-        for (final entry in values.entries) {
-          text = text.replaceAll('{{${entry.key}}}', entry.value);
-        }
-        node['text'] = text;
-        return node;
-      }
-      return node.map((key, child) => MapEntry(key, visit(child)));
-    }
-
-    return Map<String, dynamic>.from(visit(content) as Map);
-  }
+  ) => DocumentStudioTemplateFields.applyFieldValues(content, values);
 
   Widget _buildTabSelector() {
     return Padding(
