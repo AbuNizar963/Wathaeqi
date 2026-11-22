@@ -2,7 +2,10 @@ import { timingSafeEqual } from "node:crypto";
 import express, { type Express } from "express";
 import { rateLimit } from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerStorageRoutes } from "./features/storage/storageRoutes";
+import {
+  MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
+  registerStorageRoutes,
+} from "./features/storage/storageRoutes";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import { serveStatic } from "./_core/static";
@@ -62,6 +65,16 @@ function allowVerificationAttempt(ip: string): boolean {
  * this module prevents serverless bundlers from tracing Vite's native build
  * dependencies into the production API function.
  */
+export function getRawBodyLimit(method: string, path: string): number | null {
+  if (
+    method === "PUT" &&
+    /^\/api\/telegrams\/\d+\/attachments\/upload$/.test(path)
+  ) {
+    return MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES;
+  }
+  return null;
+}
+
 export function getJsonBodyLimit(path: string): string {
   if (path === "/api/telegram-render") return "4mb";
   if (path.includes("/api/trpc/telegrams.importRows")) return "50mb";
@@ -77,6 +90,8 @@ function requiresAuthenticatedLargeBody(path: string): boolean {
     path.includes("/api/trpc/telegrams.importRows") ||
     path.includes("/api/trpc/telegrams.importWorkbookPreview") ||
     path.includes("/api/trpc/telegrams.uploadAttachment") ||
+    (path.startsWith("/api/telegrams/") &&
+      path.endsWith("/attachments/upload")) ||
     path.includes("/api/trpc/settings.uploadLogo")
   );
 }
@@ -162,6 +177,19 @@ export function createApp(
       })().catch(next);
     }
   );
+
+  // Parse authenticated attachment uploads as raw bytes before the JSON
+  // parser. express.json() intentionally skips application/octet-stream bodies.
+  app.use((req, res, next) => {
+    const rawBodyLimit = getRawBodyLimit(req.method, req.path);
+    if (rawBodyLimit !== null) {
+      return express.raw({
+        type: "application/octet-stream",
+        limit: rawBodyLimit,
+      })(req, res, next);
+    }
+    next();
+  });
 
   app.use((req, res, next) =>
     express.json({ limit: getJsonBodyLimit(req.path) })(req, res, next)

@@ -215,11 +215,11 @@ export function organizationAttachmentKeyMatches(
   );
 }
 
-export async function storageCreateOrganizationAttachmentUploadUrl(
+export async function storageCreateOrganizationAttachmentUploadKey(
   organizationId: string,
   telegramId: number,
   fileName: string
-): Promise<{ key: string; uploadUrl: string }> {
+): Promise<string> {
   const safeOrganizationId = organizationId.trim();
   if (
     !UUID_PATTERN.test(safeOrganizationId) ||
@@ -230,11 +230,7 @@ export async function storageCreateOrganizationAttachmentUploadUrl(
   }
 
   const safeFileName = sanitizeFileName(fileName);
-  const key = `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
-  const uploadUrl = validateStorageProviderUrl(
-    await getStorageProvider().createSignedUploadUrl(key)
-  );
-  return { key, uploadUrl };
+  return `organizations/${safeOrganizationId}/telegrams/${telegramId}/attachments/${crypto.randomUUID()}-${safeFileName}`;
 }
 
 export async function storageGetObjectInfo(
@@ -250,6 +246,32 @@ export async function storageGetObjectInfo(
     throw new StorageAccessDeniedError();
   }
   return getStorageProvider().getObjectInfo(key);
+}
+
+export async function storagePutOrganizationAttachmentAtKey(
+  key: string,
+  fileName: string,
+  data: Buffer | Uint8Array,
+  contentType: AllowedAttachmentType
+): Promise<{ key: string; url: string }> {
+  const parts = parseOrganizationAttachmentKey(key);
+  const safeFileName = sanitizeFileName(fileName);
+  const storedFileName = key.split("/").pop() ?? "";
+  if (
+    !parts ||
+    storedFileName.slice(37) !== safeFileName ||
+    storedFileName.length <= 37
+  ) {
+    throw new StorageAccessDeniedError();
+  }
+
+  const body = Buffer.from(data);
+  await getStorageProvider().upload(key, body, {
+    contentType,
+    cacheControl: "3600",
+  });
+
+  return { key, url: storageStableUrl(key) };
 }
 
 export async function storagePutOrganizationAttachment(
