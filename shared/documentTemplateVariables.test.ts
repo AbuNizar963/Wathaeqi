@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyDocumentTemplateVariables } from "./documentTemplateVariables";
 
 describe("applyDocumentTemplateVariables", () => {
-  it("resolves Arabic and English system variables with optional whitespace", () => {
+  it("resolves system variables with optional whitespace", () => {
     const content = {
       type: "doc",
       content: [
@@ -12,7 +12,7 @@ describe("applyDocumentTemplateVariables", () => {
             {
               type: "text",
               text:
-                "إلى {{ organization }} بتاريخ {{date}} رقم {{number}} الموضوع {{subject}}",
+                "إلى {{ organization }} {{date}} {{number}} {{subject}}",
             },
           ],
         },
@@ -35,7 +35,7 @@ describe("applyDocumentTemplateVariables", () => {
             {
               type: "text",
               text:
-                "إلى مديرية الوثائق بتاريخ 2026/11/22 رقم DOC-00125 الموضوع اعتماد النموذج",
+                "إلى مديرية الوثائق 2026/11/22 DOC-00125 اعتماد النموذج",
             },
           ],
         },
@@ -78,7 +78,7 @@ describe("applyDocumentTemplateVariables", () => {
     ]);
   });
 
-  it("preserves marks, attributes, unknown nodes, and the original object", () => {
+  it("preserves formatting, unknown nodes, and the original object", () => {
     const content = {
       type: "doc",
       attrs: { note: "{{subject}}" },
