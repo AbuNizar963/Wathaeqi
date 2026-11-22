@@ -1036,7 +1036,7 @@ void main() {
     expect(bytes, isNull);
   });
 
-  test('recovers an attachment when upload succeeds but its response is lost', () async {
+  test('recovers an attachment after a lost upload response', () async {
     const sessionCookie = 'sid=recovery-session';
     const storageKey =
         'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
