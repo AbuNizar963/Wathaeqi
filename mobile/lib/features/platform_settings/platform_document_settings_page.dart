@@ -802,7 +802,11 @@ class _PlatformDocumentSettingsPageState
                             ),
                             DropdownMenuItem(
                               value: 'tricolor-stars',
-                              child: Text('أسود وأخضر مع ثلاث نجوم'),
+                              child: Text(
+                                'أسود وأخضر مع ثلاث نجوم',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                           onChanged: _saving
