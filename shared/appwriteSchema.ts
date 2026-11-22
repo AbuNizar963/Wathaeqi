@@ -500,7 +500,13 @@ export const appwriteSchema: SchemaTable[] = [
         required: true,
         default: false,
       },
-      { key: "role", type: "varchar", size: 16, required: true, default: "user" },
+      {
+        key: "role",
+        type: "varchar",
+        size: 16,
+        required: true,
+        default: "user",
+      },
       CREATED_AT,
       UPDATED_AT,
       { key: "lastSignedIn", type: "datetime", required: true },
@@ -582,7 +588,11 @@ export const appwriteSchema: SchemaTable[] = [
       CREATED_AT,
     ],
     indexes: [
-      { key: "audit_logs_entry_hash_unique", type: "unique", columns: ["entryHash"] },
+      {
+        key: "audit_logs_entry_hash_unique",
+        type: "unique",
+        columns: ["entryHash"],
+      },
       {
         key: "audit_logs_actor_created",
         type: "key",
