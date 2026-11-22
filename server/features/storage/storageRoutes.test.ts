@@ -172,7 +172,7 @@ function createSignedTelegramAttachmentHarness() {
   )?.[1];
   const upload = routes.get(
     "/api/telegrams/:telegramId/attachments/upload"
-  )?.[3];
+  )?.[2];
   const finalize = routes.get(
     "/api/telegrams/:telegramId/attachments/finalize"
   )?.[1];
