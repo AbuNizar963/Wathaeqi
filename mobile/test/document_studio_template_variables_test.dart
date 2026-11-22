@@ -116,8 +116,7 @@ void main() {
           },
         ],
       };
-      final snapshot =
-          jsonDecode(jsonEncode(content)) as Map<String, dynamic>;
+      final snapshot = jsonDecode(jsonEncode(content)) as Map<String, dynamic>;
 
       final result = applyDocumentTemplateVariables(content, {
         'subject': 'قرار إداري',
