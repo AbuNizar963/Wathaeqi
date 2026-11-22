@@ -52,21 +52,13 @@ const platformDocumentSettingsInput = z.object({
     .int()
     .min(MIN_HEADER_LOGO_SIZE)
     .max(MAX_HEADER_LOGO_SIZE),
-  headerTopPaddingMm: z
-    .number()
-    .int()
-    .min(0)
-    .max(MAX_HEADER_PADDING_MM),
+  headerTopPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
   headerHorizontalPaddingMm: z
     .number()
     .int()
     .min(0)
     .max(MAX_HEADER_PADDING_MM),
-  headerBottomPaddingMm: z
-    .number()
-    .int()
-    .min(0)
-    .max(MAX_HEADER_PADDING_MM),
+  headerBottomPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
   headerAlignment: z.enum(["spread", "center", "right"]),
   pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
   pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
@@ -74,10 +66,7 @@ const platformDocumentSettingsInput = z.object({
   pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
   frameStyle: z.enum(["none", "single", "double", "ornate"]),
   frameColor: z.string().regex(HEX_COLOR_PATTERN),
-  frameWidthPt: z
-    .number()
-    .min(MIN_FRAME_WIDTH_PT)
-    .max(MAX_FRAME_WIDTH_PT),
+  frameWidthPt: z.number().min(MIN_FRAME_WIDTH_PT).max(MAX_FRAME_WIDTH_PT),
   showVerificationQr: z.boolean(),
 });
 
