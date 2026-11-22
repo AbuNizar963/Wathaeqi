@@ -276,7 +276,7 @@ jobs:
 
       - name: Remove temporary signing material
         if: always()
-        run: rm -f "$RUNNER_TEMP/police-telegrams-release.jks"
+        run: rm -f "$RUNNER_TEMP/wathaeqi-release.jks"
 
       - name: Upload installable APK
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -326,7 +326,7 @@ jobs:
       - name: Download signed APK
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: police-telegrams-android-apk
+          name: wathaeqi-android-apk
           path: release-assets
 
       - name: Verify downloaded APK and checksum
@@ -358,14 +358,14 @@ jobs:
       - name: Notify mobile devices about the new release
         if: needs.build-android-apk.outputs.push_backend_state == 'ready'
         env:
-          RELEASE_NOTIFICATION_URL: ${{ vars.RELEASE_NOTIFICATION_URL || 'https://police-telegrams-platform.vercel.app' }}
+          RELEASE_NOTIFICATION_URL: ${{ vars.RELEASE_NOTIFICATION_URL }}
           RELEASE_NOTIFICATION_SECRET: ${{ secrets.RELEASE_NOTIFICATION_SECRET }}
           RELEASE_VERSION: ${{ needs.build-android-apk.outputs.release_version }}
           RELEASE_TAG: ${{ needs.build-android-apk.outputs.release_tag }}
         run: |
           set -euo pipefail
-          if [ -z "${RELEASE_NOTIFICATION_SECRET:-}" ]; then
-            echo "::warning::RELEASE_NOTIFICATION_SECRET is not configured; skipping mobile release notification."
+          if [ -z "${RELEASE_NOTIFICATION_SECRET:-}" ] || [ -z "${RELEASE_NOTIFICATION_URL:-}" ]; then
+            echo "::warning::Release notification is not configured; set RELEASE_NOTIFICATION_SECRET and RELEASE_NOTIFICATION_URL to enable it."
             exit 0
           fi
           release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
