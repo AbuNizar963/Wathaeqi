@@ -557,9 +557,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
   }
 
-  Map<String, dynamic> _documentContentForDisplay(
-    OfficialDocument document,
-  ) {
+  Map<String, dynamic> _documentContentForDisplay(OfficialDocument document) {
     final content = DocumentStudioQuillCodec.normalizeLegacyText(
       document.content,
     );
@@ -966,21 +964,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       ..remove('date')
       ..remove('number')
       ..remove('subject');
-    final content = applyDocumentTemplateVariables(
-      _documentContent,
-      {
-        ...customFieldValues,
-        'organization':
-            (_letterhead['departmentName'] ??
-                    _letterhead['organizationName'] ??
-                    'وثائقي')
-                .toString(),
+    final content = applyDocumentTemplateVariables(_documentContent, {
+      ...customFieldValues,
+      'organization':
+          (_letterhead['departmentName'] ??
+                  _letterhead['organizationName'] ??
+                  'وثائقي')
+              .toString(),
       'date': DateFormat('yyyy/MM/dd').format(_documentDate),
-        'subject': _subjectController.text.trim(),
-        if (_selectedDocument?.serialCode.isNotEmpty == true)
-          'number': _selectedDocument!.serialCode,
-      },
-    );
+      'subject': _subjectController.text.trim(),
+      if (_selectedDocument?.serialCode.isNotEmpty == true)
+        'number': _selectedDocument!.serialCode,
+    });
     final input = <String, dynamic>{
       'title': _titleController.text.trim(),
       'category': _documentCategory,
