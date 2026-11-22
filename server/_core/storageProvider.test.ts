@@ -185,7 +185,7 @@ describe("Appwrite storage provider", () => {
   });
 
   it(
-    "creates signed URLs for legacy Supabase objects only after Appwrite returns not found",
+    "uses legacy Supabase URLs for missing Appwrite files",
     async () => {
     mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
 
