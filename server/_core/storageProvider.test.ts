@@ -103,7 +103,7 @@ describe("Appwrite storage provider", () => {
         permissions: [],
       });
       expect(mocks.legacyFrom).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it("creates an expiring Appwrite file-token URL", async () => {
@@ -116,11 +116,11 @@ describe("Appwrite storage provider", () => {
         bucketId: "document-attachments",
         fileId: expect.any(String),
         expire: expect.any(String),
-      }),
+      })
     );
     expect(url.origin).toBe("https://fra.cloud.appwrite.io");
     expect(url.pathname).toMatch(
-      /^\/v1\/storage\/buckets\/document-attachments\/files\/[a-f0-9]{32}\/view$/,
+      /^\/v1\/storage\/buckets\/document-attachments\/files\/[a-f0-9]{32}\/view$/
     );
     expect(url.searchParams.get("project")).toBe("wathaeqi");
     expect(url.searchParams.get("token")).toBe("short-lived-token");
@@ -150,7 +150,7 @@ describe("Appwrite storage provider", () => {
       expect.objectContaining({
         bucketId: "document-attachments",
         fileId: expect.any(String),
-      }),
+      })
     );
   });
 
@@ -161,10 +161,10 @@ describe("Appwrite storage provider", () => {
       mocks.getFile.mockRejectedValueOnce(failure);
 
       await expect(
-        getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf"),
+        getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
       ).rejects.toEqual(failure);
       expect(mocks.legacyFrom).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it(
@@ -173,7 +173,7 @@ describe("Appwrite storage provider", () => {
       mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
       await expect(
-        getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf"),
+        getStorageProvider().getObjectInfo("telegrams/7/legacy.pdf")
       ).resolves.toEqual({
         size: 6,
         contentType: "application/pdf",
@@ -181,7 +181,7 @@ describe("Appwrite storage provider", () => {
 
       expect(mocks.legacyFrom).toHaveBeenCalledWith("telegram-files");
       expect(mocks.legacyInfo).toHaveBeenCalledWith("telegrams/7/legacy.pdf");
-    },
+    }
   );
 
   it(
@@ -190,7 +190,7 @@ describe("Appwrite storage provider", () => {
       mocks.getFile.mockRejectedValueOnce({ code: 404 });
 
       await expect(
-        getStorageProvider().download("telegrams/7/legacy.pdf"),
+        getStorageProvider().download("telegrams/7/legacy.pdf")
       ).resolves.toEqual({
         body: Buffer.from("legacy"),
         contentType: "application/pdf",
@@ -198,19 +198,19 @@ describe("Appwrite storage provider", () => {
       expect(mocks.legacyDownload).toHaveBeenCalledWith(
         "telegrams/7/legacy.pdf",
       );
-    },
+    }
   );
 
   it("uses legacy Supabase URLs for missing Appwrite files", async () => {
     mocks.createFileToken.mockRejectedValueOnce({ code: 404 });
 
     await expect(
-      getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600),
+      getStorageProvider().createSignedUrl("telegrams/7/legacy.pdf", 600)
     ).resolves.toBe("https://legacy.example/signed");
 
     expect(mocks.legacyCreateSignedUrl).toHaveBeenCalledWith(
       "telegrams/7/legacy.pdf",
-      600,
+      600
     );
   });
 
@@ -220,11 +220,11 @@ describe("Appwrite storage provider", () => {
       mocks.deleteFile.mockRejectedValueOnce({ code: 404 });
 
       await expect(
-        getStorageProvider().remove?.("telegrams/7/legacy.pdf"),
+        getStorageProvider().remove?.("telegrams/7/legacy.pdf")
       ).resolves.toBeUndefined();
 
       expect(mocks.legacyFrom).not.toHaveBeenCalled();
-    },
+    }
   );
 
   it("rejects unsafe storage paths", async () => {
