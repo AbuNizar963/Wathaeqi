@@ -64,8 +64,7 @@ jobs:
             echo "No changed files are covered by the Prettier check."
             exit 0
           fi
-          pnpm exec prettier --write "${changed_files[@]}"
-          git --no-pager diff -- server/_core/storageProvider.test.ts
+          pnpm exec prettier --check "${changed_files[@]}"
 
       - name: Verify responsive application shell
         run: pnpm check:responsive-shell
