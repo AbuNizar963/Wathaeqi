@@ -11,7 +11,8 @@ describe("applyDocumentTemplateVariables", () => {
           content: [
             {
               type: "text",
-              text: "إلى {{ organization }} بتاريخ {{date}} رقم {{number}} الموضوع {{subject}}",
+              text:
+                "إلى {{ organization }} بتاريخ {{date}} رقم {{number}} الموضوع {{subject}}",
             },
           ],
         },
@@ -57,7 +58,10 @@ describe("applyDocumentTemplateVariables", () => {
     const content = {
       type: "doc",
       content: [
-        { type: "paragraph", content: [{ type: "text", text: "{{subject}}" }] },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "{{subject}}" }],
+        },
       ],
     };
 
@@ -66,7 +70,12 @@ describe("applyDocumentTemplateVariables", () => {
         subject: "{{number}}",
         number: "DOC-9",
       }).content
-    ).toEqual([{ type: "paragraph", content: [{ type: "text", text: "{{number}}" }] }]);
+    ).toEqual([
+      {
+        type: "paragraph",
+        content: [{ type: "text", text: "{{number}}" }],
+      },
+    ]);
   });
 
   it("preserves marks, attributes, unknown nodes, and the original object", () => {
