@@ -48,11 +48,6 @@ jobs:
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
-      - name: Show Prettier output for document variable files
-        run: |
-          pnpm exec prettier --write shared/documentTemplateVariables.ts shared/documentTemplateVariables.test.ts
-          git --no-pager diff -- shared/documentTemplateVariables.ts shared/documentTemplateVariables.test.ts
-
       - name: Check formatting
         run: pnpm lint
 
