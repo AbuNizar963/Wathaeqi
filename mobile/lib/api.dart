@@ -1501,7 +1501,7 @@ class PoliceApi {
 
   @visibleForTesting
   Future<void> waitForPendingOrganizationLogoRefreshes() async {
-    final pending = List<Future<Uint8List?>>.of(
+    final pending = List<Future<void>>.of(
       _organizationLogoRefreshes.values,
     );
     if (pending.isNotEmpty) await Future.wait(pending);
