@@ -1,26 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  upload,
-  createSignedUrl,
-  createSignedUploadUrl,
-  getObjectInfo,
-  provider,
-} = vi.hoisted(() => {
+const { upload, createSignedUrl, getObjectInfo, provider } = vi.hoisted(() => {
   const upload = vi.fn();
   const createSignedUrl = vi.fn();
-  const createSignedUploadUrl = vi.fn();
   const getObjectInfo = vi.fn();
   const provider = {
     upload,
     createSignedUrl,
-    createSignedUploadUrl,
     getObjectInfo,
   };
   return {
     upload,
     createSignedUrl,
-    createSignedUploadUrl,
     getObjectInfo,
     provider,
   };
@@ -32,7 +23,8 @@ vi.mock("../../_core/storageProvider", () => ({
 
 import {
   parseOrganizationAttachmentKey,
-  storageCreateOrganizationAttachmentUploadUrl,
+  storageCreateOrganizationAttachmentUploadKey,
+  storagePutOrganizationAttachmentAtKey,
   validateStorageProviderUrl,
   storageGetObjectInfo,
   storagePutDepartmentLogo,
@@ -44,9 +36,6 @@ describe("stable storage URLs", () => {
     vi.clearAllMocks();
     upload.mockResolvedValue(undefined);
     createSignedUrl.mockResolvedValue("https://storage.example/signed");
-    createSignedUploadUrl.mockResolvedValue(
-      "https://storage.example/signed-upload?token=opaque"
-    );
     getObjectInfo.mockResolvedValue({
       size: 12,
       contentType: "application/pdf",
@@ -82,15 +71,15 @@ describe("stable storage URLs", () => {
     expect(productionUrl).toBe("https://storage.example/upload");
   });
 
-  it("creates a signed upload URL scoped to one organization and telegram", async () => {
+  it("creates a scoped attachment key without issuing a user JWT", async () => {
     const organizationId = "550e8400-e29b-41d4-a716-446655440000";
-    const result = await storageCreateOrganizationAttachmentUploadUrl(
+    const key = await storageCreateOrganizationAttachmentUploadKey(
       organizationId,
       7,
       "report.pdf"
     );
 
-    expect(result.key).toMatch(
+    expect(key).toMatch(
       new RegExp(
         "^organizations/" +
           organizationId +
@@ -98,10 +87,10 @@ describe("stable storage URLs", () => {
         "i"
       )
     );
-    expect(result.uploadUrl).toBe(
-      "https://storage.example/signed-upload?token=opaque"
-    );
-    expect(createSignedUploadUrl).toHaveBeenCalledWith(result.key);
+    expect(parseOrganizationAttachmentKey(key)).toEqual({
+      organizationId,
+      telegramId: 7,
+    });
     expect(upload).not.toHaveBeenCalled();
   });
 
@@ -142,6 +131,32 @@ describe("stable storage URLs", () => {
       contentType: "application/pdf",
       cacheControl: "3600",
     });
+  });
+
+  it("uploads attachment bytes only to a valid pre-scoped key", async () => {
+    const key =
+      "organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf";
+    const body = Buffer.from("attachment");
+    const result = await storagePutOrganizationAttachmentAtKey(
+      key,
+      "report.pdf",
+      body,
+      "application/pdf"
+    );
+
+    expect(result).toEqual({ key, url: `/api/storage/${key}` });
+    expect(upload).toHaveBeenCalledWith(key, body, {
+      contentType: "application/pdf",
+      cacheControl: "3600",
+    });
+    await expect(
+      storagePutOrganizationAttachmentAtKey(
+        key,
+        "other.pdf",
+        body,
+        "application/pdf"
+      )
+    ).rejects.toThrow("Storage access denied");
   });
 
   it("rejects invalid organization or telegram identifiers before upload", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createApp, getJsonBodyLimit } from "./app";
+import { createApp, getJsonBodyLimit, getRawBodyLimit } from "./app";
 import { ENV } from "./_core/env";
 
 async function postUnauthenticated(path: string): Promise<number> {
@@ -65,6 +65,18 @@ async function postUnauthenticatedAttempts(
 }
 
 describe("request body limits", () => {
+  it("selects a bounded raw parser only for attachment upload requests", () => {
+    expect(
+      getRawBodyLimit("PUT", "/api/telegrams/7/attachments/upload")
+    ).toBe(10 * 1024 * 1024);
+    expect(
+      getRawBodyLimit("POST", "/api/telegrams/7/attachments/upload")
+    ).toBeNull();
+    expect(
+      getRawBodyLimit("PUT", "/api/telegrams/7/attachments/finalize")
+    ).toBeNull();
+  });
+
   it("keeps ordinary API requests small", () => {
     expect(getJsonBodyLimit("/api/trpc/auth.login")).toBe("1mb");
     expect(getJsonBodyLimit("/api/trpc/telegrams.create")).toBe("1mb");
