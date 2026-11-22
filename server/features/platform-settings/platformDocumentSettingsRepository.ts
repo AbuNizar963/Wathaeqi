@@ -221,12 +221,11 @@ export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSet
 }
 
 export async function updatePlatformDocumentSettings(
-  values: Omit<PlatformDocumentSettings, "updatedAt">,
+  values: Partial<Omit<PlatformDocumentSettings, "updatedAt">>,
   updatedByUserId: number
 ): Promise<PlatformDocumentSettings> {
   const now = new Date().toISOString();
-  const data = {
-    id: 1,
+  const updateData = {
     ...values,
     updatedByUserId,
     updatedAt: now,
@@ -235,26 +234,36 @@ export async function updatePlatformDocumentSettings(
   const existing = await findSettingsRow();
 
   if (existing) {
+    // Appwrite updateRow applies only the supplied columns. Keeping this
+    // payload partial prevents concurrent saves of different settings from
+    // overwriting one another with stale values read by another request.
     const updated = await tables.updateRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: TABLE_ID,
       rowId: existing.$id,
-      data,
+      data: updateData,
     });
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
+
+  const createData = {
+    id: 1,
+    ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+    ...updateData,
+  };
 
   try {
     const created = await tables.createRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: TABLE_ID,
       rowId: ROW_ID,
-      data,
+      data: createData,
     });
     return mapPlatformDocumentSettings(rowData(created as AppwriteRow));
   } catch (error) {
     // If two first-time saves race, the unique id index lets one win. Reload
-    // the winning row and apply this owner's requested values to that row.
+    // the winning row and apply only this request's fields to preserve the
+    // other request's values.
     const code =
       error && typeof error === "object" && "code" in error
         ? Number((error as { code?: unknown }).code)
@@ -270,7 +279,7 @@ export async function updatePlatformDocumentSettings(
       databaseId: getAppwriteDatabaseId(),
       tableId: TABLE_ID,
       rowId: raced.$id,
-      data,
+      data: updateData,
     });
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
