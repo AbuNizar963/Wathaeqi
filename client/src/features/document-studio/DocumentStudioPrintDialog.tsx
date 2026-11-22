@@ -45,69 +45,69 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   }
 
   const { default: html2canvas } = await import("html2canvas");
-  const captureId = "document-print-" + (++printCaptureSequence);
+  const captureId = "document-print-" + ++printCaptureSequence;
   element.dataset.printCaptureId = captureId;
   let canvas: HTMLCanvasElement;
   try {
     canvas = await html2canvas(element, {
-    backgroundColor: "#ffffff",
-    allowTaint: false,
-    useCORS: true,
-    logging: false,
-    scale: 2,
-    width,
-    height,
-    windowWidth: Math.max(document.documentElement.clientWidth, width),
-    windowHeight: Math.max(window.innerHeight, height),
-    scrollX: 0,
-    scrollY: 0,
-    onclone: clonedDocument => {
-      sanitizeUnsupportedPrintColors(clonedDocument);
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-a4-preview-viewport")
-        .forEach(viewport => {
-          viewport.style.height = "auto";
-          viewport.style.overflow = "visible";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".batch-print-source")
-        .forEach(source => {
-          source.style.visibility = "visible";
-          source.style.zIndex = "auto";
-        });
-      const clonedPage = clonedDocument.querySelector<HTMLElement>(
-        '[data-print-capture-id="' + captureId + '"]'
-      );
-      if (clonedPage) {
-        clonedPage.style.minHeight = `${height}px`;
-        clonedPage.style.transform = "none";
-        clonedPage.style.transformOrigin = "top left";
-        clonedPage.style.position = "relative";
-        clonedPage.style.left = "0";
-        clonedPage.style.top = "0";
-      }
+      backgroundColor: "#ffffff",
+      allowTaint: false,
+      useCORS: true,
+      logging: false,
+      scale: 2,
+      width,
+      height,
+      windowWidth: Math.max(document.documentElement.clientWidth, width),
+      windowHeight: Math.max(window.innerHeight, height),
+      scrollX: 0,
+      scrollY: 0,
+      onclone: clonedDocument => {
+        sanitizeUnsupportedPrintColors(clonedDocument);
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-a4-preview-viewport")
+          .forEach(viewport => {
+            viewport.style.height = "auto";
+            viewport.style.overflow = "visible";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".batch-print-source")
+          .forEach(source => {
+            source.style.visibility = "visible";
+            source.style.zIndex = "auto";
+          });
+        const clonedPage = clonedDocument.querySelector<HTMLElement>(
+          '[data-print-capture-id="' + captureId + '"]'
+        );
+        if (clonedPage) {
+          clonedPage.style.minHeight = `${height}px`;
+          clonedPage.style.transform = "none";
+          clonedPage.style.transformOrigin = "top left";
+          clonedPage.style.position = "relative";
+          clonedPage.style.left = "0";
+          clonedPage.style.top = "0";
+        }
 
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-studio-no-print")
-        .forEach(control => {
-          control.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-input")
-        .forEach(editor => {
-          editor.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-warning")
-        .forEach(warning => {
-          warning.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-print-copy")
-        .forEach(copy => {
-          copy.style.display = "block";
-        });
-    },
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-studio-no-print")
+          .forEach(control => {
+            control.style.display = "none";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-editor-input")
+          .forEach(editor => {
+            editor.style.display = "none";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-editor-warning")
+          .forEach(warning => {
+            warning.style.display = "none";
+          });
+        clonedDocument
+          .querySelectorAll<HTMLElement>(".document-editor-print-copy")
+          .forEach(copy => {
+            copy.style.display = "block";
+          });
+      },
     });
   } finally {
     delete element.dataset.printCaptureId;
@@ -173,9 +173,8 @@ export default function DocumentStudioPrintDialog({
   pageElements?: HTMLElement[];
 }) {
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
-  const [copiesPerPage, setCopiesPerPage] = useState<
-    (typeof COPY_COUNTS)[number]
-  >(1);
+  const [copiesPerPage, setCopiesPerPage] =
+    useState<(typeof COPY_COUNTS)[number]>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -191,11 +190,8 @@ export default function DocumentStudioPrintDialog({
     setLoading(true);
     setError(null);
     try {
-      const elements = (pageElements?.length
-        ? pageElements
-        : pageElement
-          ? [pageElement]
-          : []
+      const elements = (
+        pageElements?.length ? pageElements : pageElement ? [pageElement] : []
       ).filter(element => element.isConnected);
       if (elements.length === 0) {
         throw new Error("تعذر العثور على صفحات الوثائق المحددة للطباعة");
@@ -237,8 +233,8 @@ export default function DocumentStudioPrintDialog({
         <DialogHeader>
           <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4.
-            وضع صفحتين يطبع أفقيًا جنبًا إلى جنب.
+            {title} — اختر عدد النسخ لكل صفحة وعدد الصفحات في كل ورقة A4. وضع
+            صفحتين يطبع أفقيًا جنبًا إلى جنب.
           </DialogDescription>
         </DialogHeader>
         <fieldset className="rounded-lg border bg-muted/30 p-3">

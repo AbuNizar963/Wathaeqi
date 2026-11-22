@@ -195,9 +195,7 @@ describe("template substitutions", () => {
                   content: [
                     {
                       type: "paragraph",
-                      content: [
-                        { type: "text", text: "الموضوع: {{الموضوع}}" },
-                      ],
+                      content: [{ type: "text", text: "الموضوع: {{الموضوع}}" }],
                     },
                   ],
                 },
@@ -207,9 +205,7 @@ describe("template substitutions", () => {
         },
       ],
     };
-    expect(
-      applyFieldValues(doc, { الموضوع: "طلب رسمي" })
-    ).toEqual({
+    expect(applyFieldValues(doc, { الموضوع: "طلب رسمي" })).toEqual({
       type: "doc",
       content: [
         {
@@ -223,9 +219,7 @@ describe("template substitutions", () => {
                   content: [
                     {
                       type: "paragraph",
-                      content: [
-                        { type: "text", text: "الموضوع: طلب رسمي" },
-                      ],
+                      content: [{ type: "text", text: "الموضوع: طلب رسمي" }],
                     },
                   ],
                 },
