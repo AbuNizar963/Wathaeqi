@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/platform-settings/platformDocumentSettings";
+import {
+  DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+} from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
@@ -19,7 +21,9 @@ vi.mock("../../_core/appwrite", () => ({
   getAppwriteDatabaseId: mocks.getAppwriteDatabaseId,
 }));
 
-import { getPlatformDocumentSettings } from "./platformDocumentSettingsRepository";
+import {
+  getPlatformDocumentSettings,
+} from "./platformDocumentSettingsRepository";
 
 describe("platform document settings nullable Appwrite columns", () => {
   beforeEach(() => {
@@ -31,9 +35,15 @@ describe("platform document settings nullable Appwrite columns", () => {
   it.each([
     ["pageMarginTopMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm],
     ["pageMarginRightMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginRightMm],
-    ["pageMarginBottomMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginBottomMm],
+    [
+      "pageMarginBottomMm",
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginBottomMm,
+    ],
     ["pageMarginLeftMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginLeftMm],
-    ["headerBottomPaddingMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm],
+    [
+      "headerBottomPaddingMm",
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm,
+    ],
   ])("uses the configured default when %s is null", async (field, fallback) => {
     mocks.listRows.mockResolvedValue({
       rows: [
