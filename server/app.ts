@@ -65,6 +65,16 @@ function allowVerificationAttempt(ip: string): boolean {
  * this module prevents serverless bundlers from tracing Vite's native build
  * dependencies into the production API function.
  */
+export function getRawBodyLimit(method: string, path: string): number | null {
+  if (
+    method === "PUT" &&
+    /^\/api\/telegrams\/\d+\/attachments\/upload$/.test(path)
+  ) {
+    return MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES;
+  }
+  return null;
+}
+
 export function getJsonBodyLimit(path: string): string {
   if (path === "/api/telegram-render") return "4mb";
   if (path.includes("/api/trpc/telegrams.importRows")) return "50mb";
@@ -171,13 +181,11 @@ export function createApp(
   // Parse authenticated attachment uploads as raw bytes before the JSON
   // parser. express.json() intentionally skips application/octet-stream bodies.
   app.use((req, res, next) => {
-    if (
-      req.method === "PUT" &&
-      /^\/api\/telegrams\/\d+\/attachments\/upload$/.test(req.path)
-    ) {
+    const rawBodyLimit = getRawBodyLimit(req.method, req.path);
+    if (rawBodyLimit !== null) {
       return express.raw({
         type: "application/octet-stream",
-        limit: MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
+        limit: rawBodyLimit,
       })(req, res, next);
     }
     next();
