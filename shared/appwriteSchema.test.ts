@@ -12,6 +12,9 @@ describe("Appwrite operational schema", () => {
     "organization_memberships",
     "audit_logs",
     "app_records",
+    "auth_login_rate_limits",
+    "audit_purge_receipts",
+    "user_purge_receipts",
   ])("declares the %s table used by the server", tableId => {
     expect(findSchemaTable(tableId)).toBeDefined();
     expect(REQUIRED_TABLE_IDS).toContain(tableId);
@@ -69,15 +72,20 @@ describe("Appwrite operational schema", () => {
     );
   });
 
-  it("requires login identifiers and preserves large audit payloads", () => {
+  it("keeps legacy profile fields nullable and preserves large audit payloads", () => {
     const users = findSchemaTable("users");
     const audit = findSchemaTable("audit_logs");
     const records = findSchemaTable("app_records");
 
     expect(users?.columns).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ key: "username", required: true }),
-        expect.objectContaining({ key: "email", required: true }),
+        expect.objectContaining({ key: "username", required: false }),
+        expect.objectContaining({ key: "email", required: false }),
+        expect.objectContaining({
+          key: "passwordHashCiphertext",
+          required: false,
+          size: 512,
+        }),
       ])
     );
     expect(audit?.columns).toEqual(
@@ -149,6 +157,54 @@ describe("Appwrite operational schema", () => {
     expect(records?.indexes.map(index => index.key)).toContain(
       "record_type_key"
     );
+  });
+
+  it("preserves rate-limit and purge receipt records", () => {
+    const rateLimits = findSchemaTable("auth_login_rate_limits");
+    const auditReceipts = findSchemaTable("audit_purge_receipts");
+    const userReceipts = findSchemaTable("user_purge_receipts");
+
+    expect(rateLimits?.columns.map(column => column.key)).toEqual(
+      expect.arrayContaining([
+        "keyHash",
+        "windowStartedAt",
+        "attempts",
+        "blockedUntil",
+        "updatedAt",
+      ])
+    );
+    expect(rateLimits?.indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "unique",
+          columns: ["keyHash"],
+        }),
+        expect.objectContaining({
+          type: "key",
+          columns: ["updatedAt"],
+        }),
+      ])
+    );
+
+    for (const receipts of [auditReceipts, userReceipts]) {
+      expect(receipts?.columns.map(column => column.key)).toEqual(
+        expect.arrayContaining([
+          "id",
+          "ownerUserId",
+          "reason",
+          "deletedCounts",
+          "createdAt",
+        ])
+      );
+      expect(receipts?.indexes).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "unique",
+            columns: ["id"],
+          }),
+        ])
+      );
+    }
   });
 
   it("does not duplicate table identifiers in the provisioned schema", () => {

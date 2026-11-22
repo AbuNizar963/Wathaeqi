@@ -70,6 +70,9 @@ export const USERS_TABLE = "users";
 export const ORGANIZATION_MEMBERSHIPS_TABLE = "organization_memberships";
 export const AUDIT_LOGS_TABLE = "audit_logs";
 export const APP_RECORDS_TABLE = "app_records";
+export const AUTH_LOGIN_RATE_LIMITS_TABLE = "auth_login_rate_limits";
+export const AUDIT_PURGE_RECEIPTS_TABLE = "audit_purge_receipts";
+export const USER_PURGE_RECEIPTS_TABLE = "user_purge_receipts";
 
 export const appwriteSchema: SchemaTable[] = [
   {
@@ -478,15 +481,22 @@ export const appwriteSchema: SchemaTable[] = [
       { key: "sessionVersion", type: "varchar", size: 36, required: true },
       { key: "organizationId", type: "varchar", size: 36, required: true },
       { key: "name", type: "varchar", size: 255, required: false },
-      { key: "username", type: "varchar", size: 120, required: true },
+      { key: "username", type: "varchar", size: 120, required: false },
       { key: "badgeNumber", type: "varchar", size: 80, required: false },
       { key: "bio", type: "text", required: false },
       { key: "phone", type: "varchar", size: 32, required: false },
       { key: "rank", type: "varchar", size: 120, required: false },
       { key: "unit", type: "varchar", size: 255, required: false },
       { key: "avatarKey", type: "text", required: false },
-      { key: "email", type: "varchar", size: 320, required: true },
+      { key: "email", type: "varchar", size: 320, required: false },
       { key: "loginMethod", type: "varchar", size: 64, required: false },
+      {
+        key: "passwordHashCiphertext",
+        type: "varchar",
+        size: 512,
+        required: false,
+        description: "Encrypted legacy password verifier; never store raw hashes.",
+      },
       { key: "isActive", type: "boolean", required: true, default: true },
       {
         key: "isPlatformOwner",
@@ -632,6 +642,73 @@ export const appwriteSchema: SchemaTable[] = [
         key: "record_type_key",
         type: "unique",
         columns: ["recordType", "recordKey"],
+      },
+    ],
+  },
+  {
+    id: AUTH_LOGIN_RATE_LIMITS_TABLE,
+    name: "Authentication login rate limits",
+    description: "Hashed login keys and their temporary attempt windows.",
+    columns: [
+      { key: "keyHash", type: "text", required: true },
+      { key: "windowStartedAt", type: "datetime", required: true },
+      { key: "attempts", type: "integer", required: true },
+      { key: "blockedUntil", type: "datetime", required: false },
+      UPDATED_AT,
+    ],
+    indexes: [
+      {
+        key: "auth_login_rate_limits_key_hash_unique",
+        type: "unique",
+        columns: ["keyHash"],
+      },
+      {
+        key: "auth_login_rate_limits_updated_at_idx",
+        type: "key",
+        columns: ["updatedAt"],
+      },
+    ],
+  },
+  {
+    id: AUDIT_PURGE_RECEIPTS_TABLE,
+    name: "Audit purge receipts",
+    description: "Immutable evidence retained after organization audit purges.",
+    columns: [
+      { key: "id", type: "varchar", size: 36, required: true },
+      { key: "organizationCode", type: "text", required: true },
+      { key: "organizationName", type: "text", required: true },
+      { key: "organizationIdHash", type: "varchar", size: 64, required: true },
+      { key: "ownerUserId", type: "integer", required: true },
+      { key: "reason", type: "longtext", required: true },
+      { key: "deletedCounts", type: "longtext", required: true },
+      CREATED_AT,
+    ],
+    indexes: [
+      {
+        key: "audit_purge_receipts_id_unique",
+        type: "unique",
+        columns: ["id"],
+      },
+    ],
+  },
+  {
+    id: USER_PURGE_RECEIPTS_TABLE,
+    name: "User purge receipts",
+    description: "Immutable evidence retained after user data purges.",
+    columns: [
+      { key: "id", type: "varchar", size: 36, required: true },
+      { key: "userIdHash", type: "varchar", size: 64, required: true },
+      { key: "organizationIdHash", type: "varchar", size: 64, required: true },
+      { key: "ownerUserId", type: "integer", required: true },
+      { key: "reason", type: "longtext", required: true },
+      { key: "deletedCounts", type: "longtext", required: true },
+      CREATED_AT,
+    ],
+    indexes: [
+      {
+        key: "user_purge_receipts_id_unique",
+        type: "unique",
+        columns: ["id"],
       },
     ],
   },
@@ -852,4 +929,7 @@ export const REQUIRED_TABLE_IDS = [
   ORGANIZATION_MEMBERSHIPS_TABLE,
   AUDIT_LOGS_TABLE,
   APP_RECORDS_TABLE,
+  AUTH_LOGIN_RATE_LIMITS_TABLE,
+  AUDIT_PURGE_RECEIPTS_TABLE,
+  USER_PURGE_RECEIPTS_TABLE,
 ] as const;
