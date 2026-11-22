@@ -132,9 +132,16 @@ class DocumentStudioQuillCodec {
           }
         }
       } else if (insert is Map && insert['image'] is String) {
+        final style = attributes['style']?.toString() ?? '';
+        final width = _cssDimension(style, 'width');
+        final height = _cssDimension(style, 'height');
         inlineContent.add({
           'type': 'image',
-          'attrs': {'src': insert['image']},
+          'attrs': {
+            'src': insert['image'],
+            if (width != null) 'width': width,
+            if (height != null) 'height': height,
+          },
         });
       }
     }
@@ -253,8 +260,20 @@ class DocumentStudioQuillCodec {
     if (type == 'image' && node['attrs'] is Map) {
       final src = (node['attrs'] as Map)['src'];
       if (src is String) {
+        final attrs = node['attrs'] as Map;
+        final width = attrs['width'];
+        final height = attrs['height'];
+        final styleParts = <String>[];
+        if (width is num && width.isFinite && width > 0) {
+          styleParts.add('width: ${width.toDouble()}px');
+        }
+        if (height is num && height.isFinite && height > 0) {
+          styleParts.add('height: ${height.toDouble()}px');
+        }
         operations.add({
           'insert': {'image': src},
+          if (styleParts.isNotEmpty)
+            'attributes': {'style': styleParts.join('; ')},
         });
       }
       return;
@@ -285,6 +304,14 @@ class DocumentStudioQuillCodec {
       });
     }
     return {'type': 'text', 'text': text, if (marks.isNotEmpty) 'marks': marks};
+  }
+
+  static double? _cssDimension(String style, String property) {
+    final match = RegExp(
+      '${property}\\s*:\\s*([0-9]+(?:\\.[0-9]+)?)px',
+      caseSensitive: false,
+    ).firstMatch(style);
+    return match == null ? null : double.tryParse(match.group(1) ?? '');
   }
 
   static List<dynamic> _asList(dynamic value) =>
