@@ -197,7 +197,7 @@ describe("Appwrite storage provider", () => {
         "telegrams/7/legacy.pdf",
         600
       );
-    }
+    },
   );
 
   it("never deletes legacy Supabase objects during generic cleanup", async () => {
