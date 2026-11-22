@@ -9,7 +9,6 @@ import {
 import { isPlatformOwner } from "../../ownerAccess";
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
-  DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
   MAX_HEADER_LOGO_SIZE,
