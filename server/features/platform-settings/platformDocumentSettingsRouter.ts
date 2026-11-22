@@ -10,21 +10,21 @@ import { isPlatformOwner } from "../../ownerAccess";
 import { protectedProcedure, router } from "../../_core/trpc";
 import {
   HEX_COLOR_PATTERN,
-  MAX_WATERMARK_OPACITY_PERCENT,
   MAX_HEADER_LOGO_SIZE,
-  MIN_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
   MAX_PAGE_MARGIN_MM,
-  MIN_DIVIDER_WIDTH_PT,
+  MAX_WATERMARK_OPACITY_PERCENT,
   MAX_DIVIDER_WIDTH_PT,
-  MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
+  MIN_DIVIDER_WIDTH_PT,
+  MIN_FRAME_WIDTH_PT,
+  MIN_HEADER_LOGO_SIZE,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
 
 const platformDocumentSettingsInput = z
   .object({
     showMinistryWatermarkText: z.boolean(),
-    watermarkText: z.string().trim().max(255),
+    watermarkText: z.string().max(255),
     watermarkOpacityPercent: z
       .number()
       .int()
@@ -58,11 +58,7 @@ const platformDocumentSettingsInput = z
       .int()
       .min(0)
       .max(MAX_HEADER_PADDING_MM),
-    headerBottomPaddingMm: z
-      .number()
-      .int()
-      .min(0)
-      .max(MAX_HEADER_PADDING_MM),
+    headerBottomPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
     headerAlignment: z.enum(["spread", "center", "right"]),
     pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
     pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
@@ -70,30 +66,17 @@ const platformDocumentSettingsInput = z
     pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
     frameStyle: z.enum(["none", "single", "double", "ornate"]),
     frameColor: z.string().regex(HEX_COLOR_PATTERN),
-    frameWidthPt: z
-      .number()
-      .min(MIN_FRAME_WIDTH_PT)
-      .max(MAX_FRAME_WIDTH_PT),
+    frameWidthPt: z.number().min(MIN_FRAME_WIDTH_PT).max(MAX_FRAME_WIDTH_PT),
     showVerificationQr: z.boolean(),
   })
-  .partial();
+  .partial()
+  .refine(values => Object.keys(values).length > 0);
 
 export const platformDocumentSettingsRouter = router({
   get: protectedProcedure.query(() => getPlatformDocumentSettings()),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        showMinistryWatermarkText: z.boolean(),
-        watermarkOpacityPercent: z
-          .number()
-          .int()
-          .min(0)
-          .max(MAX_WATERMARK_OPACITY_PERCENT),
-        headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
-        showVerificationQr: z.boolean(),
-      })
-    )
+    .input(platformDocumentSettingsInput)
     .mutation(async ({ ctx, input }) => {
       if (!isPlatformOwner(ctx.user)) {
         throw new TRPCError({
@@ -102,12 +85,7 @@ export const platformDocumentSettingsRouter = router({
         });
       }
 
-      const current = await getPlatformDocumentSettings();
-      const { updatedAt: _updatedAt, ...currentSettings } = current;
-      const saved = await updatePlatformDocumentSettings(
-        { ...currentSettings, ...input },
-        ctx.user.id
-      );
+      const saved = await updatePlatformDocumentSettings(input, ctx.user.id);
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
