@@ -20,8 +20,6 @@ jobs:
           node-version: 24
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
       - name: Format only the two changed settings files
