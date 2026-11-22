@@ -14,8 +14,7 @@ const TEMPLATE_CONTAINERS = new Set([
   "tableCell",
 ]);
 
-const PLACEHOLDER_PATTERN =
-  /\{\{\s*([\p{L}][\p{L}\p{N}_]{0,63})\s*\}\}/gu;
+const PLACEHOLDER_PATTERN = /\{\{\s*([\p{L}][\p{L}\p{N}_]{0,63})\s*\}\}/gu;
 
 function isRecord(value: unknown): value is EditorContent {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -61,8 +60,9 @@ export function applyDocumentTemplateVariables(
       return node;
     }
 
-    const nextContent = node.content.map(visit);
-    return nextContent.some((child, index) => child !== node.content[index])
+    const children = node.content;
+    const nextContent = children.map(visit);
+    return nextContent.some((child, index) => child !== children[index])
       ? { ...node, content: nextContent }
       : node;
   };
