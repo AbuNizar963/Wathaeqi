@@ -185,7 +185,9 @@ class LegacySupabaseStorageProvider {
     const size = Number(data?.size);
     if (error || !data || !Number.isSafeInteger(size) || size < 0) {
       throw new Error(
-        `Legacy storage object info failed: ${error?.message ?? "invalid metadata"}`
+        `Legacy storage object info failed: ${
+          error?.message ?? "invalid metadata"
+        }`
       );
     }
     return {
@@ -208,7 +210,6 @@ class LegacySupabaseStorageProvider {
       contentType: data.type || "application/octet-stream",
     };
   }
-
 }
 
 class HybridStorageProvider implements StorageProvider {
