@@ -117,6 +117,38 @@ describe("Appwrite operational schema", () => {
     );
   });
 
+  it("reuses live index keys and adds only missing uniqueness", () => {
+    const users = findSchemaTable("users");
+    const memberships = findSchemaTable("organization_memberships");
+    const audit = findSchemaTable("audit_logs");
+    const records = findSchemaTable("app_records");
+
+    expect(users?.indexes.map(index => index.key)).toEqual(
+      expect.arrayContaining([
+        "users_id_unique",
+        "users_auth_user_unique",
+        "users_organization_idx",
+        "users_username_unique",
+      ])
+    );
+    expect(memberships?.indexes.map(index => index.key)).toEqual(
+      expect.arrayContaining([
+        "org_membership_id_unique",
+        "org_user_unique",
+        "org_memberships_user_idx",
+      ])
+    );
+    expect(audit?.indexes.map(index => index.key)).toEqual(
+      expect.arrayContaining([
+        "audit_logs_id_unique",
+        "audit_logs_entry_hash_unique",
+        "audit_actor_created_idx",
+        "audit_org_created_idx",
+      ])
+    );
+    expect(records?.indexes.map(index => index.key)).toContain("record_type_key");
+  });
+
   it("does not duplicate table identifiers in the provisioned schema", () => {
     const ids = appwriteSchema.map(table => table.id);
     expect(new Set(ids).size).toBe(ids.length);
