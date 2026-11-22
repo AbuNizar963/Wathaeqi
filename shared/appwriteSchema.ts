@@ -617,8 +617,7 @@ export const appwriteSchema: SchemaTable[] = [
   {
     id: APP_RECORDS_TABLE,
     name: "Application records",
-    description:
-      "Keyed records for one-time setup and audit-chain metadata.",
+    description: "Keyed records for one-time setup and audit-chain metadata.",
     columns: [
       { key: "recordType", type: "varchar", size: 80, required: true },
       { key: "recordKey", type: "varchar", size: 128, required: true },
