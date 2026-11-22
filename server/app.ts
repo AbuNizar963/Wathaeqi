@@ -2,7 +2,10 @@ import { timingSafeEqual } from "node:crypto";
 import express, { type Express } from "express";
 import { rateLimit } from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerStorageRoutes } from "./features/storage/storageRoutes";
+import {
+  MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
+  registerStorageRoutes,
+} from "./features/storage/storageRoutes";
 import { appRouter } from "./routers";
 import { createContext } from "./_core/context";
 import { serveStatic } from "./_core/static";
@@ -164,6 +167,21 @@ export function createApp(
       })().catch(next);
     }
   );
+
+  // Parse authenticated attachment uploads as raw bytes before the JSON
+  // parser. express.json() intentionally skips application/octet-stream bodies.
+  app.use((req, res, next) => {
+    if (
+      req.method === "PUT" &&
+      /^\/api\/telegrams\/\d+\/attachments\/upload$/.test(req.path)
+    ) {
+      return express.raw({
+        type: "application/octet-stream",
+        limit: MAX_TELEGRAM_ATTACHMENT_UPLOAD_BYTES,
+      })(req, res, next);
+    }
+    next();
+  });
 
   app.use((req, res, next) =>
     express.json({ limit: getJsonBodyLimit(req.path) })(req, res, next)
