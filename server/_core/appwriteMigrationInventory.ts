@@ -115,9 +115,16 @@ function asCount(value: unknown, label: string): number {
   return count;
 }
 
-function asBytes(value: unknown): number {
-  const size = Number(value ?? 0);
-  return Number.isSafeInteger(size) && size > 0 ? size : 0;
+function asBytes(value: unknown, label: string): number {
+  if (value === null || value === undefined || value === "") {
+    throw new Error(`Invalid byte size returned for ${label}`);
+  }
+
+  const size = Number(value);
+  if (!Number.isSafeInteger(size) || size < 0) {
+    throw new Error(`Invalid byte size returned for ${label}`);
+  }
+  return size;
 }
 
 function errorCode(error: unknown): number {
@@ -189,7 +196,12 @@ async function countSupabaseBucket(
         );
       }
 
-      const entries = data ?? [];
+      if (!Array.isArray(data)) {
+        throw new Error(
+          `Supabase Storage listing returned no data (${bucket})`
+        );
+      }
+      const entries = data;
       for (const entry of entries) {
         if (!entry.name) continue;
 
@@ -199,7 +211,7 @@ async function countSupabaseBucket(
         }
 
         objects += 1;
-        bytes += asBytes(entry.metadata?.size);
+        bytes += asBytes(entry.metadata?.size, `Supabase Storage.${bucket}`);
       }
 
       if (entries.length < PAGE_SIZE) break;
@@ -257,7 +269,10 @@ async function countAppwriteBucket(
     const files = result.files ?? [];
     objects += files.length;
     for (const file of files) {
-      bytes += asBytes(file.sizeOriginal ?? file.sizeActual);
+      bytes += asBytes(
+        file.sizeOriginal ?? file.sizeActual,
+        `Appwrite Storage.${bucketId}`
+      );
     }
 
     if (files.length < PAGE_SIZE) break;
@@ -304,9 +319,12 @@ export async function runAppwriteMigrationInventory(
       `Supabase bucket listing failed: ${sourceBucketResult.error.message}`
     );
   }
+  if (!Array.isArray(sourceBucketResult.data)) {
+    throw new Error("Supabase bucket listing returned no bucket data");
+  }
 
   const sourceBuckets = await mapWithConcurrency(
-    (sourceBucketResult.data ?? []).map(bucket => bucket.name),
+    sourceBucketResult.data.map(bucket => bucket.name),
     2,
     bucket => countSupabaseBucket(supabase, bucket)
   );

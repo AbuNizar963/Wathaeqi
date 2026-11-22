@@ -134,4 +134,111 @@ describe("Appwrite migration inventory", () => {
       })
     ).rejects.toThrow("Invalid record count returned for Supabase.users");
   });
+
+  it("fails closed when Supabase bucket listing returns null without an error", async () => {
+    const supabase = {
+      from: () => ({
+        select: async () => ({ count: 0, error: null }),
+      }),
+      storage: {
+        listBuckets: async () => ({ data: null, error: null }),
+      },
+    };
+
+    await expect(
+      runAppwriteMigrationInventory({
+        supabase: supabase as never,
+        tables: {} as never,
+        storage: {} as never,
+        users: {} as never,
+        databaseId: "database",
+        bucketId: "attachments",
+      })
+    ).rejects.toThrow("Supabase bucket listing returned no bucket data");
+  });
+
+  it("counts more than one Supabase Storage page without dropping objects", async () => {
+    const sourceEntries = Array.from({ length: 103 }, (_, index) => ({
+      id: `file-${index}`,
+      name: `file-${String(index).padStart(3, "0")}.png`,
+      metadata: { size: 1 },
+    }));
+    const supabase = {
+      from: () => ({
+        select: async () => ({ count: 0, error: null }),
+      }),
+      storage: {
+        listBuckets: async () => ({
+          data: [{ name: "documents" }],
+          error: null,
+        }),
+        from: () => ({
+          list: async (_path: string, options: { offset: number }) => ({
+            data: sourceEntries.slice(options.offset, options.offset + 100),
+            error: null,
+          }),
+        }),
+      },
+    };
+    const tables = {
+      getTable: async () => ({}),
+      listRows: async () => ({ total: 0, rows: [] }),
+    };
+    const storage = {
+      listFiles: async () => ({ total: 0, files: [] }),
+    };
+    const users = { list: async () => ({ total: 0 }) };
+
+    const report = await runAppwriteMigrationInventory({
+      supabase: supabase as never,
+      tables: tables as never,
+      storage: storage as never,
+      users: users as never,
+      databaseId: "database",
+      bucketId: "attachments",
+    });
+
+    expect(report.source.storage).toEqual([
+      { bucket: "documents", objects: 103, bytes: 103 },
+    ]);
+  });
+
+  it("fails closed when a listed file has an invalid size", async () => {
+    const supabase = {
+      from: () => ({
+        select: async () => ({ count: 0, error: null }),
+      }),
+      storage: {
+        listBuckets: async () => ({
+          data: [{ name: "documents" }],
+          error: null,
+        }),
+        from: () => ({
+          list: async () => ({
+            data: [
+              {
+                id: "file-1",
+                name: "file.png",
+                metadata: { size: "unknown" },
+              },
+            ],
+            error: null,
+          }),
+        }),
+      },
+    };
+
+    await expect(
+      runAppwriteMigrationInventory({
+        supabase: supabase as never,
+        tables: {} as never,
+        storage: {} as never,
+        users: {} as never,
+        databaseId: "database",
+        bucketId: "attachments",
+      })
+    ).rejects.toThrow(
+      "Invalid byte size returned for Supabase Storage.documents"
+    );
+  });
 });
