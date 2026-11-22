@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["flutter-mobile-app"]
+    branches: ["main"]
   pull_request:
-    branches: ["flutter-mobile-app"]
+    branches: ["main"]
 
 permissions:
   contents: read
