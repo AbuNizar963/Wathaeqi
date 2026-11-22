@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { runAppwriteMigrationInventory } from "./appwriteMigrationInventory";
 
 describe("Appwrite migration inventory", () => {
-  it("compares counts and storage metadata without exposing row or file values", async () => {
+  it(
+    "compares counts and storage metadata without exposing row or file values",
+    async () => {
     const sourceCounts: Record<string, number> = {
       users: 21,
       organizations: 159,
@@ -86,7 +88,9 @@ describe("Appwrite migration inventory", () => {
 
     expect(report.mode).toBe("read-only");
     expect(report.source.tables).toHaveLength(17);
-    expect(report.source.tables.find(item => item.table === "users")?.records).toBe(21);
+    expect(
+      report.source.tables.find(item => item.table === "users")?.records
+    ).toBe(21);
     expect(report.source.storage).toEqual([
       { bucket: "telegram-files", objects: 2, bytes: 3072 },
     ]);
