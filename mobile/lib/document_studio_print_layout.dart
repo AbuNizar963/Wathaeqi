@@ -40,6 +40,11 @@ class DocumentStudioPrintLayout {
     }
 
     final output = pw.Document();
+    const gap = 8.0;
+    final cellWidth =
+        (PdfPageFormat.a4.width - gap * (layout.columns - 1)) / layout.columns;
+    final cellHeight =
+        (PdfPageFormat.a4.height - gap * (layout.rows - 1)) / layout.rows;
     for (
       var startIndex = 0;
       startIndex < images.length;
@@ -59,6 +64,8 @@ class DocumentStudioPrintLayout {
                         _buildCell(
                           images,
                           startIndex + row * layout.columns + column,
+                          width: cellWidth,
+                          height: cellHeight,
                         ),
                     ],
                   ),
@@ -72,17 +79,26 @@ class DocumentStudioPrintLayout {
     return output.save();
   }
 
-  static pw.Widget _buildCell(List<pw.MemoryImage> images, int index) {
+  static pw.Widget _buildCell(
+    List<pw.MemoryImage> images,
+    int index, {
+    required double width,
+    required double height,
+  }) {
     if (index >= images.length) return pw.Expanded(child: pw.SizedBox());
     return pw.Expanded(
-      child: pw.Padding(
-        padding: const pw.EdgeInsets.all(2),
-        child: pw.Container(
-          alignment: pw.Alignment.center,
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300, width: 0.35),
-          ),
-          child: pw.Image(images[index], fit: pw.BoxFit.contain),
+      child: pw.Container(
+        width: width,
+        height: height,
+        alignment: pw.Alignment.center,
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.grey300, width: 0.35),
+        ),
+        child: pw.Image(
+          images[index],
+          width: width - 4,
+          height: height - 4,
+          fit: pw.BoxFit.contain,
         ),
       ),
     );

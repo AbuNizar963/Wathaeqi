@@ -124,6 +124,11 @@ class DocumentPrintLayout {
   ) {
     final columnCount = pagesPerSheet == 1 || pagesPerSheet == 2 ? 1 : 2;
     final rowCount = (pagesPerSheet / columnCount).ceil();
+    const gap = 8.0;
+    final cellWidth =
+        (PdfPageFormat.a4.width - gap * (columnCount - 1)) / columnCount;
+    final cellHeight =
+        (PdfPageFormat.a4.height - gap * (rowCount - 1)) / rowCount;
     final rows = <pw.Widget>[];
 
     for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
@@ -134,7 +139,11 @@ class DocumentPrintLayout {
         cells.add(
           pw.Expanded(
             child: hasPage
-                ? _buildCell(pageImages[pageIndices[slot]])
+                ? _buildCell(
+                    pageImages[pageIndices[slot]],
+                    width: cellWidth,
+                    height: cellHeight,
+                  )
                 : pw.SizedBox(),
           ),
         );
@@ -159,11 +168,22 @@ class DocumentPrintLayout {
     );
   }
 
-  static pw.Widget _buildCell(Uint8List imageBytes) => pw.Container(
+  static pw.Widget _buildCell(
+    Uint8List imageBytes, {
+    required double width,
+    required double height,
+  }) => pw.Container(
+    width: width,
+    height: height,
+    alignment: pw.Alignment.center,
     decoration: pw.BoxDecoration(
       border: pw.Border.all(color: PdfColors.grey600, width: 0.5),
     ),
-    padding: const pw.EdgeInsets.all(5),
-    child: pw.Image(pw.MemoryImage(imageBytes), fit: pw.BoxFit.contain),
+    child: pw.Image(
+      pw.MemoryImage(imageBytes),
+      width: width - 10,
+      height: height - 10,
+      fit: pw.BoxFit.contain,
+    ),
   );
 }
