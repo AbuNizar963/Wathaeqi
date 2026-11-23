@@ -1,8 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Account, Query } from "node-appwrite";
-import { SignJWT, jwtVerify } from "jose";
-import { parse } from "cookie";
-import type { Request, Response } from "express";
+import { EncryptJWT, jwtDecrypt } from "jose";
+import type { Request } from "express";
 import type { User } from "./user";
 import {
   getAppwriteAdminClient,
@@ -12,9 +11,8 @@ import {
 } from "./appwrite";
 import { ENV } from "./env";
 
-// Keep the browser cookie name stable while changing its contents to an Appwrite-backed signed session.
-export const APPWRITE_SESSION_COOKIE = "police_telegrams_session";
 const USERS_TABLE_ID = "users";
+const SESSION_TOKEN_TTL_SECONDS = 12 * 60 * 60;
 
 type AppwriteSession = Awaited<
   ReturnType<Account["createEmailPasswordSession"]>
@@ -162,7 +160,7 @@ export async function authenticateAppwriteUser(
   username: string,
   password: string
 ): Promise<{ user: User; session: AppwriteSession } | null> {
-  getSessionSigningKey();
+  getSessionTokenEncryptionKey();
   const profile = await getAppwriteProfileByUsername(username);
   if (
     !profile ||
@@ -223,11 +221,14 @@ export async function authenticateAppwriteUser(
   }
 }
 
-function getSessionSigningKey(): Uint8Array {
+function getSessionTokenEncryptionKey(): Uint8Array {
   if (ENV.authSessionSecret.length < 32) {
     throw new Error("AUTH_SESSION_SECRET must contain at least 32 characters");
   }
-  return new TextEncoder().encode(ENV.authSessionSecret);
+  return createHash("sha256")
+    .update("wathaeqi-appwrite-session-token-v1\0")
+    .update(ENV.authSessionSecret)
+    .digest();
 }
 
 type SessionClaims = {
@@ -237,13 +238,25 @@ type SessionClaims = {
 };
 
 async function readSessionClaims(req: Request): Promise<SessionClaims | null> {
-  const token = parse(req.headers.cookie ?? "")[APPWRITE_SESSION_COOKIE];
+  const authorization = req.headers.authorization;
+  const match =
+    typeof authorization === "string"
+      ? /^Bearer\s+([A-Za-z0-9._~-]{1,16384})$/i.exec(authorization.trim())
+      : null;
+  const token = match?.[1];
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, getSessionSigningKey(), {
-      algorithms: ["HS256"],
-    });
+    const { payload } = await jwtDecrypt(
+      token,
+      getSessionTokenEncryptionKey(),
+      {
+        keyManagementAlgorithms: ["dir"],
+        contentEncryptionAlgorithms: ["A256GCM"],
+        issuer: "wathaeqi-api",
+        audience: "wathaeqi-client",
+      }
+    );
     const appwriteSessionSecret = payload.appwriteSessionSecret;
     const sessionVersion = payload.sessionVersion;
     const userId = Number(payload.sub);
@@ -306,49 +319,33 @@ export async function deleteCurrentAppwriteSession(
   await account.deleteSession({ sessionId: "current" });
 }
 
-function serializeCookie(value: string, maxAge: number): string {
-  const parts = [
-    `${APPWRITE_SESSION_COOKIE}=${encodeURIComponent(value)}`,
-    "Path=/",
-    "HttpOnly",
-    `SameSite=${ENV.appwriteSessionCookieSameSite}`,
-    `Max-Age=${maxAge}`,
-  ];
-  if (ENV.isProduction || ENV.appwriteSessionCookieSameSite === "None") {
-    parts.push("Secure");
-  }
-  if (ENV.appwriteSessionCookieSameSite === "None") {
-    // The production API runs on an Appwrite Function origin while the UI is
-    // served from an Appwrite Site origin. Partitioned keeps the HttpOnly
-    // session usable in that embedded cross-site context without widening its
-    // scope to unrelated top-level sites.
-    parts.push("Partitioned");
-  }
-  return parts.join("; ");
-}
-
-export async function setAppwriteSessionCookie(
-  res: Response,
+export async function createAppwriteSessionToken(
   session: AppwriteSession,
   user: Pick<User, "id" | "authUserId" | "sessionVersion">
-): Promise<void> {
+): Promise<string> {
   const expiresAt = new Date(session.expire).getTime();
-  const maxAge = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-  if (!session.secret || !Number.isFinite(expiresAt) || maxAge === 0) {
+  const now = Math.floor(Date.now() / 1000);
+  const tokenExpiresAt = Math.min(
+    Math.floor(expiresAt / 1000),
+    now + SESSION_TOKEN_TTL_SECONDS
+  );
+  if (!session.secret || !Number.isFinite(expiresAt) || tokenExpiresAt <= now) {
     throw new Error("Appwrite returned an invalid authentication session");
   }
 
   let token: string;
   try {
-    token = await new SignJWT({
+    token = await new EncryptJWT({
       appwriteSessionSecret: session.secret,
       sessionVersion: user.sessionVersion ?? user.authUserId,
     })
-      .setProtectedHeader({ alg: "HS256" })
+      .setProtectedHeader({ alg: "dir", enc: "A256GCM", typ: "JWT" })
+      .setIssuer("wathaeqi-api")
+      .setAudience("wathaeqi-client")
       .setSubject(String(user.id))
       .setIssuedAt()
-      .setExpirationTime(Math.floor(expiresAt / 1000))
-      .sign(getSessionSigningKey());
+      .setExpirationTime(tokenExpiresAt)
+      .encrypt(getSessionTokenEncryptionKey());
   } catch (error) {
     await new Account(getAppwriteSessionClient(session.secret))
       .deleteSession({ sessionId: "current" })
@@ -356,14 +353,7 @@ export async function setAppwriteSessionCookie(
     throw error;
   }
 
-  res.setHeader("Set-Cookie", serializeCookie(token, maxAge));
-}
-
-export function clearAppwriteSessionCookie(res: Response): void {
-  res.setHeader(
-    "Set-Cookie",
-    `${serializeCookie("", 0)}; Expires=${new Date(0).toUTCString()}`
-  );
+  return token;
 }
 
 export async function verifyAppwriteUserPassword(
@@ -399,10 +389,9 @@ export class AppwriteInvalidCurrentPasswordError extends Error {
 
 export async function changeAppwritePassword(
   req: Request,
-  res: Response,
   currentPassword: string,
   newPassword: string
-): Promise<User> {
+): Promise<{ user: User; sessionToken: string }> {
   const claims = await readSessionClaims(req);
   if (!claims) {
     throw new Error("An active Appwrite session is required");
@@ -456,6 +445,10 @@ export async function changeAppwritePassword(
     updatedAt: now,
   };
 
+  const sessionToken = await createAppwriteSessionToken(
+    newSession,
+    updatedUser
+  );
   try {
     await getAppwriteTablesDB().updateRow({
       databaseId: getAppwriteDatabaseId(),
@@ -468,7 +461,6 @@ export async function changeAppwritePassword(
         updatedAt: now.toISOString(),
       },
     });
-    await setAppwriteSessionCookie(res, newSession, updatedUser);
   } catch (error) {
     await new Account(getAppwriteSessionClient(newSession.secret))
       .deleteSession({ sessionId: "current" })
@@ -480,7 +472,7 @@ export async function changeAppwritePassword(
     .deleteSession({ sessionId: "current" })
     .catch(() => undefined);
 
-  return updatedUser;
+  return { user: updatedUser, sessionToken };
 }
 
 export async function dismissAppwritePasswordChange(

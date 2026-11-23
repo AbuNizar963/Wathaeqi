@@ -53,12 +53,13 @@
 - `APPWRITE_DATABASE_ID=wathaeqi-db`
 - `APPWRITE_BUCKET_ID=document-attachments`
 - `APPWRITE_WEB_ORIGINS=https://wathaeqi.appwrite.network`
-- `APPWRITE_SESSION_COOKIE_SAMESITE=None`
 - `NODE_ENV=production`
 - `AUTH_SESSION_SECRET`: سر عشوائي طويل محفوظ كمتغير Secret داخل Function فقط. لا يُحفظ في GitHub أو ملفات الواجهة أو المستودع.
 - `OWNER_SETUP_SECRET`: مسار إعداد المالك لمرة واحدة؛ سجل استهلاكه موجود بالفعل، فلا يُعاد تفعيله أو تدويره ضمن النشر المعتاد.
 
 لا تضف مفاتيح Appwrite أو أسرار الجلسات إلى متغيرات `VITE_` أو إلى Git.
+
+المصادقة لا تستخدم ملفات تعريف الارتباط: تُرسل الواجهة رمز Bearer مشفّراً ومتحققاً من سلامته في `Authorization` عبر HTTPS، ويُحفظ مؤقتاً في `sessionStorage` لمدة لا تتجاوز 12 ساعة. لا يحتوي الرمز على سر جلسة Appwrite بصيغة قابلة للقراءة. يجب أن يسمح إعداد Function بطلبات `OPTIONS` وترويسة `Authorization` من أصل الموقع المحدد في `APPWRITE_WEB_ORIGINS`.
 
 ## التخزين
 

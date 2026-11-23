@@ -7,7 +7,7 @@
 
 أصبحت مسارات التشغيل الحالية في هذا الفرع مبنية على Appwrite:
 
-- المصادقة والجلسات: Appwrite Auth مع جلسة خادمية موقعة.
+- المصادقة والجلسات: Appwrite Auth مع رمز جلسة مشفّر يصدره الخادم.
 - ملفات المالك والوثائق والقوالب وإعدادات المؤسسة: Appwrite TablesDB.
 - الملفات: Appwrite Storage عبر `AppwriteStorageProvider`.
 - واجهة API: Appwrite Function `wathaeqi-api`.

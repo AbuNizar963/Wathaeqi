@@ -3,17 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BrandMark } from "@/components/BrandMark";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { setSessionToken } from "@/lib/sessionToken";
 
 export default function OwnerSetupForm() {
   const utils = trpc.useUtils();
   const resetOwnerPassword = trpc.auth.createInitialOwner.useMutation({
-    onSuccess: async () => {
+    onSuccess: async result => {
+      setSessionToken(result.sessionToken);
       await Promise.all([
         utils.auth.me.invalidate(),
         utils.auth.ownerSetupStatus.invalidate(),
       ]);
-      // The recovery mutation sets an HttpOnly session cookie. A clean
-      // navigation ensures the next page load is authenticated with that cookie.
+      // Reload after the session token is stored so the app starts authenticated.
       window.location.replace("/");
     },
   });

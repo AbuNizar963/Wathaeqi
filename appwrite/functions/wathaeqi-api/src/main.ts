@@ -189,7 +189,6 @@ function createCorsHeaders(origin: string | undefined): Headers {
   const headers = new Headers({
     "Cache-Control": "no-store",
     Vary: "Origin",
-    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
     "Access-Control-Allow-Headers": [
       "Content-Type",

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { clearSessionToken } from "@/lib/sessionToken";
 import {
   documentFileUrl,
   documentStudioUrl,
@@ -8,6 +9,7 @@ import {
 
 describe("document actions", () => {
   beforeEach(() => {
+    clearSessionToken();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
     vi.stubGlobal("window", {
@@ -77,7 +79,8 @@ describe("document actions", () => {
     await downloadDocumentFile("/api/documents/doc-1/file", "file.pdf");
 
     expect(fetch).toHaveBeenCalledWith("/api/documents/doc-1/file", {
-      credentials: "include",
+      headers: new Headers(),
+      credentials: "omit",
     });
     expect(createElement).toHaveBeenCalledWith("a");
     expect(click).toHaveBeenCalledOnce();

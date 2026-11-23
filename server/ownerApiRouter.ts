@@ -7,10 +7,9 @@ import {
   AppwritePasswordResetRequiredError,
   authenticateAppwriteUser,
   changeAppwritePassword,
-  clearAppwriteSessionCookie,
+  createAppwriteSessionToken,
   deleteCurrentAppwriteSession,
   dismissAppwritePasswordChange,
-  setAppwriteSessionCookie,
   updateAppwriteUserProfile,
 } from "./_core/appwriteAuth";
 import {
@@ -121,12 +120,11 @@ const ownerAuthRouter = router({
       }
 
       const recovered = await createInitialOwnerProfile(input);
-      await setAppwriteSessionCookie(
-        ctx.res,
+      const sessionToken = await createAppwriteSessionToken(
         recovered.session,
         recovered.user
       );
-      return publicUser(recovered.user);
+      return { user: publicUser(recovered.user), sessionToken };
     }),
 
   login: publicProcedure
@@ -154,13 +152,12 @@ const ownerAuthRouter = router({
         });
       }
 
-      await setAppwriteSessionCookie(
-        ctx.res,
+      const sessionToken = await createAppwriteSessionToken(
         authenticated.session,
         authenticated.user
       );
       await clearSuccessfulLoginRateLimit(rateLimitKey);
-      return publicUser(authenticated.user);
+      return { user: publicUser(authenticated.user), sessionToken };
     }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
@@ -168,8 +165,6 @@ const ownerAuthRouter = router({
       await deleteCurrentAppwriteSession(ctx.req);
     } catch {
       // An expired or revoked server session must not block local logout.
-    } finally {
-      clearAppwriteSessionCookie(ctx.res);
     }
     return { success: true } as const;
   }),
@@ -224,12 +219,12 @@ const ownerProfileRouter = router({
       }
 
       try {
-        await changeAppwritePassword(
+        const changed = await changeAppwritePassword(
           ctx.req,
-          ctx.res,
           input.currentPassword,
           input.newPassword
         );
+        return { success: true, sessionToken: changed.sessionToken };
       } catch (error) {
         if (error instanceof AppwriteInvalidCurrentPasswordError) {
           throw new TRPCError({
@@ -239,8 +234,6 @@ const ownerProfileRouter = router({
         }
         throw error;
       }
-
-      return { success: true };
     }),
 
   dismissTemporaryPasswordChange: authenticatedProcedure.mutation(
