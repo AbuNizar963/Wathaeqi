@@ -91,7 +91,7 @@ class DocumentPrintLayout {
       output.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(18),
+          margin: pw.EdgeInsets.zero,
           build: (_) => _buildSheet(indices, sheetImages, pagesPerSheet),
         ),
       );
