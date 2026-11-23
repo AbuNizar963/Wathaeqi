@@ -170,8 +170,6 @@ describe.skipIf(
           top: 400px;
           left: 0;
         }
-        .reference .document-letterhead,
-        .reference .document-letterhead * { letter-spacing: normal; }
       </style></head><body>
         ${letterhead("target")}
         ${letterhead("reference")}

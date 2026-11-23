@@ -120,6 +120,85 @@ function errorCode(error: unknown): number {
     : 0;
 }
 
+function errorMessage(error: unknown): string {
+  return error && typeof error === "object" && "message" in error
+    ? String((error as { message?: unknown }).message ?? "")
+    : "";
+}
+
+type ColumnMetadata = {
+  key?: string;
+  type?: string;
+  required?: boolean;
+};
+
+type LegacyIdKind = "integer" | "text";
+
+/**
+ * Production databases created before the Appwrite-only schema still carry the
+ * legacy auto-increment `id` column on `department_settings`, and Appwrite
+ * rejects inserts that omit it. The current schema no longer declares it, so
+ * inspect the live table and mirror the column only when it is still required.
+ */
+async function detectLegacyIdColumn(): Promise<LegacyIdKind | null> {
+  try {
+    const table = await getAppwriteTablesDB().getTable({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: DEPARTMENT_SETTINGS_TABLE,
+    });
+    const columns = (table.columns ?? []) as ColumnMetadata[];
+    const column = columns.find(candidate => candidate.key === "id");
+    if (!column || column.required === false) return null;
+    switch (column.type) {
+      case "integer":
+      case "bigint":
+      case "float":
+        return "integer";
+      case "varchar":
+      case "string":
+      case "text":
+      case "mediumtext":
+      case "longtext":
+        return "text";
+      default:
+        return null;
+    }
+  } catch {
+    // Schema inspection is best effort; the insert fallbacks below still cover
+    // a table that hides its metadata from the server key.
+    return null;
+  }
+}
+
+function legacyIdValue(
+  organizationId: string,
+  kind: LegacyIdKind
+): number | string {
+  const digest = createHash("sha256")
+    .update(`department-settings:${organizationId}`)
+    .digest("hex");
+  if (kind === "integer") {
+    // Deterministic positive 31-bit integer that stays inside Appwrite's
+    // 32-bit integer column range.
+    return (Number.parseInt(digest.slice(0, 8), 16) % 2_000_000_000) + 1;
+  }
+  return `ds-${digest.slice(0, 33)}`;
+}
+
+function isMissingLegacyIdError(error: unknown): boolean {
+  return (
+    errorCode(error) === 400 &&
+    /required attribute ["']?id["']?/i.test(errorMessage(error))
+  );
+}
+
+function isLegacyIdTypeError(error: unknown): boolean {
+  return (
+    errorCode(error) === 400 &&
+    /(invalid|type).*["']?id["']?/i.test(errorMessage(error))
+  );
+}
+
 async function findRowByColumn(
   tableId: string,
   column: string,
@@ -227,13 +306,7 @@ async function ensureDepartmentSettingsRow(
     updatedAt: now,
   };
   try {
-    const created = await getAppwriteTablesDB().createRow({
-      databaseId: getAppwriteDatabaseId(),
-      tableId: DEPARTMENT_SETTINGS_TABLE,
-      // 136 hash bits plus the prefix fit Appwrite's 36-character ID limit.
-      rowId: `s-${createHash("sha256").update(organizationId).digest("hex").slice(0, 34)}`,
-      data,
-    });
+    const created = await createSettingsRow(organizationId, data);
     return created as AppwriteRow;
   } catch (error) {
     if (errorCode(error) !== 409) throw error;
@@ -244,6 +317,45 @@ async function ensureDepartmentSettingsRow(
     );
     if (!raced) throw error;
     return raced;
+  }
+}
+
+async function createSettingsRow(
+  organizationId: string,
+  data: Record<string, unknown>
+): Promise<unknown> {
+  const tables = getAppwriteTablesDB();
+  // 136 hash bits plus the prefix fit Appwrite's 36-character ID limit.
+  const rowId = `s-${createHash("sha256").update(organizationId).digest("hex").slice(0, 34)}`;
+  const create = (payload: Record<string, unknown>) =>
+    tables.createRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: DEPARTMENT_SETTINGS_TABLE,
+      rowId,
+      data: payload,
+    });
+
+  const legacyIdKind = await detectLegacyIdColumn();
+  if (legacyIdKind) {
+    return create({ ...data, id: legacyIdValue(organizationId, legacyIdKind) });
+  }
+
+  try {
+    return await create(data);
+  } catch (error) {
+    if (!isMissingLegacyIdError(error)) throw error;
+    try {
+      return await create({
+        ...data,
+        id: legacyIdValue(organizationId, "integer"),
+      });
+    } catch (retryError) {
+      if (!isLegacyIdTypeError(retryError)) throw retryError;
+      return create({
+        ...data,
+        id: legacyIdValue(organizationId, "text"),
+      });
+    }
   }
 }
 

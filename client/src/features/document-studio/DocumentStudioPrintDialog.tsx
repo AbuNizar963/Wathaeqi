@@ -14,7 +14,6 @@ import {
   openPrintWindow,
 } from "../document-library/printSheets";
 import type { PagesPerSheet, SourcePage } from "../document-library/types";
-import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
@@ -35,42 +34,48 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     throw new Error("تعذر تحديد أبعاد صفحة الوثيقة للطباعة");
   }
 
-  const { default: html2canvas } = await import("html2canvas");
-  const canvas = await html2canvas(element, {
-    backgroundColor: "#ffffff",
-    allowTaint: false,
-    useCORS: true,
-    logging: false,
-    scale: 3,
-    width,
-    height,
-    windowWidth: Math.max(document.documentElement.clientWidth, width),
-    windowHeight: Math.max(window.innerHeight, height),
-    scrollX: 0,
-    scrollY: 0,
-    onclone: clonedDocument => {
-      sanitizeUnsupportedPrintColors(clonedDocument);
-      const clonedPage =
-        clonedDocument.querySelector<HTMLElement>(".document-a4-page");
-      if (clonedPage) clonedPage.style.minHeight = `${height}px`;
-
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-input")
-        .forEach(editor => {
-          editor.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-warning")
-        .forEach(warning => {
-          warning.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-print-copy")
-        .forEach(copy => {
-          copy.style.display = "block";
-        });
-    },
+  // html-to-image renders the real DOM through an SVG foreignObject, so Arabic
+  // shaping and the letterhead layout match the on-screen page exactly.
+  const { toCanvas } = await import("html-to-image");
+  const inputs = Array.from(
+    element.querySelectorAll<HTMLElement>(".document-editor-input")
+  );
+  const warnings = Array.from(
+    element.querySelectorAll<HTMLElement>(".document-editor-warning")
+  );
+  const printCopies = Array.from(
+    element.querySelectorAll<HTMLElement>(".document-editor-print-copy")
+  );
+  const previous = [...inputs, ...warnings, ...printCopies].map(
+    node => node.style.display
+  );
+  [...inputs, ...warnings].forEach(node => {
+    node.style.display = "none";
   });
+  printCopies.forEach(node => {
+    node.style.display = "block";
+  });
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await toCanvas(element, {
+      pixelRatio: 3,
+      cacheBust: true,
+      width,
+      height,
+      style: {
+        transform: "none",
+        position: "static",
+        left: "auto",
+        top: "auto",
+        margin: "0",
+        minHeight: `${height}px`,
+      },
+    });
+  } finally {
+    [...inputs, ...warnings, ...printCopies].forEach((node, index) => {
+      node.style.display = previous[index] ?? "";
+    });
+  }
 
   const scale = canvas.width / width;
   const pageHeight = (width * 297) / 210;

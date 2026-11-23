@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
   createRow: vi.fn(),
   updateRow: vi.fn(),
+  getTable: vi.fn(),
 }));
 
 vi.mock("../../_core/appwrite", () => ({
@@ -62,6 +63,8 @@ beforeEach(() => {
   vi.resetAllMocks();
   rows.clear();
 
+  mocks.getTable.mockResolvedValue({ columns: [] });
+
   mocks.listRows.mockImplementation(
     async ({ databaseId, tableId, queries, total }) => {
       expect(databaseId).toBe("test-db");
@@ -119,6 +122,53 @@ beforeEach(() => {
 });
 
 describe("department settings Appwrite repository", () => {
+  it("fills the legacy required integer id when the live table still declares it", async () => {
+    mocks.getTable.mockResolvedValue({
+      columns: [{ key: "id", type: "integer", required: true }],
+    });
+
+    const first = await ensureDepartmentSettings(orgA);
+    const firstPayload = (mocks.createRow.mock.calls[0][0] as CreateRequest)
+      .data;
+    expect(firstPayload.id).toEqual(expect.any(Number));
+    expect(Number.isInteger(firstPayload.id)).toBe(true);
+    expect(firstPayload.id).toBeGreaterThan(0);
+    expect(first).toMatchObject({ organizationId: orgA });
+
+    await ensureDepartmentSettings(orgB);
+    const secondPayload = (mocks.createRow.mock.calls[1][0] as CreateRequest)
+      .data;
+    expect(secondPayload.id).not.toBe(firstPayload.id);
+
+    // Recreating the same organization keeps the deterministic legacy id.
+    rows.clear();
+    await ensureDepartmentSettings(orgA);
+    const repeatedPayload = (mocks.createRow.mock.calls[2][0] as CreateRequest)
+      .data;
+    expect(repeatedPayload.id).toBe(firstPayload.id);
+  });
+
+  it("retries with a legacy id when the table metadata is unavailable", async () => {
+    mocks.getTable.mockRejectedValue(new Error("schema unavailable"));
+    const missingId = Object.assign(
+      new Error('Invalid document structure: Missing required attribute "id"'),
+      { code: 400 }
+    );
+    mocks.createRow.mockRejectedValueOnce(missingId);
+
+    const settings = await ensureDepartmentSettings(orgA);
+    expect(settings.organizationId).toBe(orgA);
+    expect(mocks.createRow).toHaveBeenCalledTimes(2);
+    const retried = (mocks.createRow.mock.calls[1][0] as CreateRequest).data;
+    expect(retried.id).toEqual(expect.any(Number));
+  });
+
+  it("does not send a legacy id when the table no longer declares one", async () => {
+    await ensureDepartmentSettings(orgA);
+    const payload = (mocks.createRow.mock.calls[0][0] as CreateRequest).data;
+    expect(payload).not.toHaveProperty("id");
+  });
+
   it("creates a valid at-most-36-character stable row ID for a maximum-length organization ID", async () => {
     expect(orgA).toHaveLength(36);
     const first = await ensureDepartmentSettings(orgA);

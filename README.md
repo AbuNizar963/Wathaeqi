@@ -19,7 +19,7 @@
 - **المصادقة:** Appwrite Auth، مع جلسة HttpOnly موقعة من الخادم.
 - **قاعدة البيانات:** Appwrite TablesDB ضمن قاعدة `wathaeqi-db`.
 - **الملفات:** Appwrite Storage عبر موفر التخزين الخادمي، بمفاتيح آمنة تحت `documents/{userId}/`.
-- **معاينة الملفات:** `pdfjs-dist` لـPDF، و`docx-preview` لـWord، و`html2canvas` لتحويل الصفحات إلى صور عند الطباعة.
+- **معاينة الملفات:** `pdfjs-dist` لـPDF، و`docx-preview` لـWord، و`html-to-image` لتحويل الصفحات إلى صور عند الطباعة والتنزيل.
 
 ## إعداد البيئة المحلية
 
