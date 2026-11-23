@@ -336,6 +336,27 @@ export async function createOrganization(
   return mapOrganizationRow(created as AppwriteRow);
 }
 
+export async function renameOrganization(
+  organizationId: string,
+  name: string
+): Promise<OrganizationRecord> {
+  const row = await getOrganizationRowId(organizationId);
+  if (!row) throw new Error("الجهة غير موجودة");
+  const updated = await getAppwriteTablesDB().updateRow({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: ORGANIZATIONS_TABLE,
+    rowId: row.$id,
+    data: {
+      name: name.trim(),
+      updatedAt: new Date().toISOString(),
+    },
+  });
+  return {
+    ...mapOrganizationRow(row),
+    ...mapOrganizationRow(updated as AppwriteRow),
+  };
+}
+
 export async function updateOrganization(
   organizationId: string,
   input: OrganizationWriteInput

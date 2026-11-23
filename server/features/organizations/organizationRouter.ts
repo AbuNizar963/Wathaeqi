@@ -16,6 +16,7 @@ import {
   listOrganizations,
   listOrganizationDescendants,
   listRoutingTargets,
+  renameOrganization,
   saveOrganizationLogo,
   setOrganizationActive,
   updateOrganization,
@@ -82,6 +83,26 @@ export const organizationRouter = router({
       canAdministrate: scope.canAdministrate,
     };
   }),
+
+  renameCurrent: authenticatedProcedure
+    .input(z.object({ name: z.string().trim().min(2).max(255) }).strict())
+    .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
+      if (!scope.canAdministrate) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "تغيير اسم الجهة متاح لمدير الجهة أو مالك المنصة فقط.",
+        });
+      }
+      const organization = await renameOrganization(
+        scope.organizationId,
+        input.name
+      );
+      return {
+        organizationId: organization.id,
+        organizationName: organization.name,
+      };
+    }),
 
   list: authenticatedProcedure
     .input(z.object({ includeInactive: z.boolean().default(false) }).optional())

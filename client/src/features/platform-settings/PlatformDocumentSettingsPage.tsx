@@ -55,13 +55,13 @@ function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
 export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
   const settingsQuery = ownerTrpc.platformDocumentSettings.get.useQuery();
-  const organizationsQuery = trpc.organizations.all.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState("");
+  const organizationId = organizationContext.data?.organizationId;
+  const [organizationName, setOrganizationName] = useState("");
   const organizationLogoQuery = trpc.organizations.logo.useQuery(
-    { id: selectedOrganizationId || "00000000-0000-0000-0000-000000000000" },
+    { id: organizationId ?? "unavailable" },
     {
-      enabled: Boolean(selectedOrganizationId),
+      enabled: Boolean(organizationId),
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
@@ -78,19 +78,10 @@ export default function PlatformDocumentSettingsPage() {
   }, [settingsQuery.data]);
 
   useEffect(() => {
-    if (selectedOrganizationId || !organizationsQuery.data?.length) return;
-    const currentId = organizationContext.data?.organizationId;
-    const currentOrganization = organizationsQuery.data.find(
-      organization => organization.id === currentId
-    );
-    setSelectedOrganizationId(
-      currentOrganization?.id ?? organizationsQuery.data[0].id
-    );
-  }, [
-    selectedOrganizationId,
-    organizationsQuery.data,
-    organizationContext.data?.organizationId,
-  ]);
+    if (organizationContext.data?.organizationName) {
+      setOrganizationName(organizationContext.data.organizationName);
+    }
+  }, [organizationContext.data?.organizationName]);
 
   useEffect(() => {
     setLogoUrl(organizationLogoQuery.data?.dataUrl ?? "");
@@ -105,18 +96,31 @@ export default function PlatformDocumentSettingsPage() {
     onError: error => toast.error(error.message),
   });
 
+  const renameOrganizationMutation =
+    trpc.organizations.renameCurrent.useMutation({
+      onSuccess: async saved => {
+        setOrganizationName(saved.organizationName);
+        await Promise.all([
+          utils.organizations.context.invalidate(),
+          utils.organizations.all.invalidate(),
+        ]);
+        toast.success("تم حفظ اسم الجهة");
+      },
+      onError: error => toast.error(error.message),
+    });
+
   const updateValue = <K extends keyof SettingsForm>(
     key: K,
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
 
   const handleLogoFile = async (file: File | undefined) => {
-    if (!file || !selectedOrganizationId) return;
+    if (!file || !organizationId) return;
     setIsUploadingLogo(true);
     try {
       const prepared = await prepareOrganizationLogoUpload(file);
       const uploadedLogo = await uploadOrganizationLogoDirect({
-        organizationId: selectedOrganizationId,
+        organizationId,
         fileName: file.name,
         blob: prepared.blob,
         contentType: prepared.contentType,
@@ -205,37 +209,67 @@ export default function PlatformDocumentSettingsPage() {
                 <div>
                   <h2 className="font-semibold">هوية الجهة وشعارها</h2>
                   <p className="text-xs text-muted-foreground">
-                    اختر الجهة وارفع شعارها ليظهر في منتصف رأس الوثيقة الرسمية.
+                    تُطبّق التغييرات تلقائياً على جهة عملك الحالية والوثائق
+                    الرسمية.
                   </p>
                 </div>
               </div>
-              {organizationsQuery.isLoading ? (
+              {organizationContext.isLoading ? (
                 <p className="text-sm text-muted-foreground">
-                  جارٍ تحميل الجهات...
+                  جارٍ تحميل بيانات الجهة الحالية...
                 </p>
-              ) : organizationsQuery.isError ||
-                !organizationsQuery.data?.length ? (
+              ) : organizationContext.isError || !organizationId ? (
                 <p className="text-sm text-destructive">
-                  تعذر تحميل الجهات. تحقق من صلاحية مالك المنصة ثم أعد المحاولة.
+                  تعذر تحميل الجهة الحالية. تحقق من صلاحيات الحساب ثم أعد
+                  المحاولة.
                 </p>
               ) : (
                 <>
-                  <label className="block space-y-1">
-                    <span className="text-sm font-medium">الجهة</span>
-                    <select
-                      value={selectedOrganizationId}
-                      onChange={event =>
-                        setSelectedOrganizationId(event.target.value)
-                      }
-                      className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                    <label
+                      htmlFor="current-organization-name"
+                      className="block space-y-1"
                     >
-                      {organizationsQuery.data.map(organization => (
-                        <option key={organization.id} value={organization.id}>
-                          {organization.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      <span className="text-sm font-medium">اسم الجهة</span>
+                      <input
+                        id="current-organization-name"
+                        value={organizationName}
+                        maxLength={255}
+                        disabled={!organizationContext.data?.canAdministrate}
+                        onChange={event =>
+                          setOrganizationName(event.target.value)
+                        }
+                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                        autoComplete="organization"
+                      />
+                    </label>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        renameOrganizationMutation.mutate({
+                          name: organizationName.trim(),
+                        })
+                      }
+                      disabled={
+                        !organizationContext.data?.canAdministrate ||
+                        renameOrganizationMutation.isPending ||
+                        organizationName.trim().length < 2 ||
+                        organizationName.trim().length > 255 ||
+                        organizationName.trim() ===
+                          organizationContext.data.organizationName
+                      }
+                    >
+                      <Save className="ml-2 h-4 w-4" />
+                      {renameOrganizationMutation.isPending
+                        ? "جارٍ حفظ الاسم..."
+                        : "حفظ اسم الجهة"}
+                    </Button>
+                  </div>
+                  {!organizationContext.data?.canAdministrate ? (
+                    <p className="text-xs text-muted-foreground">
+                      تغيير الاسم ورفع الشعار متاحان لمدير الجهة أو مالك المنصة.
+                    </p>
+                  ) : null}
                   {organizationLogoQuery.isLoading ? (
                     <p className="text-sm text-muted-foreground">
                       جارٍ تحميل شعار الجهة...
@@ -270,7 +304,10 @@ export default function PlatformDocumentSettingsPage() {
                             type="file"
                             accept="image/png,image/jpeg"
                             className="sr-only"
-                            disabled={isUploadingLogo}
+                            disabled={
+                              isUploadingLogo ||
+                              !organizationContext.data?.canAdministrate
+                            }
                             onChange={event => {
                               void handleLogoFile(event.target.files?.[0]);
                               event.currentTarget.value = "";

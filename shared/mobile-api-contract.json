@@ -73,6 +73,7 @@
     "organizations.logoForExport",
     "organizations.provisionAccount",
     "organizations.purgeArchived",
+    "organizations.renameCurrent",
     "organizations.routingDirectory",
     "organizations.routingTargets",
     "organizations.selectWorkplace",
