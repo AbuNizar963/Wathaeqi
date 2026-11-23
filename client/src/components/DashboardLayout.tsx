@@ -95,13 +95,44 @@ export default function DashboardLayout({
   const { loading, user } = useAuth();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
-  const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: async () => {
-      await utils.auth.me.invalidate();
-    },
-  });
+  const loginMutation = trpc.auth.login.useMutation();
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
+  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError(null);
+
+    try {
+      await loginMutation.mutateAsync({ username: username.trim(), password });
+      await utils.auth.me.invalidate();
+
+      if (!utils.auth.me.getData()) {
+        setLoginError(
+          "قُبلت بيانات الدخول لكن لم تُنشأ جلسة للنظام. اسمح بملفات تعريف الارتباط للموقع ثم أعد المحاولة."
+        );
+      }
+    } catch (error) {
+      const failure = error as Error;
+      if (failure.name === "TimeoutError") {
+        setLoginError(
+          "انتهت مهلة تسجيل الدخول قبل تلقي رد من الخادم. تحقق من اتصال الإنترنت ثم أعد المحاولة."
+        );
+      } else if (
+        failure instanceof TypeError ||
+        /failed to fetch|network|load failed/i.test(failure.message)
+      ) {
+        setLoginError(
+          "تعذر الاتصال بخدمة تسجيل الدخول. تحقق من اتصال الإنترنت ثم أعد المحاولة."
+        );
+      } else {
+        setLoginError(
+          failure.message || "تعذر تسجيل الدخول. يرجى المحاولة مرة أخرى."
+        );
+      }
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -116,10 +147,7 @@ export default function DashboardLayout({
       <div className="flex min-h-dvh items-center justify-center px-4">
         <form
           className="surface-elevated flex w-full max-w-md flex-col gap-6 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
-          onSubmit={event => {
-            event.preventDefault();
-            loginMutation.mutate({ username, password });
-          }}
+          onSubmit={submitLogin}
         >
           <div className="flex flex-col items-center gap-4">
             <BrandMark size="lg" />
@@ -163,9 +191,13 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          {loginMutation.error ? (
-            <p role="alert" className="text-sm text-destructive text-center">
-              {loginMutation.error.message}
+          {loginError ? (
+            <p
+              role="alert"
+              aria-live="polite"
+              className="text-sm text-destructive text-center"
+            >
+              {loginError}
             </p>
           ) : null}
 
