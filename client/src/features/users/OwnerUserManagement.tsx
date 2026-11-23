@@ -508,7 +508,7 @@ export default function OwnerUserManagement() {
                   مراجع — مراجعة واعتماد الإحالات
                 </option>
                 <option value="reader">قارئ — عرض الوثائق والسجل فقط</option>
-                <option value="auditor">مدقق — عرض السجل والتدقيق</option>
+                <option value="auditor">مدقق — مراجعة الوثائق والسجلات</option>
                 <option value="organization_supervisor">
                   مشرف الجهة — إدارة حسابات الجهة
                 </option>
@@ -1016,7 +1016,7 @@ export default function OwnerUserManagement() {
                                           "هذا الحساب";
                                         if (
                                           window.confirm(
-                                            `سيتم حذف حساب ${label} نهائيًا. إذا كان مرتبطًا بوثائق أو سجل تدقيق سيُرفض الحذف حفاظًا على السجلات. هل تريد المتابعة؟`
+                                            `سيتم حذف حساب ${label} نهائيًا. إذا كانت لديه بيانات أو سجلات عمل مرتبطة، سيُرفض الحذف لحمايتها. استخدم تعطيل الحساب للاحتفاظ بها. هل تريد المتابعة؟`
                                           )
                                         ) {
                                           const confirmPassword = window.prompt(

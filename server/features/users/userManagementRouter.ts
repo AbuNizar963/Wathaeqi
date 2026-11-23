@@ -9,6 +9,7 @@ import {
   createManagedUser,
   deleteManagedUser,
   getManagedUser,
+  ManagedUserHasLinkedRecordsError,
   listManagedUsers,
   setManagedUserActive,
   updateManagedUser,
@@ -216,10 +217,20 @@ export const userManagementRouter = router({
           code: "NOT_FOUND",
           message: "المستخدم غير موجود",
         });
-      await deleteManagedUser(input.id, {
-        id: ctx.user.id,
-        authUserId: ctx.user.authUserId,
-      });
+      try {
+        await deleteManagedUser(input.id, {
+          id: ctx.user.id,
+          authUserId: ctx.user.authUserId,
+        });
+      } catch (error) {
+        if (error instanceof ManagedUserHasLinkedRecordsError) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: error.message,
+          });
+        }
+        throw error;
+      }
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,

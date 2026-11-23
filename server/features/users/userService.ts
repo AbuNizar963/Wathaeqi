@@ -5,9 +5,59 @@ import {
   getAppwriteTablesDB,
   getAppwriteUsers,
 } from "../../_core/appwrite";
-
 const USERS_TABLE = "users";
 const MEMBERSHIPS_TABLE = "organization_memberships";
+type UserRecordReference = {
+  tableId: string;
+  attribute: string;
+  owner: "profileId" | "authUserId";
+};
+
+const USER_RECORD_REFERENCES: readonly UserRecordReference[] = [
+  { tableId: "documents", attribute: "ownerId", owner: "authUserId" },
+  { tableId: "templates", attribute: "ownerId", owner: "authUserId" },
+  { tableId: "contacts", attribute: "ownerId", owner: "authUserId" },
+  { tableId: "attachments", attribute: "ownerId", owner: "authUserId" },
+  { tableId: "notifications", attribute: "userId", owner: "profileId" },
+  { tableId: "push_subscriptions", attribute: "userId", owner: "profileId" },
+  { tableId: "mobile_push_tokens", attribute: "userId", owner: "profileId" },
+  { tableId: "telegrams", attribute: "createdByUserId", owner: "profileId" },
+  {
+    tableId: "telegram_versions",
+    attribute: "changedByUserId",
+    owner: "profileId",
+  },
+  {
+    tableId: "telegram_attachments",
+    attribute: "uploadedByUserId",
+    owner: "profileId",
+  },
+  { tableId: "telegram_actions", attribute: "actorUserId", owner: "profileId" },
+  {
+    tableId: "telegram_routes",
+    attribute: "forwardedByUserId",
+    owner: "profileId",
+  },
+  {
+    tableId: "telegram_routes",
+    attribute: "approvedByUserId",
+    owner: "profileId",
+  },
+  {
+    tableId: "telegram_routes",
+    attribute: "receiverDecisionByUserId",
+    owner: "profileId",
+  },
+];
+
+export class ManagedUserHasLinkedRecordsError extends Error {
+  constructor() {
+    super(
+      "لا يمكن حذف الحساب لوجود بيانات أو سجلات مرتبطة به. عطّل الحساب بدلاً من ذلك."
+    );
+    this.name = "ManagedUserHasLinkedRecordsError";
+  }
+}
 
 export type ManagedUser = {
   id: number;
@@ -164,6 +214,31 @@ async function findUserRow(id: number): Promise<AppwriteRow | null> {
   const rows = result.rows as AppwriteRow[];
   if (rows.length > 1) throw new Error("Appwrite returned duplicate user IDs");
   return rows[0] ?? null;
+}
+
+async function hasLinkedRecords(user: {
+  id: number;
+  authUserId: string;
+}): Promise<boolean> {
+  const tables = getAppwriteTablesDB();
+  const databaseId = getAppwriteDatabaseId();
+  const results = await Promise.all(
+    USER_RECORD_REFERENCES.map(({ tableId, attribute, owner }) =>
+      tables.listRows({
+        databaseId,
+        tableId,
+        queries: [
+          Query.equal(
+            attribute,
+            owner === "profileId" ? user.id : user.authUserId
+          ),
+          Query.limit(1),
+        ],
+        total: false,
+      })
+    )
+  );
+  return results.some(result => result.rows.length > 0);
 }
 
 export async function createManagedUser(input: {
@@ -436,6 +511,9 @@ export async function deleteManagedUser(
     throw new Error("لا يمكن حذف حساب مالك المنصة أو حسابك الحالي");
   }
   const authUserId = asString(row.authUserId);
+  if (await hasLinkedRecords({ id, authUserId })) {
+    throw new ManagedUserHasLinkedRecordsError();
+  }
   const tables = getAppwriteTablesDB();
   const databaseId = getAppwriteDatabaseId();
 
