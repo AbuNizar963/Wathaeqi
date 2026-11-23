@@ -123,20 +123,14 @@ assert(
     "إدارة المستخدمين",
     "إدارة الجهات",
     "إعدادات الوثائق",
-    "سجل الإجراءات",
   ].every(label => dashboardLayout.includes(`label: "${label}"`)),
   "The sidebar must expose the full Wathaeqi workspace navigation."
 );
 
 assert(
-  [
-    "/dashboard",
-    "/studio",
-    "/users",
-    "/organizations",
-    "/settings",
-    "/audit-log",
-  ].every(path => appRoutes.includes(`path="${path}"`)),
+  ["/dashboard", "/studio", "/users", "/organizations", "/settings"].every(
+    path => appRoutes.includes(`path="${path}"`)
+  ),
   "Every restored workspace navigation item must resolve to a registered route."
 );
 
@@ -149,9 +143,9 @@ assert(
 
 assert(
   workspaceRouter.includes('tableId: "contacts"') &&
-    workspaceRouter.includes('tableId: "audit_logs"') &&
     workspaceRouter.includes('tableId: "organizations"') &&
     workspaceRouter.includes('tableId: "users"') &&
+    !workspaceRouter.includes('tableId: "audit_logs"') &&
     workspaceRouter.includes("ctx.user.authUserId"),
   "Workspace API reads and writes must use the existing Appwrite tables and scope data to the signed-in owner."
 );

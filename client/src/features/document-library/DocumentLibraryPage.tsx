@@ -1,8 +1,9 @@
 // Document library with a full-screen A4 preview and native actions.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Archive,
+  Bookmark,
   Download,
   FileImage,
   FileText,
@@ -32,6 +33,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/features/auth-session/useAuth";
+import {
+  parseSavedDocumentViews,
+  savedDocumentViewsKey,
+  type SavedDocumentView,
+} from "./savedViews";
 import { toast } from "sonner";
 import FilePreview from "./FilePreview";
 import PrintDialog from "./PrintDialog";
@@ -75,14 +82,48 @@ function FileGlyph({
 
 export default function DocumentLibraryPage() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
+  const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
+  const [savedViewName, setSavedViewName] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [creationOpen, setCreationOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [printOpen, setPrintOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setSavedViews([]);
+      setSavedViewsUserId(null);
+      return;
+    }
+    const userId = String(user.id);
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem(savedDocumentViewsKey(userId));
+    } catch {
+      // Private browsing may disable local storage; saved searches remain optional.
+    }
+    setSavedViews(parseSavedDocumentViews(stored));
+    setSavedViewsUserId(userId);
+  }, [user?.id]);
+
+  useEffect(() => {
+    const userId = user ? String(user.id) : null;
+    if (!userId || savedViewsUserId !== userId) return;
+    try {
+      localStorage.setItem(
+        savedDocumentViewsKey(userId),
+        JSON.stringify(savedViews)
+      );
+    } catch {
+      // Do not block document search when browser storage is unavailable.
+    }
+  }, [savedViews, savedViewsUserId, user?.id]);
 
   const documents = useMemo(
     () => (documentsQuery.data ?? []).filter(document => document.file),
@@ -99,6 +140,19 @@ export default function DocumentLibraryPage() {
         .some(value => String(value).toLowerCase().includes(needle));
     });
   }, [documents, search, category]);
+
+  const saveCurrentView = () => {
+    const name = savedViewName.trim();
+    if (!name) return;
+    setSavedViews(current =>
+      [
+        { id: crypto.randomUUID(), name: name.slice(0, 40), search, category },
+        ...current.filter(view => view.name !== name),
+      ].slice(0, 30)
+    );
+    setSavedViewName("");
+    toast.success("تم حفظ عرض البحث على هذا الجهاز");
+  };
 
   const stats = useMemo(() => {
     const pages = documents.reduce(
@@ -225,6 +279,54 @@ export default function DocumentLibraryPage() {
             >
               {item.label}
             </button>
+          ))}
+        </div>
+        <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
+          <Input
+            value={savedViewName}
+            onChange={event => setSavedViewName(event.target.value)}
+            maxLength={40}
+            placeholder="اسم العرض المحفوظ"
+            aria-label="اسم عرض البحث الجديد"
+            className="h-9 min-w-36 flex-1 sm:max-w-56"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={saveCurrentView}
+            disabled={!savedViewName.trim()}
+          >
+            <Bookmark className="ms-1 size-4" /> حفظ البحث
+          </Button>
+          {savedViews.map(view => (
+            <div
+              key={view.id}
+              className="flex shrink-0 items-center rounded-full border bg-background"
+            >
+              <button
+                type="button"
+                className="px-3 py-1.5 text-xs hover:text-primary"
+                onClick={() => {
+                  setSearch(view.search);
+                  setCategory(view.category);
+                }}
+              >
+                {view.name}
+              </button>
+              <button
+                type="button"
+                className="px-2 text-muted-foreground hover:text-destructive"
+                aria-label={`حذف العرض ${view.name}`}
+                onClick={() =>
+                  setSavedViews(current =>
+                    current.filter(item => item.id !== view.id)
+                  )
+                }
+              >
+                ×
+              </button>
+            </div>
           ))}
         </div>
       </Card>
@@ -448,25 +550,6 @@ export default function DocumentLibraryPage() {
                   {selected.subject}
                 </p>
               ) : null}
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                <details className="rounded-xl border bg-card px-3 py-2">
-                  <summary className="cursor-pointer list-none text-sm font-semibold">
-                    إصدارات الوثيقة (1)
-                  </summary>
-                  <div className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-                    الإصدار الحالي · {statusLabel(selected.status)}
-                  </div>
-                </details>
-                <details className="rounded-xl border bg-card px-3 py-2">
-                  <summary className="cursor-pointer list-none text-sm font-semibold">
-                    سجل التدقيق والإجراءات
-                  </summary>
-                  <div className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-                    تم حفظ الوثيقة في المكتبة · {statusLabel(selected.status)}
-                  </div>
-                </details>
-              </div>
 
               {fileUrlQuery.isLoading ? (
                 <div className="flex items-center justify-center gap-2 py-20 text-sm text-muted-foreground">

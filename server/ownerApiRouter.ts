@@ -322,7 +322,6 @@ const ownerPlatformDocumentSettingsRouter = router({
 import { departmentSettingsRouter } from "./features/settings/departmentSettingsRouter";
 import { organizationRouter } from "./features/organizations/organizationRouter";
 import { userManagementRouter } from "./features/users/userManagementRouter";
-import { auditSearchRouter } from "./features/audit/auditSearchRouter";
 
 export const ownerApiRouter = router({
   auth: ownerAuthRouter,
@@ -333,7 +332,6 @@ export const ownerApiRouter = router({
   workspace: workspaceRouter,
   departmentSettings: departmentSettingsRouter,
   userManagement: userManagementRouter,
-  auditLogs: auditSearchRouter,
 });
 
 export type OwnerApiRouter = typeof ownerApiRouter;

@@ -23,12 +23,7 @@ import { Input } from "@/components/ui/input";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 
 type WorkspaceSection =
-  | "dashboard"
-  | "contacts"
-  | "activity"
-  | "notifications"
-  | "users"
-  | "organizations";
+  "dashboard" | "contacts" | "notifications" | "users" | "organizations";
 
 type OrganizationForm = {
   name: string;
@@ -79,7 +74,6 @@ const emptyContact: ContactForm = {
 const sectionTitles: Record<WorkspaceSection, string> = {
   dashboard: "لوحة التحكم",
   contacts: "جهات الاتصال",
-  activity: "سجل النشاط",
   notifications: "الإشعارات",
   users: "إدارة المستخدمين",
   organizations: "إدارة الجهات",
@@ -114,9 +108,6 @@ export default function WorkspacePage({
       enabled: section === "notifications",
     }
   );
-  const activityQuery = trpc.workspace.activity.list.useQuery(undefined, {
-    enabled: section === "activity",
-  });
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
     {
@@ -223,17 +214,6 @@ export default function WorkspacePage({
     );
   }, [contactsQuery.data, search]);
 
-  const activities = useMemo(() => {
-    const rows = activityQuery.data ?? [];
-    const term = search.trim().toLocaleLowerCase("ar");
-    if (!term) return rows;
-    return rows.filter(item =>
-      [item.actorName, item.action, item.entityType, item.entityId]
-        .filter(Boolean)
-        .some(value => String(value).toLocaleLowerCase("ar").includes(term))
-    );
-  }, [activityQuery.data, search]);
-
   const users = useMemo(() => {
     const rows = administrationQuery.data?.users ?? [];
     const term = search.trim().toLocaleLowerCase("ar");
@@ -263,11 +243,9 @@ export default function WorkspacePage({
         administrationQuery.isLoading
       : section === "contacts"
         ? contactsQuery.isLoading
-        : section === "activity"
-          ? activityQuery.isLoading
-          : section === "notifications"
-            ? notificationsQuery.isLoading
-            : administrationQuery.isLoading;
+        : section === "notifications"
+          ? notificationsQuery.isLoading
+          : administrationQuery.isLoading;
   const isError =
     section === "dashboard"
       ? documentsQuery.isError ||
@@ -275,11 +253,9 @@ export default function WorkspacePage({
         administrationQuery.isError
       : section === "contacts"
         ? contactsQuery.isError
-        : section === "activity"
-          ? activityQuery.isError
-          : section === "notifications"
-            ? notificationsQuery.isError
-            : administrationQuery.isError;
+        : section === "notifications"
+          ? notificationsQuery.isError
+          : administrationQuery.isError;
   const errorMessage =
     section === "dashboard"
       ? (documentsQuery.error?.message ??
@@ -287,11 +263,9 @@ export default function WorkspacePage({
         administrationQuery.error?.message)
       : section === "contacts"
         ? contactsQuery.error?.message
-        : section === "activity"
-          ? activityQuery.error?.message
-          : section === "notifications"
-            ? notificationsQuery.error?.message
-            : administrationQuery.error?.message;
+        : section === "notifications"
+          ? notificationsQuery.error?.message
+          : administrationQuery.error?.message;
 
   const refresh = () => {
     if (section === "dashboard") {
@@ -299,7 +273,6 @@ export default function WorkspacePage({
       void templatesQuery.refetch();
       void administrationQuery.refetch();
     } else if (section === "contacts") void contactsQuery.refetch();
-    else if (section === "activity") void activityQuery.refetch();
     else if (section === "notifications") void notificationsQuery.refetch();
     else void administrationQuery.refetch();
   };
@@ -348,8 +321,6 @@ export default function WorkspacePage({
               <LayoutDashboard className="h-6 w-6" />
             ) : section === "contacts" ? (
               <Contact className="h-6 w-6" />
-            ) : section === "activity" ? (
-              <FileClock className="h-6 w-6" />
             ) : section === "notifications" ? (
               <Bell className="h-6 w-6" />
             ) : section === "users" ? (
@@ -365,13 +336,11 @@ export default function WorkspacePage({
                 ? "ملخص الوثائق والنماذج وحالة المنصة"
                 : section === "contacts"
                   ? "إدارة دليل الجهات والأشخاص المرتبطين بمراسلاتك ووثائقك"
-                  : section === "activity"
-                    ? "مراجعة سجل العمليات المسجلة على المنصة"
-                    : section === "notifications"
-                      ? "عرض التنبيهات المرتبطة بحسابك وإدارة حالة قراءتها"
-                      : section === "users"
-                        ? "إدارة حسابات المستخدمين وصلاحياتهم"
-                        : "إدارة الجهات وعلاقاتها التنظيمية"}
+                  : section === "notifications"
+                    ? "عرض التنبيهات المرتبطة بحسابك وإدارة حالة قراءتها"
+                    : section === "users"
+                      ? "إدارة حسابات المستخدمين وصلاحياتهم"
+                      : "إدارة الجهات وعلاقاتها التنظيمية"}
             </p>
           </div>
         </div>
@@ -629,51 +598,6 @@ export default function WorkspacePage({
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
-        </Card>
-      ) : section === "activity" ? (
-        <Card className="space-y-4 p-4 sm:p-5">
-          <SearchField
-            value={search}
-            onChange={setSearch}
-            placeholder="ابحث في سجل النشاط..."
-          />
-          {isLoading ? (
-            <Loading />
-          ) : isError ? (
-            <ErrorMessage message={errorMessage} onRetry={refresh} />
-          ) : activities.length === 0 ? (
-            <EmptyState text="لا توجد عمليات مسجلة بعد." />
-          ) : (
-            <div className="space-y-2">
-              {activities.map(item => (
-                <div
-                  key={item.id}
-                  className="flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3"
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold">{item.actorName}</p>
-                    <p className="mt-1 text-sm">
-                      {item.action} · {item.entityType}
-                      {item.entityId ? ` · ${item.entityId}` : ""}
-                    </p>
-                    {item.metadata ? (
-                      <pre className="mt-2 max-w-full overflow-auto rounded-lg bg-muted p-2 text-xs">
-                        {JSON.stringify(item.metadata, null, 2)}
-                      </pre>
-                    ) : null}
-                  </div>
-                  <time
-                    className="shrink-0 text-xs text-muted-foreground"
-                    dir="ltr"
-                  >
-                    {item.createdAt
-                      ? new Date(item.createdAt).toLocaleString("ar")
-                      : "—"}
-                  </time>
-                </div>
-              ))}
             </div>
           )}
         </Card>

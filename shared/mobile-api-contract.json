@@ -2,7 +2,6 @@
   "version": 1,
   "scope": "Literal tRPC procedure names only; does not prove input, output, permission, behavior, dynamic calls, or HTTP endpoint compatibility.",
   "mobileProcedures": [
-    "auditLogs.search",
     "auth.logout",
     "auth.me",
     "departmentSettings.get",
@@ -39,7 +38,6 @@
     "userManagement.update"
   ],
   "webProcedures": [
-    "auditLogs.search",
     "auth.createInitialOwner",
     "auth.login",
     "auth.logout",
@@ -98,7 +96,6 @@
     "userManagement.list",
     "userManagement.setActive",
     "userManagement.update",
-    "workspace.activity.list",
     "workspace.administration.createOrganization",
     "workspace.administration.createUser",
     "workspace.administration.overview",

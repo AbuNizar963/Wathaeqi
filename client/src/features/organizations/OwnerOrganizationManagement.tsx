@@ -222,7 +222,7 @@ export default function OwnerOrganizationManagement() {
         utils.organizations.accounts.invalidate(),
       ]);
       setSelectedOrganizationId(null);
-      toast.success("تم حذف الجهة وتعطيل حساباتها مع حفظ سجل التدقيق");
+      toast.success("تم حذف الجهة وتعطيل حساباتها");
     },
     onError: error => toast.error(error.message || "تعذر حذف الجهة"),
   });
@@ -1628,7 +1628,7 @@ export default function OwnerOrganizationManagement() {
                         disabled={deleteOrganization.isPending}
                         onClick={() => {
                           const confirmed = window.confirm(
-                            `هل تريد حذف الجهة «${selectedOrganization.name}»؟ سيتم تعطيل حساباتها وإبطال جلساتها، مع الاحتفاظ بسجل التدقيق والسجلات التاريخية. لا يمكن إتمام الحذف إذا كانت للجهة جهات فرعية أو كانت جهة إحالة مفعّلة.`
+                            `هل تريد حذف الجهة «${selectedOrganization.name}»؟ سيتم تعطيل حساباتها وإبطال جلساتها، لا يمكن إتمام الحذف إذا كانت للجهة جهات فرعية أو كانت جهة إحالة مفعّلة.`
                           );
                           if (confirmed) {
                             deleteOrganization.mutate({

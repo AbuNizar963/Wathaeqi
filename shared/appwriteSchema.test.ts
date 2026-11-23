@@ -10,7 +10,6 @@ describe("Appwrite operational schema", () => {
     "organizations",
     "users",
     "organization_memberships",
-    "audit_logs",
     "app_records",
     "auth_login_rate_limits",
     "audit_purge_receipts",
@@ -72,9 +71,8 @@ describe("Appwrite operational schema", () => {
     );
   });
 
-  it("keeps legacy profile fields nullable and preserves large audit payloads", () => {
+  it("keeps legacy profile fields nullable and application records available", () => {
     const users = findSchemaTable("users");
-    const audit = findSchemaTable("audit_logs");
     const records = findSchemaTable("app_records");
 
     expect(users?.columns).toEqual(
@@ -88,13 +86,6 @@ describe("Appwrite operational schema", () => {
         }),
       ])
     );
-    expect(audit?.columns).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ key: "metadata", type: "longtext" }),
-        expect.objectContaining({ key: "beforeState", type: "longtext" }),
-        expect.objectContaining({ key: "afterState", type: "longtext" }),
-      ])
-    );
     expect(records?.columns).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ key: "payload", type: "longtext" }),
@@ -102,19 +93,9 @@ describe("Appwrite operational schema", () => {
     );
   });
 
-  it("stores the audit hash chain and keyed application records", () => {
-    const audit = findSchemaTable("audit_logs");
+  it("stores keyed application records", () => {
     const records = findSchemaTable("app_records");
 
-    expect(audit?.columns.map(column => column.key)).toEqual(
-      expect.arrayContaining([
-        "actorUserId",
-        "organizationId",
-        "previousHash",
-        "entryHash",
-        "createdAt",
-      ])
-    );
     expect(records?.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -128,7 +109,6 @@ describe("Appwrite operational schema", () => {
   it("reuses live index keys and adds only missing uniqueness", () => {
     const users = findSchemaTable("users");
     const memberships = findSchemaTable("organization_memberships");
-    const audit = findSchemaTable("audit_logs");
     const records = findSchemaTable("app_records");
 
     expect(users?.indexes.map(index => index.key)).toEqual(
@@ -146,20 +126,16 @@ describe("Appwrite operational schema", () => {
         "org_memberships_user_idx",
       ])
     );
-    expect(audit?.indexes.map(index => index.key)).toEqual(
-      expect.arrayContaining([
-        "audit_logs_id_unique",
-        "audit_logs_entry_hash_unique",
-        "audit_actor_created_idx",
-        "audit_org_created_idx",
-      ])
-    );
     expect(records?.indexes.map(index => index.key)).toContain(
       "record_type_key"
     );
   });
 
-  it("preserves rate-limit and purge receipt records", () => {
+  it("does not provision removed audit/version history and preserves rate-limit receipts", () => {
+    expect(findSchemaTable("audit_logs")).toBeUndefined();
+    expect(findSchemaTable("telegram_versions")).toBeUndefined();
+    expect(REQUIRED_TABLE_IDS).not.toContain("audit_logs");
+    expect(REQUIRED_TABLE_IDS).not.toContain("telegram_versions");
     const rateLimits = findSchemaTable("auth_login_rate_limits");
     const auditReceipts = findSchemaTable("audit_purge_receipts");
     const userReceipts = findSchemaTable("user_purge_receipts");

@@ -56,7 +56,6 @@ const UPDATED_AT: SchemaColumn = {
 };
 
 export const TELEGRAMS_TABLE = "telegrams";
-export const TELEGRAM_VERSIONS_TABLE = "telegram_versions";
 export const TELEGRAM_ACTIONS_TABLE = "telegram_actions";
 export const TELEGRAM_ATTACHMENTS_TABLE = "telegram_attachments";
 export const TELEGRAM_ROUTES_TABLE = "telegram_routes";
@@ -68,7 +67,6 @@ export const CONTACTS_TABLE = "contacts";
 export const COUNTERS_TABLE = "counters";
 export const USERS_TABLE = "users";
 export const ORGANIZATION_MEMBERSHIPS_TABLE = "organization_memberships";
-export const AUDIT_LOGS_TABLE = "audit_logs";
 export const APP_RECORDS_TABLE = "app_records";
 export const AUTH_LOGIN_RATE_LIMITS_TABLE = "auth_login_rate_limits";
 export const AUDIT_PURGE_RECEIPTS_TABLE = "audit_purge_receipts";
@@ -170,33 +168,6 @@ export const appwriteSchema: SchemaTable[] = [
         key: "telegrams_subject_search",
         type: "fulltext",
         columns: ["subject"],
-      },
-    ],
-  },
-  {
-    id: TELEGRAM_VERSIONS_TABLE,
-    name: "Telegram versions",
-    description: "Immutable snapshots for every content revision.",
-    columns: [
-      ID_COLUMN,
-      { key: "telegramId", type: "integer", required: true },
-      { key: "versionNumber", type: "integer", required: true },
-      { key: "changedByUserId", type: "integer", required: true },
-      { key: "changeReason", type: "text", required: true },
-      { key: "snapshot", type: "text", required: true },
-      CREATED_AT,
-    ],
-    indexes: [
-      {
-        key: "telegram_versions_unique",
-        type: "unique",
-        columns: ["telegramId", "versionNumber"],
-      },
-      {
-        key: "telegram_versions_telegram",
-        type: "key",
-        columns: ["telegramId", "createdAt"],
-        orders: ["ASC", "DESC"],
       },
     ],
   },
@@ -575,63 +546,6 @@ export const appwriteSchema: SchemaTable[] = [
     ],
   },
   {
-    id: AUDIT_LOGS_TABLE,
-    name: "Audit logs",
-    description:
-      "Append-only operational audit entries with a verifiable hash chain.",
-    columns: [
-      ID_COLUMN,
-      { key: "actorUserId", type: "integer", required: true },
-      { key: "actorName", type: "varchar", size: 255, required: true },
-      { key: "action", type: "varchar", size: 80, required: true },
-      { key: "entityType", type: "varchar", size: 80, required: true },
-      { key: "entityId", type: "varchar", size: 80, required: false },
-      { key: "metadata", type: "longtext", required: false },
-      { key: "ipAddress", type: "varchar", size: 80, required: false },
-      { key: "userAgent", type: "text", required: false },
-      {
-        key: "deviceType",
-        type: "varchar",
-        size: 16,
-        required: true,
-        default: "unknown",
-      },
-      { key: "actorRank", type: "varchar", size: 120, required: false },
-      { key: "actorRole", type: "varchar", size: 80, required: false },
-      { key: "organizationId", type: "varchar", size: 36, required: false },
-      { key: "reason", type: "longtext", required: false },
-      { key: "beforeState", type: "longtext", required: false },
-      { key: "afterState", type: "longtext", required: false },
-      { key: "previousHash", type: "varchar", size: 64, required: false },
-      { key: "entryHash", type: "varchar", size: 64, required: false },
-      CREATED_AT,
-    ],
-    indexes: [
-      {
-        key: "audit_logs_id_unique",
-        type: "unique",
-        columns: ["id"],
-      },
-      {
-        key: "audit_logs_entry_hash_unique",
-        type: "unique",
-        columns: ["entryHash"],
-      },
-      {
-        key: "audit_actor_created_idx",
-        type: "key",
-        columns: ["actorUserId", "createdAt"],
-        orders: ["ASC", "DESC"],
-      },
-      {
-        key: "audit_org_created_idx",
-        type: "key",
-        columns: ["organizationId", "createdAt"],
-        orders: ["ASC", "DESC"],
-      },
-    ],
-  },
-  {
     id: APP_RECORDS_TABLE,
     name: "Application records",
     description: "Keyed records for one-time setup and audit-chain metadata.",
@@ -928,7 +842,6 @@ export function findSchemaTable(tableId: string): SchemaTable | undefined {
 /** Tables required by the telegram workspace, in provisioning order. */
 export const REQUIRED_TABLE_IDS = [
   TELEGRAMS_TABLE,
-  TELEGRAM_VERSIONS_TABLE,
   TELEGRAM_ACTIONS_TABLE,
   TELEGRAM_ATTACHMENTS_TABLE,
   TELEGRAM_ROUTES_TABLE,
@@ -940,7 +853,6 @@ export const REQUIRED_TABLE_IDS = [
   ORGANIZATIONS_TABLE,
   USERS_TABLE,
   ORGANIZATION_MEMBERSHIPS_TABLE,
-  AUDIT_LOGS_TABLE,
   APP_RECORDS_TABLE,
   AUTH_LOGIN_RATE_LIMITS_TABLE,
   AUDIT_PURGE_RECEIPTS_TABLE,

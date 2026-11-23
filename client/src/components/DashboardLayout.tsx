@@ -69,13 +69,6 @@ const menuItems = [
     path: "/settings",
     ownerOnly: true,
   },
-  {
-    key: "audit-log",
-    icon: History,
-    label: "سجل الإجراءات",
-    path: "/audit-log",
-    auditOnly: true,
-  },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -422,13 +415,6 @@ function DashboardLayoutContent({
       "regional_admin",
       "organization_supervisor",
     ].includes(organizationContext.data?.role ?? "");
-  const canViewAuditLogs =
-    user?.role === "admin" ||
-    organizationContext.data?.isOwner === true ||
-    (organizationContext.data?.isActive === true &&
-      ["system_admin", "auditor"].includes(
-        organizationContext.data?.role ?? ""
-      ));
   const [location, setLocation] = useLocation();
   const { state, setOpen, openMobile, setOpenMobile, toggleSidebar } =
     useSidebar();
@@ -538,8 +524,7 @@ function DashboardLayoutContent({
                 .filter(
                   item =>
                     (!item.adminOnly || canManageUsers) &&
-                    (!item.ownerOnly || isPlatformOwnerAccount) &&
-                    (!item.auditOnly || canViewAuditLogs)
+                    (!item.ownerOnly || isPlatformOwnerAccount)
                 )
                 .map(item => {
                   const isActive = location === item.path;

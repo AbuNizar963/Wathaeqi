@@ -159,36 +159,6 @@ const contactsRouter = router({
     }),
 });
 
-const activityRouter = router({
-  list: authenticatedProcedure.query(async ({ ctx }) => {
-    const result = await getAppwriteTablesDB().listRows({
-      databaseId: getAppwriteDatabaseId(),
-      tableId: "audit_logs",
-      queries: [
-        ...(isPlatformOwner(ctx.user)
-          ? []
-          : [Query.equal("actorUserId", ctx.user.id)]),
-        Query.orderDesc("createdAt"),
-        Query.limit(100),
-      ],
-      total: true,
-    });
-    return result.rows.map(row => {
-      const data = rowData(row as AppwriteRow);
-      return {
-        id: String(data.id ?? (row as AppwriteRow).$id),
-        actorName: String(data.actorName ?? "غير معروف"),
-        action: String(data.action ?? ""),
-        entityType: String(data.entityType ?? ""),
-        entityId: parseOptionalText(data.entityId),
-        metadata: safeJson(data.metadata),
-        deviceType: parseOptionalText(data.deviceType),
-        createdAt: String(data.createdAt ?? ""),
-      };
-    });
-  }),
-});
-
 const notificationsRouter = router({
   list: authenticatedProcedure.query(async ({ ctx }) => {
     const result = await getAppwriteTablesDB().listRows({
@@ -787,7 +757,6 @@ const administrationRouter = router({
 
 export const workspaceRouter = router({
   contacts: contactsRouter,
-  activity: activityRouter,
   notifications: notificationsRouter,
   administration: administrationRouter,
 });
