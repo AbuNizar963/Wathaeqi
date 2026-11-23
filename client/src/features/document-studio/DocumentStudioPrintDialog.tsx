@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,18 +9,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  buildPrintHtml,
-  openPrintWindow,
-} from "../document-library/printSheets";
-import type { PagesPerSheet, SourcePage } from "../document-library/types";
+import { openPrintWindow } from "../document-library/printSheets";
+import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
+import type {
+  PagesPerSheet,
+  PrintLayoutMode,
+  PrintOrientation,
+  SourcePage,
+} from "../document-library/types";
 import {
   DEFAULT_PRINT_PIXEL_RATIO,
   canvasToPngObjectUrl,
   getBoundedPixelRatio,
 } from "../document-library/renderQuality";
-
-const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
 async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const width = element.clientWidth;
@@ -158,9 +159,25 @@ export default function DocumentStudioPrintDialog({
   title: string;
   pageElement: HTMLElement | null;
 }) {
+  const [layoutMode, setLayoutMode] = useState<PrintLayoutMode>("sequential");
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
+  const [copiesPerSheet, setCopiesPerSheet] = useState<PagesPerSheet>(2);
+  const [orientation, setOrientation] = useState<PrintOrientation>("portrait");
+  const [marginMm, setMarginMm] = useState(0);
+  const [showPageNumbers, setShowPageNumbers] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setError(null);
+    setLayoutMode("sequential");
+    setPagesPerSheet(1);
+    setCopiesPerSheet(2);
+    setOrientation("portrait");
+    setMarginMm(0);
+    setShowPageNumbers(false);
+  }, [open, title]);
 
   async function handlePrint() {
     const printWindow = window.open("", "_blank");
@@ -178,14 +195,22 @@ export default function DocumentStudioPrintDialog({
         throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
       }
       const pages = await renderA4Pages(pageElement);
-      const html = buildPrintHtml(pages, {
-        pagesPerSheet,
-        marginMm: 0,
-        headerText: "",
-        footerText: "",
-        showPageNumbers: false,
-      });
-      await openPrintWindow(html, printWindow);
+      await openPrintWindow(
+        {
+          pages,
+          options: {
+            pagesPerSheet,
+            layoutMode,
+            copiesPerSheet,
+            orientation,
+            marginMm,
+            headerText: "",
+            footerText: "",
+            showPageNumbers,
+          },
+        },
+        printWindow
+      );
     } catch (printError) {
       printWindow.close();
       setError(
@@ -207,48 +232,30 @@ export default function DocumentStudioPrintDialog({
       }}
     >
       <DialogContent
-        className="max-h-[92vh] max-w-lg overflow-y-auto"
+        className="max-h-[92vh] max-w-5xl overflow-y-auto"
         dir="rtl"
       >
         <DialogHeader>
           <DialogTitle className="text-right">إعداد طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — اختر عدد صفحات الوثيقة التي تريد وضعها في كل ورقة A4.
+            {title} — اختر الصفحات المختلفة في الورقة أو كرر كل صفحة كنسخ، ثم
+            اضبط اتجاه الورقة والهوامش.
           </DialogDescription>
         </DialogHeader>
-        <fieldset className="rounded-lg border bg-muted/30 p-3">
-          <legend className="px-1 text-sm font-medium">
-            عدد الصفحات في الورقة
-          </legend>
-          <div
-            className="grid grid-cols-3 gap-2 sm:grid-cols-5"
-            role="radiogroup"
-            aria-label="عدد الصفحات في الورقة"
-          >
-            {PAGE_COUNTS.map(value => {
-              const selected = pagesPerSheet === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setPagesPerSheet(value)}
-                  className={`rounded-md border px-2 py-3 text-sm font-semibold transition ${
-                    selected
-                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                      : "bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                  }`}
-                >
-                  {value}
-                  <span className="mt-1 block text-[11px] font-normal">
-                    {value === 1 ? "صفحة واحدة" : "صفحات"}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        <PrintSettingsPanel
+          mode={layoutMode}
+          onModeChange={setLayoutMode}
+          count={layoutMode === "repeat" ? copiesPerSheet : pagesPerSheet}
+          onCountChange={
+            layoutMode === "repeat" ? setCopiesPerSheet : setPagesPerSheet
+          }
+          orientation={orientation}
+          onOrientationChange={setOrientation}
+          marginMm={marginMm}
+          onMarginChange={setMarginMm}
+          showPageNumbers={showPageNumbers}
+          onShowPageNumbersChange={setShowPageNumbers}
+        />
         {error ? (
           <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             {error}

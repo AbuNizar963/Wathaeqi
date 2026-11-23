@@ -1,4 +1,6 @@
 export type PagesPerSheet = 1 | 2 | 4 | 6 | 8;
+export type PrintLayoutMode = "sequential" | "repeat";
+export type PrintOrientation = "portrait" | "landscape";
 
 export type DocumentFileKind = "word" | "pdf" | "image";
 
@@ -10,6 +12,9 @@ export interface SourcePage {
 
 export interface PrintOptions {
   pagesPerSheet: PagesPerSheet;
+  layoutMode?: PrintLayoutMode;
+  copiesPerSheet?: PagesPerSheet;
+  orientation?: PrintOrientation;
   marginMm: number;
   headerText: string;
   footerText: string;

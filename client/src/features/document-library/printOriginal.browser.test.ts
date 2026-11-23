@@ -214,6 +214,53 @@ describe.skipIf(
         }
         await popup.close();
       }
+
+      const repeatedPopupPromise = page.waitForEvent("popup");
+      const repeatedPrintPromise = page.evaluate(
+        ({ url, mimeType, fileName }) =>
+          (
+            window as unknown as {
+              printOriginalTest: {
+                openOriginalPrintWindow: (options: unknown) => Promise<void>;
+              };
+            }
+          ).printOriginalTest.openOriginalPrintWindow({
+            url,
+            mimeType,
+            fileName,
+            layoutMode: "repeat",
+            copiesPerSheet: 2,
+          }),
+        { url, mimeType: docxMimeType, fileName: "repeat-fixture.docx" }
+      );
+      const repeatedPopup = await repeatedPopupPromise;
+      await repeatedPrintPromise;
+      const repeatedPdf = await repeatedPopup.pdf({
+        format: "A4",
+        preferCSSPageSize: true,
+        printBackground: true,
+      });
+      const repeatedTask = getDocument({ data: new Uint8Array(repeatedPdf) });
+      try {
+        const repeatedDocument = await repeatedTask.promise;
+        expect(repeatedDocument.numPages).toBe(9);
+        for (let index = 1; index <= 9; index += 1) {
+          const printedPage = await repeatedDocument.getPage(index);
+          const text = (await printedPage.getTextContent()).items
+            .map(item => ("str" in item ? item.str : ""))
+            .join(" ");
+          expect(text.match(new RegExp(`PAGE${index}TOP`, "g"))).toHaveLength(
+            2
+          );
+          expect(text.match(/BOTTOMMARK/g)).toHaveLength(2);
+          for (let other = 1; other <= 9; other += 1) {
+            if (other !== index) expect(text).not.toContain(`PAGE${other}TOP`);
+          }
+        }
+      } finally {
+        await repeatedTask.destroy();
+      }
+      await repeatedPopup.close();
     } finally {
       await browser.close();
     }

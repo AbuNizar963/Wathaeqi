@@ -57,7 +57,7 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
               })),
               {
                 pagesPerSheet,
-                marginMm: 8,
+                marginMm: pagesPerSheet === 1 ? 0 : 8,
                 headerText: "",
                 footerText: "",
                 showPageNumbers: false,
@@ -82,6 +82,12 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
                 imageLoaded: image.complete && image.naturalWidth > 0,
                 cellWidth: cellRect.width,
                 cellHeight: cellRect.height,
+                sheetWidth:
+                  cell.parentElement!.parentElement!.getBoundingClientRect()
+                    .width,
+                sheetHeight:
+                  cell.parentElement!.parentElement!.getBoundingClientRect()
+                    .height,
                 imageWidth: imageRect.width,
                 imageHeight: imageRect.height,
               };
@@ -99,6 +105,14 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
         expect(
           layout.every(item => item.imageHeight <= item.cellHeight + 0.1)
         ).toBe(true);
+        if (pagesPerSheet === 1) {
+          expect(
+            layout.every(item => item.cellWidth > item.sheetWidth * 0.98)
+          ).toBe(true);
+          expect(
+            layout.every(item => item.cellHeight > item.sheetHeight * 0.98)
+          ).toBe(true);
+        }
 
         const pdf = await page.pdf({
           format: "A4",
@@ -118,4 +132,108 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
     },
     90_000
   );
+
+  it("prints repeated copies of each same source page on separate sheets", async () => {
+    const bundle = await build({
+      entryPoints: [
+        resolve("client/src/features/document-library/printSheets.ts"),
+      ],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "printSheetsTest",
+      platform: "browser",
+    });
+    const browser = await chromium.launch({
+      executablePath: chromiumPath,
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto("data:text/html,<html><body></body></html>");
+      await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      const html = await page.evaluate(() => {
+        const api = (
+          window as unknown as {
+            printSheetsTest: { buildPrintHtml: BuiltPrintHtml };
+          }
+        ).printSheetsTest;
+        const sourcePages = ["#b91c1c", "#1d4ed8"].map((color, index) => {
+          const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123"><rect width="794" height="1123" fill="${color}"/><text x="397" y="570" fill="white" font-size="72" text-anchor="middle">PAGE${index + 1}</text></svg>`;
+          return {
+            src: `data:image/svg+xml;base64,${btoa(svg)}`,
+            width: 794,
+            height: 1123,
+          };
+        });
+        return api.buildPrintHtml(sourcePages, {
+          pagesPerSheet: 1,
+          layoutMode: "repeat",
+          copiesPerSheet: 4,
+          marginMm: 0,
+          orientation: "portrait",
+          headerText: "",
+          footerText: "",
+          showPageNumbers: false,
+        });
+      });
+      await page.setContent(html, { waitUntil: "load" });
+      await page.waitForFunction(() =>
+        Array.from(document.images).every(
+          image => image.complete && image.naturalWidth > 0
+        )
+      );
+      const layout = await page.evaluate(() => ({
+        sourcesBySheet: Array.from(document.querySelectorAll(".sheet"), sheet =>
+          Array.from(sheet.querySelectorAll("img"), image =>
+            image.getAttribute("src")
+          )
+        ),
+        firstCell: (() => {
+          const sheet = document.querySelector<HTMLElement>(".sheet")!;
+          const cell = document.querySelector<HTMLElement>(".cell")!;
+          const sheetRect = sheet.getBoundingClientRect();
+          const cellRect = cell.getBoundingClientRect();
+          return {
+            sheetWidth: sheetRect.width,
+            sheetHeight: sheetRect.height,
+            cellWidth: cellRect.width,
+            cellHeight: cellRect.height,
+          };
+        })(),
+      }));
+      expect(layout.sourcesBySheet).toHaveLength(2);
+      expect(layout.sourcesBySheet.every(sheet => sheet.length === 4)).toBe(
+        true
+      );
+      expect(
+        layout.sourcesBySheet.every(sheet => new Set(sheet).size === 1)
+      ).toBe(true);
+      expect(layout.sourcesBySheet[0]![0]).not.toBe(
+        layout.sourcesBySheet[1]![0]
+      );
+      expect(layout.firstCell.cellWidth).toBeGreaterThan(
+        layout.firstCell.sheetWidth * 0.4
+      );
+      expect(layout.firstCell.cellWidth).toBeLessThan(
+        layout.firstCell.sheetWidth * 0.6
+      );
+
+      const pdf = await page.pdf({
+        format: "A4",
+        preferCSSPageSize: true,
+        printBackground: true,
+      });
+      const loadingTask = getDocument({ data: new Uint8Array(pdf) });
+      const pdfDocument = await loadingTask.promise;
+      try {
+        expect(pdfDocument.numPages).toBe(2);
+      } finally {
+        await loadingTask.destroy();
+      }
+    } finally {
+      await browser.close();
+    }
+  }, 90_000);
 });

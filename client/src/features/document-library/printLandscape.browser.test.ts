@@ -84,6 +84,7 @@ describe.skipIf(
               fileName: "landscape.docx",
               mimeType,
               pagesPerSheet,
+              orientation: "landscape",
             }),
           { url, mimeType: docxMimeType, pagesPerSheet }
         );
