@@ -65,6 +65,8 @@ export default function FilePreview({
           if (!response.ok) throw new Error("تعذر تنزيل الملف");
           const document = await pdfjs.getDocument({
             data: new Uint8Array(await response.arrayBuffer()),
+            cMapUrl: `${import.meta.env.BASE_URL}pdfjs/cmaps/`,
+            cMapPacked: true,
           }).promise;
           const total = document.numPages;
           const images: string[] = [];
@@ -185,7 +187,7 @@ export default function FilePreview({
             key={index}
             src={page}
             alt={`صفحة ${index + 1}`}
-            className="mx-auto block h-auto w-full max-w-[820px] min-w-0 bg-white object-contain shadow sm:min-w-[620px]"
+            className="mx-auto block h-auto w-full max-w-[820px] min-w-0 bg-white object-contain shadow"
           />
         ))}
       </div>
@@ -195,7 +197,7 @@ export default function FilePreview({
   return (
     <div
       ref={wordViewport}
-      className="document-word-preview-viewport relative overflow-hidden rounded-lg bg-slate-100 p-2 sm:p-3"
+      className="document-word-preview-viewport relative min-w-0 overflow-hidden rounded-lg bg-slate-100 p-2 sm:p-3"
       style={{ height: wordLayout.height ? wordLayout.height + 16 : undefined }}
     >
       {loading ? (
@@ -210,8 +212,9 @@ export default function FilePreview({
         style={{
           transform: `translateX(-50%) scale(${wordLayout.scale})`,
           transformOrigin: "top center",
-          position: "relative",
+          position: "absolute",
           left: "50%",
+          top: "8px",
         }}
       />
     </div>

@@ -41,8 +41,10 @@ import type { PlatformDocumentSettings } from "@shared/features/platform-setting
 import FilePreview from "../document-library/FilePreview";
 import PrintDialog from "../document-library/PrintDialog";
 import UploadDialog from "../document-library/UploadDialog";
+import { signedFileQueryOptions } from "../document-library/signedFileQueryOptions";
 import DocumentEditor from "./DocumentEditor";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
+import { isDocumentFormDirty, parseDocumentDate } from "./documentFormState";
 import { applyDocumentTemplateVariables } from "../../../../shared/documentTemplateVariables";
 import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
@@ -100,7 +102,7 @@ function dateInputValue(value: string): string {
 }
 
 function makeDocumentDate(value: string): string {
-  return new Date(`${value}T12:00:00.000Z`).toISOString();
+  return parseDocumentDate(value) ?? "";
 }
 
 function statusLabel(status: OfficialDocument["status"]): string {
@@ -216,7 +218,7 @@ export default function DocumentStudioPage() {
     { id: selectedDocument?.id ?? "" },
     {
       enabled: Boolean(selectedDocument?.file),
-      staleTime: 120_000,
+      ...signedFileQueryOptions,
     }
   );
   const documentOrganizationId =
@@ -399,6 +401,11 @@ export default function DocumentStudioPage() {
       toast.error("أدخل عنوان الوثيقة أولاً");
       return;
     }
+    const validDate = parseDocumentDate(documentDate);
+    if (!validDate) {
+      toast.error("أدخل تاريخاً صالحاً للوثيقة أولاً");
+      return;
+    }
 
     const input = {
       title: documentTitle.trim(),
@@ -413,7 +420,7 @@ export default function DocumentStudioPage() {
         getDocumentSystemVariables()
       ),
       fieldValues: documentFieldValues,
-      documentDate: makeDocumentDate(documentDate),
+      documentDate: validDate,
       templateId: selectedTemplateId,
       templateRevision: selectedTemplateRevision,
     };
@@ -631,6 +638,8 @@ export default function DocumentStudioPage() {
     createTemplateMutation.isPending || updateTemplateMutation.isPending;
   const canEditDocument =
     activeTab !== "archive" &&
+    !isSavingDocument &&
+    !issueDocumentMutation.isPending &&
     (!selectedDocument || selectedDocument.status === "draft");
   const isNewDocumentWorkspace = isCreatingDocument && !selectedDocument;
   const canIssueDocuments =
@@ -639,6 +648,18 @@ export default function DocumentStudioPage() {
       ["system_admin", "organization_admin"].includes(
         organizationContext.data?.role ?? ""
       ));
+  const hasUnsavedDocumentChanges = selectedDocument
+    ? isDocumentFormDirty(selectedDocument, {
+        title: documentTitle,
+        category: documentCategory,
+        subject: documentSubject,
+        documentDate,
+        content: documentContent,
+        fieldValues: documentFieldValues,
+        templateId: selectedTemplateId,
+        templateRevision: selectedTemplateRevision,
+      })
+    : false;
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1155,8 +1176,14 @@ export default function DocumentStudioPage() {
                   canIssueDocuments ? (
                     <Button
                       variant="secondary"
-                      disabled={issueDocumentMutation.isPending}
+                      disabled={
+                        issueDocumentMutation.isPending || isSavingDocument
+                      }
                       onClick={() => {
+                        if (hasUnsavedDocumentChanges) {
+                          toast.error("احفظ التعديلات أولاً قبل إصدار الوثيقة");
+                          return;
+                        }
                         if (
                           window.confirm(
                             "سيتم تخصيص رقم صادر نهائي للوثيقة. هل تريد المتابعة؟"
@@ -1568,6 +1595,13 @@ export default function DocumentStudioPage() {
           url={importedFileUrlQuery.data.url}
           fileName={selectedDocument.file.fileName}
           mimeType={selectedDocument.file.mimeType}
+          getPrintUrl={async () => {
+            const { data } = await importedFileUrlQuery.refetch({
+              throwOnError: true,
+            });
+            if (!data?.url) throw new Error("تعذر تجديد رابط الملف للطباعة");
+            return data.url;
+          }}
         />
       ) : null}
     </div>

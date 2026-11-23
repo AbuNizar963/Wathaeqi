@@ -1,6 +1,7 @@
 import express, { type Express, type RequestHandler } from "express";
 import { randomUUID } from "node:crypto";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 import { ownerApiRouter } from "./ownerApiRouter";
 import { createContext } from "./_core/context";
 import { serveStatic } from "./_core/static";
@@ -223,7 +224,7 @@ export function createApp(
         res.status(400).json({ error: "لم يصل ملف الشعار" });
         return;
       }
-      if (body.byteLength > 2_500_000) {
+      if (body.byteLength > MAX_ORGANIZATION_LOGO_BYTES) {
         res.status(413).json({
           error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت",
         });

@@ -63,6 +63,8 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
   document.body.appendChild(probe);
 
   const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
   const context = canvas.getContext("2d");
   const resolveColor = (colorFunction: string): string => {
     try {
@@ -72,11 +74,13 @@ export function sanitizeUnsupportedPrintColors(document: Document): void {
 
       if (!context) return SAFE_COLOR_FALLBACK;
       context.fillStyle = "#000000";
-      context.fillStyle = colorFunction;
-      const resolved = context.fillStyle;
-      return typeof resolved === "string" && !/oklch\s*\(/i.test(resolved)
-        ? resolved
-        : SAFE_COLOR_FALLBACK;
+      context.fillStyle = computed || colorFunction;
+      // Chromium may serialize canvas fillStyle as OKLCH too. Reading a pixel
+      // converts it to sRGB without replacing the original color with gray.
+      context.clearRect(0, 0, 1, 1);
+      context.fillRect(0, 0, 1, 1);
+      const [red, green, blue, alpha] = context.getImageData(0, 0, 1, 1).data;
+      return `rgba(${red}, ${green}, ${blue}, ${alpha / 255})`;
     } catch {
       return SAFE_COLOR_FALLBACK;
     }

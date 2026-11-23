@@ -1,5 +1,67 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { uploadOrganizationLogoDirect } from "./organizationLogoUpload";
+import {
+  prepareOrganizationLogoUpload,
+  uploadOrganizationLogoDirect,
+} from "./organizationLogoUpload";
+import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
+
+describe("prepared organization logo size", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.each(["image/png", "image/jpeg"])(
+    "resizes %s above the server limit and accepts the exact boundary",
+    async contentType => {
+      const blobAtSize = (size: number) =>
+        new Blob([new Uint8Array(size)], { type: contentType });
+      const toBlob = vi
+        .fn()
+        .mockImplementationOnce((callback: (blob: Blob) => void) =>
+          callback(blobAtSize(MAX_ORGANIZATION_LOGO_BYTES + 1))
+        )
+        .mockImplementationOnce((callback: (blob: Blob) => void) =>
+          callback(blobAtSize(MAX_ORGANIZATION_LOGO_BYTES))
+        );
+      const canvas = {
+        width: 0,
+        height: 0,
+        getContext: () => ({ drawImage() {} }),
+        toBlob,
+      };
+      vi.stubGlobal("document", { createElement: () => canvas });
+      vi.stubGlobal(
+        "Image",
+        class {
+          naturalWidth = 1600;
+          naturalHeight = 1600;
+          async decode() {}
+        }
+      );
+      vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fixture");
+      const revoke = vi
+        .spyOn(URL, "revokeObjectURL")
+        .mockImplementation(() => {});
+
+      const result = await prepareOrganizationLogoUpload(
+        new File(["fixture"], "logo", { type: contentType })
+      );
+      expect(result.blob.size).toBe(MAX_ORGANIZATION_LOGO_BYTES);
+      expect(result.contentType).toBe(contentType);
+      expect(toBlob).toHaveBeenCalledTimes(2);
+      expect(revoke).toHaveBeenCalledWith("blob:fixture");
+    }
+  );
+
+  it("rejects an empty input without attempting an upload", async () => {
+    await expect(
+      prepareOrganizationLogoUpload(
+        new File([], "logo.png", { type: "image/png" })
+      )
+    ).rejects.toThrow("ملف الشعار فارغ");
+  });
+});
 
 describe("direct organization logo upload", () => {
   afterEach(() => {

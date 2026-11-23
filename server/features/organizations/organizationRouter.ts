@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getRequestAuditContext } from "../../auditContext";
@@ -201,7 +202,7 @@ export const organizationRouter = router({
         });
       }
       const bytes = Buffer.from(input.base64, "base64");
-      if (bytes.length === 0 || bytes.length > 2_500_000) {
+      if (bytes.length === 0 || bytes.length > MAX_ORGANIZATION_LOGO_BYTES) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "حجم الشعار يجب أن يكون بين 1 بايت و2.5 ميغابايت.",
