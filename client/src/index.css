@@ -836,3 +836,34 @@
     margin-bottom: 8px !important;
   }
 }
+
+.document-paragraph {
+  min-height: 1.85em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.document-paragraph-heading {
+  margin-block: 0.45rem;
+  font-size: 1.18em;
+}
+
+.document-editor-mobile-toolbar {
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+}
+
+@media (max-width: 640px) {
+  .document-editor-mobile-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+  }
+
+  .document-editor-input {
+    min-height: 55dvh !important;
+    font-size: 16px !important;
+    line-height: 2 !important;
+  }
+}

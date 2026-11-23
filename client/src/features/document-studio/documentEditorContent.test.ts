@@ -2,7 +2,12 @@ import { Children, isValidElement, type ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Textarea } from "@/components/ui/textarea";
 import DocumentEditor from "./DocumentEditor";
-import { applyFieldValues, contentForSave } from "./documentEditorContent";
+import {
+  applyFieldValues,
+  contentForSave,
+  formatPlainTextParagraph,
+  updatePlainTextDocument,
+} from "./documentEditorContent";
 
 type ElementProps = {
   children?: unknown;
@@ -211,6 +216,60 @@ describe("template substitutions", () => {
               text: "إلى مديرية الشرطة بتاريخ 2026-11-22",
             },
           ],
+        },
+      ],
+    });
+  });
+
+  it("formats the paragraph at the caret without changing other paragraphs", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "الأول" }] },
+        { type: "paragraph", content: [{ type: "text", text: "الثاني" }] },
+      ],
+    };
+    expect(
+      formatPlainTextParagraph(doc, "الأول\nالثاني", 8, {
+        textAlign: "center",
+        blockType: "heading",
+        lineHeight: "relaxed",
+      })
+    ).toEqual({
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "الأول" }] },
+        {
+          type: "paragraph",
+          attrs: {
+            textAlign: "center",
+            blockType: "heading",
+            lineHeight: "relaxed",
+          },
+          content: [{ type: "text", text: "الثاني" }],
+        },
+      ],
+    });
+  });
+
+  it("keeps paragraph formatting when text changes", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { textAlign: "center" },
+          content: [{ type: "text", text: "قديم" }],
+        },
+      ],
+    };
+    expect(updatePlainTextDocument(doc, "جديد")).toEqual({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { textAlign: "center" },
+          content: [{ type: "text", text: "جديد" }],
         },
       ],
     });
