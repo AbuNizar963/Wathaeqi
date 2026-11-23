@@ -556,7 +556,9 @@ export default function OwnerOrganizationManagement() {
         blob: normalizedLogo.blob,
         contentType: normalizedLogo.contentType,
       });
-      setSettingsDraft(current => ({ ...current, logoUrl: result.url }));
+      if (result.url) {
+        setSettingsDraft(current => ({ ...current, logoUrl: result.url! }));
+      }
       toast.success("تم رفع الشعار؛ اضغط حفظ الجهة لاعتماده رسميًا");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر رفع الشعار");

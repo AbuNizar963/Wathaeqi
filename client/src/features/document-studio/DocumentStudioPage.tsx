@@ -663,14 +663,14 @@ export default function DocumentStudioPage() {
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-3 document-studio-no-print">
+      <div className="flex flex-col items-stretch justify-between gap-3 document-studio-no-print sm:flex-row sm:items-start">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">وثائقي</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             إنشاء الوثائق الرسمية وإدارة أرشيفك
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           <Button
             variant={activeTab === "documents" ? "default" : "outline"}
             onClick={() => setActiveTab("documents")}

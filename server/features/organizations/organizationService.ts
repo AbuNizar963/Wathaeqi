@@ -413,19 +413,26 @@ export async function setOrganizationActive(
   });
 }
 
+export type OrganizationLogoSaveStage =
+  "organization_lookup" | "storage_upload" | "organization_update";
+
 export async function saveOrganizationLogo(
   organizationId: string,
   bytes: Buffer,
-  contentType: "image/png" | "image/jpeg"
+  contentType: "image/png" | "image/jpeg",
+  onStage?: (stage: OrganizationLogoSaveStage) => void
 ): Promise<string> {
+  onStage?.("organization_lookup");
   const row = await getOrganizationRowId(organizationId);
   if (!row) throw new Error("الجهة غير موجودة");
   const extension = contentType === "image/png" ? "png" : "jpg";
   const logoKey = `organizations/${organizationId}/logo-${Date.now()}.${extension}`;
+  onStage?.("storage_upload");
   await getStorageProvider().upload(logoKey, bytes, {
     contentType,
     cacheControl: "private, max-age=300",
   });
+  onStage?.("organization_update");
   await getAppwriteTablesDB().updateRow({
     databaseId: getAppwriteDatabaseId(),
     tableId: ORGANIZATIONS_TABLE,

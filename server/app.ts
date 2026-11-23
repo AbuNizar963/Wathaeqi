@@ -40,6 +40,38 @@ function safeUploadName(value: string): string {
   return cleaned || "document";
 }
 
+function getSafeLogoErrorDetails(error: unknown): {
+  errorName: string;
+  errorCode?: number | string;
+  errorType?: string;
+} {
+  if (!error || typeof error !== "object") {
+    return { errorName: "UnknownError" };
+  }
+  const details: {
+    errorName: string;
+    errorCode?: number | string;
+    errorType?: string;
+  } = {
+    errorName: error instanceof Error ? error.name : "UnknownError",
+  };
+  const value = error as { code?: unknown; type?: unknown };
+  if (
+    (typeof value.code === "number" && Number.isFinite(value.code)) ||
+    (typeof value.code === "string" &&
+      /^[A-Za-z0-9_.-]{1,64}$/.test(value.code))
+  ) {
+    details.errorCode = value.code;
+  }
+  if (
+    typeof value.type === "string" &&
+    /^[A-Za-z0-9_.-]{1,64}$/.test(value.type)
+  ) {
+    details.errorType = value.type;
+  }
+  return details;
+}
+
 const uploadMetadataSchema = z.object({
   title: z.string().trim().min(1).max(256),
   category: z.string().trim().min(1).max(100),
@@ -247,6 +279,14 @@ export function createApp(
       const user = res.locals.appwriteUser as NonNullable<
         Awaited<ReturnType<typeof getAppwriteAuthenticatedUserFromRequest>>
       >;
+      const requestId = randomUUID();
+      res.setHeader("X-Request-Id", requestId);
+      let stage:
+        | "authorization"
+        | "organization_lookup"
+        | "storage_upload"
+        | "organization_update"
+        | "preview_url" = "authorization";
       try {
         if (!isPlatformOwner(user)) {
           const scope = await resolveOrganizationScope(user);
@@ -265,23 +305,42 @@ export function createApp(
         const key = await saveOrganizationLogo(
           organizationId,
           body,
-          contentType
+          contentType,
+          currentStage => {
+            stage = currentStage;
+          }
         );
-        const url = await getOrganizationLogoUrl(organizationId);
+        stage = "preview_url";
+        let url: string | null = null;
+        try {
+          url = await getOrganizationLogoUrl(organizationId);
+        } catch (error) {
+          console.warn(
+            "[organizations/logo] preview URL unavailable",
+            JSON.stringify({ requestId, stage, ...getSafeLogoErrorDetails(error) })
+          );
+        }
         if (!url) {
-          res.status(502).json({
-            error: "تم حفظ الشعار لكن تعذر إنشاء رابط المعاينة",
-          });
+          res.status(200).json({ key, url: null, requestId });
           return;
         }
-        res.status(200).json({ key, url });
+        res.status(200).json({ key, url, requestId });
       } catch (error) {
-        console.error("[organizations/logo] upload failed");
+        console.error(
+          "[organizations/logo] upload failed",
+          JSON.stringify({
+            requestId,
+            stage,
+            bytes: body.byteLength,
+            contentType,
+            ...getSafeLogoErrorDetails(error),
+          })
+        );
         const message =
           error instanceof Error && error.message.includes("غير مرتبط")
             ? error.message
             : "تعذر حفظ شعار الجهة";
-        res.status(502).json({ error: message });
+        res.status(502).json({ error: message, requestId });
       }
     }
   );

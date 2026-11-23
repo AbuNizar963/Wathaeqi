@@ -569,7 +569,7 @@ export default function DocumentLibraryPage() {
               )}
 
               {fileUrlQuery.data?.url ? (
-                <div className="grid grid-cols-3 gap-2 rounded-2xl border bg-card p-3">
+                <div className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 rounded-2xl border bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-sm backdrop-blur sm:static sm:grid-cols-3 sm:bg-card sm:pb-3 sm:shadow-none">
                   <Button
                     variant="outline"
                     className="h-12 gap-2"

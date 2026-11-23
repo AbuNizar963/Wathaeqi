@@ -86,13 +86,15 @@ export async function prepareOrganizationLogoUpload(
 
 export type UploadedOrganizationLogo = {
   key: string;
-  url: string;
+  url: string | null;
+  requestId?: string;
 };
 
 type OrganizationLogoUploadResponse = {
   key?: unknown;
   url?: unknown;
   error?: unknown;
+  requestId?: unknown;
 };
 
 /** Upload a prepared logo as raw bytes through the authenticated API. */
@@ -131,10 +133,22 @@ export async function uploadOrganizationLogoDirect(input: {
   if (!response.ok) {
     const message =
       typeof result?.error === "string" ? result.error : "تعذر رفع شعار الجهة";
-    throw new Error(message);
+    const requestId =
+      typeof result?.requestId === "string" ? result.requestId : null;
+    throw new Error(
+      requestId ? `${message} (رقم المتابعة: ${requestId})` : message
+    );
   }
-  if (typeof result?.key !== "string" || typeof result.url !== "string") {
+  if (
+    typeof result?.key !== "string" ||
+    (typeof result.url !== "string" && result.url !== null)
+  ) {
     throw new Error("استجابة الخادم لرفع الشعار غير صالحة");
   }
-  return { key: result.key, url: result.url };
+  return {
+    key: result.key,
+    url: result.url,
+    requestId:
+      typeof result.requestId === "string" ? result.requestId : undefined,
+  };
 }

@@ -5,12 +5,9 @@ import {
   Menu,
   Monitor,
   Moon,
-  Settings,
-  SlidersHorizontal,
   Sun,
   SunMoon,
   UserRound,
-  Users,
 } from "lucide-react";
 import { useTheme, type ThemePreference } from "@/contexts/ThemeContext";
 import {
@@ -25,35 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth-session/useAuth";
-import { trpc } from "@/lib/trpc";
-import {
-  getManagementMenuHeading,
-  hasOrganizationSettingsMenuAccess,
-  hasUserManagementMenuAccess,
-} from "@/features/admin/menuAccess";
 
 export default function HeaderActions() {
   const { preference, setThemePreference } = useTheme();
   const { user, logout } = useAuth();
-  const organizationContext = trpc.organizations.context.useQuery(undefined, {
-    enabled: Boolean(user),
-  });
-  const isPlatformOwner =
-    user?.isPlatformOwner === true ||
-    organizationContext.data?.isOwner === true;
-  const canManageOrganizationSettings = hasOrganizationSettingsMenuAccess({
-    organizationRole: organizationContext.data?.role,
-    isPlatformOwner,
-  });
-  const canManageUsers = hasUserManagementMenuAccess({
-    accountRole: user?.role,
-    organizationRole: organizationContext.data?.role,
-    isPlatformOwner,
-  });
-  const managementMenuHeading = getManagementMenuHeading(
-    user?.role,
-    isPlatformOwner
-  );
 
   if (!user) {
     return null;
@@ -119,14 +91,17 @@ export default function HeaderActions() {
             type="button"
             variant="outline"
             size="icon"
-            aria-label="الإعدادات"
-            title="الإعدادات"
+            aria-label="الحساب والمساعدة"
+            title="الحساب والمساعدة"
             className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur hover:bg-accent"
           >
             <Menu className="h-[19px] w-[19px]" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={8} className="w-64">
+          <DropdownMenuLabel className="text-right text-xs font-bold text-muted-foreground">
+            الحساب والمساعدة
+          </DropdownMenuLabel>
           <DropdownMenuItem
             onSelect={() => {
               window.location.href = "/profile";
@@ -136,66 +111,6 @@ export default function HeaderActions() {
             <UserRound className="h-4 w-4" />
             <span>الملف الشخصي</span>
           </DropdownMenuItem>
-          {canManageOrganizationSettings ? (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-right text-xs font-bold text-muted-foreground">
-                إعدادات الجهة
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onSelect={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("open-department-settings")
-                  )
-                }
-                className="cursor-pointer justify-end gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                <span>إعدادات الجهة</span>
-              </DropdownMenuItem>
-            </>
-          ) : null}
-          {canManageUsers ? (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-right text-xs font-bold text-muted-foreground">
-                {managementMenuHeading}
-              </DropdownMenuLabel>
-              {isPlatformOwner ? (
-                <DropdownMenuItem
-                  onSelect={() => {
-                    window.location.href = "/settings";
-                  }}
-                  className="cursor-pointer justify-end gap-2"
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  <span>إعدادات الوثائق</span>
-                </DropdownMenuItem>
-              ) : null}
-              <DropdownMenuItem
-                onSelect={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("open-owner-user-management")
-                  )
-                }
-                className="cursor-pointer justify-end gap-2"
-              >
-                <Users className="h-4 w-4" />
-                <span>الحسابات والصلاحيات</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() =>
-                  window.dispatchEvent(
-                    new CustomEvent("open-owner-organization-management")
-                  )
-                }
-                className="cursor-pointer justify-end gap-2"
-              >
-                <Users className="h-4 w-4" />
-                <span>إدارة الجهات</span>
-              </DropdownMenuItem>
-            </>
-          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => {

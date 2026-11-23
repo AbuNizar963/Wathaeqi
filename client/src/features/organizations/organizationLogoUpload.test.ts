@@ -156,3 +156,53 @@ describe("direct organization logo upload", () => {
     ).rejects.toThrow("استجابة الخادم لرفع الشعار غير صالحة");
   });
 });
+
+describe("logo upload recovery responses", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    clearSessionToken();
+  });
+
+  const input = {
+    organizationId: "550e8400-e29b-41d4-a716-446655440000",
+    fileName: "badge.png",
+    blob: new Blob([new Uint8Array([1])], { type: "image/png" }),
+    contentType: "image/png" as const,
+  };
+
+  it("includes the server request id for HTTP 502 errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: "تعذر حفظ شعار الجهة",
+            requestId: "req-123",
+          }),
+          { status: 502, headers: { "Content-Type": "application/json" } }
+        )
+      )
+    );
+    await expect(uploadOrganizationLogoDirect(input)).rejects.toThrow(
+      "تعذر حفظ شعار الجهة (رقم المتابعة: req-123)"
+    );
+  });
+
+  it("accepts a stored logo when its preview URL is temporarily unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ key: "organizations/org/logo.png", url: null }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          )
+        )
+    );
+    await expect(uploadOrganizationLogoDirect(input)).resolves.toMatchObject({
+      key: "organizations/org/logo.png",
+      url: null,
+    });
+  });
+});

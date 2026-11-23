@@ -123,7 +123,7 @@ export default function PlatformDocumentSettingsPage() {
       });
       // Upload success is authoritative; a separate preview refresh must not
       // misreport a successfully stored logo as a failed upload.
-      setLogoUrl(uploadedLogo.url);
+      setLogoUrl(uploadedLogo.url ?? "");
       void organizationLogoQuery
         .refetch()
         .then(refreshedLogo => {
@@ -132,7 +132,11 @@ export default function PlatformDocumentSettingsPage() {
           }
         })
         .catch(() => undefined);
-      toast.success("تم رفع شعار الجهة بنجاح، وتُحدّث المعاينة الآن");
+      toast.success(
+        uploadedLogo.url
+          ? "تم رفع شعار الجهة بنجاح، وتُحدّث المعاينة الآن"
+          : "تم حفظ الشعار بنجاح؛ جارٍ تجهيز المعاينة"
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر رفع الشعار");
     } finally {
@@ -706,11 +710,6 @@ export default function PlatformDocumentSettingsPage() {
               {!colorIsValid ? (
                 <p className="text-xs text-destructive">
                   أدخل لوناً صالحاً بصيغة HEX.
-                </p>
-              ) : null}
-              {!values.watermarkText.trim() ? (
-                <p className="text-xs text-destructive">
-                  لا يمكن ترك نص العلامة الأمنية فارغاً.
                 </p>
               ) : null}
               {!values.watermarkText.trim() ? (

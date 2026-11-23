@@ -21,6 +21,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import { trpc as appTrpc } from "@/lib/trpc";
+import { useAuth } from "@/features/auth-session/useAuth";
+import { hasUserManagementMenuAccess } from "@/features/admin/menuAccess";
 
 type WorkspaceSection =
   "dashboard" | "contacts" | "notifications" | "users" | "organizations";
@@ -84,6 +87,18 @@ export default function WorkspacePage({
 }: {
   section: WorkspaceSection;
 }) {
+  const { user } = useAuth();
+  const organizationContext = appTrpc.organizations.context.useQuery(
+    undefined,
+    { enabled: Boolean(user), staleTime: 30_000 }
+  );
+  const canOpenAdvancedManagement = hasUserManagementMenuAccess({
+    accountRole: user?.role,
+    organizationRole: organizationContext.data?.role,
+    isPlatformOwner:
+      user?.isPlatformOwner === true ||
+      organizationContext.data?.isOwner === true,
+  });
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyContact);
@@ -344,10 +359,38 @@ export default function WorkspacePage({
             </p>
           </div>
         </div>
-        <Button variant="outline" onClick={refresh} disabled={isLoading}>
-          <RefreshCw className="ml-2 h-4 w-4" />
-          تحديث البيانات
-        </Button>
+        <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
+          {canOpenAdvancedManagement && section === "users" ? (
+            <Button
+              variant="outline"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("open-owner-user-management")
+                )
+              }
+            >
+              <ShieldCheck className="ml-2 h-4 w-4" />
+              إدارة الصلاحيات المتقدمة
+            </Button>
+          ) : null}
+          {canOpenAdvancedManagement && section === "organizations" ? (
+            <Button
+              variant="outline"
+              onClick={() =>
+                window.dispatchEvent(
+                  new CustomEvent("open-owner-organization-management")
+                )
+              }
+            >
+              <Building2 className="ml-2 h-4 w-4" />
+              إدارة الهيكل والحسابات
+            </Button>
+          ) : null}
+          <Button variant="outline" onClick={refresh} disabled={isLoading}>
+            <RefreshCw className="ml-2 h-4 w-4" />
+            تحديث البيانات
+          </Button>
+        </div>
       </header>
 
       {section === "users" || section === "organizations" ? (

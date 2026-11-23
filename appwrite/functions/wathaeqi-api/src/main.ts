@@ -200,11 +200,36 @@ function createCorsHeaders(origin: string | undefined): Headers {
       "X-Document-Metadata",
     ].join(", "),
     "Access-Control-Max-Age": "600",
+    "Access-Control-Expose-Headers": "X-Request-Id",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
   });
   if (origin) headers.set("Access-Control-Allow-Origin", origin);
   return headers;
+}
+
+export function applyCorsHeaders(
+  response: Response,
+  corsHeaders: Headers
+): Response {
+  for (const [name, value] of corsHeaders.entries()) {
+    const normalizedName = name.toLowerCase();
+    if (normalizedName === "vary" && response.headers.has("Vary")) {
+      const current = response.headers
+        .get("Vary")!
+        .split(",")
+        .map(item => item.trim());
+      if (!current.some(item => item.toLowerCase() === "origin")) {
+        response.headers.set("Vary", [...current, "Origin"].join(", "));
+      }
+    } else if (
+      normalizedName.startsWith("access-control-") ||
+      !response.headers.has(name)
+    ) {
+      response.headers.set(name, value);
+    }
+  }
+  return response;
 }
 
 export default async function main({
@@ -269,14 +294,10 @@ export default async function main({
       awsRequestId: randomUUID(),
       getRemainingTimeInMillis: () => 55_000,
     } as never);
-    const response = toWebResponse(result as LambdaResponse);
-    for (const [name, value] of corsHeaders.entries()) {
-      if (name.toLowerCase() === "set-cookie") {
-        response.headers.append(name, value);
-      } else if (!response.headers.has(name)) {
-        response.headers.set(name, value);
-      }
-    }
+    const response = applyCorsHeaders(
+      toWebResponse(result as LambdaResponse),
+      corsHeaders
+    );
     response.headers.set(
       "Cache-Control",
       response.headers.get("Cache-Control")?.includes("private")

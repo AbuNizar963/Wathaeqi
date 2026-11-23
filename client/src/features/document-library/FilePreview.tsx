@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
-import { FileWarning, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileWarning, Loader2 } from "lucide-react";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import { fileKind } from "./types";
+import { calculatePdfPreviewScale } from "./pdfPreviewSizing";
 
 export default function FilePreview({
   url,
@@ -17,7 +19,10 @@ export default function FilePreview({
   const kind = fileKind(fileName, mimeType);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [pdfPageUrl, setPdfPageUrl] = useState<string | null>(null);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [pdfPageNumber, setPdfPageNumber] = useState(1);
+  const pdfDocument = useRef<PDFDocumentProxy | null>(null);
   const wordHost = useRef<HTMLDivElement | null>(null);
   const wordViewport = useRef<HTMLDivElement | null>(null);
   const [wordLayout, setWordLayout] = useState({ scale: 1, height: 0 });
@@ -45,7 +50,10 @@ export default function FilePreview({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setPdfPages([]);
+    setPdfPageUrl(null);
+    setPdfPageCount(0);
+    setPdfPageNumber(1);
+    pdfDocument.current = null;
     setWordLayout({ scale: 1, height: 0 });
     if (!kind) {
       setError("صيغة الملف غير مدعومة للمعاينة");
@@ -68,27 +76,10 @@ export default function FilePreview({
             cMapUrl: `${import.meta.env.BASE_URL}pdfjs/cmaps/`,
             cMapPacked: true,
           }).promise;
-          const total = document.numPages;
-          const images: string[] = [];
-          for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
-            const page = await document.getPage(pageNumber);
-            const viewport = page.getViewport({ scale: 2.5 });
-            const canvas = window.document.createElement("canvas");
-            const context = canvas.getContext("2d", { alpha: false });
-            if (!context) throw new Error("تعذر تجهيز المعاينة");
-            canvas.width = Math.ceil(viewport.width);
-            canvas.height = Math.ceil(viewport.height);
-            context.fillStyle = "#ffffff";
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            await page.render({ canvas, canvasContext: context, viewport })
-              .promise;
-            images.push(canvas.toDataURL("image/png"));
-            page.cleanup();
+          if (!cancelled) {
+            pdfDocument.current = document;
+            setPdfPageCount(document.numPages);
           }
-          await (
-            document as unknown as { destroy?: () => Promise<void> }
-          ).destroy?.();
-          if (!cancelled) setPdfPages(images);
         } catch (previewError) {
           if (!cancelled) {
             setError(
@@ -98,11 +89,13 @@ export default function FilePreview({
             );
           }
         } finally {
-          if (!cancelled) setLoading(false);
+          if (!cancelled && !pdfDocument.current) setLoading(false);
         }
       })();
       return () => {
         cancelled = true;
+        void pdfDocument.current?.cleanup();
+        pdfDocument.current = null;
       };
     }
 
@@ -140,6 +133,57 @@ export default function FilePreview({
       cancelled = true;
     };
   }, [url, fileName, mimeType, kind]);
+
+  useEffect(() => {
+    if (kind !== "pdf" || !pdfDocument.current) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    setLoading(true);
+    void (async () => {
+      try {
+        const page = await pdfDocument.current!.getPage(pdfPageNumber);
+        const base = page.getViewport({ scale: 1 });
+        const scale = calculatePdfPreviewScale(
+          base.width,
+          base.height,
+          Math.max(
+            240,
+            (wordViewport.current?.clientWidth ?? window.innerWidth) - 24
+          )
+        );
+        const viewport = page.getViewport({ scale });
+        const canvas = window.document.createElement("canvas");
+        const context = canvas.getContext("2d", { alpha: false });
+        if (!context) throw new Error("تعذر تجهيز المعاينة");
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        await page.render({ canvas, canvasContext: context, viewport }).promise;
+        const blob = await new Promise<Blob | null>(resolve =>
+          canvas.toBlob(resolve, "image/jpeg", 0.88)
+        );
+        if (!blob) throw new Error("تعذر تجهيز صورة المعاينة");
+        objectUrl = URL.createObjectURL(blob);
+        if (!cancelled) setPdfPageUrl(objectUrl);
+        page.cleanup();
+      } catch (previewError) {
+        if (!cancelled) {
+          setError(
+            previewError instanceof Error
+              ? previewError.message
+              : "تعذر عرض الملف"
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [kind, pdfPageNumber, pdfPageCount]);
 
   useEffect(() => {
     if (kind !== "word") return;
@@ -182,14 +226,40 @@ export default function FilePreview({
             <Loader2 className="size-4 animate-spin" /> جارٍ تجهيز معاينة PDF…
           </div>
         ) : null}
-        {pdfPages.map((page, index) => (
+        {pdfPageUrl ? (
           <img
-            key={index}
-            src={page}
-            alt={`صفحة ${index + 1}`}
+            src={pdfPageUrl}
+            alt={`صفحة ${pdfPageNumber} من ${pdfPageCount}`}
             className="mx-auto block h-auto w-full max-w-[820px] min-w-0 bg-white object-contain shadow"
           />
-        ))}
+        ) : null}
+        {!loading && pdfPageCount > 0 ? (
+          <div className="flex items-center justify-center gap-3" dir="rtl">
+            <button
+              type="button"
+              className="rounded-md border bg-background p-2 disabled:opacity-40"
+              aria-label="الصفحة التالية"
+              disabled={pdfPageNumber >= pdfPageCount}
+              onClick={() =>
+                setPdfPageNumber(value => Math.min(pdfPageCount, value + 1))
+              }
+            >
+              <ChevronRight className="size-4" />
+            </button>
+            <span className="text-sm tabular-nums">
+              صفحة {pdfPageNumber} من {pdfPageCount}
+            </span>
+            <button
+              type="button"
+              className="rounded-md border bg-background p-2 disabled:opacity-40"
+              aria-label="الصفحة السابقة"
+              disabled={pdfPageNumber <= 1}
+              onClick={() => setPdfPageNumber(value => Math.max(1, value - 1))}
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
