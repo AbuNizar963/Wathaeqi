@@ -13,6 +13,11 @@ describe("document actions", () => {
       document: { createElement: vi.fn() },
     });
     vi.stubGlobal("navigator", {});
+    vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:download"),
+      revokeObjectURL: vi.fn(),
+    });
   });
 
   it("shares the authenticated studio route, never a storage URL", async () => {
@@ -45,13 +50,33 @@ describe("document actions", () => {
     );
   });
 
-  it("downloads an imported file through the existing signed URL", () => {
+  it("downloads an imported file as a Blob instead of navigating to its URL", async () => {
     const click = vi.fn();
-    const createElement = vi.fn().mockReturnValue({ click });
+    const createElement = vi.fn().mockReturnValue({
+      click,
+      set href(value: string) {
+        void value;
+      },
+      set download(value: string) {
+        void value;
+      },
+      set rel(value: string) {
+        void value;
+      },
+    });
     window.document.createElement = createElement;
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(new Blob(["pdf"]), {
+        status: 200,
+        headers: { "Content-Type": "application/pdf" },
+      })
+    );
 
-    downloadDocumentFile("https://private-storage.test/signed", "file.pdf");
+    await downloadDocumentFile("/api/documents/doc-1/file", "file.pdf");
 
+    expect(fetch).toHaveBeenCalledWith("/api/documents/doc-1/file", {
+      credentials: "include",
+    });
     expect(createElement).toHaveBeenCalledWith("a");
     expect(click).toHaveBeenCalledOnce();
   });

@@ -70,7 +70,7 @@ export default function FilePreview({
           const images: string[] = [];
           for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
             const page = await document.getPage(pageNumber);
-            const viewport = page.getViewport({ scale: 1.5 });
+            const viewport = page.getViewport({ scale: 2.5 });
             const canvas = window.document.createElement("canvas");
             const context = canvas.getContext("2d", { alpha: false });
             if (!context) throw new Error("تعذر تجهيز المعاينة");
@@ -80,7 +80,7 @@ export default function FilePreview({
             context.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvas, canvasContext: context, viewport })
               .promise;
-            images.push(canvas.toDataURL("image/jpeg", 0.9));
+            images.push(canvas.toDataURL("image/png"));
             page.cleanup();
           }
           await (

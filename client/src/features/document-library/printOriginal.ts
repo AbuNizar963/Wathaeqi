@@ -16,13 +16,6 @@ function waitForImages(document: Document): Promise<void> {
   ).then(() => undefined);
 }
 
-function waitForLoad(target: Window): Promise<void> {
-  if (target.document.readyState === "complete") return Promise.resolve();
-  return new Promise(resolve => {
-    target.addEventListener("load", () => resolve(), { once: true });
-  });
-}
-
 export async function openOriginalPrintWindow(options: {
   url: string;
   fileName: string;
@@ -106,7 +99,7 @@ export async function openOriginalPrintWindow(options: {
       await openPrintWindow(
         buildPrintHtml(pages, {
           pagesPerSheet: 1,
-          marginMm: 8,
+          marginMm: 0,
           headerText: "",
           footerText: "",
           showPageNumbers: false,
@@ -120,7 +113,7 @@ export async function openOriginalPrintWindow(options: {
     }
   }
 
-  if (kind === "pdf" && (options.pagesPerSheet ?? 1) !== 1) {
+  if (kind === "pdf") {
     const pdfjs = await import("pdfjs-dist");
     pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
     const response = await fetch(options.url, { credentials: "omit" });
@@ -131,7 +124,7 @@ export async function openOriginalPrintWindow(options: {
     const pages = [];
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: 2 });
+      const viewport = page.getViewport({ scale: 3 });
       const canvas = window.document.createElement("canvas");
       const context = canvas.getContext("2d", { alpha: false });
       if (!context) throw new Error("تعذر تجهيز صفحات PDF للطباعة");
@@ -151,26 +144,13 @@ export async function openOriginalPrintWindow(options: {
     await openPrintWindow(
       buildPrintHtml(pages, {
         pagesPerSheet: options.pagesPerSheet ?? 1,
-        marginMm: 8,
+        marginMm: 0,
         headerText: "",
         footerText: "",
         showPageNumbers: false,
       }),
       printWindow
     );
-    return;
-  }
-
-  if (kind === "pdf") {
-    printWindow.document.open();
-    printWindow.document.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>طباعة ${escapeHtml(options.fileName)}</title><style>@page{size:auto;margin:0}html,body,iframe{width:100%;height:100%;margin:0;border:0;overflow:hidden}</style></head><body><iframe title="${escapeHtml(options.fileName)}" src="${escapeAttribute(options.url)}"></iframe></body></html>`
-    );
-    printWindow.document.close();
-    await waitForLoad(printWindow);
-    await new Promise(resolve => printWindow.setTimeout(resolve, 250));
-    printWindow.focus();
-    printWindow.print();
     return;
   }
 
@@ -183,7 +163,7 @@ export async function openOriginalPrintWindow(options: {
   const [{ renderAsync }] = await Promise.all([import("docx-preview")]);
   printWindow.document.open();
   printWindow.document.write(
-    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة ${escapeHtml(options.fileName)}</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.docx-wrapper{background:#fff!important;padding:0!important}.docx{box-shadow:none!important;margin:0!important}.sheet{width:210mm;height:297mm;padding:8mm;display:grid;gap:3mm;page-break-after:always;break-after:page;overflow:hidden}.sheet:last-child{page-break-after:auto;break-after:auto}.sheet.per-1{grid-template-columns:1fr;grid-template-rows:1fr}.sheet.per-2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}.sheet.per-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}.sheet.per-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}.sheet.per-8{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}.cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff}.cell>.docx{position:absolute;inset:0 auto auto 0;width:210mm!important;min-height:297mm!important;box-shadow:none!important}@media print{html,body{width:210mm}}</style></head><body><div id="docx-print-host" dir="rtl"></div></body></html>`
+    `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة ${escapeHtml(options.fileName)}</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}.docx-wrapper{background:#fff!important;padding:0!important}.docx{box-shadow:none!important;margin:0!important}.sheet{width:210mm;height:297mm;padding:0;display:grid;gap:3mm;direction:ltr;page-break-after:always;break-after:page;overflow:hidden}.sheet:last-child{page-break-after:auto;break-after:auto}.sheet.per-1{grid-template-columns:1fr;grid-template-rows:1fr}.sheet.per-2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}.sheet.per-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}.sheet.per-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}.sheet.per-8{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}.cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff;direction:rtl}.cell>.docx{position:absolute;inset:0 auto auto 0;width:210mm!important;min-height:297mm!important;box-shadow:none!important}@media print{html,body{width:210mm}}</style></head><body><div id="docx-print-host" dir="rtl"></div></body></html>`
   );
   printWindow.document.close();
   const host = printWindow.document.getElementById("docx-print-host");
@@ -254,8 +234,4 @@ function escapeHtml(value: string): string {
         character
       ] ?? character
   );
-}
-
-function escapeAttribute(value: string): string {
-  return escapeHtml(value);
 }

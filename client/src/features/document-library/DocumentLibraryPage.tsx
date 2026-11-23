@@ -32,10 +32,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import FilePreview from "./FilePreview";
 import PrintDialog from "./PrintDialog";
 import UploadDialog from "./UploadDialog";
 import {
+  documentFileUrl,
   downloadDocumentFile,
   shareDocument,
 } from "../document-studio/documentActions";
@@ -484,12 +486,18 @@ export default function DocumentLibraryPage() {
                   <Button
                     variant="outline"
                     className="h-12 gap-2"
-                    onClick={() =>
-                      downloadDocumentFile(
-                        fileUrlQuery.data!.url,
+                    onClick={() => {
+                      void downloadDocumentFile(
+                        documentFileUrl(selected.id),
                         selected.file!.fileName
-                      )
-                    }
+                      ).catch(downloadError => {
+                        toast.error(
+                          downloadError instanceof Error
+                            ? downloadError.message
+                            : "تعذر تنزيل الوثيقة"
+                        );
+                      });
+                    }}
                   >
                     <Download className="size-4" />
                     تنزيل

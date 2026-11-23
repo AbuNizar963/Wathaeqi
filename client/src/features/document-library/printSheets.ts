@@ -39,7 +39,7 @@ export function buildPrintHtml(
         : "";
       return `<section class="sheet">
         ${header ? `<header class="sheet-header">${escapeHtml(header)}</header>` : ""}
-        <div class="grid per-${options.pagesPerSheet}">${cells}</div>
+        <div class="grid per-${options.pagesPerSheet}" dir="ltr">${cells}</div>
         ${
           footer || counter
             ? `<footer class="sheet-footer"><span>${escapeHtml(footer)}</span>${counter}</footer>`
@@ -92,7 +92,7 @@ export function buildPrintHtml(
     padding-top: 1.5mm;
   }
   .counter { margin-inline-start: auto; white-space: nowrap; }
-  .grid { flex: 1 1 auto; display: grid; gap: 3mm; min-height: 0; }
+  .grid { flex: 1 1 auto; display: grid; gap: 3mm; min-height: 0; direction: ltr; }
   .per-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .per-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .per-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
@@ -107,6 +107,7 @@ export function buildPrintHtml(
     overflow: hidden;
     border: 0.2mm solid #e2e8f0;
     background: #ffffff;
+    direction: rtl;
   }
   .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
   @media screen {
