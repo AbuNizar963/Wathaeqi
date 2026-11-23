@@ -53,6 +53,15 @@ export async function downloadA4PageAsPng(
       clonedElement.style.transform = "none";
       clonedElement.style.position = "relative";
       clonedElement.style.left = "auto";
+      // html2canvas splits text with non-zero letter spacing into graphemes,
+      // which breaks Arabic shaping. Keep the live preview unchanged.
+      clonedElement
+        .querySelectorAll<HTMLElement>(
+          ".document-letterhead, .document-letterhead *"
+        )
+        .forEach(node => {
+          node.style.letterSpacing = "normal";
+        });
       sanitizeUnsupportedPrintColors(clonedDocument);
       clonedDocument
         .querySelectorAll<HTMLElement>(
