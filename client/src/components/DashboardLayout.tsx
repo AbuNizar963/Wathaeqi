@@ -284,7 +284,7 @@ function TemporaryPasswordDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"
       dir="rtl"
     >
       <form
@@ -292,7 +292,7 @@ function TemporaryPasswordDialog({
         aria-modal="true"
         aria-labelledby="temporary-password-title"
         onSubmit={submit}
-        className="w-full max-w-md space-y-5 rounded-3xl border bg-background p-6 shadow-2xl sm:p-8"
+        className="my-auto max-h-[calc(100dvh-2rem)] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-3xl border bg-background p-6 shadow-2xl sm:p-8"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
@@ -430,7 +430,8 @@ function DashboardLayoutContent({
         organizationContext.data?.role ?? ""
       ));
   const [location, setLocation] = useLocation();
-  const { state, setOpen, toggleSidebar } = useSidebar();
+  const { state, setOpen, openMobile, setOpenMobile, toggleSidebar } =
+    useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
   // The offcanvas shell is initialized from the mobile breakpoint.
@@ -548,6 +549,7 @@ function DashboardLayoutContent({
                         isActive={isActive}
                         onClick={() => {
                           setLocation(item.path);
+                          if (isMobile) setOpenMobile(false);
                         }}
                         tooltip={item.label}
                         className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
@@ -610,9 +612,7 @@ function DashboardLayoutContent({
               <SidebarTrigger
                 className="h-10 w-10 rounded-xl border bg-background shadow-sm"
                 aria-label={
-                  state === "expanded"
-                    ? "إغلاق القائمة الجانبية"
-                    : "فتح القائمة الجانبية"
+                  openMobile ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية"
                 }
               />
               <BrandMark size="sm" />

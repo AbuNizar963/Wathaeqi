@@ -470,7 +470,12 @@ export default function AuditLogPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-xl border">
+            <div
+              className="max-w-full overflow-x-auto rounded-xl border"
+              role="region"
+              aria-label="جدول سجل الإجراءات؛ اسحب أفقياً لعرض بقية الأعمدة"
+              tabIndex={0}
+            >
               <Table className="min-w-[900px]">
                 <TableHeader className="bg-muted/60">
                   <TableRow>

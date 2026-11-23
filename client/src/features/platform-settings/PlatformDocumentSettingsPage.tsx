@@ -115,15 +115,24 @@ export default function PlatformDocumentSettingsPage() {
     setIsUploadingLogo(true);
     try {
       const prepared = await prepareOrganizationLogoUpload(file);
-      await uploadOrganizationLogoDirect({
+      const uploadedLogo = await uploadOrganizationLogoDirect({
         organizationId: selectedOrganizationId,
         fileName: file.name,
         blob: prepared.blob,
         contentType: prepared.contentType,
       });
-      const refreshedLogo = await organizationLogoQuery.refetch();
-      setLogoUrl(refreshedLogo.data?.dataUrl ?? "");
-      toast.success("تم حفظ شعار الجهة في مساحة التخزين وربطه بترويسة الوثائق");
+      // Upload success is authoritative; a separate preview refresh must not
+      // misreport a successfully stored logo as a failed upload.
+      setLogoUrl(uploadedLogo.url);
+      void organizationLogoQuery
+        .refetch()
+        .then(refreshedLogo => {
+          if (refreshedLogo.data?.dataUrl) {
+            setLogoUrl(refreshedLogo.data.dataUrl);
+          }
+        })
+        .catch(() => undefined);
+      toast.success("تم رفع شعار الجهة بنجاح، وتُحدّث المعاينة الآن");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر رفع الشعار");
     } finally {

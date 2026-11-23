@@ -102,18 +102,28 @@ export async function uploadOrganizationLogoDirect(input: {
   blob: Blob;
   contentType: OrganizationLogoContentType;
 }): Promise<UploadedOrganizationLogo> {
-  const response = await fetchWithSession(
-    appwriteApiUrl("/api/storage/department-logo"),
-    {
-      method: "PUT",
-      headers: {
-        "Content-Type": input.contentType,
-        "X-Organization-Id": input.organizationId,
-        "X-File-Name": encodeURIComponent(input.fileName),
-      },
-      body: input.blob,
+  let response: Response;
+  try {
+    response = await fetchWithSession(
+      appwriteApiUrl("/api/storage/department-logo"),
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": input.contentType,
+          "X-Organization-Id": input.organizationId,
+          "X-File-Name": encodeURIComponent(input.fileName),
+        },
+        body: input.blob,
+      }
+    );
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error(
+        "تعذر الاتصال بخدمة رفع الشعار. تحقق من الاتصال بالإنترنت ثم أعد المحاولة؛ لم يُؤكَّد حفظ الملف."
+      );
     }
-  );
+    throw error;
+  }
 
   const result = (await response
     .json()
