@@ -156,8 +156,8 @@ describe.skipIf(
       expect(
         requestedMaps.some(url => url.endsWith("/UniGB-UCS2-H.bcmap"))
       ).toBe(true);
-      expect(glyphs.width).toBe(900);
-      expect(glyphs.height).toBe(540);
+      expect(glyphs.width).toBe(1500);
+      expect(glyphs.height).toBe(900);
       for (const count of glyphs.counts) expect(count).toBeGreaterThan(50);
       // Distinct masks rule out four identical missing-glyph boxes.
       for (const difference of glyphs.differences)

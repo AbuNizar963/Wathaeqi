@@ -44,7 +44,7 @@ function makeDocx(pageCount: number): Buffer {
 
 describe.skipIf(
   !chromiumPath && !(process.platform === "linux" && process.arch === "x64")
-)("original Word printing in Chromium", () => {
+)("original document printing in Chromium", () => {
   it("fits every source page and its footer on A4 for every pages-per-sheet option", async () => {
     // Stub only the unrelated PDF renderer; the DOCX parser and print path are real.
     const bundle = await build({
@@ -56,16 +56,31 @@ describe.skipIf(
       format: "iife",
       globalName: "printOriginalTest",
       platform: "browser",
+      define: { "import.meta.env.BASE_URL": JSON.stringify("/") },
       plugins: [
         {
-          name: "unused-pdfjs-stub",
+          name: "pdfjs-browser-test-stub",
           setup(builder) {
             builder.onResolve({ filter: /^pdfjs-dist(?:\/|$)/ }, args => ({
               path: args.path,
               namespace: "pdfjs-stub",
             }));
-            builder.onLoad({ filter: /.*/, namespace: "pdfjs-stub" }, () => ({
-              contents: 'export default "";',
+            builder.onLoad({ filter: /.*/, namespace: "pdfjs-stub" }, args => ({
+              contents: args.path.endsWith("?url")
+                ? 'export default "pdf.worker.js";'
+                : `export const GlobalWorkerOptions = {};
+                     export function getDocument() {
+                       const page = {
+                         getViewport: ({ scale }) => ({ width: 612 * scale, height: 792 * scale }),
+                         render: ({ canvas, canvasContext }) => {
+                           canvasContext.fillStyle = "#fff";
+                           canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+                           return { promise: Promise.resolve() };
+                         },
+                         cleanup() {},
+                       };
+                       return { promise: Promise.resolve({ numPages: 1, getPage: async () => page, destroy: async () => {} }) };
+                     }`,
               loader: "js",
             }));
           },
@@ -203,4 +218,104 @@ describe.skipIf(
       await browser.close();
     }
   }, 90_000);
+
+  it("renders PDF pages at a high print ratio using revocable Blob URLs", async () => {
+    const bundle = await build({
+      entryPoints: [
+        resolve("client/src/features/document-library/printOriginal.ts"),
+      ],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "printOriginalTest",
+      platform: "browser",
+      define: { "import.meta.env.BASE_URL": JSON.stringify("/") },
+      plugins: [
+        {
+          name: "pdfjs-browser-test-stub",
+          setup(builder) {
+            builder.onResolve({ filter: /^pdfjs-dist(?:\/|$)/ }, args => ({
+              path: args.path,
+              namespace: "pdfjs-stub",
+            }));
+            builder.onLoad({ filter: /.*/, namespace: "pdfjs-stub" }, args => ({
+              contents: args.path.endsWith("?url")
+                ? 'export default "pdf.worker.js";'
+                : `export const GlobalWorkerOptions = {};
+                     export function getDocument() {
+                       const page = {
+                         getViewport: ({ scale }) => ({ width: 612 * scale, height: 792 * scale }),
+                         render: ({ canvas, canvasContext }) => {
+                           canvasContext.fillStyle = "#fff";
+                           canvasContext.fillRect(0, 0, canvas.width, canvas.height);
+                           return { promise: Promise.resolve() };
+                         },
+                         cleanup() {},
+                       };
+                       return { promise: Promise.resolve({ numPages: 1, getPage: async () => page, destroy: async () => {} }) };
+                     }`,
+              loader: "js",
+            }));
+          },
+        },
+      ],
+    });
+    const browser = await chromium.launch({
+      executablePath:
+        chromiumPath ?? (await sparticuzChromium.executablePath()),
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto("data:text/html,<html><body></body></html>");
+      await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      await page.evaluate(() => {
+        const revoked: string[] = [];
+        const revoke = URL.revokeObjectURL.bind(URL);
+        URL.revokeObjectURL = url => {
+          revoked.push(url);
+          revoke(url);
+        };
+        (window as unknown as { revokedBlobUrls: string[] }).revokedBlobUrls =
+          revoked;
+      });
+      const popupPromise = page.waitForEvent("popup");
+      const printPromise = page.evaluate(() =>
+        (
+          window as unknown as {
+            printOriginalTest: {
+              openOriginalPrintWindow: (options: unknown) => Promise<void>;
+            };
+          }
+        ).printOriginalTest.openOriginalPrintWindow({
+          url: "data:application/pdf;base64,JVBERi0xLjQK",
+          fileName: "fixture.pdf",
+          mimeType: "application/pdf",
+        })
+      );
+      const popup = await popupPromise;
+      await printPromise;
+      await popup.waitForFunction(() => {
+        const image = document.querySelector("img");
+        return image?.complete && image.naturalWidth > 0;
+      });
+      const image = await popup.locator("img").evaluate(node => ({
+        src: (node as HTMLImageElement).src,
+        width: (node as HTMLImageElement).naturalWidth,
+        height: (node as HTMLImageElement).naturalHeight,
+      }));
+      expect(image.src).toMatch(/^blob:/);
+      expect(image.width).toBe(3060);
+      expect(image.height).toBe(3960);
+      await popup.close();
+      await page.waitForFunction(
+        () =>
+          (window as unknown as { revokedBlobUrls: string[] }).revokedBlobUrls
+            .length > 0
+      );
+    } finally {
+      await browser.close();
+    }
+  }, 60_000);
 });

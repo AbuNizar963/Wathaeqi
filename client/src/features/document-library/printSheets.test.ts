@@ -4,7 +4,7 @@ import type { PrintOptions, SourcePage } from "./types";
 
 function page(index: number): SourcePage {
   return {
-    dataUrl: `data:image/jpeg;base64,page-${index}`,
+    src: `data:image/jpeg;base64,page-${index}`,
     width: 1240,
     height: 1754,
   };

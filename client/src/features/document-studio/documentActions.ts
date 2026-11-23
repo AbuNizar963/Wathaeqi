@@ -1,6 +1,10 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
 import { fetchWithSession } from "@/lib/trpcFetch";
 import { fileKind } from "../document-library/types";
+import {
+  DEFAULT_PRINT_PIXEL_RATIO,
+  getBoundedPixelRatio,
+} from "../document-library/renderQuality";
 
 export type ShareResult = "shared" | "copied";
 
@@ -44,7 +48,7 @@ export async function downloadA4PageAsPng(
   // html2canvas re-implements text layout and breaks Arabic shaping and table
   // geometry; html-to-image serializes the real DOM into an SVG foreignObject,
   // so the export matches the browser rendering exactly.
-  const { toPng } = await import("html-to-image");
+  const { toBlob } = await import("html-to-image");
   const hidden = Array.from(
     element.querySelectorAll<HTMLElement>(
       ".document-studio-no-print, .document-editor-input, .document-editor-warning"
@@ -62,9 +66,17 @@ export async function downloadA4PageAsPng(
     node.style.display = "block";
   });
   try {
-    const dataUrl = await toPng(element, {
-      pixelRatio: 3,
+    const width = Math.max(element.clientWidth, element.scrollWidth);
+    const height = Math.max(element.clientHeight, element.scrollHeight);
+    const blob = await toBlob(element, {
+      pixelRatio: getBoundedPixelRatio(
+        width,
+        height,
+        DEFAULT_PRINT_PIXEL_RATIO
+      ),
       cacheBust: true,
+      width,
+      height,
       // Preview scaling and clipping are for the viewport only, not the export.
       style: {
         transform: "none",
@@ -74,8 +86,8 @@ export async function downloadA4PageAsPng(
         margin: "0",
       },
     });
-    const response = await fetch(dataUrl);
-    triggerBlobDownload(await response.blob(), fileName);
+    if (!blob) throw new Error("تعذر تجهيز صورة PNG للتنزيل");
+    triggerBlobDownload(blob, fileName);
   } finally {
     hidden.forEach((node, index) => {
       node.style.display = previousHidden[index] ?? "";

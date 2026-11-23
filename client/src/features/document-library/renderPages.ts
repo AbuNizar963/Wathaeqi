@@ -1,8 +1,12 @@
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 import type { SourcePage } from "./types";
 import { fileKind } from "./types";
+import {
+  DEFAULT_PRINT_PIXEL_RATIO,
+  getBoundedPixelRatio,
+} from "./renderQuality";
 
-const RENDER_SCALE = 3;
+const RENDER_SCALE = DEFAULT_PRINT_PIXEL_RATIO;
 const MAX_PAGES = 300;
 
 async function renderPdfPages(
@@ -18,7 +22,13 @@ async function renderPdfPages(
     const total = Math.min(document.numPages, MAX_PAGES);
     for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
       const page = await document.getPage(pageNumber);
-      const viewport = page.getViewport({ scale: RENDER_SCALE });
+      const baseViewport = page.getViewport({ scale: 1 });
+      const scale = getBoundedPixelRatio(
+        baseViewport.width,
+        baseViewport.height,
+        5
+      );
+      const viewport = page.getViewport({ scale });
       const canvas = window.document.createElement("canvas");
       const context = canvas.getContext("2d", { alpha: false });
       if (!context) throw new Error("تعذر تجهيز مساحة رسم الصفحة");
@@ -28,7 +38,7 @@ async function renderPdfPages(
       context.fillRect(0, 0, canvas.width, canvas.height);
       await page.render({ canvas, canvasContext: context, viewport }).promise;
       pages.push({
-        dataUrl: canvas.toDataURL("image/png"),
+        src: canvas.toDataURL("image/png"),
         width: canvas.width,
         height: canvas.height,
       });
@@ -88,13 +98,17 @@ async function renderWordPages(
       // html2canvas re-implements text layout and breaks Arabic shaping in
       // rendered Word pages; html-to-image keeps the browser's own layout.
       const canvas = await toCanvas(section, {
-        pixelRatio: RENDER_SCALE,
+        pixelRatio: getBoundedPixelRatio(
+          section.scrollWidth,
+          section.scrollHeight,
+          RENDER_SCALE
+        ),
         cacheBust: true,
         width: section.scrollWidth,
         height: section.scrollHeight,
       });
       pages.push({
-        dataUrl: canvas.toDataURL("image/png"),
+        src: canvas.toDataURL("image/png"),
         width: canvas.width,
         height: canvas.height,
       });
@@ -125,7 +139,7 @@ async function renderImagePage(url: string): Promise<SourcePage[]> {
   context.drawImage(image, 0, 0);
   return [
     {
-      dataUrl: canvas.toDataURL("image/png"),
+      src: canvas.toDataURL("image/png"),
       width: canvas.width,
       height: canvas.height,
     },

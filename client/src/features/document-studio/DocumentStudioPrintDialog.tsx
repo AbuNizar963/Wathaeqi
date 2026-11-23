@@ -14,6 +14,11 @@ import {
   openPrintWindow,
 } from "../document-library/printSheets";
 import type { PagesPerSheet, SourcePage } from "../document-library/types";
+import {
+  DEFAULT_PRINT_PIXEL_RATIO,
+  canvasToPngObjectUrl,
+  getBoundedPixelRatio,
+} from "../document-library/renderQuality";
 
 const PAGE_COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
 
@@ -58,7 +63,11 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   let canvas: HTMLCanvasElement;
   try {
     canvas = await toCanvas(element, {
-      pixelRatio: 3,
+      pixelRatio: getBoundedPixelRatio(
+        width,
+        height,
+        DEFAULT_PRINT_PIXEL_RATIO
+      ),
       cacheBust: true,
       width,
       height,
@@ -85,42 +94,57 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     Math.ceil(Math.max(0, height - 1) / pageHeight)
   );
   const pages: SourcePage[] = [];
-
-  for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-    const sourceTop = pageIndex * pageHeightPixels;
-    if (sourceTop >= canvas.height) break;
-    const sourceHeight = Math.min(pageHeightPixels, canvas.height - sourceTop);
-    const pageCanvas = document.createElement("canvas");
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = pageHeightPixels;
-    const context = pageCanvas.getContext("2d", { alpha: false });
-    if (!context) {
-      throw new Error("تعذر تجهيز صفحة الوثيقة للطباعة");
+  try {
+    for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      const sourceTop = pageIndex * pageHeightPixels;
+      if (sourceTop >= canvas.height) break;
+      const sourceHeight = Math.min(
+        pageHeightPixels,
+        canvas.height - sourceTop
+      );
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = pageHeightPixels;
+      try {
+        const context = pageCanvas.getContext("2d", { alpha: false });
+        if (!context) {
+          throw new Error("تعذر تجهيز صفحة الوثيقة للطباعة");
+        }
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+        context.drawImage(
+          canvas,
+          0,
+          sourceTop,
+          canvas.width,
+          sourceHeight,
+          0,
+          0,
+          canvas.width,
+          sourceHeight
+        );
+        pages.push({
+          src: await canvasToPngObjectUrl(pageCanvas),
+          width: pageCanvas.width,
+          height: pageCanvas.height,
+        });
+      } finally {
+        pageCanvas.width = 0;
+        pageCanvas.height = 0;
+      }
     }
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-    context.drawImage(
-      canvas,
-      0,
-      sourceTop,
-      canvas.width,
-      sourceHeight,
-      0,
-      0,
-      canvas.width,
-      sourceHeight
-    );
-    pages.push({
-      dataUrl: pageCanvas.toDataURL("image/png"),
-      width: pageCanvas.width,
-      height: pageCanvas.height,
-    });
-  }
 
-  if (pages.length === 0) {
-    throw new Error("لم يتم العثور على صفحات قابلة للطباعة");
+    if (pages.length === 0) {
+      throw new Error("لم يتم العثور على صفحات قابلة للطباعة");
+    }
+    return pages;
+  } catch (error) {
+    pages.forEach(page => URL.revokeObjectURL(page.src));
+    throw error;
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
   }
-  return pages;
 }
 
 export default function DocumentStudioPrintDialog({

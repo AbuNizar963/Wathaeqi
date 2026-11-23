@@ -77,8 +77,8 @@ describe.skipIf(
         };
       });
       expect(output.downloadedName).toBe("fixture.png");
-      expect(output.width).toBe(360);
-      expect(output.height).toBe(480);
+      expect(output.width).toBe(480);
+      expect(output.height).toBe(640);
       expect(output.pixel[1]).toBeGreaterThan(180);
       expect(output.background[0]).toBeGreaterThan(output.background[1]! * 2);
     } finally {
@@ -106,7 +106,7 @@ describe.skipIf(
     try {
       const page = await browser.newPage({
         viewport: { width: 1000, height: 1000 },
-        deviceScaleFactor: 3,
+        deviceScaleFactor: 4,
       });
       const cairoFont = readFileSync(
         resolve("client/public/fonts/cairo-700.ttf")
@@ -250,8 +250,8 @@ describe.skipIf(
         };
       }, reference.toString("base64"));
       expect(output.downloadedName).toBe("arabic.png");
-      expect(output.width).toBe(2382);
-      expect(output.height).toBe(1050);
+      expect(output.width).toBe(3176);
+      expect(output.height).toBe(1400);
       // Allow minor rasterizer antialiasing differences, not broken shaping.
       expect(output.differingRatio).toBeLessThan(0.008);
     } finally {
@@ -331,8 +331,8 @@ describe.skipIf(
         return outputs;
       });
       for (const result of results) {
-        expect(result.width).toBe(360);
-        expect(result.height).toBe(480);
+        expect(result.width).toBe(480);
+        expect(result.height).toBe(640);
         expect(result.corner[1]).toBeGreaterThan(150);
         expect(result.corner[0]).toBeLessThan(50);
       }

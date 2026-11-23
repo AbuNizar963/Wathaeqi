@@ -5,6 +5,7 @@ import {
   buildSinglePdfPagesHtml,
   openPrintWindow,
 } from "./printSheets";
+import { canvasToPngObjectUrl, getBoundedPixelRatio } from "./renderQuality";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 function waitForImages(document: Document): Promise<void> {
@@ -40,6 +41,7 @@ export async function openOriginalPrintWindow(options: {
     );
   }
   printWindow.opener = null;
+  const printImageUrls: string[] = [];
   try {
     // Open synchronously on the user gesture, then refresh the short-lived URL.
     const url = options.resolveUrl ? await options.resolveUrl() : options.url;
@@ -49,18 +51,34 @@ export async function openOriginalPrintWindow(options: {
         const response = await fetch(url, { credentials: "omit" });
         if (!response.ok) throw new Error("تعذر تنزيل الصورة للطباعة");
         const blob = await response.blob();
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () =>
-            typeof reader.result === "string"
-              ? resolve(reader.result)
-              : reject(new Error("تعذر قراءة الصورة"));
-          reader.onerror = () => reject(new Error("تعذر قراءة الصورة"));
-          reader.readAsDataURL(blob);
-        });
+        const imageUrl = URL.createObjectURL(blob);
+        printImageUrls.push(imageUrl);
         const image = new Image();
-        image.src = dataUrl;
+        image.src = imageUrl;
         await image.decode();
+        const tileCount = options.imageTiles ?? 1;
+        if (tileCount === 1) {
+          await openPrintWindow(
+            buildPrintHtml(
+              [
+                {
+                  src: imageUrl,
+                  width: image.naturalWidth,
+                  height: image.naturalHeight,
+                },
+              ],
+              {
+                pagesPerSheet: 1,
+                marginMm: 0,
+                headerText: "",
+                footerText: "",
+                showPageNumbers: false,
+              }
+            ),
+            printWindow
+          );
+          return;
+        }
         const canvas = window.document.createElement("canvas");
         canvas.width = image.naturalWidth;
         canvas.height = image.naturalHeight;
@@ -69,7 +87,6 @@ export async function openOriginalPrintWindow(options: {
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0);
-        const tileCount = options.imageTiles ?? 1;
         const columns = Math.sqrt(tileCount);
         const rows = columns;
         const sourceTileWidth = canvas.width / columns;
@@ -97,10 +114,13 @@ export async function openOriginalPrintWindow(options: {
               tileCanvas.height
             );
             pages.push({
-              dataUrl: tileCanvas.toDataURL("image/png"),
+              src: await canvasToPngObjectUrl(tileCanvas),
               width: tileCanvas.width,
               height: tileCanvas.height,
             });
+            printImageUrls.push(pages[pages.length - 1]!.src);
+            tileCanvas.width = 0;
+            tileCanvas.height = 0;
           }
         }
 
@@ -132,27 +152,43 @@ export async function openOriginalPrintWindow(options: {
         cMapPacked: true,
       }).promise;
       const pages = [];
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-        const page = await pdf.getPage(pageNumber);
-        const viewport = page.getViewport({ scale: 3 });
-        const canvas = window.document.createElement("canvas");
-        const context = canvas.getContext("2d", { alpha: false });
-        if (!context) throw new Error("تعذر تجهيز صفحات PDF للطباعة");
-        canvas.width = Math.ceil(viewport.width);
-        canvas.height = Math.ceil(viewport.height);
-        context.fillStyle = "#fff";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        await page.render({ canvas, canvasContext: context, viewport }).promise;
-        pages.push({
-          dataUrl: canvas.toDataURL("image/png"),
-          width: canvas.width,
-          height: canvas.height,
-          widthPt: viewport.width / 3,
-          heightPt: viewport.height / 3,
-        });
-        page.cleanup();
+      try {
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          const page = await pdf.getPage(pageNumber);
+          const canvas = window.document.createElement("canvas");
+          try {
+            const baseViewport = page.getViewport({ scale: 1 });
+            const scale = getBoundedPixelRatio(
+              baseViewport.width,
+              baseViewport.height,
+              5
+            );
+            const viewport = page.getViewport({ scale });
+            const context = canvas.getContext("2d", { alpha: false });
+            if (!context) throw new Error("تعذر تجهيز صفحات PDF للطباعة");
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
+            context.fillStyle = "#fff";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            await page.render({ canvas, canvasContext: context, viewport })
+              .promise;
+            pages.push({
+              src: await canvasToPngObjectUrl(canvas),
+              width: canvas.width,
+              height: canvas.height,
+              widthPt: baseViewport.width,
+              heightPt: baseViewport.height,
+            });
+            printImageUrls.push(pages[pages.length - 1]!.src);
+          } finally {
+            canvas.width = 0;
+            canvas.height = 0;
+            page.cleanup();
+          }
+        }
+      } finally {
+        await (pdf as unknown as { destroy?: () => Promise<void> }).destroy?.();
       }
-      await (pdf as unknown as { destroy?: () => Promise<void> }).destroy?.();
       await openPrintWindow(
         (options.pagesPerSheet ?? 1) === 1
           ? buildSinglePdfPagesHtml(pages)
@@ -205,6 +241,7 @@ export async function openOriginalPrintWindow(options: {
     printWindow.print();
   } catch (error) {
     printWindow.close();
+    printImageUrls.forEach(imageUrl => URL.revokeObjectURL(imageUrl));
     throw error;
   }
 }

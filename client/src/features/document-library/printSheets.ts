@@ -32,7 +32,7 @@ export function buildSinglePdfPagesHtml(
   const content = pages
     .map(
       (page, index) =>
-        `<section class="page page${index}"><img src="${page.dataUrl}" alt="" /></section>`
+        `<section class="page page${index}"><img src="${page.src}" alt="" /></section>`
     )
     .join("");
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8" />
@@ -64,9 +64,7 @@ export function buildPrintHtml(
   const sheetMarkup = sheets
     .map((sheet, sheetIndex) => {
       const cells = sheet
-        .map(
-          page => `<div class="cell"><img src="${page.dataUrl}" alt="" /></div>`
-        )
+        .map(page => `<div class="cell"><img src="${page.src}" alt="" /></div>`)
         .join("");
       const counter = options.showPageNumbers
         ? `<span class="counter">ورقة ${sheetIndex + 1} من ${sheets.length}</span>`
@@ -169,6 +167,17 @@ export async function openPrintWindow(
   printWindow.document.write(html);
   printWindow.document.close();
   const images = Array.from(printWindow.document.images);
+  const blobUrls = images
+    .map(image => image.src)
+    .filter(src => src.startsWith("blob:"));
+  let released = false;
+  const releaseBlobUrls = () => {
+    if (released) return;
+    released = true;
+    blobUrls.forEach(src => URL.revokeObjectURL(src));
+  };
+  printWindow.addEventListener("beforeunload", releaseBlobUrls, { once: true });
+  printWindow.addEventListener("pagehide", releaseBlobUrls, { once: true });
   await Promise.all(
     images.map(
       image =>

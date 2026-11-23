@@ -3,7 +3,7 @@ export type PagesPerSheet = 1 | 2 | 4 | 6 | 8;
 export type DocumentFileKind = "word" | "pdf" | "image";
 
 export interface SourcePage {
-  dataUrl: string;
+  src: string;
   width: number;
   height: number;
 }

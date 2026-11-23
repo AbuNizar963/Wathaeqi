@@ -51,7 +51,7 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
             ).printSheetsTest;
             return api.buildPrintHtml(
               Array.from({ length: 9 }, (_, index) => ({
-                dataUrl: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123"><rect width="794" height="1123" fill="rgb(${index * 20},80,140)"/></svg>`)}`,
+                src: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123"><rect width="794" height="1123" fill="rgb(${index * 20},80,140)"/></svg>`)}`,
                 width: 794,
                 height: 1123,
               })),
