@@ -679,6 +679,13 @@ export default function DocumentStudioPage() {
             الوثائق
           </Button>
           <Button
+            variant={activeTab === "templates" ? "default" : "outline"}
+            onClick={() => setActiveTab("templates")}
+          >
+            <LayoutTemplate className="ml-2 h-4 w-4" />
+            القوالب
+          </Button>
+          <Button
             variant={activeTab === "archive" ? "default" : "outline"}
             onClick={() => setActiveTab("archive")}
           >
