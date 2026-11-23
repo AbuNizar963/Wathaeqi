@@ -1741,7 +1741,7 @@ function DocumentLetterhead({
 
   return (
     <header
-      className="grid items-start gap-[2px]"
+      className="document-letterhead grid items-start gap-[2px]"
       style={{
         borderBottom:
           headerSettings?.headerDividerStyle === "tricolor-stars"
