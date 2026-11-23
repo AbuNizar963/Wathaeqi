@@ -31,10 +31,8 @@ class DocumentStudioPrintLayout {
     required int pagesPerSheet,
   }) async {
     final layout = gridFor(pagesPerSheet);
-    if (pagesPerSheet == 1) return sourcePdf;
-
     final images = <pw.MemoryImage>[];
-    await for (final raster in Printing.raster(sourcePdf, dpi: 144)) {
+    await for (final raster in Printing.raster(sourcePdf, dpi: 300)) {
       images.add(pw.MemoryImage(await raster.toPng()));
     }
     if (images.isEmpty) {
@@ -50,7 +48,7 @@ class DocumentStudioPrintLayout {
       output.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(12),
+          margin: pw.EdgeInsets.zero,
           build: (context) => pw.Column(
             children: [
               for (var row = 0; row < layout.rows; row++)

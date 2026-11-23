@@ -540,12 +540,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         document,
         imageTiles: imageTiles,
       );
-      final printPdf = pagesPerSheet == 1
-          ? sourcePdf
-          : await DocumentStudioPrintLayout.compose(
-              sourcePdf,
-              pagesPerSheet: pagesPerSheet,
-            );
+      final printPdf = await DocumentStudioPrintLayout.compose(
+        sourcePdf,
+        pagesPerSheet: pagesPerSheet,
+      );
       await Printing.layoutPdf(
         name: document.title,
         onLayout: (_) async => printPdf,
@@ -714,7 +712,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             pdf.addPage(
               pw.Page(
                 pageFormat: PdfPageFormat.a4,
-                margin: const pw.EdgeInsets.all(12),
+                margin: pw.EdgeInsets.zero,
                 build: (_) =>
                     pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
               ),
