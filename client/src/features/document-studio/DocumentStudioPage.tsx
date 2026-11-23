@@ -47,7 +47,12 @@ import { applyDocumentTemplateVariables } from "../../../../shared/documentTempl
 import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
 import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
-import { downloadDocumentFile, shareDocument } from "./documentActions";
+import {
+  documentFileUrl,
+  downloadA4PageAsPng,
+  downloadDocumentFile,
+  shareDocument,
+} from "./documentActions";
 import {
   buildDocumentWatermarkCss,
   DOCUMENT_WATERMARK_COLUMNS,
@@ -424,16 +429,35 @@ export default function DocumentStudioPage() {
     }
   }
 
-  function downloadSelectedDocument() {
-    if (selectedDocument?.file && importedFileUrlQuery.data?.url) {
-      downloadDocumentFile(
-        importedFileUrlQuery.data.url,
-        selectedDocument.file.fileName
+  async function downloadSelectedDocument() {
+    if (!selectedDocument) return;
+    try {
+      if (selectedDocument.file) {
+        await downloadDocumentFile(
+          documentFileUrl(selectedDocument.id),
+          selectedDocument.file.fileName
+        );
+        toast.success("بدأ تنزيل الملف المستورد");
+        return;
+      }
+      if (!documentPageRef.current) {
+        throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
+      }
+      const baseName = (selectedDocument.title || "وثيقة")
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .trim();
+      await downloadA4PageAsPng(
+        documentPageRef.current,
+        `${baseName || "وثيقة"}.png`
       );
-      toast.success("بدأ تنزيل الملف المستورد");
-      return;
+      toast.success("بدأ تنزيل الوثيقة كصورة PNG عالية الجودة");
+    } catch (downloadError) {
+      toast.error(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "تعذر تنزيل الوثيقة"
+      );
     }
-    setNativePrintOpen(true);
   }
 
   async function shareSelectedDocument() {
@@ -1419,10 +1443,8 @@ export default function DocumentStudioPage() {
                     type="button"
                     variant="outline"
                     className="h-16 flex-col gap-1"
-                    disabled={Boolean(
-                      selectedDocument.file && !importedFileUrlQuery.data?.url
-                    )}
-                    onClick={downloadSelectedDocument}
+                    disabled={!selectedDocument}
+                    onClick={() => void downloadSelectedDocument()}
                   >
                     <Download className="h-5 w-5" />
                     <span className="text-xs">تنزيل</span>

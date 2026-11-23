@@ -2,7 +2,7 @@ import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 import type { SourcePage } from "./types";
 import { fileKind } from "./types";
 
-const RENDER_SCALE = 2;
+const RENDER_SCALE = 3;
 const MAX_PAGES = 300;
 
 async function renderPdfPages(
@@ -28,7 +28,7 @@ async function renderPdfPages(
       context.fillRect(0, 0, canvas.width, canvas.height);
       await page.render({ canvas, canvasContext: context, viewport }).promise;
       pages.push({
-        dataUrl: canvas.toDataURL("image/jpeg", 0.9),
+        dataUrl: canvas.toDataURL("image/png"),
         width: canvas.width,
         height: canvas.height,
       });
@@ -94,7 +94,7 @@ async function renderWordPages(
         height: section.scrollHeight,
       });
       pages.push({
-        dataUrl: canvas.toDataURL("image/jpeg", 0.9),
+        dataUrl: canvas.toDataURL("image/png"),
         width: canvas.width,
         height: canvas.height,
       });
@@ -125,7 +125,7 @@ async function renderImagePage(url: string): Promise<SourcePage[]> {
   context.drawImage(image, 0, 0);
   return [
     {
-      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+      dataUrl: canvas.toDataURL("image/png"),
       width: canvas.width,
       height: canvas.height,
     },

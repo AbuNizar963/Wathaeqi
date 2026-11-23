@@ -41,7 +41,7 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
     allowTaint: false,
     useCORS: true,
     logging: false,
-    scale: 2,
+    scale: 3,
     width,
     height,
     windowWidth: Math.max(document.documentElement.clientWidth, width),
@@ -151,7 +151,7 @@ export default function DocumentStudioPrintDialog({
       const pages = await renderA4Pages(pageElement);
       const html = buildPrintHtml(pages, {
         pagesPerSheet,
-        marginMm: 8,
+        marginMm: 0,
         headerText: "",
         footerText: "",
         showPageNumbers: false,
