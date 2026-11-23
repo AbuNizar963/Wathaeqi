@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPrintHtml, groupPages } from "./printSheets";
+import { buildPrintHtml, buildPrintSheets, groupPages } from "./printSheets";
 import type { PrintOptions, SourcePage } from "./types";
 
 function page(index: number): SourcePage {
@@ -37,14 +37,82 @@ describe("document print sheet layout", () => {
       headerText: "وزارة الداخلية",
       footerText: "نسخة أرشيفية",
     });
-    expect(html).toContain("grid per-4");
+    expect(html).toContain("grid portrait per-4");
     expect(html).toContain("grid-auto-flow: row");
-    expect(html).toContain('class="grid per-4" dir="ltr"');
+    expect(html).toContain('class="grid portrait per-4" dir="ltr"');
     expect(html.match(/<section class="sheet">/g)).toHaveLength(2);
     expect(html.match(/<img /g)).toHaveLength(5);
     expect(html).toContain("وزارة الداخلية");
     expect(html).toContain("نسخة أرشيفية");
     expect(html).toContain("ورقة 1 من 2");
+  });
+
+  it("repeats each source page in its own sheet without mixing sequential pages", () => {
+    const sheets = buildPrintSheets(pages.slice(0, 3), "repeat", 4);
+    expect(sheets).toHaveLength(3);
+    expect(sheets.map(sheet => sheet.map(item => item.src))).toEqual([
+      [
+        "data:image/jpeg;base64,page-1",
+        "data:image/jpeg;base64,page-1",
+        "data:image/jpeg;base64,page-1",
+        "data:image/jpeg;base64,page-1",
+      ],
+      [
+        "data:image/jpeg;base64,page-2",
+        "data:image/jpeg;base64,page-2",
+        "data:image/jpeg;base64,page-2",
+        "data:image/jpeg;base64,page-2",
+      ],
+      [
+        "data:image/jpeg;base64,page-3",
+        "data:image/jpeg;base64,page-3",
+        "data:image/jpeg;base64,page-3",
+        "data:image/jpeg;base64,page-3",
+      ],
+    ]);
+    expect(
+      buildPrintSheets(pages.slice(0, 3), "sequential", 2).map(sheet =>
+        sheet.map(item => item.src)
+      )
+    ).toEqual([
+      ["data:image/jpeg;base64,page-1", "data:image/jpeg;base64,page-2"],
+      ["data:image/jpeg;base64,page-3"],
+    ]);
+  });
+
+  it("keeps one-up output at full A4 size and lays out repeated copies on one sheet", () => {
+    const oneUp = buildPrintHtml([page(1)], { ...baseOptions, marginMm: 0 });
+    expect(oneUp).toContain("@page { size: A4 portrait; margin: 0; }");
+    expect(oneUp).toContain("width: 210mm;");
+    expect(oneUp).toContain("height: 297mm;");
+    expect(oneUp).toContain(
+      ".per-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }"
+    );
+
+    const repeated = buildPrintHtml([page(1)], {
+      ...baseOptions,
+      pagesPerSheet: 1,
+      layoutMode: "repeat",
+      copiesPerSheet: 4,
+    });
+    expect(repeated.match(/<section class="sheet">/g)).toHaveLength(1);
+    expect(repeated.match(/<img /g)).toHaveLength(4);
+    expect(repeated.match(/page-1/g)).toHaveLength(4);
+  });
+
+  it("applies landscape paper dimensions and grid orientation", () => {
+    const html = buildPrintHtml(pages.slice(0, 2), {
+      ...baseOptions,
+      pagesPerSheet: 2,
+      orientation: "landscape",
+      marginMm: 0,
+    });
+    expect(html).toContain("@page { size: A4 landscape; margin: 0; }");
+    expect(html).toContain("width: 297mm;");
+    expect(html).toContain("height: 210mm;");
+    expect(html).toContain(
+      ".grid.landscape.per-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }"
+    );
   });
 
   it("escapes header and footer text instead of injecting HTML", () => {

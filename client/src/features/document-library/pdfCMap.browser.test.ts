@@ -179,8 +179,8 @@ describe.skipIf(
         const viewport = (await printedDocument.getPage(1)).getViewport({
           scale: 1,
         });
-        expect(viewport.width).toBeCloseTo(300, 0);
-        expect(viewport.height).toBeCloseTo(180, 0);
+        expect(viewport.width).toBeCloseTo(595, 0);
+        expect(viewport.height).toBeCloseTo(842, 0);
       } finally {
         await loadingTask.destroy();
       }

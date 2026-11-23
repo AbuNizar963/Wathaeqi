@@ -1,4 +1,9 @@
-import type { PagesPerSheet, PrintOptions, SourcePage } from "./types";
+import type {
+  PagesPerSheet,
+  PrintLayoutMode,
+  PrintOptions,
+  SourcePage,
+} from "./types";
 
 export function groupPages(
   pages: SourcePage[],
@@ -9,6 +14,16 @@ export function groupPages(
     sheets.push(pages.slice(index, index + perSheet));
   }
   return sheets;
+}
+
+/** Build sheets without mixing sequential document pages with repeated copies. */
+export function buildPrintSheets(
+  pages: SourcePage[],
+  mode: PrintLayoutMode,
+  count: PagesPerSheet
+): SourcePage[][] {
+  if (mode === "sequential") return groupPages(pages, count);
+  return pages.map(page => Array.from({ length: count }, () => page));
 }
 
 /** One rasterized PDF page per sheet, preserving its original physical size. */
@@ -57,8 +72,16 @@ export function buildPrintHtml(
   pages: SourcePage[],
   options: PrintOptions
 ): string {
-  const sheets = groupPages(pages, options.pagesPerSheet);
-  const margin = Math.min(20, Math.max(0, options.marginMm));
+  const mode = options.layoutMode ?? "sequential";
+  const count =
+    mode === "repeat" ? (options.copiesPerSheet ?? 1) : options.pagesPerSheet;
+  const orientation = options.orientation ?? "portrait";
+  const isLandscape = orientation === "landscape";
+  const sheets = buildPrintSheets(pages, mode, count);
+  const margin = Math.min(
+    20,
+    Math.max(0, Number.isFinite(options.marginMm) ? options.marginMm : 0)
+  );
   const header = options.headerText.trim();
   const footer = options.footerText.trim();
   const sheetMarkup = sheets
@@ -71,7 +94,7 @@ export function buildPrintHtml(
         : "";
       return `<section class="sheet">
         ${header ? `<header class="sheet-header">${escapeHtml(header)}</header>` : ""}
-        <div class="grid per-${options.pagesPerSheet}" dir="ltr">${cells}</div>
+        <div class="grid ${isLandscape ? "landscape" : "portrait"} per-${count}" dir="ltr">${cells}</div>
         ${
           footer || counter
             ? `<footer class="sheet-footer"><span>${escapeHtml(footer)}</span>${counter}</footer>`
@@ -87,13 +110,13 @@ export function buildPrintHtml(
 <meta charset="utf-8" />
 <title>طباعة الوثيقة</title>
 <style>
-  @page { size: A4 portrait; margin: 0; }
+  @page { size: A4 ${orientation}; margin: 0; }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: #ffffff; }
   body { font-family: "Cairo", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif; color: #0f172a; }
   .sheet {
-    width: 210mm;
-    height: 297mm;
+    width: ${isLandscape ? "297mm" : "210mm"};
+    height: ${isLandscape ? "210mm" : "297mm"};
     padding: ${margin}mm;
     display: flex;
     flex-direction: column;
@@ -130,6 +153,9 @@ export function buildPrintHtml(
   .per-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
   .per-6 { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); }
   .per-8 { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(4, 1fr); }
+  .grid.landscape.per-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+  .grid.landscape.per-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); }
+  .grid.landscape.per-8 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); }
   .cell {
     min-width: 0;
     min-height: 0;
