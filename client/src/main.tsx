@@ -4,6 +4,7 @@ import { httpBatchLink } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { fetchWithCredentials } from "@/lib/trpcFetch";
 import App from "./App";
 import { initializeAnalytics } from "./analytics";
 import "./index.css";
@@ -29,12 +30,7 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: trpcEndpoint,
       transformer: superjson,
-      fetch(input, init) {
-        return globalThis.fetch(input, {
-          ...init,
-          credentials: "include",
-        });
-      },
+      fetch: fetchWithCredentials,
     }),
   ],
 });
