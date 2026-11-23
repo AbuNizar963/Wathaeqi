@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Query } from "node-appwrite";
 import {
   getAppwriteDatabaseId,
@@ -207,11 +208,14 @@ export async function getDepartmentSettings(
   return row ? mapDepartmentSettingsRow(row) : null;
 }
 
-/** Reads the settings row, creating it with defaults when it does not exist. */
-export async function ensureDepartmentSettings(
+async function ensureDepartmentSettingsRow(
   organizationId: string
-): Promise<DepartmentSettings> {
-  const existing = await getDepartmentSettings(organizationId);
+): Promise<AppwriteRow> {
+  const existing = await findRowByColumn(
+    DEPARTMENT_SETTINGS_TABLE,
+    "organizationId",
+    organizationId
+  );
   if (existing) return existing;
 
   const now = new Date().toISOString();
@@ -226,16 +230,30 @@ export async function ensureDepartmentSettings(
     const created = await getAppwriteTablesDB().createRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: DEPARTMENT_SETTINGS_TABLE,
-      rowId: `settings-${organizationId}`,
+      // 136 hash bits plus the prefix fit Appwrite's 36-character ID limit.
+      rowId: `s-${createHash("sha256").update(organizationId).digest("hex").slice(0, 34)}`,
       data,
     });
-    return mapDepartmentSettingsRow(created as AppwriteRow);
+    return created as AppwriteRow;
   } catch (error) {
     if (errorCode(error) !== 409) throw error;
-    const raced = await getDepartmentSettings(organizationId);
+    const raced = await findRowByColumn(
+      DEPARTMENT_SETTINGS_TABLE,
+      "organizationId",
+      organizationId
+    );
     if (!raced) throw error;
     return raced;
   }
+}
+
+/** Reads the settings row, creating it with defaults when it does not exist. */
+export async function ensureDepartmentSettings(
+  organizationId: string
+): Promise<DepartmentSettings> {
+  return mapDepartmentSettingsRow(
+    await ensureDepartmentSettingsRow(organizationId)
+  );
 }
 
 export async function updateDepartmentSettings(
@@ -246,11 +264,11 @@ export async function updateDepartmentSettings(
   >,
   updatedByUserId: number
 ): Promise<DepartmentSettings> {
-  await ensureDepartmentSettings(organizationId);
+  const row = await ensureDepartmentSettingsRow(organizationId);
   const updated = await getAppwriteTablesDB().updateRow({
     databaseId: getAppwriteDatabaseId(),
     tableId: DEPARTMENT_SETTINGS_TABLE,
-    rowId: `settings-${organizationId}`,
+    rowId: row.$id,
     data: {
       ...input,
       updatedByUserId,

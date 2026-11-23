@@ -21,6 +21,7 @@ export default function PrintDialog({
   url,
   fileName,
   mimeType,
+  getPrintUrl,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -28,6 +29,7 @@ export default function PrintDialog({
   url: string;
   fileName: string;
   mimeType: string;
+  getPrintUrl?: () => Promise<string>;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function PrintDialog({
         mimeType,
         pagesPerSheet,
         imageTiles,
+        resolveUrl: getPrintUrl,
       });
     } catch (printError) {
       setError(
@@ -73,11 +76,11 @@ export default function PrintDialog({
         <DialogHeader>
           <DialogTitle className="text-right">طباعة الوثيقة</DialogTitle>
           <DialogDescription className="text-right">
-            {title} — تتم الطباعة من الملف الأصلي للحفاظ على الجداول والصور
-            والخطوط والتنسيق.
+            {title} — تُجهّز الطباعة من الملف المرفوع. قد تختلف بعض تفاصيل العرض
+            بحسب نوع الملف والمتصفح.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {canPrint ? (
             <FilePreview url={url} fileName={fileName} mimeType={mimeType} />
           ) : (
@@ -117,7 +120,10 @@ export default function PrintDialog({
               <legend className="px-1 text-sm font-medium">
                 عدد الصفحات في الورقة
               </legend>
-              <div className="grid grid-cols-5 gap-2" role="radiogroup">
+              <div
+                className="grid grid-cols-2 gap-2 sm:grid-cols-5"
+                role="radiogroup"
+              >
                 {[1, 2, 4, 6, 8].map(value => {
                   const selected = pagesPerSheet === value;
                   return (
@@ -142,6 +148,12 @@ export default function PrintDialog({
                 يُستخدم الملف الأصلي، ويُنشأ توزيع A4 فقط عند اختيار أكثر من
                 صفحة.
               </p>
+              {kind === "pdf" ? (
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  تُرسم صفحات PDF كصور للطباعة، وقد لا يبقى النص قابلاً للتحديد
+                  عند حفظ مخرجات الطباعة كملف PDF.
+                </p>
+              ) : null}
             </fieldset>
           )}
 

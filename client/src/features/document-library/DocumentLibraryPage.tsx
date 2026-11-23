@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import FilePreview from "./FilePreview";
 import PrintDialog from "./PrintDialog";
 import UploadDialog from "./UploadDialog";
+import { signedFileQueryOptions } from "./signedFileQueryOptions";
 import {
   documentFileUrl,
   downloadDocumentFile,
@@ -115,7 +116,10 @@ export default function DocumentLibraryPage() {
     documents.find(document => document.id === selectedId) ?? null;
   const fileUrlQuery = trpc.documentStudio.getFileUrl.useQuery(
     { id: selectedId ?? "" },
-    { enabled: Boolean(selectedId && selected?.file), staleTime: 120_000 }
+    {
+      enabled: Boolean(selectedId && selected?.file),
+      ...signedFileQueryOptions,
+    }
   );
 
   const deleteDocument = trpc.documentStudio.deleteDocument.useMutation({
@@ -571,6 +575,14 @@ export default function DocumentLibraryPage() {
                   url={fileUrlQuery.data.url}
                   fileName={selected.file.fileName}
                   mimeType={selected.file.mimeType}
+                  getPrintUrl={async () => {
+                    const { data } = await fileUrlQuery.refetch({
+                      throwOnError: true,
+                    });
+                    if (!data?.url)
+                      throw new Error("تعذر تجديد رابط الملف للطباعة");
+                    return data.url;
+                  }}
                 />
               ) : null}
             </>

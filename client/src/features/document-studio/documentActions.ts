@@ -1,3 +1,7 @@
+import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { fileKind } from "../document-library/types";
+import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
+
 export type ShareResult = "shared" | "copied";
 
 export function documentStudioUrl(documentId: string): string {
@@ -6,8 +10,9 @@ export function documentStudioUrl(documentId: string): string {
 }
 
 export function documentFileUrl(documentId: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}/api/documents/${encodeURIComponent(documentId)}/file`;
+  return appwriteApiUrl(
+    `/api/documents/${encodeURIComponent(documentId)}/file`
+  );
 }
 
 function triggerBlobDownload(blob: Blob, fileName: string): void {
@@ -26,6 +31,9 @@ export async function downloadDocumentFile(
 ): Promise<void> {
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) throw new Error("تعذر تنزيل الملف");
+  if (!fileKind(fileName, response.headers.get("content-type") ?? "")) {
+    throw new Error("تعذر تنزيل الملف: نوع الاستجابة غير صالح");
+  }
   triggerBlobDownload(await response.blob(), fileName);
 }
 
@@ -40,7 +48,12 @@ export async function downloadA4PageAsPng(
     useCORS: true,
     logging: false,
     scale: 3,
-    onclone: clonedDocument => {
+    onclone: (clonedDocument, clonedElement) => {
+      // Preview transform and clipping are for the viewport only, not the export.
+      clonedElement.style.transform = "none";
+      clonedElement.style.position = "relative";
+      clonedElement.style.left = "auto";
+      sanitizeUnsupportedPrintColors(clonedDocument);
       clonedDocument
         .querySelectorAll<HTMLElement>(
           ".document-studio-no-print, .document-editor-input, .document-editor-warning"

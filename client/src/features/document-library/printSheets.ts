@@ -11,6 +11,40 @@ export function groupPages(
   return sheets;
 }
 
+/** One rasterized PDF page per sheet, preserving its original physical size. */
+export function buildSinglePdfPagesHtml(
+  pages: Array<SourcePage & { widthPt: number; heightPt: number }>
+): string {
+  const rules = pages
+    .map((page, index) => {
+      if (
+        !Number.isFinite(page.widthPt) ||
+        !Number.isFinite(page.heightPt) ||
+        page.widthPt <= 0 ||
+        page.heightPt <= 0
+      ) {
+        throw new Error("أبعاد صفحة PDF غير صالحة للطباعة");
+      }
+      return `@page pdfpage${index} { size: ${page.widthPt}pt ${page.heightPt}pt; margin: 0; }
+        .page${index} { page: pdfpage${index}; width: ${page.widthPt}pt; height: ${page.heightPt}pt; }`;
+    })
+    .join("\n");
+  const content = pages
+    .map(
+      (page, index) =>
+        `<section class="page page${index}"><img src="${page.dataUrl}" alt="" /></section>`
+    )
+    .join("");
+  return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8" />
+    <title>طباعة الوثيقة</title><style>
+    ${rules}
+    html, body { margin: 0; padding: 0; background: white; }
+    .page { break-after: page; page-break-after: always; overflow: hidden; }
+    .page:last-child { break-after: auto; page-break-after: auto; }
+    .page img { width: 100%; height: 100%; display: block; }
+    </style></head><body>${content}</body></html>`;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

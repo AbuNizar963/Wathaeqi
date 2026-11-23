@@ -1,11 +1,46 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { createReadStream } from "node:fs";
+import { cp } from "node:fs/promises";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+
+function pdfCMaps(): Plugin {
+  const source = path.resolve(
+    import.meta.dirname,
+    "node_modules/pdfjs-dist/cmaps"
+  );
+  let outputDirectory = "";
+  return {
+    name: "local-pdf-cmaps",
+    configResolved(config) {
+      outputDirectory = config.build.outDir;
+    },
+    configureServer(server) {
+      server.middlewares.use("/pdfjs/cmaps", (request, response, next) => {
+        const name =
+          (request.url ?? "").split("?")[0]?.replace(/^\//, "") ?? "";
+        if (!/^[A-Za-z0-9_-]+\.bcmap$/.test(name)) return next();
+        response.setHeader("Content-Type", "application/octet-stream");
+        createReadStream(path.join(source, name))
+          .on("error", () => {
+            response.statusCode = 404;
+            response.end();
+          })
+          .pipe(response);
+      });
+    },
+    async writeBundle() {
+      await cp(source, path.join(outputDirectory, "pdfjs/cmaps"), {
+        recursive: true,
+      });
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), jsxLocPlugin()],
+  plugins: [react(), tailwindcss(), jsxLocPlugin(), pdfCMaps()],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

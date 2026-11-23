@@ -1,7 +1,7 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 
 const MAX_SOURCE_LOGO_BYTES = 5 * 1024 * 1024;
-const MAX_STORED_LOGO_BYTES = 2.5 * 1024 * 1024;
 const INITIAL_MAX_DIMENSION = 1600;
 const MINIMUM_DIMENSION = 256;
 
@@ -60,7 +60,7 @@ export async function prepareOrganizationLogoUpload(
       if (!blob || blob.type !== file.type) {
         throw new Error("تعذر ضغط شعار الجهة إلى الصيغة المطلوبة");
       }
-      if (blob.size <= MAX_STORED_LOGO_BYTES) {
+      if (blob.size <= MAX_ORGANIZATION_LOGO_BYTES) {
         return {
           blob,
           contentType: file.type,
