@@ -568,8 +568,25 @@
   }
 }
 
+.document-letterhead__row {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+.document-letterhead__cell {
+  display: table-cell;
+  vertical-align: top;
+  min-width: 0;
+}
+.document-letterhead__logo-cell {
+  padding: 0;
+}
+.document-letterhead__logo-cell img {
+  margin: 0 auto;
+}
 .document-tricolor-stars-divider {
-  grid-column: 1 / -1;
+  /* The letterhead row is a table so html2canvas (PNG export) keeps the divider
+     below the serial/date block instead of painting it over the text. */
   display: flex;
   align-items: center;
   gap: 0.38rem;

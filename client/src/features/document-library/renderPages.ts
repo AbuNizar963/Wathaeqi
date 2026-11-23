@@ -47,9 +47,9 @@ async function renderWordPages(
   buffer: ArrayBuffer,
   onProgress?: (done: number, total: number) => void
 ): Promise<SourcePage[]> {
-  const [{ renderAsync }, html2canvas] = await Promise.all([
+  const [{ renderAsync }, { toCanvas }] = await Promise.all([
     import("docx-preview"),
-    import("html2canvas").then(module => module.default),
+    import("html-to-image"),
   ]);
   const host = window.document.createElement("div");
   host.setAttribute("dir", "rtl");
@@ -85,11 +85,11 @@ async function renderWordPages(
     const pages: SourcePage[] = [];
     for (let index = 0; index < sections.length; index += 1) {
       const section = sections[index];
-      const canvas = await html2canvas(section, {
-        backgroundColor: "#ffffff",
-        scale: RENDER_SCALE,
-        useCORS: true,
-        logging: false,
+      // html2canvas re-implements text layout and breaks Arabic shaping in
+      // rendered Word pages; html-to-image keeps the browser's own layout.
+      const canvas = await toCanvas(section, {
+        pixelRatio: RENDER_SCALE,
+        cacheBust: true,
         width: section.scrollWidth,
         height: section.scrollHeight,
       });

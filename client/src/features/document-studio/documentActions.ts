@@ -1,6 +1,5 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
 import { fileKind } from "../document-library/types";
-import { sanitizeUnsupportedPrintColors } from "./printColorCompatibility";
 
 export type ShareResult = "shared" | "copied";
 
@@ -41,47 +40,49 @@ export async function downloadA4PageAsPng(
   element: HTMLElement,
   fileName: string
 ): Promise<void> {
-  const { default: html2canvas } = await import("html2canvas");
-  const canvas = await html2canvas(element, {
-    backgroundColor: "#ffffff",
-    allowTaint: false,
-    useCORS: true,
-    logging: false,
-    scale: 3,
-    onclone: (clonedDocument, clonedElement) => {
-      // Preview transform and clipping are for the viewport only, not the export.
-      clonedElement.style.transform = "none";
-      clonedElement.style.position = "relative";
-      clonedElement.style.left = "auto";
-      // html2canvas splits text with non-zero letter spacing into graphemes,
-      // which breaks Arabic shaping. Keep the live preview unchanged.
-      clonedElement
-        .querySelectorAll<HTMLElement>(
-          ".document-letterhead, .document-letterhead *"
-        )
-        .forEach(node => {
-          node.style.letterSpacing = "normal";
-        });
-      sanitizeUnsupportedPrintColors(clonedDocument);
-      clonedDocument
-        .querySelectorAll<HTMLElement>(
-          ".document-studio-no-print, .document-editor-input, .document-editor-warning"
-        )
-        .forEach(node => {
-          node.style.display = "none";
-        });
-      clonedDocument
-        .querySelectorAll<HTMLElement>(".document-editor-print-copy")
-        .forEach(node => {
-          node.style.display = "block";
-        });
-    },
-  });
-  const blob = await new Promise<Blob | null>(resolve =>
-    canvas.toBlob(resolve, "image/png")
+  // html2canvas re-implements text layout and breaks Arabic shaping and table
+  // geometry; html-to-image serializes the real DOM into an SVG foreignObject,
+  // so the export matches the browser rendering exactly.
+  const { toPng } = await import("html-to-image");
+  const hidden = Array.from(
+    element.querySelectorAll<HTMLElement>(
+      ".document-studio-no-print, .document-editor-input, .document-editor-warning"
+    )
   );
-  if (!blob) throw new Error("تعذر إنشاء صورة الوثيقة");
-  triggerBlobDownload(blob, fileName);
+  const printCopies = Array.from(
+    element.querySelectorAll<HTMLElement>(".document-editor-print-copy")
+  );
+  const previousHidden = hidden.map(node => node.style.display);
+  const previousPrintCopies = printCopies.map(node => node.style.display);
+  hidden.forEach(node => {
+    node.style.display = "none";
+  });
+  printCopies.forEach(node => {
+    node.style.display = "block";
+  });
+  try {
+    const dataUrl = await toPng(element, {
+      pixelRatio: 3,
+      cacheBust: true,
+      // Preview scaling and clipping are for the viewport only, not the export.
+      style: {
+        transform: "none",
+        position: "static",
+        left: "auto",
+        top: "auto",
+        margin: "0",
+      },
+    });
+    const response = await fetch(dataUrl);
+    triggerBlobDownload(await response.blob(), fileName);
+  } finally {
+    hidden.forEach((node, index) => {
+      node.style.display = previousHidden[index] ?? "";
+    });
+    printCopies.forEach((node, index) => {
+      node.style.display = previousPrintCopies[index] ?? "";
+    });
+  }
 }
 
 export async function shareDocument(input: {
