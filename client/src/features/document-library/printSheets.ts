@@ -92,7 +92,7 @@ export function buildPrintHtml(
     padding-top: 1.5mm;
   }
   .counter { margin-inline-start: auto; white-space: nowrap; }
-  .grid { flex: 1 1 auto; display: grid; gap: 3mm; min-height: 0; direction: ltr; }
+  .grid { flex: 1 1 auto; display: grid; grid-auto-flow: row; gap: 3mm; min-height: 0; direction: ltr; }
   .per-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .per-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .per-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }

@@ -38,6 +38,8 @@ describe("document print sheet layout", () => {
       footerText: "نسخة أرشيفية",
     });
     expect(html).toContain("grid per-4");
+    expect(html).toContain("grid-auto-flow: row");
+    expect(html).toContain('class="grid per-4" dir="ltr"');
     expect(html.match(/<section class="sheet">/g)).toHaveLength(2);
     expect(html.match(/<img /g)).toHaveLength(5);
     expect(html).toContain("وزارة الداخلية");
