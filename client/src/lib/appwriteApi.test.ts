@@ -24,4 +24,23 @@ describe("appwriteApiUrl", () => {
       "/api/documents/upload"
     );
   });
+
+  it("uses the production Function fallback only on the production site", () => {
+    vi.stubEnv("VITE_APPWRITE_API_URL", "");
+    const originalLocation = globalThis.location;
+
+    Object.defineProperty(globalThis, "location", {
+      configurable: true,
+      value: { hostname: "wathaeqi.appwrite.network" },
+    });
+
+    expect(appwriteApiUrl("/api/trpc/auth.login")).toBe(
+      "https://wathaeqi-api.fra.appwrite.run/api/trpc/auth.login"
+    );
+
+    Object.defineProperty(globalThis, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
 });
