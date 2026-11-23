@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { clearSessionToken } from "@/lib/sessionToken";
 import { useEffect, useMemo } from "react";
 
 type UseAuthOptions = {
@@ -16,7 +17,8 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
-    onSuccess: async () => {
+    onSettled: async () => {
+      clearSessionToken();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     },

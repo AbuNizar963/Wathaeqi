@@ -7,7 +7,6 @@ import type { Request } from "express";
 import type { User } from "./user";
 import { getAppwriteAuthenticatedUserFromRequest } from "./appwriteAuth";
 
-export const SESSION_COOKIE = "police_telegrams_session";
 export type PublicUser = Omit<User, "passwordHash">;
 
 const SCRYPT_N = 16384;

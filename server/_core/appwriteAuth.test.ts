@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SignJWT } from "jose";
+import { createHash } from "node:crypto";
+import { EncryptJWT, jwtDecrypt } from "jose";
 
 const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
@@ -58,9 +59,9 @@ vi.mock("./env", () => ({
 import {
   authenticateAppwriteUser,
   changeAppwritePassword,
-  clearAppwriteSessionCookie,
+  createAppwriteSessionToken,
+  deleteCurrentAppwriteSession,
   getAppwriteAuthenticatedUserFromRequest,
-  setAppwriteSessionCookie,
 } from "./appwriteAuth";
 
 const profileRow = {
@@ -87,21 +88,24 @@ const session = {
   expire: "2099-01-01T00:00:00.000Z",
 };
 
-const createSessionCookie = async (sessionVersion: string) => {
-  const token = await new SignJWT({
+const createBearerToken = async (sessionVersion: string) => {
+  const token = await new EncryptJWT({
     appwriteSessionSecret: "appwrite-session-secret",
     sessionVersion,
   })
-    .setProtectedHeader({ alg: "HS256" })
+    .setProtectedHeader({ alg: "dir", enc: "A256GCM", typ: "JWT" })
+    .setIssuer("wathaeqi-api")
+    .setAudience("wathaeqi-client")
     .setSubject("1")
     .setIssuedAt()
     .setExpirationTime("1h")
-    .sign(
-      new TextEncoder().encode(
-        "test-only-session-secret-with-more-than-32-chars"
-      )
+    .encrypt(
+      createHash("sha256")
+        .update("wathaeqi-appwrite-session-token-v1\0")
+        .update("test-only-session-secret-with-more-than-32-chars")
+        .digest()
     );
-  return `police_telegrams_session=${token}`;
+  return `Bearer ${token}`;
 };
 
 beforeEach(() => {
@@ -155,7 +159,7 @@ describe("Appwrite authentication adapter", () => {
   it("validates the signed Appwrite session", async () => {
     const request = {
       headers: {
-        cookie: await createSessionCookie("session-version-1"),
+        authorization: await createBearerToken("session-version-1"),
       },
     } as never;
 
@@ -170,7 +174,7 @@ describe("Appwrite authentication adapter", () => {
   it("rejects stale session versions", async () => {
     const request = {
       headers: {
-        cookie: await createSessionCookie("stale-session-version"),
+        authorization: await createBearerToken("stale-session-version"),
       },
     } as never;
 
@@ -179,32 +183,39 @@ describe("Appwrite authentication adapter", () => {
     ).resolves.toBeNull();
   });
 
-  it("sets secure session cookies", async () => {
-    const response = { setHeader: vi.fn() } as never;
-
-    await setAppwriteSessionCookie(response, session as never, {
+  it("issues a short-lived encrypted session token without a cookie", async () => {
+    const token = await createAppwriteSessionToken(session as never, {
       id: 1,
       authUserId: "appwrite-user-id",
       sessionVersion: "session-version-1",
     });
-
-    expect(response.setHeader).toHaveBeenCalledWith(
-      "Set-Cookie",
-      expect.stringContaining("HttpOnly")
+    const { payload } = await jwtDecrypt(
+      token,
+      createHash("sha256")
+        .update("wathaeqi-appwrite-session-token-v1\0")
+        .update("test-only-session-secret-with-more-than-32-chars")
+        .digest(),
+      {
+        keyManagementAlgorithms: ["dir"],
+        contentEncryptionAlgorithms: ["A256GCM"],
+        issuer: "wathaeqi-api",
+        audience: "wathaeqi-client",
+      }
     );
-    expect(response.setHeader).toHaveBeenCalledWith(
-      "Set-Cookie",
-      expect.stringContaining("Secure")
+    expect(token).not.toContain("appwrite-session-secret");
+    expect(payload.appwriteSessionSecret).toBe("appwrite-session-secret");
+    expect(payload.sessionVersion).toBe("session-version-1");
+    expect(Number(payload.exp) - Number(payload.iat)).toBeLessThanOrEqual(
+      12 * 60 * 60
     );
   });
 
   it("changes the Appwrite password and rotates the application session", async () => {
     const request = {
       headers: {
-        cookie: await createSessionCookie("session-version-1"),
+        authorization: await createBearerToken("session-version-1"),
       },
     } as never;
-    const response = { setHeader: vi.fn() } as never;
     const newSession = {
       secret: "new-appwrite-session-secret",
       expire: "2099-01-01T00:00:00.000Z",
@@ -213,13 +224,13 @@ describe("Appwrite authentication adapter", () => {
 
     const updated = await changeAppwritePassword(
       request,
-      response,
       "old-password",
       "new-strong-password-123"
     );
 
-    expect(updated.mustChangePassword).toBe(false);
-    expect(updated.sessionVersion).not.toBe("session-version-1");
+    expect(updated.user.mustChangePassword).toBe(false);
+    expect(updated.user.sessionVersion).not.toBe("session-version-1");
+    expect(updated.sessionToken).toEqual(expect.any(String));
     expect(mocks.updatePassword).toHaveBeenCalledWith({
       password: "new-strong-password-123",
       oldPassword: "old-password",
@@ -240,23 +251,19 @@ describe("Appwrite authentication adapter", () => {
     expect(mocks.deleteSession).toHaveBeenCalledWith({
       sessionId: "current",
     });
-    expect(response.setHeader).toHaveBeenCalledWith(
-      "Set-Cookie",
-      expect.stringContaining("HttpOnly")
-    );
-    const newCookie = response.setHeader.mock.calls[0]?.[1].split(
-      ";"
-    )[0] as string;
     mocks.listRows.mockResolvedValue({
-      rows: [{ ...profileRow, sessionVersion: updated.sessionVersion }],
+      rows: [{ ...profileRow, sessionVersion: updated.user.sessionVersion }],
       total: 1,
     });
 
     await expect(
       getAppwriteAuthenticatedUserFromRequest({
-        headers: { cookie: newCookie },
+        headers: { authorization: `Bearer ${updated.sessionToken}` },
       } as never)
-    ).resolves.toMatchObject({ id: 1, sessionVersion: updated.sessionVersion });
+    ).resolves.toMatchObject({
+      id: 1,
+      sessionVersion: updated.user.sessionVersion,
+    });
     expect(mocks.getAppwriteSessionClient).toHaveBeenCalledWith(
       "new-appwrite-session-secret"
     );
@@ -267,27 +274,37 @@ describe("Appwrite authentication adapter", () => {
 
   it("does not rotate a session when the current password is incorrect", async () => {
     const request = {
-      headers: { cookie: await createSessionCookie("session-version-1") },
+      headers: {
+        authorization: await createBearerToken("session-version-1"),
+      },
     } as never;
-    const response = { setHeader: vi.fn() } as never;
     mocks.updatePassword.mockRejectedValueOnce({ code: 401 });
 
     await expect(
-      changeAppwritePassword(request, response, "wrong", "new-password-123")
+      changeAppwritePassword(request, "wrong", "new-password-123")
     ).rejects.toMatchObject({ name: "AppwriteInvalidCurrentPasswordError" });
-    expect(response.setHeader).not.toHaveBeenCalled();
     expect(mocks.updateRow).not.toHaveBeenCalled();
     expect(mocks.createEmailPasswordSession).not.toHaveBeenCalled();
   });
 
-  it("clears the session cookie", () => {
-    const response = { setHeader: vi.fn() } as never;
+  it("does not authenticate from a cookie", async () => {
+    const bearerToken = await createBearerToken("session-version-1");
+    await expect(
+      getAppwriteAuthenticatedUserFromRequest({
+        headers: {
+          cookie: `police_telegrams_session=${bearerToken.slice("Bearer ".length)}`,
+        },
+      } as never)
+    ).resolves.toBeNull();
+  });
 
-    clearAppwriteSessionCookie(response);
+  it("revokes the Appwrite session during logout", async () => {
+    await deleteCurrentAppwriteSession({
+      headers: {
+        authorization: await createBearerToken("session-version-1"),
+      },
+    } as never);
 
-    expect(response.setHeader).toHaveBeenCalledWith(
-      "Set-Cookie",
-      expect.stringContaining("Max-Age=0")
-    );
+    expect(mocks.deleteSession).toHaveBeenCalledWith({ sessionId: "current" });
   });
 });

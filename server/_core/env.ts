@@ -27,8 +27,6 @@ export const ENV = {
     "",
   adminEmails: splitCsv(process.env.ADMIN_EMAILS),
   authSessionSecret: process.env.AUTH_SESSION_SECRET ?? "",
-  appwriteSessionCookieSameSite:
-    process.env.APPWRITE_SESSION_COOKIE_SAMESITE === "None" ? "None" : "Lax",
   ownerUsername: process.env.OWNER_USERNAME ?? "AbuNizar",
   ownerSetupSecret: process.env.OWNER_SETUP_SECRET ?? "",
   ownerPasswordHash: process.env.OWNER_PASSWORD_HASH ?? "",

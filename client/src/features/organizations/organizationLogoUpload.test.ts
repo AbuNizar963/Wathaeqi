@@ -4,6 +4,7 @@ import {
   uploadOrganizationLogoDirect,
 } from "./organizationLogoUpload";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
+import { clearSessionToken } from "@/lib/sessionToken";
 
 describe("prepared organization logo size", () => {
   afterEach(() => {
@@ -67,9 +68,10 @@ describe("direct organization logo upload", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
+    clearSessionToken();
   });
 
-  it("sends the prepared image with credentials to the configured API origin", async () => {
+  it("sends the prepared image without cookies to the configured API origin", async () => {
     vi.stubEnv("VITE_APPWRITE_API_URL", "https://api.example.test/");
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -102,14 +104,16 @@ describe("direct organization logo upload", () => {
     expect(url).toBe("https://api.example.test/api/storage/department-logo");
     expect(options).toMatchObject({
       method: "PUT",
-      credentials: "include",
-      headers: {
-        "Content-Type": "image/png",
-        "X-Organization-Id": "550e8400-e29b-41d4-a716-446655440000",
-        "X-File-Name": "badge.png",
-      },
+      credentials: "omit",
       body: blob,
     });
+    const headers = new Headers(options.headers);
+    expect(headers.get("Content-Type")).toBe("image/png");
+    expect(headers.get("X-Organization-Id")).toBe(
+      "550e8400-e29b-41d4-a716-446655440000"
+    );
+    expect(headers.get("X-File-Name")).toBe("badge.png");
+    expect(headers.get("Authorization")).toBeNull();
   });
 
   it("surfaces authorization and validation errors from the server", async () => {

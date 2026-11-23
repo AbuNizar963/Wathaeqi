@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { fetchWithSession } from "@/lib/trpcFetch";
 import { countLocalFilePages } from "./renderPages";
 import { DOCUMENT_CATEGORIES, fileKind, formatBytes } from "./types";
 
@@ -98,24 +99,26 @@ export default function UploadDialog({
     setError(null);
     try {
       setProgress("جارٍ رفع الملف إلى التخزين الآمن…");
-      const response = await fetch(appwriteApiUrl("/api/documents/upload"), {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "x-file-name": encodeURIComponent(file.name),
-          "x-document-metadata": encodeMetadataHeader({
-            title: title.trim(),
-            category,
-            subject: subject.trim(),
-            documentDate: new Date(
-              `${documentDate}T12:00:00.000Z`
-            ).toISOString(),
-            pageCount,
-          }),
-        },
-        body: file,
-      });
+      const response = await fetchWithSession(
+        appwriteApiUrl("/api/documents/upload"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/octet-stream",
+            "x-file-name": encodeURIComponent(file.name),
+            "x-document-metadata": encodeMetadataHeader({
+              title: title.trim(),
+              category,
+              subject: subject.trim(),
+              documentDate: new Date(
+                `${documentDate}T12:00:00.000Z`
+              ).toISOString(),
+              pageCount,
+            }),
+          },
+          body: file,
+        }
+      );
       const uploaded = (await response.json().catch(() => null)) as {
         id?: string;
         error?: string;

@@ -1,3 +1,5 @@
+import { getSessionToken } from "./sessionToken";
+
 export const LOGIN_REQUEST_TIMEOUT_MS = 30_000;
 
 function isLoginRequest(input: RequestInfo | URL): boolean {
@@ -17,8 +19,8 @@ function isLoginRequest(input: RequestInfo | URL): boolean {
   }
 }
 
-/** Send tRPC requests with session cookies and fail stalled login attempts visibly. */
-export async function fetchWithCredentials(
+/** Send API requests with a tab-scoped Bearer token and no browser credentials. */
+export async function fetchWithSession(
   input: RequestInfo | URL,
   init?: RequestInit
 ): Promise<Response> {
@@ -43,9 +45,19 @@ export async function fetchWithCredentials(
   }
 
   try {
+    const headers = new Headers(
+      init?.headers ??
+        (typeof Request !== "undefined" && input instanceof Request
+          ? input.headers
+          : undefined)
+    );
+    const sessionToken = getSessionToken();
+    if (sessionToken) headers.set("Authorization", `Bearer ${sessionToken}`);
+
     return await globalThis.fetch(input, {
       ...init,
-      credentials: "include",
+      headers,
+      credentials: "omit",
       ...(controller ? { signal: controller.signal } : {}),
     });
   } finally {

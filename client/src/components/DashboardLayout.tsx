@@ -31,6 +31,7 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { trpc } from "@/lib/trpc";
+import { setSessionToken } from "@/lib/sessionToken";
 import { BrandMark } from "./BrandMark";
 import HeaderActions from "./HeaderActions";
 
@@ -105,12 +106,16 @@ export default function DashboardLayout({
     setLoginError(null);
 
     try {
-      await loginMutation.mutateAsync({ username: username.trim(), password });
+      const result = await loginMutation.mutateAsync({
+        username: username.trim(),
+        password,
+      });
+      setSessionToken(result.sessionToken);
       await utils.auth.me.invalidate();
 
       if (!utils.auth.me.getData()) {
         setLoginError(
-          "قُبلت بيانات الدخول لكن لم تُنشأ جلسة للنظام. اسمح بملفات تعريف الارتباط للموقع ثم أعد المحاولة."
+          "قُبلت بيانات الدخول لكن تعذر تثبيت جلسة آمنة. أعد المحاولة، وإذا تكررت المشكلة تواصل مع الدعم."
         );
       }
     } catch (error) {
@@ -254,7 +259,8 @@ function TemporaryPasswordDialog({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const changePassword = trpc.profile.changePassword.useMutation({
-    onSuccess: async () => {
+    onSuccess: async result => {
+      setSessionToken(result.sessionToken);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

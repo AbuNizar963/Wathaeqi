@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { setSessionToken } from "@/lib/sessionToken";
 import { useAuth } from "@/features/auth-session/useAuth";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -56,7 +57,8 @@ export default function Profile() {
     onError: e => toast.error(e.message || "تعذر حفظ الملف الشخصي"),
   });
   const changePassword = trpc.profile.changePassword.useMutation({
-    onSuccess: async () => {
+    onSuccess: async result => {
+      setSessionToken(result.sessionToken);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -304,7 +306,7 @@ export default function Profile() {
             <div>
               <p className="text-sm font-semibold">إنهاء الجلسة</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                يُسجّل خروجك من هذا الجهاز فورًا حتى قبل انتهاء مدة الشهر.
+                يُنهي الجلسة على هذا الجهاز فورًا.
               </p>
             </div>
             <Button

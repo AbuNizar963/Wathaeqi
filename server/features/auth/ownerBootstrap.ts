@@ -161,7 +161,8 @@ export async function createInitialOwnerProfile(input: {
     throw error;
   }
 
-  // Use the server API-key client so Appwrite includes the session secret for the secure cookie.
+  // Use the server API-key client so Appwrite returns the session secret for
+  // the encrypted, tab-scoped Bearer session created by the API router.
   const sessionAccount = new Account(getAppwriteAdminClient());
   const session = await sessionAccount.createEmailPasswordSession({
     email: owner.email,

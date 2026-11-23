@@ -1,4 +1,5 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { fetchWithSession } from "@/lib/trpcFetch";
 import { fileKind } from "../document-library/types";
 
 export type ShareResult = "shared" | "copied";
@@ -28,7 +29,7 @@ export async function downloadDocumentFile(
   url: string,
   fileName: string
 ): Promise<void> {
-  const response = await fetch(url, { credentials: "include" });
+  const response = await fetchWithSession(url);
   if (!response.ok) throw new Error("تعذر تنزيل الملف");
   if (!fileKind(fileName, response.headers.get("content-type") ?? "")) {
     throw new Error("تعذر تنزيل الملف: نوع الاستجابة غير صالح");

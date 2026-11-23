@@ -1,4 +1,5 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { fetchWithSession } from "@/lib/trpcFetch";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 
 const MAX_SOURCE_LOGO_BYTES = 5 * 1024 * 1024;
@@ -101,16 +102,18 @@ export async function uploadOrganizationLogoDirect(input: {
   blob: Blob;
   contentType: OrganizationLogoContentType;
 }): Promise<UploadedOrganizationLogo> {
-  const response = await fetch(appwriteApiUrl("/api/storage/department-logo"), {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      "Content-Type": input.contentType,
-      "X-Organization-Id": input.organizationId,
-      "X-File-Name": encodeURIComponent(input.fileName),
-    },
-    body: input.blob,
-  });
+  const response = await fetchWithSession(
+    appwriteApiUrl("/api/storage/department-logo"),
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": input.contentType,
+        "X-Organization-Id": input.organizationId,
+        "X-File-Name": encodeURIComponent(input.fileName),
+      },
+      body: input.blob,
+    }
+  );
 
   const result = (await response
     .json()
