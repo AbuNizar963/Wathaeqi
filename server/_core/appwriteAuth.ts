@@ -317,6 +317,13 @@ function serializeCookie(value: string, maxAge: number): string {
   if (ENV.isProduction || ENV.appwriteSessionCookieSameSite === "None") {
     parts.push("Secure");
   }
+  if (ENV.appwriteSessionCookieSameSite === "None") {
+    // The production API runs on an Appwrite Function origin while the UI is
+    // served from an Appwrite Site origin. Partitioned keeps the HttpOnly
+    // session usable in that embedded cross-site context without widening its
+    // scope to unrelated top-level sites.
+    parts.push("Partitioned");
+  }
   return parts.join("; ");
 }
 
