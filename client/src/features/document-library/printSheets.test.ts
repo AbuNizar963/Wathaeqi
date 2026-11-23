@@ -125,4 +125,13 @@ describe("document print sheet layout", () => {
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("A &amp; B");
   });
+
+  it("rejects unsafe image sources instead of embedding them in generated markup", () => {
+    const html = buildPrintHtml(
+      [{ ...page(1), src: 'javascript:alert("x")' }],
+      baseOptions
+    );
+    expect(html).not.toContain("javascript:");
+    expect(html).toContain('<img src="" alt="" />');
+  });
 });

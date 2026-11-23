@@ -1,6 +1,6 @@
 import { fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
-import { buildPrintHtml, openPrintWindow } from "./printSheets";
+import { openPrintWindow } from "./printSheets";
 import { canvasToPngObjectUrl, getBoundedPixelRatio } from "./renderQuality";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
@@ -70,19 +70,17 @@ export async function openOriginalPrintWindow(options: {
         const tileCount = options.imageTiles ?? 1;
         if (tileCount === 1) {
           await openPrintWindow(
-            buildPrintHtml(
-              [
+            {
+              pages: [
                 {
                   src: imageUrl,
                   width: image.naturalWidth,
                   height: image.naturalHeight,
                 },
               ],
-              {
-                ...layoutOptions,
-                pagesPerSheet: 1,
-              }
-            ),
+              options: { ...layoutOptions, pagesPerSheet: 1 },
+              title: `طباعة ${options.fileName}`,
+            },
             printWindow
           );
           return;
@@ -133,14 +131,18 @@ export async function openOriginalPrintWindow(options: {
         }
 
         await openPrintWindow(
-          buildPrintHtml(pages, {
-            ...layoutOptions,
-            pagesPerSheet: 1,
-            layoutMode: "sequential",
-            copiesPerSheet: 1,
-            headerText: "",
-            footerText: "",
-          }),
+          {
+            pages,
+            title: `طباعة ${options.fileName}`,
+            options: {
+              ...layoutOptions,
+              pagesPerSheet: 1,
+              layoutMode: "sequential",
+              copiesPerSheet: 1,
+              headerText: "",
+              footerText: "",
+            },
+          },
           printWindow
         );
         return;
@@ -198,7 +200,10 @@ export async function openOriginalPrintWindow(options: {
       } finally {
         await (pdf as unknown as { destroy?: () => Promise<void> }).destroy?.();
       }
-      await openPrintWindow(buildPrintHtml(pages, layoutOptions), printWindow);
+      await openPrintWindow(
+        { pages, options: layoutOptions, title: `طباعة ${options.fileName}` },
+        printWindow
+      );
       return;
     }
 
@@ -215,7 +220,12 @@ export async function openOriginalPrintWindow(options: {
     const margin = Math.min(20, Math.max(0, options.marginMm ?? 0));
     printWindow.document.open();
     printWindow.document.write(
-      `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة ${escapeHtml(options.fileName)}</title><style>
+      '<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة الوثيقة</title></head><body></body></html>'
+    );
+    printWindow.document.close();
+    printWindow.document.title = `طباعة ${options.fileName}`;
+    const wordStyle = printWindow.document.createElement("style");
+    wordStyle.textContent = `
       @page{size:A4 ${orientation};margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
       .docx-wrapper{background:#fff!important;padding:0!important}.docx{box-shadow:none!important;margin:0!important}
       .sheet{width:${sheetWidth}mm;height:${sheetHeight}mm;padding:${margin}mm;display:flex;flex-direction:column;gap:2mm;direction:ltr;page-break-after:always;break-after:page;overflow:hidden;background:#fff}
@@ -226,14 +236,13 @@ export async function openOriginalPrintWindow(options: {
       .cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff;direction:rtl}.cell>.docx{position:absolute;inset:0 auto auto 0;box-shadow:none!important}
       .print-counter{flex:0 0 auto;text-align:left;font:8pt Arial,sans-serif;color:#64748b;padding-top:1mm}
       @media screen{body{background:#e2e8f0;padding:8mm 0}.sheet{margin:0 auto 8mm;box-shadow:0 2mm 8mm #0f172a2e}}
-      </style></head><body><div id="docx-print-host" dir="rtl"></div></body></html>`
-    );
-    printWindow.document.close();
-    const host = printWindow.document.getElementById("docx-print-host");
-    if (!host) {
-      printWindow.close();
-      throw new Error("تعذر تجهيز مساحة طباعة Word");
-    }
+    `;
+    printWindow.document.head.append(wordStyle);
+    const hostElement = printWindow.document.createElement("div");
+    hostElement.id = "docx-print-host";
+    hostElement.dir = "rtl";
+    printWindow.document.body.append(hostElement);
+    const host = hostElement;
     await renderAsync(buffer, host, undefined, {
       className: "docx",
       inWrapper: true,
@@ -346,14 +355,4 @@ function arrangeWordPages(
     // Unlike transform, zoom also scales the layout before print pagination.
     page.style.zoom = String(scale);
   }
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(
-    /[&<>"']/g,
-    character =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        character
-      ] ?? character
-  );
 }

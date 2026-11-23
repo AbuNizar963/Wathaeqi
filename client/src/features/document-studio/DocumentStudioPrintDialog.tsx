@@ -9,10 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  buildPrintHtml,
-  openPrintWindow,
-} from "../document-library/printSheets";
+import { openPrintWindow } from "../document-library/printSheets";
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
 import type {
   PagesPerSheet,
@@ -198,17 +195,22 @@ export default function DocumentStudioPrintDialog({
         throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
       }
       const pages = await renderA4Pages(pageElement);
-      const html = buildPrintHtml(pages, {
-        pagesPerSheet,
-        layoutMode,
-        copiesPerSheet,
-        orientation,
-        marginMm,
-        headerText: "",
-        footerText: "",
-        showPageNumbers,
-      });
-      await openPrintWindow(html, printWindow);
+      await openPrintWindow(
+        {
+          pages,
+          options: {
+            pagesPerSheet,
+            layoutMode,
+            copiesPerSheet,
+            orientation,
+            marginMm,
+            headerText: "",
+            footerText: "",
+            showPageNumbers,
+          },
+        },
+        printWindow
+      );
     } catch (printError) {
       printWindow.close();
       setError(
