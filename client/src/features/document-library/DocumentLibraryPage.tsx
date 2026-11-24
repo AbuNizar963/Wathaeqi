@@ -92,10 +92,8 @@ export default function DocumentLibraryPage() {
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [statusFilter, setStatusFilter] =
-    useState<DocumentStatusFilter>("all");
-  const [sortOrder, setSortOrder] =
-    useState<DocumentSortOrder>("updated-desc");
+  const [statusFilter, setStatusFilter] = useState<DocumentStatusFilter>("all");
+  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("updated-desc");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
