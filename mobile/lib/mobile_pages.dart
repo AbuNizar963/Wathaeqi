@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -11,8 +10,6 @@ import 'api.dart';
 import 'features/organizations/organization_logo_upload.dart';
 import 'app_theme.dart';
 import './features/reports/audit_log_presentation.dart';
-import './features/reports/telegram_report_date_formatter.dart';
-import './features/reports/telegram_report_labels.dart';
 import './features/notifications/toast.dart';
 
 const _gold = Color(0xFFD8C38E);
@@ -159,453 +156,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
     ),
   );
-}
-
-class ReportsPage extends StatefulWidget {
-  const ReportsPage({super.key, required this.api});
-  final PoliceApi api;
-
-  @override
-  State<ReportsPage> createState() => _ReportsPageState();
-}
-
-class _ReportsPageState extends State<ReportsPage> {
-  bool loading = true;
-  String? error;
-  Map<String, dynamic>? report;
-  Map<String, dynamic> reportSettings = const {};
-  bool _reportSettingsLoaded = false;
-  final _searchController = TextEditingController();
-  String _status = 'all';
-  DateTime? _from;
-  DateTime? _to;
-  Timer? _refreshTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    load();
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 15),
-      (_) => load(showLoading: false),
-    );
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  String _dateValue(DateTime value, {bool endOfDay = false}) {
-    final date = DateTime(
-      value.year,
-      value.month,
-      value.day,
-      endOfDay ? 23 : 0,
-      endOfDay ? 59 : 0,
-      endOfDay ? 59 : 0,
-      endOfDay ? 999 : 0,
-    );
-    return date.toUtc().toIso8601String();
-  }
-
-  Future<void> _chooseDate({required bool from}) async {
-    final now = DateTime.now();
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: (from ? _from : _to) ?? now,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(now.year + 10),
-      helpText: from ? 'اختر تاريخ البداية' : 'اختر تاريخ النهاية',
-      cancelText: 'إلغاء',
-      confirmText: 'اختيار',
-    );
-    if (selected == null || !mounted) return;
-
-    final nextFrom = from ? selected : _from;
-    final nextTo = from ? _to : selected;
-    if (nextFrom != null &&
-        nextTo != null &&
-        DateTime(
-          nextFrom.year,
-          nextFrom.month,
-          nextFrom.day,
-        ).isAfter(DateTime(nextTo.year, nextTo.month, nextTo.day))) {
-      setState(() => error = 'تاريخ البداية يجب ألا يتجاوز تاريخ النهاية.');
-      return;
-    }
-
-    setState(() {
-      if (from) {
-        _from = selected;
-      } else {
-        _to = selected;
-      }
-    });
-    await load();
-  }
-
-  Future<void> load({bool showLoading = true}) async {
-    if (showLoading) {
-      setState(() {
-        loading = true;
-        error = null;
-      });
-    }
-    try {
-      final input = <String, dynamic>{'page': 1, 'pageSize': 100};
-      final search = _searchController.text.trim();
-      if (search.isNotEmpty) input['search'] = search;
-      if (_status != 'all') input['status'] = _status;
-      if (_from != null) input['from'] = _dateValue(_from!);
-      if (_to != null) input['to'] = _dateValue(_to!, endOfDay: true);
-
-      final settingsFuture = _reportSettingsLoaded
-          ? Future<dynamic>.value(reportSettings)
-          : widget.api
-                .call('settings.get')
-                .catchError((_) => <String, dynamic>{});
-      final results = await Future.wait<dynamic>([
-        widget.api.call('reports.telegrams', input: input),
-        settingsFuture,
-      ]);
-      if (!mounted) return;
-      setState(() {
-        report = results[0] is Map
-            ? Map<String, dynamic>.from(results[0] as Map)
-            : {};
-        if (!_reportSettingsLoaded) {
-          reportSettings = results[1] is Map
-              ? Map<String, dynamic>.from(results[1] as Map)
-              : {};
-          _reportSettingsLoaded = true;
-        }
-        error = null;
-      });
-    } catch (exception) {
-      if (mounted) {
-        setState(() {
-          report = null;
-          error = _errorMessage(exception);
-        });
-      }
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'كل المدة';
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _exportCsv() async {
-    final raw = report?['rows'] ?? report?['items'] ?? report?['telegrams'];
-    if (raw is! List || raw.isEmpty) {
-      Toast.warning(context, 'لا توجد سجلات لتصديرها.');
-      return;
-    }
-
-    String cell(dynamic value) {
-      var text = value == null || value == 'null' ? '' : '$value';
-      if (RegExp(r'^[=+\-@]').hasMatch(text)) text = "'$text";
-      return '"${text.replaceAll('"', '""')}"';
-    }
-
-    final rows = <List<String>>[
-      [
-        'رقم البرقية',
-        'الموضوع',
-        'الجهة',
-        'الحالة',
-        'السرية',
-        'الأولوية',
-        'تاريخ الإنشاء',
-      ],
-      ...raw.whereType<Map>().map((item) {
-        final row = Map<String, dynamic>.from(item);
-        return [
-          '${row['serialCode'] ?? row['serialNumber'] ?? ''}',
-          '${row['subject'] ?? ''}',
-          '${row['recipient'] ?? row['organizationName'] ?? ''}',
-          telegramStatusLabels['${row['status']}'] ?? '${row['status'] ?? ''}',
-          telegramClassificationLabels['${row['classification']}'] ??
-              '${row['classification'] ?? ''}',
-          telegramPriorityLabels['${row['priority']}'] ??
-              '${row['priority'] ?? ''}',
-          formatTelegramReportDate(row['createdAt'], reportSettings),
-        ];
-      }),
-    ];
-    final csv =
-        '\uFEFF${rows.map((row) => row.map(cell).join(',')).join('\r\n')}\r\n';
-
-    try {
-      final date = DateTime.now().toIso8601String().substring(0, 10);
-      await FilePicker.saveFile(
-        dialogTitle: 'تصدير سجل البرقيات',
-        fileName: 'telegram-report-$date.csv',
-        type: FileType.custom,
-        allowedExtensions: const ['csv'],
-        bytes: Uint8List.fromList(utf8.encode(csv)),
-      );
-    } catch (exception) {
-      if (mounted) {
-        Toast.error(context, 'تعذر تصدير التقرير: ${_errorMessage(exception)}');
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
-    child: Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'التقارير',
-          style: TextStyle(fontWeight: FontWeight.w900),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'تصدير التقرير CSV',
-            onPressed: loading || report == null ? null : _exportCsv,
-            icon: const Icon(Icons.file_download_outlined),
-          ),
-          IconButton(
-            tooltip: 'تحديث التقرير',
-            onPressed: loading ? null : load,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
-      body: loading && report == null
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: load,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'تصفية التقرير',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: _searchController,
-                            textInputAction: TextInputAction.search,
-                            onSubmitted: (_) => load(),
-                            decoration: InputDecoration(
-                              labelText: 'بحث بالرقم أو الموضوع',
-                              prefixIcon: const Icon(Icons.search),
-                              suffixIcon: _searchController.text.isEmpty
-                                  ? null
-                                  : IconButton(
-                                      tooltip: 'مسح البحث',
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        load();
-                                      },
-                                      icon: const Icon(Icons.close),
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          DropdownButtonFormField<String>(
-                            initialValue: _status,
-                            decoration: const InputDecoration(
-                              labelText: 'حالة البرقية',
-                            ),
-                            items: [
-                              const DropdownMenuItem(
-                                value: 'all',
-                                child: Text('كل الحالات'),
-                              ),
-                              ...telegramStatusLabels.entries.map(
-                                (entry) => DropdownMenuItem(
-                                  value: entry.key,
-                                  child: Text(entry.value),
-                                ),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setState(() => _status = value);
-                              load();
-                            },
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              OutlinedButton.icon(
-                                onPressed: () => _chooseDate(from: true),
-                                icon: const Icon(Icons.calendar_today_outlined),
-                                label: Text('من: ${_formatDate(_from)}'),
-                              ),
-                              OutlinedButton.icon(
-                                onPressed: () => _chooseDate(from: false),
-                                icon: const Icon(Icons.event_outlined),
-                                label: Text('إلى: ${_formatDate(_to)}'),
-                              ),
-                              if (_from != null || _to != null)
-                                TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      _from = null;
-                                      _to = null;
-                                    });
-                                    load();
-                                  },
-                                  icon: const Icon(Icons.filter_alt_off),
-                                  label: const Text('مسح التاريخ'),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          FilledButton.icon(
-                            onPressed: loading ? null : load,
-                            icon: const Icon(Icons.filter_alt),
-                            label: const Text('تطبيق الفلاتر'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (error != null) _ErrorCard(message: error!),
-                  if (loading && report != null)
-                    const LinearProgressIndicator(),
-                  if (report != null) ...[
-                    _ReportSummary(report: report!),
-                    const SizedBox(height: 14),
-                    _ReportRows(report: report!),
-                  ],
-                ],
-              ),
-            ),
-    ),
-  );
-}
-
-class _ReportSummary extends StatelessWidget {
-  const _ReportSummary({required this.report});
-  final Map<String, dynamic> report;
-
-  @override
-  Widget build(BuildContext context) {
-    final total =
-        report['total'] ?? report['count'] ?? report['totalTelegrams'] ?? 0;
-    final items = report['items'] ?? report['rows'] ?? report['telegrams'];
-    final pending = report['pending'] ?? report['inReview'] ?? 0;
-    final completed = report['completed'] ?? report['approved'] ?? 0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'ملخص البرقيات',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            _metric(context, 'الإجمالي', total, Icons.description_outlined),
-            _metric(
-              context,
-              'قيد المراجعة',
-              pending,
-              Icons.pending_actions_outlined,
-            ),
-            _metric(context, 'مكتملة', completed, Icons.verified_outlined),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'السجلات المعروضة: ${items is List ? items.length : '—'}',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _metric(
-    BuildContext context,
-    String label,
-    dynamic value,
-    IconData icon,
-  ) => Expanded(
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.secondary),
-            const SizedBox(height: 5),
-            Text(
-              '$value',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 19,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(label, style: const TextStyle(fontSize: 10)),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-class _ReportRows extends StatelessWidget {
-  const _ReportRows({required this.report});
-  final Map<String, dynamic> report;
-
-  @override
-  Widget build(BuildContext context) {
-    final raw = report['items'] ?? report['rows'] ?? report['telegrams'];
-    if (raw is! List || raw.isEmpty) {
-      return const _EmptyCard(message: 'لا توجد سجلات في التقرير');
-    }
-    return Card(
-      child: Column(
-        children: raw.take(100).map((item) {
-          final row = Map<String, dynamic>.from(item as Map);
-          return ListTile(
-            leading: Icon(
-              Icons.description_outlined,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            title: Text(
-              _stringValue(row['subject'], 'برقية بدون موضوع'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              '${_stringValue(row['serialCode'] ?? row['serialNumber'])} · ${_stringValue(row['status'])}',
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
 }
 
 class AuditLogPage extends StatefulWidget {
@@ -1823,7 +1373,17 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
 
   Future<void> _load() async {
     try {
-      final result = await widget.api.call('settings.get');
+      final context = await widget.api.call('organizations.context');
+      final contextOrganizationId = context is Map
+          ? context['organizationId']?.toString().trim()
+          : null;
+      if (contextOrganizationId == null || contextOrganizationId.isEmpty) {
+        throw Exception('تعذر تحديد الجهة الثابتة لتحميل إعداداتها.');
+      }
+      final result = await widget.api.call(
+        'organizations.settings.get',
+        input: {'organizationId': contextOrganizationId},
+      );
       final settings = await _withOrganizationLogo(
         Map<String, dynamic>.from(result as Map),
       );
@@ -1908,7 +1468,14 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
     });
 
     try {
+      final organizationId = _text(_settings['organizationId']).trim();
+      if (organizationId.isEmpty) {
+        throw Exception(
+          'تعذر تحديد الجهة الثابتة؛ أعد تحميل الإعدادات ثم حاول مجددًا.',
+        );
+      }
       final payload = <String, dynamic>{
+        'organizationId': organizationId,
         'departmentName': departmentName,
         'unitName': _unitName.text.trim(),
         'unitChiefRank': _unitChiefRank.text.trim(),
@@ -1924,7 +1491,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
         'logoUrl': _logoUrl,
       };
       final result = await widget.api.call(
-        'settings.update',
+        'organizations.settings.update',
         mutation: true,
         input: payload,
       );
