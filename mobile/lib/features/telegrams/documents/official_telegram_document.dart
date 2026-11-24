@@ -1385,18 +1385,6 @@ class _OfficialTelegramDocumentPageState
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
             ),
-                ),
-                Text(
-                  _displaySerial,
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 4),
             Text(
               _value(telegram?['subject'], fallback: 'عرض البرقية'),
