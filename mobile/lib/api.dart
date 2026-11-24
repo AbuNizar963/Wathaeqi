@@ -525,6 +525,9 @@ class PoliceApi {
     }
 
     final sessionToken = await _readSessionToken();
+    if (sessionToken == null) {
+      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
+    }
     final uri = Uri.parse('$baseUrl/api/telegram-render');
     final headers = <String, String>{
       'content-type': 'application/json',
@@ -613,13 +616,14 @@ class PoliceApi {
     }
 
     final sessionToken = await _readSessionToken();
+    if (sessionToken == null) {
+      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
+    }
     final requestHeaders = <String, String>{
       'content-type': 'application/json',
       'accept': 'application/json',
+      'authorization': 'Bearer $sessionToken',
     };
-    if (sessionToken != null) {
-      requestHeaders['authorization'] = 'Bearer $sessionToken';
-    }
 
     Future<http.Response> send(
       Future<http.Response> Function() request, {
@@ -721,9 +725,7 @@ class PoliceApi {
         'x-attachment-file-name': Uri.encodeComponent(fileName),
         'x-attachment-content-type': contentType,
       };
-      if (sessionToken != null) {
-        uploadHeaders['authorization'] = 'Bearer $sessionToken';
-      }
+      uploadHeaders['authorization'] = 'Bearer $sessionToken';
 
       final uploadResponse = await send(
         () => _httpClient.put(uploadUri, headers: uploadHeaders, body: bytes),
@@ -1118,6 +1120,7 @@ class PoliceApi {
         return Map<String, dynamic>.from(user);
       }
       await _storage.delete(key: 'session_token');
+      await _storage.delete(key: 'session_cookie');
       await _storage.delete(key: 'cached_account');
       await clearOrganizationLogoCache();
       return null;
@@ -1126,6 +1129,7 @@ class PoliceApi {
     } on ApiException catch (error) {
       if (error.statusCode == 401 || error.statusCode == 403) {
         await _storage.delete(key: 'session_token');
+        await _storage.delete(key: 'session_cookie');
         await _storage.delete(key: 'cached_account');
         await clearOrganizationLogoCache();
         return null;
@@ -1150,6 +1154,7 @@ class PoliceApi {
     } finally {
       await _clearOfflineCache();
       await _storage.delete(key: 'session_token');
+      await _storage.delete(key: 'session_cookie');
       await _storage.delete(key: 'cached_account');
       await _storage.delete(key: _sessionVerifiedAtKey);
       await clearOrganizationLogoCache();
