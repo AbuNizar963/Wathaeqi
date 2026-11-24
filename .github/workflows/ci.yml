@@ -46,9 +46,9 @@ jobs:
           fi
       - name: Diagnose document studio formatting
         run: |
-          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx
-          git diff -- client/src/features/document-studio/DocumentStudioPage.tsx
-          pnpm exec prettier --check client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
+          pnpm exec prettier --write server/features/document-studio/documentStudioRepository.ts shared/documentStudio.test.ts
+          git diff -- server/features/document-studio/documentStudioRepository.ts shared/documentStudio.test.ts
+          pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       - name: Check formatting
         run: pnpm lint
