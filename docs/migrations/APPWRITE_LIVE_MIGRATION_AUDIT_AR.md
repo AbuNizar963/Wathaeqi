@@ -10,7 +10,7 @@
 - Appwrite TablesDB: 19 جدولاً، بإجمالي **16 سجلاً** وفق عدّ الصفوف في اللقطة.
 - Supabase Storage: 7 ملفات في bucket البرقيات، بإجمالي **9,576,975 بايت**؛ و0 ملف في صور الملفات الشخصية.
 - Appwrite Storage: 16 ملفاً في bucket `document-attachments`، بإجمالي **9,046,456 بايت**. اختلاف العدد والحجم لا يثبت تطابق الملفات؛ لم تُقارن البصمات أو مفاتيح التخزين.
-- قاعدة Supabase تعرض 27 تعريفاً لدوال PostgreSQL (بما فيها overloads) و13 trigger غير داخلي. لا توجد Supabase Edge Functions في نتيجة الفحص.
+- قاعدة Supabase تعرض 28 تعريفاً لدوال PostgreSQL (بما فيها overloads) و13 trigger غير داخلي. لا توجد Supabase Edge Functions في نتيجة الفحص.
 - Appwrite الإنتاجية تحتوي على وظيفتين: `wathaeqi-api` و`wathaeqi-api-health`.
 
 ## مقارنة جداول البيانات
