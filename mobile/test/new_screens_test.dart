@@ -559,6 +559,4 @@ void main() {
 
     expect(find.text('أدخل رمز التحقق الموجود في الوثيقة.'), findsOneWidget);
   });
-
-
 }
