@@ -111,7 +111,8 @@ describe("platform document settings UI normalization", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       pageHeaderRows: Array.from({ length: 15 }, (_, index) => ({
-        right: index === 0 ? (42 as unknown as string) : `يمين ${index}`,
+        right:
+          index === 0 ? (42 as unknown as string) : `يمين ${index}`,
         left: `left ${index}`,
       })),
     });
