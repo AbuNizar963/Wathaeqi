@@ -396,7 +396,10 @@ class PoliceApi {
 
     final request = http.Request('POST', uri)
       ..followRedirects = false
-      ..headers.addAll({'authorization': 'Bearer $sessionToken', 'accept': 'application/pdf'});
+      ..headers.addAll({
+        'authorization': 'Bearer $sessionToken',
+        'accept': 'application/pdf',
+      });
     late final http.Response response;
     try {
       final streamed = await _httpClient
@@ -459,7 +462,10 @@ class PoliceApi {
             ),
           )
           ..followRedirects = false
-          ..headers.addAll({'authorization': 'Bearer $sessionToken', 'accept': mimeType});
+          ..headers.addAll({
+            'authorization': 'Bearer $sessionToken',
+            'accept': mimeType,
+          });
     late final http.Response response;
     try {
       final streamed = await _httpClient
@@ -619,7 +625,9 @@ class PoliceApi {
       'content-type': 'application/json',
       'accept': 'application/json',
     };
-    if (sessionToken != null) requestHeaders['authorization'] = 'Bearer $sessionToken';
+    if (sessionToken != null) {
+      requestHeaders['authorization'] = 'Bearer $sessionToken';
+    }
 
     Future<http.Response> send(
       Future<http.Response> Function() request, {
@@ -721,7 +729,9 @@ class PoliceApi {
         'x-attachment-file-name': Uri.encodeComponent(fileName),
         'x-attachment-content-type': contentType,
       };
-      if (sessionToken != null) uploadHeaders['authorization'] = 'Bearer $sessionToken';
+      if (sessionToken != null) {
+        uploadHeaders['authorization'] = 'Bearer $sessionToken';
+      }
 
       final uploadResponse = await send(
         () => _httpClient.put(uploadUri, headers: uploadHeaders, body: bytes),
@@ -1117,7 +1127,7 @@ class PoliceApi {
     } on ApiException catch (error) {
       if (error.statusCode == 401 || error.statusCode == 403) {
         await _storage.delete(key: _sessionTokenKey);
-              await _storage.delete(key: _legacySessionCookieKey);
+        await _storage.delete(key: _legacySessionCookieKey);
         await _storage.delete(key: 'cached_account');
         await clearOrganizationLogoCache();
         return null;
