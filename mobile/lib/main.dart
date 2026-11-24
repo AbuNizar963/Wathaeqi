@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -689,9 +688,6 @@ class _DashboardPageState extends State<DashboardPage>
   Uint8List? _organizationLogoBytes;
   String numberSystem = 'latin';
   int unreadNotificationCount = 0;
-  bool _pushEnabled = false;
-  bool _pushBusy = false;
-  final _pushTokenRegistration = OrganizationPushTokenRegistration();
   int section = 0;
   int telegramPage = 1;
   bool hasNextTelegramPage = false;
@@ -742,24 +738,12 @@ class _DashboardPageState extends State<DashboardPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) unawaited(_checkForAppUpdate());
     });
-    push
-        .initialize(
-          onToken: _handlePushToken,
-          onAppUpdate: _openAppUpdate,
-          onOpenNotifications: _showNotificationsPreview,
-        )
-        .then((_) async {
-          final enabled = await push.notificationsEnabled();
-          if (mounted) {
-            setState(() => _pushEnabled = enabled);
-            if (enabled) {
-              unawaited(
-                _syncPushTokenForActiveOrganization(activeOrganizationId)
-                    .then<void>((_) {}),
-              );
-            }
-          }
-        });
+    unawaited(
+      push.initialize(
+        onAppUpdate: _openAppUpdate,
+        onOpenNotifications: _showNotificationsPreview,
+      ),
+    );
   }
 
   void _handleMutation(ApiMutationEvent event) {
@@ -915,40 +899,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  void _handlePushToken(String token) {
-    unawaited(_registerPushToken(token).then<void>((_) {}));
-  }
-
-  Future<bool> _registerPushToken(String token) async {
-    final organizationId = activeOrganizationId;
-    try {
-      await widget.api.call(
-        'notifications.registerMobileToken',
-        mutation: true,
-        input: {'token': token, 'platform': Platform.isIOS ? 'ios' : 'android'},
-      );
-      if (organizationId == activeOrganizationId) {
-        _pushTokenRegistration.markRegistered(organizationId);
-      }
-      return true;
-    } catch (_) {
-      // A temporary registration failure must not block the user interface.
-      return false;
-    }
-  }
-
-  Future<bool> _syncPushTokenForActiveOrganization(
-    String? organizationId,
-  ) async {
-    if (!mounted || !_pushEnabled) return false;
-    return _pushTokenRegistration.ensureRegistered(
-      organizationId: organizationId,
-      notificationsEnabled: push.notificationsEnabled,
-      currentToken: push.currentToken,
-      registerToken: _registerPushToken,
-    );
-  }
-
   Future<void> _syncOutbox({bool showProgress = true}) async {
     if (_outboxSyncInProgress) return;
     if (mounted) {
@@ -1002,64 +952,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Future<void> _togglePushNotifications() async {
-    if (_pushBusy) return;
-    setState(() => _pushBusy = true);
-    try {
-      if (_pushEnabled) {
-        final token = await push.currentToken();
-        if (token != null) {
-          await widget.api.call(
-            'notifications.unregisterMobileToken',
-            mutation: true,
-            input: {'token': token},
-          );
-        }
-        await push.disableNotifications();
-        _pushTokenRegistration.clear();
-        if (mounted) {
-          setState(() => _pushEnabled = false);
-          Toast.success(context, 'تم إيقاف إشعارات هذا الجهاز');
-        }
-      } else {
-        final enabled = await push.enableNotifications(
-          onToken: _handlePushToken,
-        );
-        if (!mounted) return;
-        setState(() => _pushEnabled = enabled);
-        if (!enabled) {
-          Toast.error(
-            context,
-            'اسمح بالإشعارات من إعدادات الجهاز ثم أعد المحاولة',
-          );
-          return;
-        }
-
-        final registered = await _syncPushTokenForActiveOrganization(
-          activeOrganizationId,
-        );
-        if (!mounted) return;
-        if (registered) {
-          Toast.success(
-            context,
-            'تم تفعيل الإشعارات وتسجيل هذا الجهاز لاستقبال البرقيات',
-          );
-        } else {
-          Toast.error(
-            context,
-            'سُمح بالإشعارات، لكن تعذر تسجيل الجهاز لدى الخادم. تحقق من الاتصال ثم أعد المحاولة',
-          );
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        Toast.error(context, 'تعذر تحديث إعداد الإشعارات الآن');
-      }
-    } finally {
-      if (mounted) setState(() => _pushBusy = false);
-    }
-  }
-
   bool get _canViewAuditLogs =>
       _account['role'] == 'admin' ||
       _isPlatformOwner ||
@@ -1097,9 +989,6 @@ class _DashboardPageState extends State<DashboardPage>
         break;
       case 'system-theme':
         widget.onUseSystemTheme?.call();
-        break;
-      case 'notifications':
-        _togglePushNotifications();
         break;
       case 'refresh':
         refresh();
@@ -1187,23 +1076,10 @@ class _DashboardPageState extends State<DashboardPage>
   Future<void> _logout() async {
     final navigator = Navigator.of(context);
     try {
-      final token = await push.currentToken();
-      if (token != null) {
-        await widget.api.call(
-          'notifications.unregisterMobileToken',
-          mutation: true,
-          input: {'token': token},
-        );
-      }
-    } catch (_) {
-      // Continue with local logout if push cleanup cannot reach the server.
-    }
-    try {
       await widget.api.logout();
     } catch (_) {
       // PoliceApi.logout clears the local session in its finally block.
     }
-    _pushTokenRegistration.clear();
     AppLockRuntime.setSessionActive(false);
     if (!mounted) return;
     navigator.pushReplacement(
@@ -1433,12 +1309,6 @@ class _DashboardPageState extends State<DashboardPage>
         activeOrganizationIsActive = value['isActive'] == true;
         activeOrganizationIsOwner = value['isOwner'] == true;
       });
-      if (organizationId != null && organizationId.isNotEmpty) {
-        unawaited(
-          _syncPushTokenForActiveOrganization(organizationId)
-              .then<void>((_) {}),
-        );
-      }
     } catch (_) {
       // Keep the last verified organization context when offline.
     }
@@ -1638,12 +1508,6 @@ class _DashboardPageState extends State<DashboardPage>
         });
       }
       unawaited(_loadOrganizationLogo(organizationId, _organizationLogoUrl));
-      if (organizationId != null && organizationId.isNotEmpty) {
-        unawaited(
-          _syncPushTokenForActiveOrganization(organizationId)
-              .then<void>((_) {}),
-        );
-      }
       if (telegramPage == 1 &&
           section == 0 &&
           searchQuery.trim().isEmpty &&
@@ -1839,20 +1703,6 @@ class _DashboardPageState extends State<DashboardPage>
                 child: _AccountMenuItem(
                   icon: Icons.person_outline_rounded,
                   title: 'الملف الشخصي',
-                ),
-              ),
-              PopupMenuItem(
-                value: 'notifications',
-                enabled: !_pushBusy,
-                child: _AccountMenuItem(
-                  icon: _pushEnabled
-                      ? Icons.notifications_off_outlined
-                      : Icons.notifications_active_outlined,
-                  title: _pushBusy
-                      ? 'جارٍ تحديث الإشعارات...'
-                      : _pushEnabled
-                      ? 'إيقاف الإشعارات'
-                      : 'تفعيل الإشعارات',
                 ),
               ),
               const PopupMenuDivider(),
