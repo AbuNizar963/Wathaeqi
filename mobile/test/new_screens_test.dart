@@ -192,15 +192,17 @@ void main() {
       'organizationId': 'org-1',
     });
 
-    final saveButton = find.widgetWithText(
-      FilledButton,
-      'حفظ إعدادات الجهة',
+    final saveButton = find.widgetWithText(FilledButton, 'حفظ إعدادات الجهة');
+    final settingsScrollable = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(Scrollable),
     );
     await tester.scrollUntilVisible(
       saveButton,
       240,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: settingsScrollable.first,
     );
+    await tester.pumpAndSettle();
     await tester.tap(saveButton);
     await tester.pumpAndSettle();
 
