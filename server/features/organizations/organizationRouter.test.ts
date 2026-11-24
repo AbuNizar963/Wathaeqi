@@ -66,11 +66,15 @@ beforeEach(() => {
   });
 });
 
+async function expectForbidden(action: Promise<unknown>) {
+  await expect(action).rejects.toMatchObject({ code: "FORBIDDEN" });
+}
+
 describe("platform-owner-only organization procedures", () => {
-  it("rejects ordinary authenticated users before any privileged side effect", async () => {
+  it("denies non-owners before privileged operations or repository access", async () => {
     const api = caller();
 
-    await expect(
+    await expectForbidden(
       api.provisionAccount({
         organizationId: "org-target",
         name: "مستخدم جديد",
@@ -78,24 +82,16 @@ describe("platform-owner-only organization procedures", () => {
         email: "new.user@example.com",
         password: "SecurePassword123",
       })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-
-    await expect(
-      api.delete({ id: "org-target" })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-
-    await expect(
+    );
+    await expectForbidden(api.delete({ id: "org-target" }));
+    await expectForbidden(
       api.purgeArchived({
         organizationId: "org-target",
         confirmation: "org-target",
       })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-
-    await expect(
-      api.settings.get({ organizationId: "org-target" })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
-
-    await expect(
+    );
+    await expectForbidden(api.settings.get({ organizationId: "org-target" }));
+    await expectForbidden(
       api.settings.update({
         organizationId: "org-target",
         departmentName: "الإدارة",
@@ -112,7 +108,7 @@ describe("platform-owner-only organization procedures", () => {
         numberSystem: "latin",
         logoUrl: null,
       })
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    );
 
     expect(mocks.createManagedUser).not.toHaveBeenCalled();
     expect(mocks.setOrganizationActive).not.toHaveBeenCalled();
