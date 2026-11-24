@@ -27,6 +27,7 @@ type Drift = {
   table: string;
   missingColumns: string[];
   missingIndexes: string[];
+  securityIssues: string[];
   missingTable: boolean;
 };
 
@@ -207,6 +208,22 @@ async function inspectTable(
     const indexKeys = new Set(
       (existing.indexes as Array<{ key: string }>).map(index => index.key)
     );
+    const tableMetadata = existing as unknown as {
+      $permissions?: unknown;
+      permissions?: unknown;
+      rowSecurity?: unknown;
+    };
+    const permissions =
+      tableMetadata.$permissions ?? tableMetadata.permissions;
+    const securityIssues: string[] = [];
+    if (!Array.isArray(permissions)) {
+      securityIssues.push("unable to verify table permissions");
+    } else if (permissions.length > 0) {
+      securityIssues.push("table permissions must be empty (server-only)");
+    }
+    if (tableMetadata.rowSecurity !== false) {
+      securityIssues.push("rowSecurity must be false for server-only tables");
+    }
     return {
       table: table.id,
       missingTable: false,
@@ -216,6 +233,7 @@ async function inspectTable(
       missingIndexes: table.indexes
         .map(index => index.key)
         .filter(key => !indexKeys.has(key)),
+      securityIssues,
     };
   } catch (error) {
     if (!isNotFound(error)) throw error;
@@ -224,6 +242,7 @@ async function inspectTable(
       missingTable: true,
       missingColumns: table.columns.map(column => column.key),
       missingIndexes: table.indexes.map(index => index.key),
+      securityIssues: [],
     };
   }
 }
@@ -234,6 +253,11 @@ async function applyTable(
   table: SchemaTable
 ): Promise<void> {
   let drift = await inspectTable(tables, databaseId, table);
+  if (drift.securityIssues.length > 0) {
+    throw new Error(
+      `Table ${table.id} has unsafe or unverifiable permissions: ${drift.securityIssues.join("; ")}`
+    );
+  }
   if (drift.missingTable) {
     console.log(`+ creating table ${table.id}`);
     try {
@@ -270,6 +294,11 @@ async function applyTable(
       table.columns.map(column => column.key)
     );
     drift = await inspectTable(tables, databaseId, table);
+    if (drift.securityIssues.length > 0) {
+      throw new Error(
+        `Table ${table.id} was created with unsafe or unverifiable permissions: ${drift.securityIssues.join("; ")}`
+      );
+    }
   }
 
   for (const key of drift.missingColumns) {
@@ -333,7 +362,8 @@ async function main(): Promise<void> {
       drift =>
         drift.missingTable ||
         drift.missingColumns.length > 0 ||
-        drift.missingIndexes.length > 0
+        drift.missingIndexes.length > 0 ||
+        drift.securityIssues.length > 0
     );
     if (pending.length === 0) {
       console.log("Appwrite schema is up to date.");
@@ -352,6 +382,11 @@ async function main(): Promise<void> {
       if (drift.missingIndexes.length > 0) {
         console.log(
           `- ${drift.table}: missing indexes ${drift.missingIndexes.join(", ")}`
+        );
+      }
+      if (drift.securityIssues.length > 0) {
+        console.log(
+          `- ${drift.table}: security issues ${drift.securityIssues.join(", ")}`
         );
       }
     }
