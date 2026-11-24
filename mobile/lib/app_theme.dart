@@ -4,36 +4,36 @@ import 'package:flutter/material.dart';
 /// docs/DESIGN_SYSTEM_WEB_MOBILE_AR.md. Keep platform layouts native while
 /// keeping the shared visual identity stable.
 abstract final class AppPalette {
-  static const navy = Color(0xFF10233F);
-  static const brandBlue = Color(0xFF3390EC);
-  static const canvas = Color(0xFFF8F7F2);
-  static const surface = Color(0xFFFFFEFC);
-  static const ink = Color(0xFF202B3A);
-  static const muted = Color(0xFFF1F2F4);
-  static const mutedInk = Color(0xFF5F6B7A);
+  static const navy = Color(0xFF132D43);
+  static const brandBlue = Color(0xFF0F9F9A);
+  static const canvas = Color(0xFFF4F7FA);
+  static const surface = Color(0xFFFFFFFF);
+  static const ink = Color(0xFF16283B);
+  static const muted = Color(0xFFEEF2F6);
+  static const mutedInk = Color(0xFF5B6B7C);
   static const border = Color(0xFFDCE5ED);
-  static const danger = Color(0xFFB42332);
-  static const success = Color(0xFF14745D);
-  static const warning = Color(0xFFA05C0C);
-  static const info = Color(0xFF356AC3);
-  static const sidebarAccent = Color(0xFF263A55);
+  static const danger = Color(0xFFC2414D);
+  static const success = Color(0xFF17856F);
+  static const warning = Color(0xFFA96A16);
+  static const info = Color(0xFF3978C5);
+  static const sidebarAccent = Color(0xFF1D4054);
 
-  static const darkCanvas = Color(0xFF101925);
-  static const darkSurface = Color(0xFF182538);
-  static const darkInk = Color(0xFFF5F6F8);
-  static const darkMuted = Color(0xFF26364B);
-  static const darkMutedInk = Color(0xFFCBD4E1);
-  static const darkBorder = Color(0xFF2A384B);
-  static const darkOutline = Color(0xFF34445B);
-  static const darkSidebarAccent = Color(0xFF263A55);
-  static const darkSuccess = Color(0xFF4ADE80);
-  static const darkWarning = Color(0xFFFBBF24);
-  static const darkInfo = Color(0xFF60A5FA);
-  static const successContainer = Color(0xFFEEF8F3);
-  static const darkSuccessContainer = Color(0xFF102B23);
-  static const warningContainer = Color(0xFFFFF8E9);
-  static const darkWarningContainer = Color(0xFF332B17);
-  static const infoContainer = Color(0xFFEEF5FF);
+  static const darkCanvas = Color(0xFF0C1722);
+  static const darkSurface = Color(0xFF142536);
+  static const darkInk = Color(0xFFECF3F8);
+  static const darkMuted = Color(0xFF1D3345);
+  static const darkMutedInk = Color(0xFFAFC0CE);
+  static const darkBorder = Color(0xFF294154);
+  static const darkOutline = Color(0xFF3A5368);
+  static const darkSidebarAccent = Color(0xFF1D4054);
+  static const darkSuccess = Color(0xFF54D5C9);
+  static const darkWarning = Color(0xFFF2C36B);
+  static const darkInfo = Color(0xFF72B6F2);
+  static const successContainer = Color(0xFFE7F6F1);
+  static const darkSuccessContainer = Color(0xFF123A35);
+  static const warningContainer = Color(0xFFFFF4E2);
+  static const darkWarningContainer = Color(0xFF40331B);
+  static const infoContainer = Color(0xFFEAF2FC);
   static const darkInfoContainer = Color(0xFF172B45);
 
   static const lightScheme = ColorScheme.light(
@@ -46,7 +46,7 @@ abstract final class AppPalette {
     onSurfaceVariant: mutedInk,
     tertiary: info,
     onTertiary: surface,
-    primaryContainer: Color(0xFFE8EDF4),
+    primaryContainer: Color(0xFFE7EEF4),
     onPrimaryContainer: navy,
     secondaryContainer: Color(0xFFDDF4F1),
     onSecondaryContainer: navy,
@@ -70,9 +70,9 @@ abstract final class AppPalette {
     surface: darkSurface,
     onSurface: darkInk,
     onSurfaceVariant: darkMutedInk,
-    tertiary: Color(0xFF60A5FA),
-    onTertiary: Color(0xFF10233F),
-    primaryContainer: Color(0xFF263A55),
+    tertiary: Color(0xFF72B6F2),
+    onTertiary: Color(0xFF132D43),
+    primaryContainer: Color(0xFF1D4054),
     onPrimaryContainer: darkInk,
     secondaryContainer: Color(0xFF1D3B5D),
     onSecondaryContainer: Color(0xFFDDF4F1),
@@ -483,7 +483,7 @@ abstract final class AppTheme {
               width: 1.6,
             ),
           ),
-          labelStyle: const TextStyle(color: Color(0xFFCBD4E1)),
+          labelStyle: const TextStyle(color: Color(0xFFAFC0CE)),
           floatingLabelStyle: const TextStyle(color: AppPalette.brandBlue),
         ),
         popupMenuTheme: PopupMenuThemeData(
