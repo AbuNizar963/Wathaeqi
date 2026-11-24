@@ -63,7 +63,9 @@ describe("document library filters", () => {
     };
 
     expect(
-      filterAndSortDocuments([arabicDocument], { search: "اداره الموارد البشريه" })
+      filterAndSortDocuments([arabicDocument], {
+        search: "اداره الموارد البشريه",
+      })
     ).toEqual([arabicDocument]);
   });
 
