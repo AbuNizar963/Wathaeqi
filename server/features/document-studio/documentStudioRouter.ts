@@ -27,6 +27,8 @@ import {
   getOfficialDocument,
   issueOfficialDocument,
   listDocumentTemplates,
+  listOfficialDocumentVersions,
+  restoreOfficialDocumentVersion,
   listOfficialDocuments,
   updateDocumentTemplate,
   updateOfficialDocument,
@@ -332,6 +334,40 @@ export const documentStudioRouter = router({
       const document = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!document) throwIfNotFound("الوثيقة غير موجودة");
       return toClientDocument(document);
+    }),
+
+  listDocumentVersions: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .query(async ({ ctx, input }) => {
+      const versions = await listOfficialDocumentVersions(
+        ctx.user.authUserId,
+        input.id
+      );
+      if (!versions) throwIfNotFound("الوثيقة غير موجودة");
+      return versions;
+    }),
+
+  restoreDocumentVersion: authenticatedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1).max(36),
+        version: z.number().int().positive(),
+        expectedUpdatedAt: z.string().datetime(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const restored = await restoreOfficialDocumentVersion(
+          ctx.user.authUserId,
+          input.id,
+          input.version,
+          input.expectedUpdatedAt
+        );
+        if (!restored) throwIfNotFound("الوثيقة غير موجودة");
+        return toClientDocument(restored);
+      } catch (error) {
+        throwConflict(error);
+      }
     }),
 
   createUploadedDocument: authenticatedProcedure
