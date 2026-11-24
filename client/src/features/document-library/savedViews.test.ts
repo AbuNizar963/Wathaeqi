@@ -14,6 +14,8 @@ describe("saved document views", () => {
         name: "بانتظار الاعتماد",
         search: "تقرير",
         category: "report",
+        status: "all",
+        sort: "updated-desc",
       },
     ];
     expect(parseSavedDocumentViews(JSON.stringify(views))).toEqual(views);
@@ -27,6 +29,8 @@ describe("saved document views", () => {
       name: `عرض ${index}`,
       search: "",
       category: "",
+      status: "all",
+      sort: "updated-desc",
     }));
     expect(parseSavedDocumentViews(JSON.stringify(views))).toHaveLength(30);
   });
