@@ -133,14 +133,12 @@ export const organizationRouter = router({
       return organization;
     }),
 
-  create: authenticatedProcedure
-    .input(organizationInput)
-    .mutation(() => {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
-      });
-    }),
+  create: authenticatedProcedure.input(organizationInput).mutation(() => {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+    });
+  }),
 
   update: authenticatedProcedure
     .input(organizationInput.extend({ id: z.string().min(1).max(36) }))
