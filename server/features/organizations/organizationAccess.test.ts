@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   isPlatformOwner: vi.fn(),
   getUserOrganizationMembership: vi.fn(),
+  getOrganizationByCode: vi.fn(),
 }));
 
 vi.mock("../../ownerAccess", () => ({
@@ -11,6 +12,10 @@ vi.mock("../../ownerAccess", () => ({
 
 vi.mock("./appwriteOwnerOrganizationRepository", () => ({
   getUserOrganizationMembership: mocks.getUserOrganizationMembership,
+}));
+
+vi.mock("./organizationService", () => ({
+  getOrganizationByCode: mocks.getOrganizationByCode,
 }));
 
 import { resolveOrganizationScope } from "./organizationAccess";
@@ -23,19 +28,39 @@ const user = {
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.isPlatformOwner.mockReturnValue(false);
+  mocks.getOrganizationByCode.mockResolvedValue({
+    id: "wathaeqi-test-central",
+    code: "ALSHAHBAA",
+    name: "قسم شرطة الشهباء",
+    isActive: true,
+    deletedAt: null,
+  });
   mocks.getUserOrganizationMembership.mockResolvedValue({
-    organizationId: "org-current",
+    organizationId: "wathaeqi-test-central",
     role: "organization_admin",
     isActive: true,
   });
+  it("rejects users whose active membership belongs to another organization", async () => {
+    mocks.getUserOrganizationMembership.mockResolvedValue({
+      organizationId: "legacy-other-organization",
+      role: "organization_admin",
+      isActive: true,
+    });
+
+    await expect(resolveOrganizationScope(user)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+
 });
 
 describe("resolveOrganizationScope in single-organization mode", () => {
   it("does not expand an administrator's scope to child organizations", async () => {
     const scope = await resolveOrganizationScope(user);
 
-    expect(scope.organizationId).toBe("org-current");
-    expect(scope.organizationIds).toEqual(["org-current"]);
+    expect(scope.organizationId).toBe("wathaeqi-test-central");
+    expect(scope.organizationIds).toEqual(["wathaeqi-test-central"]);
+    expect(mocks.getOrganizationByCode).toHaveBeenCalledWith("ALSHAHBAA");
   });
 
   it("keeps platform owners scoped to their fixed organization", async () => {
@@ -43,6 +68,6 @@ describe("resolveOrganizationScope in single-organization mode", () => {
 
     const scope = await resolveOrganizationScope(user);
 
-    expect(scope.organizationIds).toEqual(["org-current"]);
+    expect(scope.organizationIds).toEqual(["wathaeqi-test-central"]);
   });
 });
