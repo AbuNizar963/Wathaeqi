@@ -31,7 +31,10 @@ export default function DocumentSignatureBlock({
 
   return (
     <footer
-      className="mt-8 space-y-1 text-right text-[12pt] font-semibold leading-[1.7]"
+      className="mt-8 space-y-1 text-[12pt] font-semibold leading-[1.7]"
+      style={{
+        textAlign: settings?.headerAlignment === "center" ? "center" : "right",
+      }}
       dir="rtl"
       data-testid="document-signature-block"
     >
