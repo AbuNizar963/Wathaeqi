@@ -20,8 +20,6 @@ const solidSettings: PlatformDocumentSettings = {
 function render(settings: PlatformDocumentSettings): string {
   return renderToStaticMarkup(
     <DocumentLetterhead
-      organizationName="جهة اختبار"
-      unitName="وحدة الاختبار"
       chiefRank="العقيد"
       chiefName="رئيس الوحدة"
       logoUrl={null}
@@ -45,15 +43,30 @@ describe("DocumentLetterhead", () => {
     );
   });
 
-  it("places the tricolor divider after the serial and date block", () => {
+  it("places serial and date metadata below the tricolor divider, aligned right", () => {
     const markup = render(tricolorSettings);
-    const dateIndex = markup.indexOf("التاريخ:");
     const dividerIndex = markup.indexOf("document-tricolor-stars-divider");
-    expect(dateIndex).toBeGreaterThan(-1);
-    expect(dividerIndex).toBeGreaterThan(dateIndex);
-    // The divider must be a direct child of the header so it can take a full
-    // flex row under the three columns.
-    expect(markup).toContain('class="document-tricolor-stars-divider"');
+    const metadataIndex = markup.indexOf('data-testid="document-letterhead-metadata"');
+    const dateIndex = markup.indexOf("التاريخ:");
+    expect(dividerIndex).toBeGreaterThan(-1);
+    expect(metadataIndex).toBeGreaterThan(dividerIndex);
+    expect(dateIndex).toBeGreaterThan(metadataIndex);
+    expect(markup.slice(metadataIndex, dateIndex)).toContain("text-right");
+    expect(markup.slice(metadataIndex, dateIndex)).toContain('dir="rtl"');
+    expect(markup).toContain("الرقم:");
+    expect(markup).toContain("يخصص عند الإصدار");
+    expect(markup).toContain("23 نوفمبر 2026");
+    expect(markup).toContain("رئيس الوحدة");
+  });
+
+  it("does not render the organization and unit titles in the letterhead", () => {
+    const markup = render({
+      ...tricolorSettings,
+      headerTitle: "إدارة الشرطة",
+      headerSubtitle: "وحدة العمليات",
+    });
+    expect(markup).not.toContain("إدارة الشرطة");
+    expect(markup).not.toContain("وحدة العمليات");
   });
 
   it("keeps a plain border and no divider markup for solid dividers", () => {
@@ -65,8 +78,6 @@ describe("DocumentLetterhead", () => {
   it("honours the logo size and centre alignment settings", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead
-        organizationName="جهة اختبار"
-        unitName=""
         chiefRank=""
         chiefName=""
         logoUrl="data:image/png;base64,AAAA"
