@@ -194,6 +194,16 @@ export default function OwnerUserManagement() {
     return groups;
   }, [managedOrganizations, managedUsers]);
 
+  const visibleGroups = useMemo(() => {
+    const query = userSearch.trim().toLocaleLowerCase("ar");
+    return userGroups
+      .map(group => ({
+        ...group,
+        users: group.users.filter(user => matchesUserSearch(user, query)),
+      }))
+      .filter(group => group.users.length > 0);
+  }, [userGroups, userSearch]);
+
   const selectedOrganization = managedOrganizations[0];
 
   const resetCreateFields = () => {
