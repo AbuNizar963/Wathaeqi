@@ -561,15 +561,13 @@ export function createApp(
 
       let document: Awaited<ReturnType<typeof getOfficialDocument>>;
       try {
-        const scope = await resolveOrganizationScope(user);
         document = await getOfficialDocument(user.authUserId, documentId);
-        if (
-          document &&
-          document.organizationId !== null &&
-          document.organizationId !== scope.organizationId
-        ) {
-          res.status(404).json({ error: "الوثيقة غير موجودة" });
-          return;
+        if (document?.organizationId != null) {
+          const scope = await resolveOrganizationScope(user);
+          if (document.organizationId !== scope.organizationId) {
+            res.status(404).json({ error: "الوثيقة غير موجودة" });
+            return;
+          }
         }
       } catch (error) {
         const code =
