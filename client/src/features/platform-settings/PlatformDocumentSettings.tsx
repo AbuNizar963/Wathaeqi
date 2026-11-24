@@ -168,9 +168,9 @@ export default function PlatformDocumentSettings() {
             </label>
 
             <div className="rounded-xl border p-4">
-              <h3 className="font-bold">تحرير رأس الصفحة</h3>
+              <h3 className="font-bold">بيانات أسفل الوثيقة</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                اترك أي حقل فارغًا لاستخدام بيانات الجهة المسجلة.
+                تظهر هذه البيانات بعد آخر سطر من محتوى الوثيقة. اترك أي حقل فارغًا لاستخدام بيانات الجهة المسجلة.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
