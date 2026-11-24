@@ -8,6 +8,7 @@ import 'package:printing/printing.dart' show PdfPreview, Printing;
 import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
+import 'app_theme.dart';
 import 'closable_dialog_title.dart';
 import 'document_studio_models.dart';
 import 'document_file_support.dart';
@@ -585,7 +586,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
   };
 
   Color _statusColor(BuildContext context, String status) => switch (status) {
-    'issued' => const Color(0xFF14745D),
+    'issued' => context.appSuccess,
     'archived' => Theme.of(context).colorScheme.onSurfaceVariant,
     _ => Theme.of(context).colorScheme.primary,
   };
