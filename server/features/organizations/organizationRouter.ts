@@ -58,7 +58,7 @@ const legacySettingsInput = z.object({
   logoUrl: z.string().max(1024).nullable(),
 });
 
-async function requireOwner(ctx: {
+function requireOwner(ctx: {
   user: Parameters<typeof isPlatformOwner>[0];
 }) {
   if (!isPlatformOwner(ctx.user)) {
@@ -154,7 +154,7 @@ export const organizationRouter = router({
   create: authenticatedProcedure
     .input(organizationInput)
     .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
+      requireOwner(ctx);
       const created = await createOrganization(input);
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
@@ -172,7 +172,7 @@ export const organizationRouter = router({
   update: authenticatedProcedure
     .input(organizationInput.extend({ id: z.string().min(1).max(36) }))
     .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
+      requireOwner(ctx);
       const before = await getOrganization(input.id);
       const updated = await updateOrganization(input.id, input);
       await writeAuditLog({
@@ -192,7 +192,7 @@ export const organizationRouter = router({
   setActive: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
+      requireOwner(ctx);
       if (input.id === ctx.user.organizationId && !input.isActive) {
         throw new TRPCError({
           code: "BAD_REQUEST",
