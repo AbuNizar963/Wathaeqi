@@ -12,9 +12,7 @@ function safeText(value: unknown, fallback: string, limit: number): string {
 }
 
 function safeNumber(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : fallback;
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function safeBoolean(value: unknown, fallback: boolean): boolean {
@@ -42,10 +40,7 @@ function safeRows(
 export function normalizePlatformDocumentSettings(
   input: SettingsInput
 ): PlatformDocumentSettings {
-  const source =
-    input !== null && typeof input === "object"
-      ? input
-      : {};
+  const source = input !== null && typeof input === "object" ? input : {};
   const defaults = DEFAULT_PLATFORM_DOCUMENT_SETTINGS;
 
   return {
@@ -78,9 +73,21 @@ export function normalizePlatformDocumentSettings(
       defaults.headerDividerWidthPt
     ),
     headerTitle: safeText(source.headerTitle, defaults.headerTitle, 255),
-    headerSubtitle: safeText(source.headerSubtitle, defaults.headerSubtitle, 255),
-    headerChiefRank: safeText(source.headerChiefRank, defaults.headerChiefRank, 120),
-    headerChiefName: safeText(source.headerChiefName, defaults.headerChiefName, 255),
+    headerSubtitle: safeText(
+      source.headerSubtitle,
+      defaults.headerSubtitle,
+      255
+    ),
+    headerChiefRank: safeText(
+      source.headerChiefRank,
+      defaults.headerChiefRank,
+      120
+    ),
+    headerChiefName: safeText(
+      source.headerChiefName,
+      defaults.headerChiefName,
+      255
+    ),
     headerShowLogo: safeBoolean(source.headerShowLogo, defaults.headerShowLogo),
     headerLogoSize: safeNumber(source.headerLogoSize, defaults.headerLogoSize),
     headerTopPaddingMm: safeNumber(
@@ -102,7 +109,10 @@ export function normalizePlatformDocumentSettings(
       : defaults.headerAlignment,
     pageHeaderRows: safeRows(source.pageHeaderRows, defaults.pageHeaderRows),
     pageFooterRows: safeRows(source.pageFooterRows, defaults.pageFooterRows),
-    pageMarginTopMm: safeNumber(source.pageMarginTopMm, defaults.pageMarginTopMm),
+    pageMarginTopMm: safeNumber(
+      source.pageMarginTopMm,
+      defaults.pageMarginTopMm
+    ),
     pageMarginRightMm: safeNumber(
       source.pageMarginRightMm,
       defaults.pageMarginRightMm
@@ -127,8 +137,7 @@ export function normalizePlatformDocumentSettings(
       defaults.showVerificationQr
     ),
     updatedAt:
-      typeof source.updatedAt === "string" ||
-      source.updatedAt instanceof Date
+      typeof source.updatedAt === "string" || source.updatedAt instanceof Date
         ? source.updatedAt
         : null,
   };
