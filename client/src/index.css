@@ -217,6 +217,28 @@
     flex-wrap: wrap;
   }
 
+  .document-admin-header {
+    align-items: center;
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--border);
+    border-radius: 1.125rem;
+    background:
+      radial-gradient(circle at 96% 0%, color-mix(in srgb, var(--brand-accent) 8%, transparent), transparent 40%),
+      var(--card);
+    box-shadow: 0 3px 14px var(--shadow-color);
+  }
+
+  .document-admin-header h1 {
+    letter-spacing: -0.035em;
+  }
+
+  @media (max-width: 639px) {
+    .document-admin-header {
+      align-items: stretch;
+      padding: 0.875rem;
+    }
+  }
+
   .document-toolbar {
     display: flex;
     align-items: center;
