@@ -89,8 +89,7 @@ export default function DocumentLibraryPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState<OfficialDocument["status"] | "">("");
-  const [sortOrder, setSortOrder] =
-    useState<DocumentSortOrder>("updated-desc");
+  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("updated-desc");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
