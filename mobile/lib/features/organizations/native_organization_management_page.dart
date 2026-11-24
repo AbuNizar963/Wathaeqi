@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../admin/admin_page_intro.dart';
 import '../../closable_dialog_title.dart';
 
 const _organizationTypes = <String, String>{
@@ -229,6 +230,14 @@ class _NativeOrganizationManagementPageState
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: const AdminPageIntro(
+                title: 'إدارة الجهات',
+                description: 'تنظيم الهيكل الإداري ومتابعة الجهات والفروع',
+                icon: Icons.account_tree_outlined,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: TextField(
                 onChanged: (value) => setState(() => _search = value),
                 decoration: InputDecoration(
