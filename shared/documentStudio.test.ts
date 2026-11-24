@@ -146,7 +146,12 @@ describe("Document Studio Appwrite content codecs", () => {
     const document = {
       content: {
         type: "doc",
-        content: [{ type: "paragraph", content: [{ type: "text", text: "نسخة حالية" }] }],
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "نسخة حالية" }],
+          },
+        ],
       },
       organizationId: "org-1",
       templateFieldsSnapshot: fields,
