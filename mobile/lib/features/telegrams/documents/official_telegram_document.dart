@@ -1358,19 +1358,33 @@ class _OfficialTelegramDocumentPageState
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Row(
-              textDirection: TextDirection.rtl,
-              mainAxisAlignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'برقية رقم : ',
-                  style: TextStyle(
-                    fontFamily: 'Cairo',
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'برقية رقم : ',
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                  TextSpan(
+                    text: _displaySerial,
+                    style: TextStyle(
+                      fontFamily: 'Cairo',
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+            ),
                 ),
                 Text(
                   _displaySerial,
