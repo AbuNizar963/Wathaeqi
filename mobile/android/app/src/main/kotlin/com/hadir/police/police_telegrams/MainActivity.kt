@@ -530,7 +530,7 @@ class MainActivity : FlutterFragmentActivity() {
             )
         } else {
             getSharedPreferences(
-                TELEGRAM_NOTIFICATION_PREFERENCES,
+                APP_UPDATE_NOTIFICATION_PREFERENCES,
                 Context.MODE_PRIVATE
             ).edit().putBoolean(PENDING_APP_UPDATE_NOTIFICATION, true).apply()
         }
