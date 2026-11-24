@@ -201,7 +201,7 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
       borderRadius: BorderRadius.circular(24),
       boxShadow: [
         BoxShadow(
-          color: AppPalette.navy.withOpacity(0.14),
+          color: AppPalette.navy.withValues(alpha: 0.14),
           blurRadius: 18,
           offset: Offset(0, 8),
         ),
@@ -266,7 +266,11 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       child: Row(
         children: [
-          const Icon(Icons.calendar_today_outlined, color: AppPalette.navy, size: 18),
+          const Icon(
+            Icons.calendar_today_outlined,
+            color: AppPalette.navy,
+            size: 18,
+          ),
           const SizedBox(width: 9),
           const Expanded(
             child: Text(
