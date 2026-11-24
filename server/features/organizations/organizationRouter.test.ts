@@ -86,7 +86,6 @@ describe("organizations.renameCurrent", () => {
   });
 });
 
-
 describe("single-organization mode", () => {
   it("blocks creating additional organizations", async () => {
     await expect(
