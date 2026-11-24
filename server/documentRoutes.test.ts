@@ -48,7 +48,7 @@ const mocks = vi.hoisted(() => ({
   remove: vi.fn(),
   getOfficialDocument: vi.fn(),
   createOfficialDocument: vi.fn(),
-  getUserOrganizationMembership: vi.fn(),
+  resolveOrganizationScope: vi.fn(),
   renderDocxToPdf: vi.fn(),
 }));
 
@@ -70,8 +70,8 @@ vi.mock("./features/document-studio/documentStudioRepository", () => ({
   createOfficialDocument: mocks.createOfficialDocument,
   getOfficialDocument: mocks.getOfficialDocument,
 }));
-vi.mock("./features/organizations/appwriteOwnerOrganizationRepository", () => ({
-  getUserOrganizationMembership: mocks.getUserOrganizationMembership,
+vi.mock("./features/organizations/organizationAccess", () => ({
+  resolveOrganizationScope: mocks.resolveOrganizationScope,
 }));
 vi.mock("./features/document-studio/docxPdfRenderer", async importOriginal => {
   const original =
@@ -144,6 +144,7 @@ function uploadRequest(
 function ownedDocument() {
   return {
     id: "document-1",
+    organizationId: "org-1",
     file: {
       storageKey,
       fileName,
@@ -164,7 +165,15 @@ describe("authenticated document HTTP routes", () => {
     });
     mocks.upload.mockResolvedValue(undefined);
     mocks.remove.mockResolvedValue(undefined);
-    mocks.getUserOrganizationMembership.mockResolvedValue(null);
+    mocks.resolveOrganizationScope.mockResolvedValue({
+      userId: 7,
+      organizationId: "org-1",
+      organizationIds: ["org-1"],
+      role: "organization_admin",
+      isOwner: true,
+      canManage: true,
+      canAdministrate: true,
+    });
     mocks.createOfficialDocument.mockImplementation(
       async (_ownerId, input) => ({
         id: "created-document",
@@ -258,11 +267,45 @@ describe("authenticated document HTTP routes", () => {
         expect.objectContaining({
           title: "تقرير مرفوع",
           category: "general",
+          organizationId: "org-1",
           file: expect.objectContaining({ storageKey: expect.any(String) }),
         }),
         expect.any(String)
       );
       expect(mocks.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  it("rejects document uploads when the account is outside the fixed organization", async () => {
+    await withServer(async baseUrl => {
+      mocks.resolveOrganizationScope.mockRejectedValueOnce(
+        Object.assign(new Error("outside fixed organization"), {
+          code: "FORBIDDEN",
+        })
+      );
+
+      const response = await uploadRequest(baseUrl, validDocx);
+
+      expect(response.status).toBe(403);
+      expect(mocks.upload).not.toHaveBeenCalled();
+      expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
+    });
+  });
+
+  it("does not expose a file belonging to another organization", async () => {
+    await withServer(async baseUrl => {
+      mocks.getOfficialDocument.mockResolvedValueOnce({
+        ...ownedDocument(),
+        organizationId: "legacy-other-organization",
+      });
+
+      const response = await fetch(
+        `${baseUrl}/api/documents/document-1/file`
+      );
+
+      expect(response.status).toBe(404);
+      expect(mocks.getObjectInfo).not.toHaveBeenCalled();
+      expect(mocks.download).not.toHaveBeenCalled();
     });
   });
 
