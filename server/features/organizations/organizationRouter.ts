@@ -103,15 +103,17 @@ export const organizationRouter = router({
       const organizations = await listOrganizations(
         Boolean(input?.includeInactive) && scope.isOwner
       );
-      return organizations.filter(item => item.id === scope.organizationId);
+      return organizations
+        .filter(item => item.id === scope.organizationId)
+        .map(item => ({ ...item, parentOrganizationId: null }));
     }),
 
   tree: authenticatedProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
     const organizations = await listOrganizations(false);
-    const filtered = organizations.filter(
-      item => item.id === scope.organizationId
-    );
+    const filtered = organizations
+      .filter(item => item.id === scope.organizationId)
+      .map(item => ({ ...item, parentOrganizationId: null }));
     return buildOrganizationTree(filtered);
   }),
 
@@ -228,7 +230,9 @@ export const organizationRouter = router({
   all: authenticatedProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
     const organizations = await listOrganizations(false);
-    return organizations.filter(item => item.id === scope.organizationId);
+    return organizations
+      .filter(item => item.id === scope.organizationId)
+      .map(item => ({ ...item, parentOrganizationId: null }));
   }),
 
   accounts: authenticatedProcedure
