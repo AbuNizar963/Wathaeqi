@@ -15,11 +15,27 @@ describe("saved document views", () => {
         search: "تقرير",
         category: "report",
         status: "issued",
+        sort: "updated-desc",
       },
     ];
     expect(parseSavedDocumentViews(JSON.stringify(views))).toEqual(views);
     expect(parseSavedDocumentViews("invalid")).toEqual([]);
     expect(parseSavedDocumentViews(JSON.stringify([{ id: 1 }]))).toEqual([]);
+  });
+
+  it("defaults older saved views to the newest-first sort", () => {
+    const legacy = [
+      {
+        id: "legacy",
+        name: "بحث سابق",
+        search: "تعميم",
+        category: "general",
+        status: "issued",
+      },
+    ];
+    expect(parseSavedDocumentViews(JSON.stringify(legacy))[0]?.sort).toBe(
+      "updated-desc"
+    );
   });
 
   it("limits corrupted or oversized storage to thirty views", () => {
@@ -29,6 +45,7 @@ describe("saved document views", () => {
       search: "",
       category: "",
       status: "",
+      sort: "updated-desc",
     }));
     expect(parseSavedDocumentViews(JSON.stringify(views))).toHaveLength(30);
   });
