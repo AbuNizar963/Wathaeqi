@@ -1394,7 +1394,10 @@ class _DashboardPageState extends State<DashboardPage>
                                       }
                                       if (!dialogContext.mounted) return;
                                       Navigator.pop(dialogContext);
-                                      await _openIncomingTelegram(telegramId);
+                                      Toast.info(
+                                        context,
+                                        'إشعارات البرقيات القديمة لا تفتح مستندات في نظام الطباعة فقط.',
+                                      );
                                     },
                             );
                           },
@@ -1409,12 +1412,7 @@ class _DashboardPageState extends State<DashboardPage>
                         Navigator.pop(dialogContext);
                         if (!mounted) return;
                         _pushPage(
-                          NotificationsPage(
-                            api: widget.api,
-                            onOpenTelegram: (id) {
-                              _openIncomingTelegram(id);
-                            },
-                          ),
+                          NotificationsPage(api: widget.api),
                         );
                       },
                       child: const Text('عرض جميع الإشعارات'),
@@ -1429,24 +1427,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  Future<void> _openIncomingTelegram(int telegramId) async {
-    await refresh();
-    if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TelegramDetailsPage(
-          api: widget.api,
-          telegramId: telegramId,
-          account: _account,
-          organizationRole: activeOrganizationRole,
-          organizationIsOwner: activeOrganizationIsOwner,
-          officialDocument: true,
-        ),
-      ),
-    );
-    if (mounted) await refresh();
-  }
 
   @override
   void dispose() {
