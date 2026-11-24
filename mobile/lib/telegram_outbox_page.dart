@@ -200,7 +200,10 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                       ..._legacyEntries.map(_legacyEntryCard),
                     ],
                     if (_error != null) _errorCard(_error!),
-                    if (totalPending == 0 && _legacyEntries.isEmpty && _error == null) _emptyState(),
+                    if (totalPending == 0 &&
+                        _legacyEntries.isEmpty &&
+                        _error == null)
+                      _emptyState(),
                   ],
                 ),
               ),
