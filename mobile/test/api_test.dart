@@ -87,16 +87,11 @@ void main() {
         'role': 'user',
         'organizationId': 'org-1',
       };
-      var loginRequestSeen = false;
-      var authenticatedRequestSeen = false;
+      final requests = <http.Request>[];
       _secureStorageForTest['session_cookie'] = 'obsolete-cookie';
       final client = MockClient((request) async {
-        if (request.url.path.endsWith('/auth.login')) {
-          loginRequestSeen = true;
-          expect(request.headers['authorization'], isNull);
-          expect(jsonDecode(request.body), {
-            'json': {'username': 'field.user', 'password': 'correct-password'},
-          });
+        requests.add(request);
+        if (requests.length == 1) {
           return http.Response(
             jsonEncode({
               'result': {
@@ -108,21 +103,14 @@ void main() {
             200,
           );
         }
-
-        if (request.url.path.endsWith('/auth.me')) {
-          authenticatedRequestSeen = true;
-          expect(request.headers['authorization'], 'Bearer $sessionToken');
-          return http.Response(
-            jsonEncode({
-              'result': {
-                'data': {'json': user},
-              },
-            }),
-            200,
-          );
-        }
-
-        fail('Unexpected API request: ${request.url}');
+        return http.Response(
+          jsonEncode({
+            'result': {
+              'data': {'json': user},
+            },
+          }),
+          200,
+        );
       });
       addTearDown(client.close);
       final api = PoliceApi(
@@ -135,8 +123,14 @@ void main() {
       expect(_secureStorageForTest['cached_account'], jsonEncode(user));
       expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
       expect(await api.restoreSession(), user);
-      expect(loginRequestSeen, isTrue);
-      expect(authenticatedRequestSeen, isTrue);
+      expect(requests, hasLength(2));
+      expect(requests[0].url.path, endsWith('/auth.login'));
+      expect(requests[0].headers['authorization'], isNull);
+      expect(jsonDecode(requests[0].body), {
+        'json': {'username': 'field.user', 'password': 'correct-password'},
+      });
+      expect(requests[1].url.path, endsWith('/auth.me'));
+      expect(requests[1].headers['authorization'], 'Bearer $sessionToken');
     },
   );
   test(
@@ -611,6 +605,7 @@ void main() {
   );
 
   test('logout clears the persistent organization logo cache', () async {
+    _secureStorageForTest['session_token'] = 'stored-token';
     final cacheRoot = await Directory.systemTemp.createTemp(
       'police-telegrams-logo-logout-test-',
     );
@@ -1482,6 +1477,7 @@ void main() {
   test(
     'accepts a direct Chromium PNG response for single-page export',
     () async {
+      _secureStorageForTest['session_token'] = 'render-token';
       const html = '<article class="telegram-export-page"></article>';
       const pngBytes = <int>[137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3];
       final client = MockClient((request) async {
@@ -1508,6 +1504,7 @@ void main() {
   test(
     'accepts the shared renderer PDF response for multi-page PNG export',
     () async {
+      _secureStorageForTest['session_token'] = 'render-token';
       const html =
           '<article class="telegram-export-page telegram-multipage"></article>';
       final pdfBytes = Uint8List.fromList(
