@@ -423,10 +423,10 @@ export default function DocumentLibraryPage() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map(document => {
-            const file = document.file;
-            if (!file) return null;
-            return (
-              <Card
+              const file = document.file;
+              if (!file) return null;
+              return (
+                <Card
                 key={document.id}
                 className="group flex cursor-pointer flex-col gap-3 p-4 transition hover:border-primary/40 hover:shadow-sm"
                 onClick={() => setSelectedId(document.id)}
@@ -467,7 +467,7 @@ export default function DocumentLibraryPage() {
                 </div>
               </Card>
             );
-          })}
+            })}
           </div>
         </>
       )}
