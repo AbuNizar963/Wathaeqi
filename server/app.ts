@@ -14,13 +14,11 @@ import {
   createOfficialDocument,
   getOfficialDocument,
 } from "./features/document-studio/documentStudioRepository";
-import { getUserOrganizationMembership } from "./features/organizations/appwriteOwnerOrganizationRepository";
 import {
   getOrganizationLogoUrl,
   saveOrganizationLogo,
 } from "./features/organizations/organizationService";
 import { resolveOrganizationScope } from "./features/organizations/organizationAccess";
-import { isPlatformOwner } from "./ownerAccess";
 import { z } from "zod";
 import {
   getAllowedDocumentMimeType,
@@ -288,18 +286,16 @@ export function createApp(
         | "organization_update"
         | "preview_url" = "authorization";
       try {
-        if (!isPlatformOwner(user)) {
-          const scope = await resolveOrganizationScope(user);
-          if (
-            !scope.canAdministrate ||
-            scope.organizationId !== organizationId
-          ) {
-            res.status(403).json({
-              error:
-                "رفع شعار الجهة متاح لمالك المنصة أو مدير الجهة المخوّل فقط",
-            });
-            return;
-          }
+        const scope = await resolveOrganizationScope(user);
+        if (
+          !scope.canAdministrate ||
+          scope.organizationId !== organizationId
+        ) {
+          res.status(403).json({
+            error:
+              "رفع شعار الجهة متاح لمدير الجهة الثابتة أو مالك المنصة فقط",
+          });
+          return;
         }
 
         const key = await saveOrganizationLogo(
@@ -336,11 +332,18 @@ export function createApp(
             ...getSafeLogoErrorDetails(error),
           })
         );
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code?: unknown }).code)
+            : "";
         const message =
-          error instanceof Error && error.message.includes("غير مرتبط")
-            ? error.message
+          code === "FORBIDDEN"
+            ? "لا تملك صلاحية الوصول إلى الجهة الثابتة أو تعديل شعارها"
             : "تعذر حفظ شعار الجهة";
-        res.status(502).json({ error: message, requestId });
+        res.status(code === "FORBIDDEN" ? 403 : 502).json({
+          error: message,
+          requestId,
+        });
       }
     }
   );
@@ -397,6 +400,22 @@ export function createApp(
         res.status(400).json({ error: "بيانات الوثيقة غير صالحة" });
         return;
       }
+      let organizationId: string;
+      try {
+        organizationId = (await resolveOrganizationScope(user)).organizationId;
+      } catch (error) {
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code?: unknown }).code)
+            : "";
+        res.status(code === "FORBIDDEN" ? 403 : 503).json({
+          error:
+            code === "FORBIDDEN"
+              ? "حسابك غير مرتبط بالجهة الثابتة"
+              : "تعذر تحديد الجهة الثابتة لحفظ الوثيقة",
+        });
+        return;
+      }
       const storageKey = `documents/${user.authUserId}/${randomUUID()}-${fileName}`;
       const documentId = randomUUID();
       const storage = getStorageProvider();
@@ -410,7 +429,6 @@ export function createApp(
           cacheControl: "private, max-age=0, no-store",
         });
         uploaded = true;
-        const membership = await getUserOrganizationMembership(user.id);
         recordCreationAttempted = true;
         const created = await createOfficialDocument(
           user.authUserId,
@@ -421,9 +439,7 @@ export function createApp(
             content: { type: "doc", content: [{ type: "paragraph" }] },
             fieldValues: {},
             documentDate: metadata.documentDate,
-            organizationId: membership?.isActive
-              ? membership.organizationId
-              : null,
+            organizationId,
             templateId: null,
             templateRevision: null,
             templateFieldsSnapshot: [],
@@ -545,19 +561,24 @@ export function createApp(
 
       let document: Awaited<ReturnType<typeof getOfficialDocument>>;
       try {
+        const scope = await resolveOrganizationScope(user);
         document = await getOfficialDocument(user.authUserId, documentId);
-        if (document && document.organizationId !== null) {
-          const membership = await getUserOrganizationMembership(user.id);
-          if (
-            !membership?.isActive ||
-            membership.organizationId !== document.organizationId
-          ) {
-            res.status(404).json({ error: "الوثيقة غير موجودة" });
-            return;
-          }
+        if (
+          document &&
+          document.organizationId !== null &&
+          document.organizationId !== scope.organizationId
+        ) {
+          res.status(404).json({ error: "الوثيقة غير موجودة" });
+          return;
         }
-      } catch {
-        res.status(502).json({ error: "تعذر التحقق من صلاحية الوثيقة" });
+      } catch (error) {
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code?: unknown }).code)
+            : "";
+        res
+          .status(code === "FORBIDDEN" ? 404 : 502)
+          .json({ error: "تعذر التحقق من صلاحية الوثيقة" });
         return;
       }
       if (!document || !document.file) {
@@ -636,9 +657,24 @@ export function createApp(
 
       let document: Awaited<ReturnType<typeof getOfficialDocument>>;
       try {
+        const scope = await resolveOrganizationScope(user);
         document = await getOfficialDocument(user.authUserId, documentId);
-      } catch {
-        res.status(502).json({ error: "تعذر التحقق من صلاحية الوثيقة" });
+        if (
+          document &&
+          document.organizationId !== null &&
+          document.organizationId !== scope.organizationId
+        ) {
+          res.status(404).json({ error: "الوثيقة غير موجودة" });
+          return;
+        }
+      } catch (error) {
+        const code =
+          error && typeof error === "object" && "code" in error
+            ? String((error as { code?: unknown }).code)
+            : "";
+        res
+          .status(code === "FORBIDDEN" ? 404 : 502)
+          .json({ error: "تعذر التحقق من صلاحية الوثيقة" });
         return;
       }
       if (!document) {
