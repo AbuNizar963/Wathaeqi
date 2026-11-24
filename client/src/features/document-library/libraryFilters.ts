@@ -3,15 +3,22 @@ import type { OfficialDocument } from "../../../../shared/documentStudio";
 export type DocumentStatusFilter = "all" | OfficialDocument["status"];
 export type DocumentSortOrder = "updated-desc" | "updated-asc" | "title-asc";
 
-export function filterAndSortDocuments(
-  documents: readonly OfficialDocument[],
+type FilterableDocument = Pick<
+  OfficialDocument,
+  "id" | "title" | "category" | "subject" | "serialCode" | "status" | "updatedAt"
+> & {
+  file: Pick<NonNullable<OfficialDocument["file"]>, "fileName"> | null;
+};
+
+export function filterAndSortDocuments<T extends FilterableDocument>(
+  documents: readonly T[],
   options: {
     search?: string;
     category?: string;
     status?: DocumentStatusFilter;
     sort?: DocumentSortOrder;
   } = {}
-): OfficialDocument[] {
+): T[] {
   const needle = (options.search ?? "").trim().toLocaleLowerCase();
   const filtered = documents.filter(document => {
     if (options.category && document.category !== options.category) {
@@ -41,11 +48,13 @@ export function filterAndSortDocuments(
         left.id.localeCompare(right.id)
       );
     }
+
     const leftTime = Date.parse(left.updatedAt);
     const rightTime = Date.parse(right.updatedAt);
     const difference =
       (Number.isFinite(leftTime) ? leftTime : 0) -
       (Number.isFinite(rightTime) ? rightTime : 0);
+
     return (
       (sort === "updated-asc" ? difference : -difference) ||
       left.id.localeCompare(right.id)
