@@ -29,17 +29,11 @@ function xml(value: string): string {
 }
 
 function isEditorNode(value: unknown): value is EditorNode {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    !Array.isArray(value)
-  );
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function childrenOf(node: EditorNode): EditorNode[] {
-  return Array.isArray(node.content)
-    ? node.content.filter(isEditorNode)
-    : [];
+  return Array.isArray(node.content) ? node.content.filter(isEditorNode) : [];
 }
 
 function runXml(node: EditorNode): string {
