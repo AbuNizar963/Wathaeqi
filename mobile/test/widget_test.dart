@@ -246,10 +246,6 @@ class _EmptyTelegramOutbox extends TelegramOutbox {
   _EmptyTelegramOutbox() : super();
 
   @override
-  Future<TelegramOutboxSyncResult> sync(PoliceApi api) async =>
-      const TelegramOutboxSyncResult(synced: 0, remaining: 0, failed: 0);
-
-  @override
   Future<int> pendingCount() async => 0;
 }
 
