@@ -14,6 +14,7 @@ import {
 } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
+import { resolveOrganizationScope } from "../organizations/organizationAccess";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 
 type AppwriteRow = Record<string, unknown> & {
@@ -237,7 +238,8 @@ const notificationsRouter = router({
 });
 
 const administrationRouter = router({
-  overview: platformOwnerProcedure.query(async () => {
+  overview: platformOwnerProcedure.query(async ({ ctx }) => {
+    const scope = await resolveOrganizationScope(ctx.user);
     const tables = getAppwriteTablesDB();
     const databaseId = getAppwriteDatabaseId();
     const [usersResult, organizationsResult] = await Promise.all([
@@ -272,24 +274,26 @@ const administrationRouter = router({
         lastSignedIn: parseOptionalText(data.lastSignedIn),
       };
     });
-    const organizations = organizationsResult.rows.map(row => {
-      const data = rowData(row as AppwriteRow);
-      return {
-        id: String(data.id ?? (row as AppwriteRow).$id),
-        name: String(data.name ?? "جهة بدون اسم"),
-        code: String(data.code ?? ""),
-        type: String(data.type ?? "department"),
-        isActive: data.isActive !== false,
-        parentOrganizationId: parseOptionalText(data.parentOrganizationId),
-      };
-    });
+    const organizations = organizationsResult.rows
+      .map(row => {
+        const data = rowData(row as AppwriteRow);
+        return {
+          id: String(data.id ?? (row as AppwriteRow).$id),
+          name: String(data.name ?? "جهة بدون اسم"),
+          code: String(data.code ?? ""),
+          type: String(data.type ?? "department"),
+          isActive: data.isActive !== false,
+          parentOrganizationId: parseOptionalText(data.parentOrganizationId),
+        };
+      })
+      .filter(item => item.id === scope.organizationId);
     return {
       users,
       organizations,
       totals: {
         users: usersResult.total,
         activeUsers: users.filter(user => user.isActive).length,
-        organizations: organizationsResult.total,
+        organizations: organizations.length,
         activeOrganizations: organizations.filter(item => item.isActive).length,
       },
     };
@@ -361,6 +365,13 @@ const administrationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
+      if (input.organizationId !== scope.organizationId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "يمكن إنشاء الحسابات ضمن الجهة الثابتة فقط.",
+        });
+      }
       const tables = getAppwriteTablesDB();
       const databaseId = getAppwriteDatabaseId();
       const organization = await tables.listRows({
