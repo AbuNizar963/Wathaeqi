@@ -302,7 +302,7 @@ export default function DocumentLibraryPage() {
           onStatusChange={setStatusFilter}
           onSortChange={setSortOrder}
         />
-        <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
+        <div className="flex w-full flex-wrap items-center gap-2 pt-2">
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
