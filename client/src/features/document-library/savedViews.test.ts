@@ -23,19 +23,63 @@ describe("saved document views", () => {
     expect(parseSavedDocumentViews(JSON.stringify([{ id: 1 }]))).toEqual([]);
   });
 
-  it("defaults older saved views to the newest-first sort", () => {
+  it("upgrades search-only views from the legacy format", () => {
     const legacy = [
       {
         id: "legacy",
+        name: "بحث قديم",
+        search: "عقد",
+        category: "general",
+      },
+    ];
+
+    expect(parseSavedDocumentViews(JSON.stringify(legacy))).toEqual([
+      {
+        ...legacy[0],
+        status: "all",
+        sort: "updated-desc",
+      },
+    ]);
+  });
+
+  it("defaults a missing sort while preserving a previously saved status", () => {
+    const legacy = [
+      {
+        id: "legacy-status",
         name: "بحث سابق",
         search: "تعميم",
         category: "general",
         status: "issued",
       },
     ];
-    expect(parseSavedDocumentViews(JSON.stringify(legacy))[0]?.sort).toBe(
-      "updated-desc"
-    );
+
+    expect(parseSavedDocumentViews(JSON.stringify(legacy))).toEqual([
+      {
+        ...legacy[0],
+        sort: "updated-desc",
+      },
+    ]);
+  });
+
+  it("normalizes unknown status and sort values safely", () => {
+    const invalid = [
+      {
+        id: "invalid",
+        name: "عرض غير صالح",
+        search: "",
+        category: "",
+        status: "unknown",
+        sort: "unknown",
+      },
+    ];
+
+    expect(parseSavedDocumentViews(JSON.stringify(invalid))).toEqual([
+      {
+        ...invalid[0],
+        status: "all",
+        sort: "updated-desc",
+      },
+    ]);
   });
 
   it("limits corrupted or oversized storage to thirty views", () => {
@@ -44,9 +88,10 @@ describe("saved document views", () => {
       name: `عرض ${index}`,
       search: "",
       category: "",
-      status: "",
+      status: "all",
       sort: "updated-desc",
     }));
+
     expect(parseSavedDocumentViews(JSON.stringify(views))).toHaveLength(30);
   });
 });

@@ -25,7 +25,7 @@ export function BrandMark({
     <div className={cn("flex items-center gap-3", className)}>
       <div
         className={cn(
-          "brand-mark shrink-0 overflow-hidden border border-white/15 bg-[#10233f] shadow-[0_8px_24px_rgba(16,35,63,0.18)]",
+          "brand-mark shrink-0 overflow-hidden border border-white/15 bg-primary shadow-[0_8px_24px_rgba(19,45,67,0.18)]",
           sizeClasses[size]
         )}
       >

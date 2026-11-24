@@ -56,6 +56,12 @@ import {
   formatDate,
 } from "./types";
 import type { OfficialDocument } from "../../../../shared/documentStudio";
+import {
+  filterAndSortDocuments,
+  type DocumentSortOrder,
+  type DocumentStatusFilter,
+} from "./libraryFilters";
+import DocumentLibraryStatusControls from "./DocumentLibraryStatusControls";
 
 function categoryLabel(value: string): string {
   return DOCUMENT_CATEGORIES.find(item => item.value === value)?.label ?? "عام";
@@ -87,7 +93,8 @@ export default function DocumentLibraryPage() {
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [status, setStatus] = useState<OfficialDocument["status"] | "">("");
+  const [statusFilter, setStatusFilter] = useState<DocumentStatusFilter>("all");
+  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("updated-desc");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
@@ -131,17 +138,16 @@ export default function DocumentLibraryPage() {
     [documentsQuery.data]
   );
 
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return documents.filter(document => {
-      if (category && document.category !== category) return false;
-      if (status && document.status !== status) return false;
-      if (!needle) return true;
-      return [document.title, document.subject, document.file?.fileName]
-        .filter(Boolean)
-        .some(value => String(value).toLowerCase().includes(needle));
-    });
-  }, [documents, search, category, status]);
+  const filtered = useMemo(
+    () =>
+      filterAndSortDocuments(documents, {
+        search,
+        category,
+        status: statusFilter,
+        sort: sortOrder,
+      }),
+    [documents, search, category, statusFilter, sortOrder]
+  );
 
   const saveCurrentView = () => {
     const name = savedViewName.trim();
@@ -153,8 +159,8 @@ export default function DocumentLibraryPage() {
           name: name.slice(0, 40),
           search,
           category,
-          status,
-          sort: "updated-desc",
+          status: statusFilter,
+          sort: sortOrder,
         },
         ...current.filter(view => view.name !== name),
       ].slice(0, 30)
@@ -194,12 +200,12 @@ export default function DocumentLibraryPage() {
 
   return (
     <div className="space-y-5" dir="rtl">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="document-page-header">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground">
             الأرشيف الرقمي
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
             مكتبة الوثائق
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -214,7 +220,7 @@ export default function DocumentLibraryPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="flex items-center gap-3 p-4">
+        <Card className="document-card flex items-center gap-3 p-4">
           <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <FolderOpen className="size-5" />
           </span>
@@ -249,7 +255,7 @@ export default function DocumentLibraryPage() {
         </Card>
       </div>
 
-      <Card className="flex flex-wrap items-center gap-2 p-3">
+      <Card className="document-toolbar flex flex-wrap items-center gap-2 p-3">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -290,30 +296,13 @@ export default function DocumentLibraryPage() {
             </button>
           ))}
         </div>
-        <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
-          <div className="flex flex-wrap gap-1.5">
-            {(
-              [
-                ["", "كل الحالات"],
-                ["draft", "مسودة"],
-                ["issued", "صادرة"],
-                ["archived", "مؤرشفة"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value || "all-statuses"}
-                type="button"
-                onClick={() => setStatus(value)}
-                className={`rounded-full px-3 py-1.5 text-xs transition ${
-                  status === value
-                    ? "bg-primary text-primary-foreground"
-                    : "border bg-card text-muted-foreground hover:border-primary/40"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <DocumentLibraryStatusControls
+          status={statusFilter}
+          sort={sortOrder}
+          onStatusChange={setStatusFilter}
+          onSortChange={setSortOrder}
+        />
+        <div className="flex w-full flex-wrap items-center gap-2 pt-2">
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
@@ -342,7 +331,8 @@ export default function DocumentLibraryPage() {
                 onClick={() => {
                   setSearch(view.search);
                   setCategory(view.category);
-                  setStatus(view.status as OfficialDocument["status"] | "");
+                  setStatusFilter(view.status);
+                  setSortOrder(view.sort);
                 }}
               >
                 {view.name}
@@ -409,7 +399,7 @@ export default function DocumentLibraryPage() {
             return (
               <Card
                 key={document.id}
-                className="group flex cursor-pointer flex-col gap-3 p-4 transition hover:border-primary/40 hover:shadow-sm"
+                className="document-card group flex cursor-pointer flex-col gap-3 p-4"
                 onClick={() => setSelectedId(document.id)}
               >
                 <div className="flex items-start gap-3">

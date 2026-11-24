@@ -410,7 +410,7 @@ export default function UsersPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5" dir="rtl">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="document-page-header document-admin-header">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Users className="h-6 w-6" aria-hidden="true" />
