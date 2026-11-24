@@ -76,6 +76,57 @@ void main() {
         );
   });
 
+  test('login stores the Appwrite bearer token and returns the user profile', () async {
+    const token = 'encrypted-appwrite-session-token';
+    _secureStorageForTest['session_cookie'] = 'legacy=obsolete';
+    final client = MockClient((request) async {
+      expect(request.method, 'POST');
+      expect(request.url.path, '/api/trpc/auth.login');
+      expect(jsonDecode(request.body), {
+        'json': {'username': 'operator', 'password': 'password'},
+      });
+      return http.Response(
+        jsonEncode({
+          'result': {
+            'data': {
+              'json': {
+                'user': {
+                  'id': 7,
+                  'username': 'operator',
+                  'name': 'موظف',
+                  'organizationId': 'org-1',
+                },
+                'sessionToken': token,
+              },
+            },
+          },
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    addTearDown(client.close);
+    final api = PoliceApi(
+      baseUrl: 'https://police.example.test',
+      httpClient: client,
+    );
+
+    final account = await api.login('operator', 'password');
+
+    expect(account, {
+      'id': 7,
+      'username': 'operator',
+      'name': 'موظف',
+      'organizationId': 'org-1',
+    });
+    expect(_secureStorageForTest['session_token'], token);
+    expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
+    expect(
+      jsonDecode(_secureStorageForTest['cached_account']!),
+      account,
+    );
+  });
+
   test(
     'credential mutations do not broadcast passwords or returned secrets',
     () async {
