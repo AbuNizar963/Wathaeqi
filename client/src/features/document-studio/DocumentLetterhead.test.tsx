@@ -26,7 +26,7 @@ function render(settings: PlatformDocumentSettings): string {
       dividerColor="#14532d"
       headerSettings={settings}
       serial="يخصص عند الإصدار"
-      date="23 نوفمبر 2026"
+      date="24 نوفمبر 2026"
     />
   );
 }
@@ -55,7 +55,7 @@ describe("DocumentLetterhead", () => {
     expect(markup.slice(metadataIndex, dateIndex)).toContain('dir="rtl"');
     expect(markup).toContain("الرقم:");
     expect(markup).toContain("يخصص عند الإصدار");
-    expect(markup).toContain("23 نوفمبر 2026");
+    expect(markup).toContain("24 نوفمبر 2026");
     expect(markup).toContain("رئيس الوحدة");
   });
 
