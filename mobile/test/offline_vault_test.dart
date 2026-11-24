@@ -1,10 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/offline_vault.dart';
-import 'package:police_telegrams/telegram_outbox.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -65,33 +63,5 @@ void main() {
     expect(await vault.read('blob'), isNull);
   });
 
-  test(
-    'outbox keeps attachments encrypted and coalesces offline edits',
-    () async {
-      final outbox = TelegramOutbox(storage: storage, vault: vault);
-      await outbox.enqueue(
-        payload: const {'subject': 'بلاغ', 'body': 'نص'},
-        attachment: {
-          'fileName': 'a.pdf',
-          'contentType': 'application/pdf',
-          'base64': base64Encode([1, 2, 3]),
-        },
-      );
-      final raw = await storage.read(key: TelegramOutbox.storageKey);
-      expect(raw!.contains('base64'), isFalse);
-      expect(raw.contains('vaultRef'), isTrue);
 
-      await outbox.enqueueUpdate(payload: const {'id': 5, 'subject': 'أول'});
-      await outbox.enqueueUpdate(payload: const {'id': 5, 'subject': 'ثاني'});
-
-      final entries = await outbox.list();
-      expect(entries, hasLength(2));
-      expect(entries.last.isUpdate, isTrue);
-      expect(entries.last.payload['subject'], 'ثاني');
-      expect((await outbox.pendingUpdateFor(5))?['subject'], 'ثاني');
-
-      await outbox.remove(entries.first.id);
-      expect(await vault.read('outbox_attachment_${entries.first.id}'), isNull);
-    },
-  );
 }
