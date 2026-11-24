@@ -124,28 +124,6 @@ export default function DocumentLetterhead({
           </span>
         </div>
       ))}
-      {headerSettings?.pageHeaderRows?.map((row, index) => (
-        <div
-          key={`custom-header-${index}`}
-          className="grid grid-cols-2 gap-4 px-2 text-sm font-semibold leading-6"
-        >
-          <span className="text-right">{row.right}</span>
-          <span className="text-left" dir="ltr">
-            {row.left}
-          </span>
-        </div>
-      ))}
-      {headerSettings?.pageHeaderRows?.map((row, index) => (
-        <div
-          key={`custom-header-${index}`}
-          className="grid grid-cols-2 gap-4 px-2 text-sm font-semibold leading-6"
-        >
-          <span className="text-right">{row.right}</span>
-          <span className="text-left" dir="ltr">
-            {row.left}
-          </span>
-        </div>
-      ))}
       {headerSettings?.headerDividerStyle === "tricolor-stars" ? (
         <div
           className="document-tricolor-stars-divider"
