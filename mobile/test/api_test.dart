@@ -76,6 +76,79 @@ void main() {
         );
   });
 
+  test('login stores the Appwrite bearer token and restores the user session', () async {
+    const sessionToken = 'appwrite-encrypted-session-token';
+    final user = <String, dynamic>{
+      'id': 7,
+      'name': 'مستخدم تجريبي',
+      'username': 'field.user',
+      'role': 'user',
+      'organizationId': 'org-1',
+    };
+    var loginRequestSeen = false;
+    var authenticatedRequestSeen = false;
+    _secureStorageForTest['session_cookie'] = 'obsolete-cookie';
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/auth.login')) {
+        loginRequestSeen = true;
+        expect(request.headers['authorization'], isNull);
+        expect(
+          jsonDecode(request.body),
+          {
+            'json': {
+              'username': 'field.user',
+              'password': 'correct-password',
+            },
+          },
+        );
+        return http.Response(
+          jsonEncode({
+            'result': {
+              'data': {
+                'json': {'user': user, 'sessionToken': sessionToken},
+              },
+            },
+          }),
+          200,
+        );
+      }
+
+      if (request.url.path.endsWith('/auth.me')) {
+        authenticatedRequestSeen = true;
+        expect(
+          request.headers['authorization'],
+          'Bearer $sessionToken',
+        );
+        return http.Response(
+          jsonEncode({
+            'result': {
+              'data': {'json': user},
+            },
+          }),
+          200,
+        );
+      }
+
+      fail('Unexpected API request: ${request.url}');
+    });
+    addTearDown(client.close);
+    final api = PoliceApi(
+      baseUrl: 'https://police.example.test',
+      httpClient: client,
+    );
+
+    expect(
+      await api.login('field.user', 'correct-password'),
+      user,
+    );
+    expect(_secureStorageForTest['session_token'], sessionToken);
+    expect(_secureStorageForTest['cached_account'], jsonEncode(user));
+    expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
+    expect(await api.restoreSession(), user);
+    expect(loginRequestSeen, isTrue);
+    expect(authenticatedRequestSeen, isTrue);
+  });
+
   test(
     'credential mutations do not broadcast passwords or returned secrets',
     () async {
@@ -1259,11 +1332,11 @@ void main() {
     );
   });
 
-  test('organization logo upload requires a saved session cookie', () async {
+  test('organization logo upload requires a saved bearer session', () async {
     var requestStarted = false;
     final client = MockClient((request) async {
       requestStarted = true;
-      fail('logo upload must not be sent without a saved session cookie');
+      fail('logo upload must not be sent without a saved bearer session');
     });
     addTearDown(client.close);
     final api = PoliceApi(
