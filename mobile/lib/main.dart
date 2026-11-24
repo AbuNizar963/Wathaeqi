@@ -1916,7 +1916,7 @@ class _DashboardPageState extends State<DashboardPage>
                   value: 'department',
                   child: _AccountMenuItem(
                     icon: Icons.settings_outlined,
-                    title: 'إعدادات الجهة',
+                    title: 'إعدادات الترويسة والطباعة',
                   ),
                 ),
               if (_canManageUsers) ...[
