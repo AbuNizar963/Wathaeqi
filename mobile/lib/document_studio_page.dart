@@ -1302,6 +1302,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               icon: Icon(Icons.description_outlined),
             ),
             ButtonSegment(
+              value: DocumentStudioTab.templates,
+              label: Text('القوالب'),
+              icon: Icon(Icons.dashboard_customize_outlined),
+            ),
+            ButtonSegment(
               value: DocumentStudioTab.archive,
               label: Text('الأرشيف'),
               icon: Icon(Icons.archive_outlined),
