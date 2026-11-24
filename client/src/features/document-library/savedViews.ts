@@ -46,9 +46,7 @@ function normalizeSavedDocumentStatus(
   return "all";
 }
 
-function normalizeSavedDocumentSort(
-  sort: unknown
-): SavedDocumentView["sort"] {
+function normalizeSavedDocumentSort(sort: unknown): SavedDocumentView["sort"] {
   if (sort === "updated-asc" || sort === "title-asc") {
     return sort;
   }
