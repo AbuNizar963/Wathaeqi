@@ -327,56 +327,57 @@ void main() {
     expect(find.text('تحرير الوثيقة'), findsOneWidget);
   });
 
-  testWidgets('document studio exposes documents, templates, and archive areas', (
-    tester,
-  ) async {
-    final api = _DocumentStudioTestApi(includeOrganization: false);
-    final outbox = _DocumentStudioTestOutbox(api: api);
+  testWidgets(
+    'document studio exposes documents, templates, and archive areas',
+    (tester) async {
+      final api = _DocumentStudioTestApi(includeOrganization: false);
+      final outbox = _DocumentStudioTestOutbox(api: api);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            body: DocumentStudioPage(api: api, outbox: outbox),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              body: DocumentStudioPage(api: api, outbox: outbox),
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('إعداد الوثائق الرسمية'), findsOneWidget);
-    expect(find.text('إنشاء وثيقة'), findsOneWidget);
-    expect(find.text('لا توجد وثائق بعد'), findsOneWidget);
+      expect(find.text('إعداد الوثائق الرسمية'), findsOneWidget);
+      expect(find.text('إنشاء وثيقة'), findsOneWidget);
+      expect(find.text('لا توجد وثائق بعد'), findsOneWidget);
 
-    await tester.tap(find.text('إنشاء وثيقة'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('إنشاء وثيقة'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('وثيقة جديدة'), findsOneWidget);
-    expect(find.text('رفع ملف'), findsOneWidget);
-    expect(find.text('اختيار نموذج جاهز'), findsNothing);
+      expect(find.text('وثيقة جديدة'), findsOneWidget);
+      expect(find.text('رفع ملف'), findsOneWidget);
+      expect(find.text('اختيار نموذج جاهز'), findsNothing);
 
-    await tester.tap(find.text('إلغاء'));
-    await tester.pumpAndSettle();
-    expect(find.text('الوثائق'), findsOneWidget);
-    expect(find.text('القوالب'), findsOneWidget);
-    expect(find.text('الأرشيف'), findsOneWidget);
-    expect(api.calls.containsKey('documentStudio.listDocuments'), isTrue);
-    expect(api.calls.containsKey('documentStudio.listTemplates'), isTrue);
-    expect(api.calls['documentStudio.getLetterheadSettings'], isEmpty);
+      await tester.tap(find.text('إلغاء'));
+      await tester.pumpAndSettle();
+      expect(find.text('الوثائق'), findsOneWidget);
+      expect(find.text('القوالب'), findsOneWidget);
+      expect(find.text('الأرشيف'), findsOneWidget);
+      expect(api.calls.containsKey('documentStudio.listDocuments'), isTrue);
+      expect(api.calls.containsKey('documentStudio.listTemplates'), isTrue);
+      expect(api.calls['documentStudio.getLetterheadSettings'], isEmpty);
 
-    await tester.tap(find.text('القوالب'));
-    await tester.pumpAndSettle();
-    expect(find.text('مكتبة النماذج'), findsOneWidget);
-    expect(find.text('نموذج جديد'), findsOneWidget);
+      await tester.tap(find.text('القوالب'));
+      await tester.pumpAndSettle();
+      expect(find.text('مكتبة النماذج'), findsOneWidget);
+      expect(find.text('نموذج جديد'), findsOneWidget);
 
-    await tester.tap(find.text('الوثائق'));
-    await tester.pumpAndSettle();
-    expect(find.text('إنشاء وثيقة'), findsOneWidget);
+      await tester.tap(find.text('الوثائق'));
+      await tester.pumpAndSettle();
+      expect(find.text('إنشاء وثيقة'), findsOneWidget);
 
-    await tester.tap(find.text('الأرشيف'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('الأرشيف'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('لا توجد وثائق مؤرشفة'), findsOneWidget);
-  });
+      expect(find.text('لا توجد وثائق مؤرشفة'), findsOneWidget);
+    },
+  );
 }
