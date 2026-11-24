@@ -20,6 +20,8 @@ const solidSettings: PlatformDocumentSettings = {
 function render(settings: PlatformDocumentSettings): string {
   return renderToStaticMarkup(
     <DocumentLetterhead
+      organizationName="إدارة الشرطة"
+      unitName="وحدة العمليات"
       chiefRank="العقيد"
       chiefName="رئيس الوحدة"
       logoUrl={null}
@@ -69,6 +71,16 @@ describe("DocumentLetterhead", () => {
     expect(markup).not.toContain("وحدة العمليات");
   });
 
+  it("continues to render other configured organization and unit titles", () => {
+    const markup = render({
+      ...tricolorSettings,
+      headerTitle: "مكتب المراسلات",
+      headerSubtitle: "قسم الصادر",
+    });
+    expect(markup).toContain("مكتب المراسلات");
+    expect(markup).toContain("قسم الصادر");
+  });
+
   it("keeps a plain border and no divider markup for solid dividers", () => {
     const markup = render(solidSettings);
     expect(markup).toContain("border-bottom:2.25pt solid #14532d");
@@ -78,6 +90,8 @@ describe("DocumentLetterhead", () => {
   it("honours the logo size and centre alignment settings", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead
+        organizationName=""
+        unitName=""
         chiefRank=""
         chiefName=""
         logoUrl="data:image/png;base64,AAAA"
