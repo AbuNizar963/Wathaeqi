@@ -88,9 +88,10 @@ function formatArabicDate(value: string): string {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return value;
   return new Intl.DateTimeFormat("ar", {
-    year: "numeric",
-    month: "long",
     day: "numeric",
+    month: "long",
+    year: "numeric",
+    numberingSystem: "latn",
   }).format(date);
 }
 
