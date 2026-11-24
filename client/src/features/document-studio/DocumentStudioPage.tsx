@@ -43,6 +43,7 @@ import UploadDialog from "../document-library/UploadDialog";
 import { signedFileQueryOptions } from "../document-library/signedFileQueryOptions";
 import DocumentEditor from "./DocumentEditor";
 import DocumentLetterhead from "./DocumentLetterhead";
+import DocumentSignatureBlock from "./DocumentSignatureBlock";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import { isDocumentFormDirty, parseDocumentDate } from "./documentFormState";
 import { applyDocumentTemplateVariables } from "../../../../shared/documentTemplateVariables";
@@ -1572,10 +1573,6 @@ export default function DocumentStudioPage() {
                     }
                   />
                   <DocumentLetterhead
-                    organizationName={organizationName}
-                    unitName={settings?.unitName ?? ""}
-                    chiefRank={settings?.unitChiefRank ?? ""}
-                    chiefName={settings?.unitChiefName ?? ""}
                     logoUrl={logoUrl}
                     dividerColor={dividerColor}
                     headerSettings={platformDocumentSettings.data}
@@ -1593,6 +1590,13 @@ export default function DocumentStudioPage() {
                       onChange={handleDocumentContentChange}
                       editable={canEditDocument && !previewMode}
                       containerClassName="rounded-none border-0 shadow-none"
+                    />
+                    <DocumentSignatureBlock
+                      organizationName={organizationName}
+                      unitName={settings?.unitName ?? ""}
+                      chiefRank={settings?.unitChiefRank ?? ""}
+                      chiefName={settings?.unitChiefName ?? ""}
+                      settings={platformDocumentSettings.data}
                     />
                   </div>
                   <footer className="space-y-1 pb-8 pt-4 text-xs text-slate-500">
