@@ -1272,31 +1272,55 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   ) => DocumentStudioTemplateFields.applyFieldValues(content, values);
 
   Widget _buildTabSelector() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: SegmentedButton<DocumentStudioTab>(
-        segments: const [
-          ButtonSegment(
-            value: DocumentStudioTab.documents,
-            label: Text('الوثائق'),
-            icon: Icon(Icons.description_outlined),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: SegmentedButton<DocumentStudioTab>(
+          showSelectedIcon: false,
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
-          ButtonSegment(
-            value: DocumentStudioTab.archive,
-            label: Text('الأرشيف'),
-            icon: Icon(Icons.archive_outlined),
-          ),
-        ],
-        selected: {_tab},
-        onSelectionChanged: (selection) {
-          setState(() {
-            _tab = selection.first;
-            if (_tab == DocumentStudioTab.archive) {
-              _selectedDocument = null;
-              _creatingDocument = false;
-            }
-          });
-        },
+          segments: const [
+            ButtonSegment(
+              value: DocumentStudioTab.documents,
+              label: Text('الوثائق'),
+              icon: Icon(Icons.description_outlined),
+            ),
+            ButtonSegment(
+              value: DocumentStudioTab.templates,
+              label: Text('القوالب'),
+              icon: Icon(Icons.dashboard_customize_outlined),
+            ),
+            ButtonSegment(
+              value: DocumentStudioTab.archive,
+              label: Text('الأرشيف'),
+              icon: Icon(Icons.archive_outlined),
+            ),
+          ],
+          selected: {_tab},
+          onSelectionChanged: (selection) {
+            setState(() {
+              _tab = selection.first;
+              if (_tab == DocumentStudioTab.archive) {
+                _selectedDocument = null;
+                _creatingDocument = false;
+              }
+            });
+          },
+        ),
       ),
     );
   }

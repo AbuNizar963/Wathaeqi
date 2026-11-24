@@ -2,10 +2,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../admin/admin_page_intro.dart';
+import '../../app_theme.dart';
 import '../organizations/organization_logo_upload.dart';
 import '../notifications/toast.dart';
-
-const _navy = Color(0xFF10233F);
 
 String _settingsErrorMessage(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
@@ -556,6 +556,11 @@ class _PlatformDocumentSettingsPageState
               padding: const EdgeInsets.all(16),
               children: [
                 if (_error != null) _ErrorCard(message: _error!),
+                const AdminPageIntro(
+                  title: 'إعدادات الوثائق',
+                  description: 'ضبط الهوية الرسمية والترويسة والعلامة المائية',
+                  icon: Icons.tune_outlined,
+                ),
                 _buildOrganizationLogoCard(),
                 Card(
                   child: Padding(
@@ -610,7 +615,7 @@ class _PlatformDocumentSettingsPageState
                             Text(
                               '${_watermarkOpacityPercent.round()}%',
                               style: const TextStyle(
-                                color: _navy,
+                                color: AppPalette.navy,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),

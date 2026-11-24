@@ -122,6 +122,8 @@ class PoliceApi {
   static const _telegramOutboxEpochKey = 'telegram_outbox_epoch_v1';
 
   /// Last time the server confirmed this session (login or `auth.me`).
+  static const _sessionTokenKey = 'session_token';
+  static const _legacySessionCookieKey = 'session_cookie';
   static const _sessionVerifiedAtKey = 'session_verified_at_v1';
 
   /// How long a saved session may be opened without reaching the server.
@@ -165,6 +167,11 @@ class PoliceApi {
   Future<Directory>? _logoCacheDirectoryFuture;
   int _logoCacheGeneration = 0;
 
+  Future<String?> _readSessionToken() async {
+    final token = (await _storage.read(key: _sessionTokenKey))?.trim();
+    return token == null || token.isEmpty ? null : token;
+  }
+
   Stream<ApiMutationEvent> get mutationEvents => _mutationEvents.stream;
 
   OfflineVault get offlineVault => _vault;
@@ -186,7 +193,7 @@ class PoliceApi {
     bool mutation = false,
     bool allowOfflineCache = true,
   }) async {
-    final cookie = await _storage.read(key: 'session_cookie');
+    final sessionToken = await _readSessionToken();
     final uri = mutation
         ? Uri.parse('$baseUrl/api/trpc/$procedure')
         : Uri.parse(
@@ -196,7 +203,7 @@ class PoliceApi {
       'content-type': 'application/json',
       'accept': 'application/json',
     };
-    if (cookie != null) headers['cookie'] = cookie;
+    if (sessionToken != null) headers['authorization'] = 'Bearer $sessionToken';
     late final http.Response response;
     try {
       response =
@@ -299,15 +306,15 @@ class PoliceApi {
       throw const FormatException('يجب استخدام اتصال HTTPS لرفع الوثائق');
     }
     final uri = baseUri.resolve('/api/documents/upload');
-    final cookie = await _storage.read(key: 'session_cookie');
-    if (cookie == null || cookie.trim().isEmpty) {
+    final sessionToken = await _readSessionToken();
+    if (sessionToken == null || sessionToken.trim().isEmpty) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
     }
 
     final request = http.Request('POST', uri)
       ..followRedirects = false
       ..headers.addAll({
-        'cookie': cookie,
+        'authorization': 'Bearer $sessionToken',
         'content-type': 'application/octet-stream',
         'accept': 'application/json',
         'x-file-name': Uri.encodeComponent(normalizedName),
@@ -382,14 +389,17 @@ class PoliceApi {
     final uri = baseUri.resolve(
       '/api/documents/${Uri.encodeComponent(documentId)}/print-pdf',
     );
-    final cookie = await _storage.read(key: 'session_cookie');
-    if (cookie == null || cookie.trim().isEmpty) {
+    final sessionToken = await _readSessionToken();
+    if (sessionToken == null || sessionToken.trim().isEmpty) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
     }
 
     final request = http.Request('POST', uri)
       ..followRedirects = false
-      ..headers.addAll({'cookie': cookie, 'accept': 'application/pdf'});
+      ..headers.addAll({
+        'authorization': 'Bearer $sessionToken',
+        'accept': 'application/pdf',
+      });
     late final http.Response response;
     try {
       final streamed = await _httpClient
@@ -440,8 +450,8 @@ class PoliceApi {
         !{'localhost', '127.0.0.1', '::1'}.contains(baseUri.host)) {
       throw const FormatException('يجب استخدام اتصال HTTPS لتنزيل الوثائق');
     }
-    final cookie = await _storage.read(key: 'session_cookie');
-    if (cookie == null || cookie.trim().isEmpty) {
+    final sessionToken = await _readSessionToken();
+    if (sessionToken == null || sessionToken.trim().isEmpty) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
     }
     final request =
@@ -452,7 +462,10 @@ class PoliceApi {
             ),
           )
           ..followRedirects = false
-          ..headers.addAll({'cookie': cookie, 'accept': mimeType});
+          ..headers.addAll({
+            'authorization': 'Bearer $sessionToken',
+            'accept': mimeType,
+          });
     late final http.Response response;
     try {
       final streamed = await _httpClient
@@ -519,14 +532,14 @@ class PoliceApi {
       );
     }
 
-    final cookie = await _storage.read(key: 'session_cookie');
+    final sessionToken = await _readSessionToken();
     final uri = Uri.parse('$baseUrl/api/telegram-render');
     final headers = <String, String>{
       'content-type': 'application/json',
       'accept': 'application/pdf, image/png',
     };
-    if (cookie != null && cookie.isNotEmpty) {
-      headers['cookie'] = cookie;
+    if (sessionToken != null) {
+      headers['authorization'] = 'Bearer $sessionToken';
     }
 
     final body = <String, Object>{
@@ -607,12 +620,14 @@ class PoliceApi {
       throw const FormatException('بيانات المرفق أو حجمه غير صالح');
     }
 
-    final cookie = await _storage.read(key: 'session_cookie');
+    final sessionToken = await _readSessionToken();
     final requestHeaders = <String, String>{
       'content-type': 'application/json',
       'accept': 'application/json',
     };
-    if (cookie != null) requestHeaders['cookie'] = cookie;
+    if (sessionToken != null) {
+      requestHeaders['authorization'] = 'Bearer $sessionToken';
+    }
 
     Future<http.Response> send(
       Future<http.Response> Function() request, {
@@ -714,7 +729,9 @@ class PoliceApi {
         'x-attachment-file-name': Uri.encodeComponent(fileName),
         'x-attachment-content-type': contentType,
       };
-      if (cookie != null) uploadHeaders['cookie'] = cookie;
+      if (sessionToken != null) {
+        uploadHeaders['authorization'] = 'Bearer $sessionToken';
+      }
 
       final uploadResponse = await send(
         () => _httpClient.put(uploadUri, headers: uploadHeaders, body: bytes),
@@ -928,7 +945,7 @@ class PoliceApi {
     final uri = Uri.parse('$baseUrl/api/trpc/auth.login');
     late final http.Response response;
     try {
-      response = await http
+      response = await _httpClient
           .post(
             uri,
             headers: {
@@ -954,16 +971,20 @@ class PoliceApi {
     // account's offline responses on a shared device.
     await _clearOfflineCache();
     await clearOrganizationLogoCache();
-    final cookie = response.headers['set-cookie'];
-    if (cookie != null) {
-      await _storage.write(
-        key: 'session_cookie',
-        value: cookie.split(';').first,
-      );
-    }
     final decoded = jsonDecode(response.body);
     final data = decoded['result']['data'];
-    final account = Map<String, dynamic>.from(data['json'] ?? data);
+    final authResult = Map<String, dynamic>.from(data['json'] ?? data);
+    final sessionToken = authResult['sessionToken'];
+    final user = authResult['user'];
+    if (sessionToken is! String ||
+        sessionToken.isEmpty ||
+        sessionToken.length > 16384 ||
+        user is! Map) {
+      throw const FormatException('استجابة تسجيل الدخول لا تحتوي جلسة صالحة');
+    }
+    await _storage.write(key: _sessionTokenKey, value: sessionToken);
+    await _storage.delete(key: _legacySessionCookieKey);
+    final account = Map<String, dynamic>.from(user);
     await _storage.write(key: 'cached_account', value: jsonEncode(account));
     await _markSessionVerified();
     return account;
@@ -1085,8 +1106,8 @@ class PoliceApi {
   }
 
   Future<Map<String, dynamic>?> restoreSession() async {
-    final cookie = await _storage.read(key: 'session_cookie');
-    if (cookie == null || cookie.trim().isEmpty) return null;
+    final sessionToken = await _readSessionToken();
+    if (sessionToken == null || sessionToken.trim().isEmpty) return null;
 
     final cached = await _readCachedAccount();
 
@@ -1096,7 +1117,8 @@ class PoliceApi {
         await _markSessionVerified();
         return Map<String, dynamic>.from(user);
       }
-      await _storage.delete(key: 'session_cookie');
+      await _storage.delete(key: _sessionTokenKey);
+      await _storage.delete(key: _legacySessionCookieKey);
       await _storage.delete(key: 'cached_account');
       await clearOrganizationLogoCache();
       return null;
@@ -1104,7 +1126,8 @@ class PoliceApi {
       return _openOfflineSession(cached);
     } on ApiException catch (error) {
       if (error.statusCode == 401 || error.statusCode == 403) {
-        await _storage.delete(key: 'session_cookie');
+        await _storage.delete(key: _sessionTokenKey);
+        await _storage.delete(key: _legacySessionCookieKey);
         await _storage.delete(key: 'cached_account');
         await clearOrganizationLogoCache();
         return null;
@@ -1128,7 +1151,8 @@ class PoliceApi {
       await call('auth.logout', mutation: true);
     } finally {
       await _clearOfflineCache();
-      await _storage.delete(key: 'session_cookie');
+      await _storage.delete(key: _sessionTokenKey);
+      await _storage.delete(key: _legacySessionCookieKey);
       await _storage.delete(key: 'cached_account');
       await _storage.delete(key: _sessionVerifiedAtKey);
       await clearOrganizationLogoCache();
@@ -1238,9 +1262,9 @@ class PoliceApi {
     if (!uri.isScheme('http') && !uri.isScheme('https')) return null;
 
     final headers = <String, String>{'accept': 'image/*'};
-    final cookie = await _storage.read(key: 'session_cookie');
-    if (cookie != null && cookie.isNotEmpty && uri.origin == baseUri.origin) {
-      headers['cookie'] = cookie;
+    final sessionToken = await _readSessionToken();
+    if (sessionToken != null && uri.origin == baseUri.origin) {
+      headers['authorization'] = 'Bearer $sessionToken';
     }
 
     const retryableStatusCodes = {408, 425, 429, 500, 502, 503, 504};
@@ -1725,8 +1749,8 @@ class PoliceApi {
       );
     }
 
-    final cookie = (await _storage.read(key: 'session_cookie'))?.trim();
-    if (cookie == null || cookie.isEmpty) {
+    final sessionToken = await _readSessionToken();
+    if (sessionToken == null) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
     }
     final uri = Uri.parse('$baseUrl/api/storage/department-logo');
@@ -1735,7 +1759,7 @@ class PoliceApi {
       'accept': 'application/json',
       'x-organization-id': organizationId,
       'x-file-name': Uri.encodeComponent(fileName),
-      'cookie': cookie,
+      'authorization': 'Bearer $sessionToken',
     };
 
     late final http.Response response;
