@@ -74,7 +74,7 @@ abstract final class AppPalette {
     onTertiary: Color(0xFF132D43),
     primaryContainer: Color(0xFF1D4054),
     onPrimaryContainer: darkInk,
-    secondaryContainer: Color(0xFF1D3B5D),
+    secondaryContainer: darkMuted,
     onSecondaryContainer: Color(0xFFDDF4F1),
     surfaceTint: brandBlue,
     error: Color(0xFFF97066),
