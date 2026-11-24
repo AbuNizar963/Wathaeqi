@@ -33,8 +33,7 @@ export default function DocumentLetterhead({
 }: DocumentLetterheadProps) {
   const configuredTitle =
     headerSettings?.headerTitle.trim() || organizationName;
-  const configuredSubtitle =
-    headerSettings?.headerSubtitle.trim() || unitName;
+  const configuredSubtitle = headerSettings?.headerSubtitle.trim() || unitName;
   const title = configuredTitle === "إدارة الشرطة" ? "" : configuredTitle;
   const subtitle =
     configuredSubtitle === "وحدة العمليات" ? "" : configuredSubtitle;
