@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   resolveOrganizationScope: vi.fn(),
   renameOrganization: vi.fn(),
+  getOrganization: vi.fn(),
+  ensureDepartmentSettings: vi.fn(),
+  updateDepartmentSettings: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
 
@@ -12,8 +15,17 @@ vi.mock("./organizationAccess", () => ({
 
 vi.mock("./organizationService", async importOriginal => {
   const actual = await importOriginal<typeof import("./organizationService")>();
-  return { ...actual, renameOrganization: mocks.renameOrganization };
+  return {
+    ...actual,
+    renameOrganization: mocks.renameOrganization,
+    getOrganization: mocks.getOrganization,
+  };
 });
+
+vi.mock("../settings/departmentSettingsRepository", () => ({
+  ensureDepartmentSettings: mocks.ensureDepartmentSettings,
+  updateDepartmentSettings: mocks.updateDepartmentSettings,
+}));
 
 vi.mock("../audit/appwriteAuditRepository", () => ({
   writeAuditLog: mocks.writeAuditLog,
@@ -43,6 +55,25 @@ beforeEach(() => {
   mocks.renameOrganization.mockResolvedValue({
     id: "org-current",
     name: "الاسم الجديد",
+  });
+  mocks.getOrganization.mockResolvedValue({
+    id: "org-current",
+    name: "قسم شرطة الشهباء",
+  });
+  mocks.ensureDepartmentSettings.mockResolvedValue({
+    departmentName: "قسم شرطة الشهباء",
+    unitName: "وحدة العمليات",
+    unitChiefRank: "العقيد",
+    unitChiefName: "رئيس الوحدة",
+    serialPrefix: "POL",
+    incomingSerialPrefix: "POL",
+    serialStart: 1,
+    incomingSerialStart: 1,
+    timezone: "Asia/Riyadh",
+    dateFormat: "yyyy/MM/dd HH:mm:ss",
+    timeFormat: "24",
+    numberSystem: "latin",
+    logoUrl: null,
   });
 });
 
@@ -83,6 +114,75 @@ describe("organizations.renameCurrent", () => {
       caller().renameCurrent({ name: "اسم جديد" })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.renameOrganization).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("organizations.settings", () => {
+  const settingsInput = {
+    organizationId: "org-current",
+    departmentName: "قسم شرطة الشهباء",
+    unitName: "وحدة العمليات",
+    unitChiefRank: "العقيد",
+    unitChiefName: "رئيس الوحدة",
+    serialPrefix: "POL",
+    incomingSerialPrefix: "POL",
+    serialStart: 1,
+    incomingSerialStart: 1,
+    timezone: "Asia/Riyadh",
+    dateFormat: "yyyy/MM/dd HH:mm:ss",
+    timeFormat: "24" as const,
+    numberSystem: "latin" as const,
+    logoUrl: null,
+  };
+
+  it("allows an authorized organization administrator to read fixed-organization settings", async () => {
+    await expect(
+      caller().settings.get({ organizationId: "org-current" })
+    ).resolves.toMatchObject({
+      organizationId: "org-current",
+      organizationName: "قسم شرطة الشهباء",
+    });
+
+    expect(mocks.ensureDepartmentSettings).toHaveBeenCalledWith("org-current");
+  });
+
+  it("allows an authorized organization administrator to update fixed-organization settings", async () => {
+    await expect(
+      caller().settings.update(settingsInput)
+    ).resolves.toMatchObject({
+      organizationId: "org-current",
+      organizationName: "قسم شرطة الشهباء",
+    });
+
+    expect(mocks.updateDepartmentSettings).toHaveBeenCalledWith(
+      "org-current",
+      expect.objectContaining({
+        departmentName: "قسم شرطة الشهباء",
+        serialPrefix: "POL",
+        incomingSerialPrefix: "POL",
+      }),
+      7
+    );
+  });
+
+  it("denies settings access when the active role cannot administrate", async () => {
+    mocks.resolveOrganizationScope.mockResolvedValue({
+      ...adminScope,
+      canAdministrate: false,
+    });
+
+    await expect(
+      caller().settings.get({ organizationId: "org-current" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.ensureDepartmentSettings).not.toHaveBeenCalled();
+  });
+
+  it("rejects settings requests for an organization outside the fixed scope", async () => {
+    await expect(
+      caller().settings.get({ organizationId: "org-other" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.ensureDepartmentSettings).not.toHaveBeenCalled();
   });
 });
 
