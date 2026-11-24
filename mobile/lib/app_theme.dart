@@ -174,7 +174,7 @@ abstract final class AppTheme {
             minimumSize: const Size(48, 46),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             textStyle: const TextStyle(
               fontFamily: 'Cairo',
