@@ -935,7 +935,7 @@ class PoliceApi {
     final uri = Uri.parse('$baseUrl/api/trpc/auth.login');
     late final http.Response response;
     try {
-      response = await http
+      response = await _httpClient
           .post(
             uri,
             headers: {
@@ -1117,7 +1117,7 @@ class PoliceApi {
     } on ApiException catch (error) {
       if (error.statusCode == 401 || error.statusCode == 403) {
         await _storage.delete(key: _sessionTokenKey);
-      await _storage.delete(key: _legacySessionCookieKey);
+              await _storage.delete(key: _legacySessionCookieKey);
         await _storage.delete(key: 'cached_account');
         await clearOrganizationLogoCache();
         return null;
