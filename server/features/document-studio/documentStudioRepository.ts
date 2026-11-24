@@ -167,11 +167,14 @@ async function listAllRows(
 
     const nextCursor = page[page.length - 1]?.$id;
     if (!nextCursor || nextCursor === cursorAfter) {
-      throw new Error(`Appwrite pagination did not advance for table ${tableId}`);
+      throw new Error(
+        `Appwrite pagination did not advance for table ${tableId}`
+      );
     }
     cursorAfter = nextCursor;
   }
 }
+
 async function withTableTransaction<T>(
   operation: (transactionId: string) => Promise<T>
 ): Promise<T> {
