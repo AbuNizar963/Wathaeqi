@@ -633,8 +633,7 @@ export const documentStudioRouter = router({
         });
       }
 
-      const organizationId =
-        existing.organizationId ?? scope.organizationId;
+      const organizationId = existing.organizationId ?? scope.organizationId;
       const settings = await getDocumentOrganizationSettings(organizationId);
       if (!settings) {
         throw new TRPCError({
