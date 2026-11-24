@@ -311,6 +311,17 @@ export default function DocumentStudioPage() {
       onSuccess: async saved => {
         await utils.documentStudio.listDocuments.invalidate();
         setSelectedDocumentId(saved.id);
+        setIsCreatingDocument(false);
+        setDocumentTitle(saved.title);
+        setDocumentCategory(saved.category);
+        setDocumentSubject(saved.subject);
+        setDocumentDate(dateInputValue(saved.documentDate));
+        setDocumentContent(saved.content);
+        setDocumentFieldValues(saved.fieldValues);
+        setSelectedTemplateId(saved.templateId);
+        setSelectedTemplateRevision(saved.templateRevision);
+        setTemplateValuesApplied(true);
+        setPreviewMode(false);
         toast.success("تم تحديث الوثيقة");
       },
       onError: error => toast.error(error.message),
@@ -904,7 +915,10 @@ export default function DocumentStudioPage() {
                       onClick={() => {
                         setIsCreatingDocument(false);
                         setSelectedDocumentId(document.id);
-                        setPreviewMode(true);
+                        // Selecting a document is the primary edit action. The
+                        // explicit preview button remains available for read-only
+                        // viewing and shared links still open in preview mode.
+                        setPreviewMode(false);
                       }}
                       className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
                     >
