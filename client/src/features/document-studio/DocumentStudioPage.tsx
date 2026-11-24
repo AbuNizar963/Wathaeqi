@@ -994,7 +994,8 @@ export default function DocumentStudioPage() {
                     <div>
                       <h3 className="font-semibold">سجل إصدارات الوثيقة</h3>
                       <p className="text-xs text-muted-foreground">
-                        تُحفظ نسخة سابقة عند كل تعديل فعلي، ويمكن استعادتها للمسودات.
+                        تُحفظ نسخة سابقة عند كل تعديل فعلي، ويمكن استعادتها
+                        للمسودات.
                       </p>
                     </div>
                     <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
