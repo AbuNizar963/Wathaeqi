@@ -635,6 +635,7 @@ void main() {
     ).writeAsBytes([1, 2, 3]);
 
     final client = MockClient((request) async {
+      expect(request.headers['authorization'], 'Bearer stored-token');
       return http.Response(
         jsonEncode({
           'result': {
@@ -767,6 +768,7 @@ void main() {
 
   test('logout clears offline caches and invalidates the outbox', () async {
     _secureStorageForTest['session_token'] = 'stored-token';
+    _secureStorageForTest['session_cookie'] = 'obsolete-cookie';
     _secureStorageForTest['offline_settings'] = '{"departmentName":"old"}';
     _secureStorageForTest['offline_telegrams_list_e30'] = '{"items":[]}';
     _secureStorageForTest['cached_dashboard'] = '{"stats":{},"telegrams":[]}';
@@ -791,6 +793,7 @@ void main() {
     await api.logout();
 
     expect(_secureStorageForTest.containsKey('session_token'), isFalse);
+    expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
     expect(_secureStorageForTest.containsKey('offline_settings'), isFalse);
     expect(
       _secureStorageForTest.containsKey('offline_telegrams_list_e30'),
