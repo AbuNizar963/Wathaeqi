@@ -327,7 +327,7 @@ void main() {
     expect(find.text('تحرير الوثيقة'), findsOneWidget);
   });
 
-  testWidgets('document studio opens with documents and archive areas', (
+  testWidgets('document studio exposes documents, templates, and archive areas', (
     tester,
   ) async {
     final api = _DocumentStudioTestApi(includeOrganization: false);
