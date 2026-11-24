@@ -1410,9 +1410,7 @@ class _DashboardPageState extends State<DashboardPage>
                       onPressed: () {
                         Navigator.pop(dialogContext);
                         if (!mounted) return;
-                        _pushPage(
-                          NotificationsPage(api: widget.api),
-                        );
+                        _pushPage(NotificationsPage(api: widget.api));
                       },
                       child: const Text('عرض جميع الإشعارات'),
                     ),
@@ -1425,7 +1423,6 @@ class _DashboardPageState extends State<DashboardPage>
       },
     );
   }
-
 
   @override
   void dispose() {
@@ -1709,7 +1706,6 @@ class _DashboardPageState extends State<DashboardPage>
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) => Directionality(
