@@ -82,6 +82,7 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain("text-align:center");
     expect(markup).toContain('alt="الشعار الرسمي"');
   });
+
   it("renders each configured custom header row exactly once", () => {
     const settings: PlatformDocumentSettings = {
       ...tricolorSettings,
@@ -102,5 +103,4 @@ describe("DocumentLetterhead", () => {
       expect(markup.split(value)).toHaveLength(2);
     }
   });
-
 });
