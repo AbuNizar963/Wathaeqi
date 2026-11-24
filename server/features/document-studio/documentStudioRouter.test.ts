@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => {
     updateOfficialDocument: vi.fn(),
     archiveOfficialDocument: vi.fn(),
     issueOfficialDocument: vi.fn(),
+    listOfficialDocumentVersions: vi.fn(),
+    restoreOfficialDocumentVersion: vi.fn(),
   };
 });
 
@@ -223,6 +225,19 @@ describe("document studio authorization and API", () => {
       serialNumber: 12,
       serialCode: "DOC-00012",
       issuedAt: timestamp,
+    });
+    mocks.listOfficialDocumentVersions.mockResolvedValue([
+      {
+        version: 1,
+        savedAt: timestamp,
+        savedByUserId: ownerId,
+        title: "عنوان سابق",
+      },
+    ]);
+    mocks.restoreOfficialDocumentVersion.mockResolvedValue({
+      ...document,
+      title: "عنوان سابق",
+      updatedAt: "2026-11-24T11:00:00.000Z",
     });
   });
 
@@ -648,6 +663,46 @@ describe("document studio authorization and API", () => {
     expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
+  it("lists only the authenticated owner's document versions", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+
+    const result = await caller.listDocumentVersions({ id: document.id });
+
+    expect(mocks.listOfficialDocumentVersions).toHaveBeenCalledWith(
+      ownerId,
+      document.id
+    );
+    expect(result).toEqual([
+      {
+        version: 1,
+        savedAt: timestamp,
+        savedByUserId: ownerId,
+        title: "عنوان سابق",
+      },
+    ]);
+  });
+
+  it("restores a previous draft version with optimistic concurrency", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+
+    const result = await caller.restoreDocumentVersion({
+      id: document.id,
+      version: 1,
+      expectedUpdatedAt: timestamp,
+    });
+
+    expect(mocks.restoreOfficialDocumentVersion).toHaveBeenCalledWith(
+      ownerId,
+      document.id,
+      1,
+      timestamp
+    );
+    expect(result).toMatchObject({
+      id: document.id,
+      title: "عنوان سابق",
+    });
+  });
+
   it("archives without physically deleting the owned document", async () => {
     const caller = documentStudioRouter.createCaller(context());
 
@@ -684,6 +739,16 @@ describe("document studio authorization and API", () => {
     await expect(caller.createTemplate(templateInput)).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
+    await expect(
+      caller.listDocumentVersions({ id: document.id })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(
+      caller.restoreDocumentVersion({
+        id: document.id,
+        version: 1,
+        expectedUpdatedAt: timestamp,
+      })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     expect(mocks.listOfficialDocuments).not.toHaveBeenCalled();
     expect(mocks.createDocumentTemplate).not.toHaveBeenCalled();
   });
