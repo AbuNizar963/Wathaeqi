@@ -49,6 +49,11 @@ jobs:
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       # The full project lint includes the single-organization API and UI boundary.
+      - name: Diagnose workspace formatting (temporary)
+        run: |
+          pnpm exec prettier client/src/features/workspace/WorkspacePage.tsx > /tmp/WorkspacePage.formatted.tsx
+          diff -u client/src/features/workspace/WorkspacePage.tsx /tmp/WorkspacePage.formatted.tsx || true
+
       - name: Check formatting
         run: pnpm lint
 
