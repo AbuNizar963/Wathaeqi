@@ -39,7 +39,7 @@ describe("DocumentSignatureBlock", () => {
     }
     expect(markup).toContain('data-testid="document-signature-block"');
     expect(markup).toContain('dir="rtl"');
-    expect(markup).toContain("text-right");
+    expect(markup).toContain('style="text-align:right"');
   });
 
   it("uses the saved organization values when optional overrides are empty", () => {
