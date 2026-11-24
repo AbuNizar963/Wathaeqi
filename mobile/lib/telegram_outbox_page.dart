@@ -193,7 +193,9 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
     child: ListTile(
       leading: const Icon(Icons.history_outlined, color: _outboxGold),
       title: const Text('سجل محلي قديم محفوظ'),
-      subtitle: Text('حُفظ في ${_date(entry.createdAt)} · لم يُرسل إلى الخادم'),
+      subtitle: Text(
+        'حُفظ في ${_date(entry.createdAt)} · لم يُرسل إلى الخادم',
+      ),
       trailing: const Icon(Icons.lock_outline),
     ),
   );
