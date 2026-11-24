@@ -214,6 +214,11 @@ export default function DocumentStudioPage() {
     () => templates.find(item => item.id === selectedTemplateId) ?? null,
     [selectedTemplateId, templates]
   );
+  const documentVersionsQuery =
+    trpc.documentStudio.listDocumentVersions.useQuery(
+      { id: selectedDocument?.id ?? "" },
+      { enabled: Boolean(selectedDocument) }
+    );
   const importedFileUrlQuery = trpc.documentStudio.getFileUrl.useQuery(
     { id: selectedDocument?.id ?? "" },
     {
@@ -309,6 +314,25 @@ export default function DocumentStudioPage() {
       onError: error => toast.error(error.message),
     }
   );
+
+  const restoreDocumentVersionMutation =
+    trpc.documentStudio.restoreDocumentVersion.useMutation({
+      onSuccess: async saved => {
+        await Promise.all([
+          utils.documentStudio.listDocuments.invalidate(),
+          utils.documentStudio.listDocumentVersions.invalidate({ id: saved.id }),
+        ]);
+        setSelectedDocumentId(saved.id);
+        setDocumentTitle(saved.title);
+        setDocumentCategory(saved.category);
+        setDocumentSubject(saved.subject);
+        setDocumentDate(dateInputValue(saved.documentDate));
+        setDocumentContent(saved.content);
+        setDocumentFieldValues(saved.fieldValues);
+        toast.success("تمت استعادة النسخة وحفظ الحالة السابقة في سجل الإصدارات");
+      },
+      onError: error => toast.error(error.message),
+    });
 
   const createTemplateMutation = trpc.documentStudio.createTemplate.useMutation(
     {
@@ -959,6 +983,77 @@ export default function DocumentStudioPage() {
                   </Button>
                 </div>
               </div>
+
+              {selectedDocument ? (
+                <section className="document-studio-no-print space-y-3 rounded-lg border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold">سجل إصدارات الوثيقة</h3>
+                      <p className="text-xs text-muted-foreground">
+                        تُحفظ نسخة سابقة عند كل تعديل فعلي، ويمكن استعادتها للمسودات.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+                      {(documentVersionsQuery.data ?? []).length} نسخة سابقة
+                    </span>
+                  </div>
+                  {documentVersionsQuery.isLoading ? (
+                    <p className="text-sm text-muted-foreground">جارٍ تحميل سجل الإصدارات...</p>
+                  ) : documentVersionsQuery.isError ? (
+                    <p className="text-sm text-destructive">
+                      تعذر تحميل سجل الإصدارات: {documentVersionsQuery.error.message}
+                    </p>
+                  ) : (documentVersionsQuery.data ?? []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      لا توجد نسخ سابقة بعد. سيظهر السجل بعد أول تعديل محفوظ.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(documentVersionsQuery.data ?? []).map(version => (
+                        <div
+                          key={version.version}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/40 p-2"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">
+                              النسخة {version.version} · {version.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(version.savedAt).toLocaleString("ar")}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={
+                              selectedDocument.status !== "draft" ||
+                              restoreDocumentVersionMutation.isPending ||
+                              hasUnsavedDocumentChanges
+                            }
+                            onClick={() => {
+                              if (hasUnsavedDocumentChanges) {
+                                toast.error("احفظ التعديلات الحالية أو ألغها قبل استعادة نسخة سابقة");
+                                return;
+                              }
+                              if (!window.confirm(
+                                `استعادة النسخة ${version.version}؟ سيُحفظ المحتوى الحالي كنسخة قبل الاستعادة.`
+                              )) return;
+                              restoreDocumentVersionMutation.mutate({
+                                id: selectedDocument.id,
+                                version: version.version,
+                                expectedUpdatedAt: selectedDocument.updatedAt,
+                              });
+                            }}
+                          >
+                            استعادة هذه النسخة
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              ) : null}
 
               <div
                 className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
