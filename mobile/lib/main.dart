@@ -16,7 +16,6 @@ import 'document_studio_page.dart';
 import 'document_library_page.dart';
 import 'document_studio_outbox.dart';
 import 'app_theme.dart';
-import 'advanced_create_telegram_page.dart';
 import 'app_update_page.dart';
 import 'app_update_service.dart';
 import './features/admin/mobile_access_policy.dart';
@@ -1711,26 +1710,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  Future<void> create() async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        final keyboardInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
-        return AnimatedPadding(
-          padding: EdgeInsets.only(bottom: keyboardInset),
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          child: AdvancedCreateTelegramSheet(api: widget.api, outbox: _outbox),
-        );
-      },
-    );
-    if (result == true) {
-      await _syncOutbox();
-      refresh();
-    }
-  }
 
   @override
   Widget build(BuildContext context) => Directionality(
