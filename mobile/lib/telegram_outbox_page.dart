@@ -85,31 +85,6 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
     }
   }
 
-  Future<void> _remove(TelegramOutboxEntry entry) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('حذف سجل محلي قديم؟'),
-        content: const Text(
-          'سيُحذف هذا التغيير المحفوظ من إصدار سابق ولن تتم مزامنته. لا يؤثر ذلك في الوثائق الحالية.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await widget.outbox.remove(entry.id);
-    await _load();
-  }
-
   void _showMessage(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -189,7 +164,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  '${_legacyEntries.length} تغييرات محفوظة من إصدار سابق. ستبقى محفوظة حتى مزامنتها أو حذفها يدوياً.',
+                                  '${_legacyEntries.length} تغييرات محفوظة من إصدار سابق. تبقى محلياً كما هي ولا تُرسل في نظام الطباعة فقط.',
                                 ),
                               ),
                             ],
@@ -217,18 +192,11 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
   Widget _legacyEntryCard(TelegramOutboxEntry entry) => Card(
     child: ListTile(
       leading: const Icon(Icons.history_outlined, color: _outboxGold),
-      title: const Text('تغيير محفوظ من إصدار سابق'),
+      title: const Text('سجل محلي قديم محفوظ'),
       subtitle: Text(
-        'حُفظ في ${_date(entry.createdAt)} · محاولات المزامنة: ${entry.attempts}',
+        'حُفظ في ${_date(entry.createdAt)} · لم يُرسل إلى الخادم',
       ),
-      trailing: IconButton(
-        tooltip: 'حذف السجل المحلي',
-        onPressed: _syncing ? null : () => _remove(entry),
-        icon: Icon(
-          Icons.delete_outline,
-          color: Theme.of(context).colorScheme.error,
-        ),
-      ),
+      trailing: const Icon(Icons.lock_outline),
     ),
   );
 
