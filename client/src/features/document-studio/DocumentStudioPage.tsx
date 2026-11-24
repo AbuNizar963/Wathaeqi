@@ -1192,10 +1192,6 @@ export default function DocumentStudioPage() {
                   }
                 />
                 <DocumentLetterhead
-                  organizationName={organizationName}
-                  unitName={settings?.unitName ?? ""}
-                  chiefRank={settings?.unitChiefRank ?? ""}
-                  chiefName={settings?.unitChiefName ?? ""}
                   logoUrl={logoUrl}
                   dividerColor={dividerColor}
                   headerSettings={platformDocumentSettings.data}
@@ -1209,6 +1205,13 @@ export default function DocumentStudioPage() {
                     placeholder="اكتب نص النموذج واستخدم {{employee_name}} للحقول المخصصة أو {{organization}} و{{date}} و{{number}} و{{subject}} للبيانات التلقائية."
                   />
                 </div>
+                <DocumentSignatureBlock
+                  organizationName={organizationName}
+                  unitName={settings?.unitName ?? ""}
+                  chiefRank={settings?.unitChiefRank ?? ""}
+                  chiefName={settings?.unitChiefName ?? ""}
+                  settings={platformDocumentSettings.data}
+                />
               </ResponsiveA4Preview>
             </Card>
           ) : selectedDocument || isCreatingDocument ? (
