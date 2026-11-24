@@ -37,6 +37,29 @@ export default function DocumentLetterhead({
       }}
       dir="rtl"
     >
+      {headerSettings?.pageHeaderRows?.some(
+        row => row.right.trim() || row.left.trim()
+      ) ? (
+        <div
+          className="mb-2 space-y-1 text-[10pt] font-semibold leading-[1.4]"
+          dir="rtl"
+          data-testid="document-custom-header-rows"
+        >
+          {headerSettings.pageHeaderRows.map((row, index) =>
+            row.right.trim() || row.left.trim() ? (
+              <div
+                key={`custom-header-${index}`}
+                className="grid grid-cols-2 gap-4"
+              >
+                <span className="text-right">{row.right}</span>
+                <span className="text-left" dir="ltr">
+                  {row.left}
+                </span>
+              </div>
+            ) : null
+          )}
+        </div>
+      ) : null}
       <div className="document-letterhead__row">
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"

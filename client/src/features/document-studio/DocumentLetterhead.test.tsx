@@ -40,6 +40,40 @@ describe("DocumentLetterhead", () => {
     expect(markup).not.toContain("إدارة الشرطة");
   });
 
+  it("renders configured custom header rows once above the logo and divider", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentLetterhead
+        logoUrl={null}
+        dividerColor="#14532d"
+        headerSettings={{
+          ...tricolorSettings,
+          pageHeaderRows: [
+            {
+              right: "الجمهورية العربية السورية",
+              left: "Syrian Arab Republic",
+            },
+            { right: "وزارة الداخلية", left: "Ministry of Interior" },
+          ],
+        }}
+      />
+    );
+    const rowsIndex = markup.indexOf(
+      'data-testid="document-custom-header-rows"'
+    );
+    const logoIndex = markup.indexOf('class="document-letterhead__row"');
+    expect(rowsIndex).toBeGreaterThan(-1);
+    expect(rowsIndex).toBeLessThan(logoIndex);
+    expect(markup.match(/الجمهورية العربية السورية/g)).toHaveLength(1);
+    expect(markup.match(/وزارة الداخلية/g)).toHaveLength(1);
+    expect(markup).toContain("Syrian Arab Republic");
+    expect(markup).toContain("Ministry of Interior");
+  });
+
+  it("does not render an empty custom header rows container", () => {
+    const markup = render(tricolorSettings);
+    expect(markup).not.toContain('data-testid="document-custom-header-rows"');
+  });
+
   it("places serial and date metadata below the tricolor divider, aligned right", () => {
     const markup = render(tricolorSettings);
     const dividerIndex = markup.indexOf("document-tricolor-stars-divider");
