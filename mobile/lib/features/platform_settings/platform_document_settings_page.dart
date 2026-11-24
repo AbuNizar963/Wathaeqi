@@ -61,6 +61,8 @@ class _PlatformDocumentSettingsPageState
   bool _settingsConfirmed = false;
   bool _showMinistryWatermarkText = true;
   bool _showVerificationQr = true;
+  List<Map<String, String>> _pageHeaderRows = [];
+  List<Map<String, String>> _pageFooterRows = [];
   double _watermarkOpacityPercent = 12;
   String _headerDividerColor = _defaultColor;
   String _headerDividerStyle = 'double';
@@ -118,6 +120,66 @@ class _PlatformDocumentSettingsPageState
         RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(color);
   }
 
+  List<Map<String, String>> _readTextRows(Object? value) {
+    if (value is! List) return [];
+    return value.take(12).map((item) {
+      final row = item is Map ? item : const {};
+      return <String, String>{
+        'right': row['right']?.toString() ?? '',
+        'left': row['left']?.toString() ?? '',
+      };
+    }).toList();
+  }
+
+  void _resizeRows(bool header, int count) {
+    final current = header ? _pageHeaderRows : _pageFooterRows;
+    final next = List.generate(count, (index) => index < current.length
+        ? Map<String, String>.from(current[index])
+        : <String, String>{'right': '', 'left': ''});
+    setState(() => header ? _pageHeaderRows = next : _pageFooterRows = next);
+  }
+
+  Widget _buildTextRowsEditor(String title, bool header) {
+    final rows = header ? _pageHeaderRows : _pageFooterRows;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800))),
+          SizedBox(width: 120, child: DropdownButtonFormField<int>(
+            isExpanded: true,
+            initialValue: rows.length,
+            decoration: const InputDecoration(labelText: 'عدد السطور'),
+            items: List.generate(13, (count) => DropdownMenuItem(value: count, child: Text('$count سطر'))),
+            onChanged: _saving ? null : (value) { if (value != null) _resizeRows(header, value); },
+          )),
+        ]),
+        for (var index = 0; index < rows.length; index++)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              Expanded(child: TextFormField(
+                key: ValueKey('${header ? 'h' : 'f'}-r-$index'),
+                initialValue: rows[index]['right'],
+                enabled: !_saving,
+                decoration: InputDecoration(labelText: 'السطر ${index + 1} — يمين'),
+                onChanged: (value) => setState(() => rows[index]['right'] = value),
+              )),
+              const SizedBox(width: 8),
+              Expanded(child: TextFormField(
+                key: ValueKey('${header ? 'h' : 'f'}-l-$index'),
+                initialValue: rows[index]['left'],
+                enabled: !_saving,
+                textDirection: TextDirection.ltr,
+                decoration: InputDecoration(labelText: 'السطر ${index + 1} — يسار'),
+                onChanged: (value) => setState(() => rows[index]['left'] = value),
+              )),
+            ]),
+          ),
+      ],
+    );
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -139,6 +201,8 @@ class _PlatformDocumentSettingsPageState
         _showMinistryWatermarkText =
             result['showMinistryWatermarkText'] as bool;
         _showVerificationQr = result['showVerificationQr'] as bool;
+        _pageHeaderRows = _readTextRows(result['pageHeaderRows']);
+        _pageFooterRows = _readTextRows(result['pageFooterRows']);
         _watermarkOpacityPercent = opacity.toDouble();
         _headerDividerColor = color.toLowerCase();
         _headerDividerStyle =
@@ -323,6 +387,8 @@ class _PlatformDocumentSettingsPageState
           'frameColor': _frameColor,
           'frameWidthPt': _frameWidthPt,
           'showVerificationQr': _showVerificationQr,
+          'pageHeaderRows': _pageHeaderRows,
+          'pageFooterRows': _pageFooterRows,
         },
       );
       if (!mounted) return;
@@ -587,6 +653,10 @@ class _PlatformDocumentSettingsPageState
                           ),
                         ),
                         const SizedBox(height: 12),
+                        _buildTextRowsEditor('سطور رأس الصفحة', true),
+                        const SizedBox(height: 20),
+                        _buildTextRowsEditor('سطور تذييل الصفحة', false),
+                        const Divider(height: 28),
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,
                           title: const Text(

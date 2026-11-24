@@ -1929,6 +1929,18 @@ String buildOfficialTelegramHtml({
       RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(requestedDividerColor)
       ? requestedDividerColor
       : '#b49a55';
+  String customRowsMarkup(Object? value) {
+    final rows = value is List ? value.take(12) : const [];
+    return rows.map((item) {
+      final row = item is Map ? item : const {};
+      final right = _escapeHtml(_value(row['right'], fallback: ''));
+      final left = _escapeHtml(_value(row['left'], fallback: ''));
+      if (right.isEmpty && left.isEmpty) return '';
+      return '<div class="custom-document-row"><span>$right</span><span dir="ltr">$left</span></div>';
+    }).join();
+  }
+  final customHeaderRows = customRowsMarkup(platformDocumentSettings['pageHeaderRows']);
+  final customFooterRows = customRowsMarkup(platformDocumentSettings['pageFooterRows']);
   final letterhead = telegram['letterhead'] is Map
       ? Map<String, dynamic>.from(telegram['letterhead'] as Map)
       : <String, dynamic>{};
@@ -2205,6 +2217,10 @@ $fontFaces
   justify-content: flex-end;
   text-align: left;
 }
+.custom-document-row { display: flex; justify-content: space-between; gap: 16px; font-size: 10pt; line-height: 1.7; font-weight: 700; }
+.custom-document-row span { flex: 1; }
+.custom-document-row span:first-child { text-align: right; }
+.custom-document-row span:last-child { text-align: left; }
 @page {
   size: A4 portrait;
   /* The only 10mm inset is inside the A4 sheet, not in the page box. */
@@ -2254,7 +2270,7 @@ $watermark
 <p class="header-date-row"><strong>الوقت والتاريخ:</strong> <span class="header-date-value" dir="ltr">${_escapeHtml(headerCreatedAt)}</span></p>
 <p><strong>درجة السرية:</strong> ${_escapeHtml(classification)}</p>
 <p><strong>درجة الأسبقية:</strong> ${_escapeHtml(priority)}</p>
-</div></header>
+</div>$customHeaderRows</header>
 <section class="classification">
 <span><strong>نوع الوثيقة:</strong> <span class="classification-value">${_escapeHtml(documentType)}</span></span>
 <span><strong>التصنيف:</strong> <span class="classification-value">${_escapeHtml(category)}</span></span>
@@ -2277,6 +2293,7 @@ $watermark
 <p class="footer-location">$_documentFooterLocationIcon<span class="footer-text">الموقع: ${_escapeHtml(location)}</span></p>
 <p class="footer-date">$_documentFooterCalendarIcon<span class="footer-text"><span class="footer-date-label">تاريخ ووقت إخراج النسخة:</span> <span class="footer-output-time">${_escapeHtml(documentOutputAt)}</span></span></p>
 </footer>
+$customFooterRows
 $importNotesMarkup
 </article></body></html>''';
 }
