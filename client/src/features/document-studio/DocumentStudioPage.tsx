@@ -1190,8 +1190,6 @@ export default function DocumentStudioPage() {
                   }
                 />
                 <DocumentLetterhead
-                  organizationName={organizationName}
-                  unitName={settings?.unitName ?? ""}
                   chiefRank={settings?.unitChiefRank ?? ""}
                   chiefName={settings?.unitChiefName ?? ""}
                   logoUrl={logoUrl}
@@ -1571,8 +1569,6 @@ export default function DocumentStudioPage() {
                     }
                   />
                   <DocumentLetterhead
-                    organizationName={organizationName}
-                    unitName={settings?.unitName ?? ""}
                     chiefRank={settings?.unitChiefRank ?? ""}
                     chiefName={settings?.unitChiefName ?? ""}
                     logoUrl={logoUrl}
