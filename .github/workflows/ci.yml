@@ -44,8 +44,10 @@ jobs:
             echo "Retired Supabase/PostgreSQL runtime dependency detected"
             exit 1
           fi
-      - name: Check document studio formatting
+      - name: Diagnose shared document codec formatting
         run: |
+          pnpm exec prettier --write shared/documentStudio.test.ts
+          git diff -- shared/documentStudio.test.ts
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       - name: Check formatting
