@@ -416,61 +416,54 @@ export default function DocumentLibraryPage() {
           ) : null}
         </Card>
       ) : (
-        <>
-          <p className="text-xs text-muted-foreground" role="status">
-            يعرض {filtered.length.toLocaleString("ar")} من أصل{" "}
-            {documents.length.toLocaleString("ar")} وثيقة
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {filtered.map(document => {
-              const file = document.file;
-              if (!file) return null;
-              return (
-                <Card
-                  key={document.id}
-                  className="group flex cursor-pointer flex-col gap-3 p-4 transition hover:border-primary/40 hover:shadow-sm"
-                  onClick={() => setSelectedId(document.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
-                      <FileGlyph
-                        fileName={file.fileName}
-                        mimeType={file.mimeType}
-                      />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {document.title}
-                      </p>
-                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                        {file.fileName}
-                      </p>
-                    </div>
-                    <Badge variant="secondary" className="shrink-0 text-[10px]">
-                      {statusLabel(document.status)}
-                    </Badge>
-                  </div>
-                  {document.subject ? (
-                    <p className="line-clamp-2 text-xs text-muted-foreground">
-                      {document.subject}
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map(document => {
+            const file = document.file;
+            if (!file) return null;
+            return (
+              <Card
+                key={document.id}
+                className="group flex cursor-pointer flex-col gap-3 p-4 transition hover:border-primary/40 hover:shadow-sm"
+                onClick={() => setSelectedId(document.id)}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                    <FileGlyph
+                      fileName={file.fileName}
+                      mimeType={file.mimeType}
+                    />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">
+                      {document.title}
                     </p>
-                  ) : null}
-                  <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
-                    <span>{categoryLabel(document.category)}</span>
-                    <span>·</span>
-                    <span>{file.pageCount.toLocaleString("ar")} صفحة</span>
-                    <span>·</span>
-                    <span>{formatBytes(file.sizeBytes)}</span>
-                    <span className="ms-auto">
-                      {formatDate(document.documentDate)}
-                    </span>
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      {file.fileName}
+                    </p>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
-        </>
-      )}
+                  <Badge variant="secondary" className="shrink-0 text-[10px]">
+                    {statusLabel(document.status)}
+                  </Badge>
+                </div>
+                {document.subject ? (
+                  <p className="line-clamp-2 text-xs text-muted-foreground">
+                    {document.subject}
+                  </p>
+                ) : null}
+                <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                  <span>{categoryLabel(document.category)}</span>
+                  <span>·</span>
+                  <span>{file.pageCount.toLocaleString("ar")} صفحة</span>
+                  <span>·</span>
+                  <span>{formatBytes(file.sizeBytes)}</span>
+                  <span className="ms-auto">
+                    {formatDate(document.documentDate)}
+                  </span>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
 
       <Button
         type="button"
