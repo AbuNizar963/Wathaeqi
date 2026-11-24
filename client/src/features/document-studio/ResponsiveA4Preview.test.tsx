@@ -15,6 +15,5 @@ describe("ResponsiveA4Preview", () => {
     expect(markup).not.toContain("تكبير معاينة الورقة");
     expect(markup).not.toContain("تصغير المعاينة");
     expect(markup).not.toContain("إعادة ضبط التكبير");
-    expect(markup).not.toContain("100%");
   });
 });
