@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -671,42 +670,16 @@ class _DashboardPageState extends State<DashboardPage>
   bool loading = true;
   String? error;
   Map<String, dynamic> stats = {};
-  List<dynamic> telegrams = [];
-  String? activeOrganizationId;
   String? activeOrganizationName;
   String? activeOrganizationRole;
   bool activeOrganizationIsActive = false;
   bool activeOrganizationIsOwner = false;
-  String? _organizationLogoUrl;
-  String? _loadedOrganizationLogoIdentity;
-  String? _logoResolvedOrganizationId;
-  DateTime? _logoResolvedAt;
-  bool _logoLookupResolved = false;
-  bool _lastLogoLookupSucceeded = false;
-  DateTime? _lastLogoLoadAttemptAt;
-  DateTime? _organizationLogoBytesLoadedAt;
-  Uint8List? _organizationLogoBytes;
-  String numberSystem = 'latin';
   int unreadNotificationCount = 0;
-  int section = 0;
-  int telegramPage = 1;
-  bool hasNextTelegramPage = false;
-  String searchQuery = '';
-  DateTime? _filterFrom;
-  DateTime? _filterTo;
-  String statusFilter = 'all';
-  String priorityFilter = 'all';
-  String classificationFilter = 'all';
-  String categoryFilter = 'all';
-  final searchController = TextEditingController();
   final push = PushNotificationService();
   late final TelegramOutbox _outbox;
   late final DocumentStudioOutbox _documentStudioOutbox;
   bool _outboxSyncInProgress = false;
-  Timer? _searchDebounce;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
-  bool _refreshInProgress = false;
-  bool _refreshQueued = false;
   bool _updateCheckInProgress = false;
   bool _forceUpdateCheckQueued = false;
   DateTime? _lastUpdateCheckAt;
@@ -770,97 +743,9 @@ class _DashboardPageState extends State<DashboardPage>
     if (event.procedure == 'organizations.selectWorkplace') {
       unawaited(_refreshOrganizationContext());
     }
-    if (event.procedure.startsWith('notifications.')) {
+    if (event.procedure.startsWith('workspace.notifications.')) {
       unawaited(_loadUnreadNotificationCount());
     }
-  }
-
-  Future<void> _loadOrganizationLogo(
-    String? organizationIdValue,
-    String? source,
-  ) async {
-    final organizationId = organizationIdValue?.trim() ?? '';
-    final value = source?.trim() ?? '';
-
-    if (organizationId.isEmpty) {
-      _loadedOrganizationLogoIdentity = null;
-      _lastLogoLoadAttemptAt = null;
-      _organizationLogoBytesLoadedAt = null;
-      if (mounted && _organizationLogoBytes != null) {
-        setState(() => _organizationLogoBytes = null);
-      }
-      return;
-    }
-
-    // A missing settings URL must not suppress the authenticated,
-    // organization-scoped binary endpoint. The API client intentionally
-    // supports an empty source and resolves the logo by organization ID.
-    final sourceIdentity = resolveOrganizationLogoSourceIdentity(
-      value,
-      widget.api.organizationLogoCacheIdentity,
-    );
-    if (sourceIdentity == null) {
-      _loadedOrganizationLogoIdentity = null;
-      _lastLogoLoadAttemptAt = null;
-      _organizationLogoBytesLoadedAt = null;
-      if (mounted && _organizationLogoBytes != null) {
-        setState(() => _organizationLogoBytes = null);
-      }
-      return;
-    }
-
-    final identity = '$organizationId\n$sourceIdentity';
-    final now = DateTime.now();
-    final isSameIdentity = _loadedOrganizationLogoIdentity == identity;
-    final bytesLoadedAt = _organizationLogoBytesLoadedAt;
-
-    // Revalidate periodically: an organization can replace its logo at the
-    // same storage path, so a stable URL alone must not cache it forever.
-    if (isSameIdentity &&
-        _organizationLogoBytes != null &&
-        bytesLoadedAt != null &&
-        now.difference(bytesLoadedAt) < const Duration(minutes: 10)) {
-      return;
-    }
-
-    final lastAttempt = _lastLogoLoadAttemptAt;
-    if (isSameIdentity &&
-        lastAttempt != null &&
-        now.difference(lastAttempt) < const Duration(seconds: 30)) {
-      return;
-    }
-
-    _loadedOrganizationLogoIdentity = identity;
-    _lastLogoLoadAttemptAt = now;
-    if (!isSameIdentity && mounted && _organizationLogoBytes != null) {
-      setState(() {
-        _organizationLogoBytes = null;
-        _organizationLogoBytesLoadedAt = null;
-      });
-    }
-
-    Uint8List? imageBytes;
-    try {
-      imageBytes = await widget.api.fetchOrganizationLogo(
-        organizationId: organizationId,
-        source: value,
-      );
-    } catch (_) {
-      imageBytes = null;
-    }
-
-    if (!mounted || _loadedOrganizationLogoIdentity != identity) return;
-    setState(() {
-      if (imageBytes != null) {
-        _organizationLogoBytes = imageBytes;
-        _organizationLogoBytesLoadedAt = DateTime.now();
-      } else if (!isSameIdentity) {
-        _organizationLogoBytes = null;
-        _organizationLogoBytesLoadedAt = null;
-      }
-      // If revalidation fails for the same logo, retain the last known-good
-      // bytes and retry later rather than replacing a valid logo with a blank.
-    });
   }
 
   Future<void> _checkForAppUpdate({bool force = false}) async {
@@ -903,9 +788,6 @@ class _DashboardPageState extends State<DashboardPage>
     if (state == AppLifecycleState.resumed) {
       // Revalidate the organization logo as soon as connectivity may have
       // changed; the persisted cache remains available if this request fails.
-      _lastLogoLoadAttemptAt = null;
-      _logoLookupResolved = false;
-      _lastLogoLookupSucceeded = false;
       unawaited(_refreshOrganizationContext());
       unawaited(_syncOutbox(showProgress: false));
       _loadUnreadNotificationCount();
@@ -1008,9 +890,6 @@ class _DashboardPageState extends State<DashboardPage>
         break;
       case 'system-theme':
         widget.onUseSystemTheme?.call();
-        break;
-      case 'refresh':
-        refresh();
         break;
       case 'department':
         if (_canManageOrganizationSettings) {
@@ -1304,12 +1183,10 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _searchDebounce?.cancel();
     final mutationSubscription = _mutationSubscription;
     if (mutationSubscription != null) {
       unawaited(mutationSubscription.cancel());
     }
-    searchController.dispose();
     push.dispose();
     super.dispose();
   }
@@ -1321,7 +1198,6 @@ class _DashboardPageState extends State<DashboardPage>
       final organizationId = value['organizationId']?.toString();
       if (!mounted) return;
       setState(() {
-        activeOrganizationId = organizationId;
         activeOrganizationName = (value['organizationName'] ?? value['name'])
             ?.toString();
         activeOrganizationRole = value['role']?.toString();
@@ -1330,245 +1206,6 @@ class _DashboardPageState extends State<DashboardPage>
       });
     } catch (_) {
       // Keep the last verified organization context when offline.
-    }
-  }
-
-  Future<void> refresh({bool showLoading = true}) async {
-    if (!mounted) return;
-    if (_refreshInProgress) {
-      _refreshQueued = true;
-      return;
-    }
-    _refreshInProgress = true;
-    if (showLoading) setState(() => loading = true);
-    try {
-      final canUseCachedDashboard =
-          showLoading &&
-          telegramPage == 1 &&
-          section == 0 &&
-          searchQuery.trim().isEmpty &&
-          statusFilter == 'all' &&
-          priorityFilter == 'all' &&
-          classificationFilter == 'all' &&
-          categoryFilter == 'all' &&
-          _filterFrom == null &&
-          _filterTo == null;
-      if (canUseCachedDashboard) {
-        final cached = await widget.api.readCachedDashboard();
-        final cachedStats = cached?['stats'];
-        final cachedTelegrams = cached?['telegrams'];
-        if (mounted && cached != null && cachedTelegrams is List) {
-          setState(() {
-            if (cachedStats is Map) {
-              stats = Map<String, dynamic>.from(cachedStats);
-            }
-            telegrams = List<dynamic>.from(cachedTelegrams);
-            loading = false;
-            error = null;
-          });
-        }
-      }
-      final results = await Future.wait([
-        widget.api.call('dashboard.stats'),
-        widget.api.call('organizations.context').catchError((_) => null),
-        widget.api.call('settings.get').catchError((_) => null),
-        widget.api.call(
-          'telegrams.list',
-          input: {
-            'page': telegramPage,
-            // Fetch one look-ahead row so the Next button is enabled only
-            // when another page actually exists.
-            'pageSize': 21,
-            if (section == 1) 'direction': 'outgoing',
-            if (section == 2) 'direction': 'incoming',
-            if (_filterFrom != null)
-              'from': _filterFrom!.toUtc().toIso8601String(),
-            if (_filterTo != null) 'to': _filterTo!.toUtc().toIso8601String(),
-            if (searchQuery.trim().isNotEmpty) 'search': searchQuery.trim(),
-            if (statusFilter != 'all') 'status': statusFilter,
-            if (priorityFilter != 'all') 'priority': priorityFilter,
-            if (classificationFilter != 'all')
-              'classification': classificationFilter,
-            if (categoryFilter != 'all') 'category': categoryFilter,
-          },
-        ),
-      ]);
-      final organizationContext = results[1];
-      var settings = results[2];
-      final list = results[3];
-
-      // Organization logos must come only from the verified active
-      // organization. Never fall back to a legacy user-level logo.
-      final contextOrganizationId = organizationContext is Map
-          ? organizationContext['organizationId']?.toString().trim()
-          : null;
-      final settingsOrganizationId = settings is Map
-          ? settings['organizationId']?.toString().trim()
-          : null;
-      final accountOrganization = _account['organization'];
-      final accountOrganizationId =
-          _account['organizationId'] ??
-          _account['organization_id'] ??
-          (accountOrganization is Map ? accountOrganization['id'] : null);
-      final organizationId =
-          (contextOrganizationId != null && contextOrganizationId.isNotEmpty)
-          ? contextOrganizationId
-          : settingsOrganizationId != null && settingsOrganizationId.isNotEmpty
-          ? settingsOrganizationId
-          : accountOrganizationId?.toString().trim();
-
-      final mergedSettings = settings is Map
-          ? Map<String, dynamic>.from(settings)
-          : <String, dynamic>{};
-      final savedOrganizationLogo = mergedSettings['logoUrl']
-          ?.toString()
-          .trim();
-      // Use settings.get as a fallback only when its organization ID
-      // matches the active organization. Missing metadata cannot prove that
-      // a legacy logo belongs to this unit; the scoped endpoint may refresh it.
-      mergedSettings['logoUrl'] =
-          organizationId != null &&
-              organizationId.isNotEmpty &&
-              settingsOrganizationId == organizationId &&
-              savedOrganizationLogo != null &&
-              savedOrganizationLogo.isNotEmpty
-          ? savedOrganizationLogo
-          : null;
-      final now = DateTime.now();
-      final logoResolutionIsFresh =
-          organizationId != null &&
-          organizationId.isNotEmpty &&
-          _logoLookupResolved &&
-          _logoResolvedOrganizationId == organizationId &&
-          _logoResolvedAt != null &&
-          now.difference(_logoResolvedAt!) <
-              (_lastLogoLookupSucceeded
-                  ? const Duration(minutes: 10)
-                  : const Duration(minutes: 2));
-      var logoLookupSucceeded = false;
-      if (logoResolutionIsFresh) {
-        mergedSettings['logoUrl'] = _organizationLogoUrl;
-      } else if (organizationId != null && organizationId.isNotEmpty) {
-        try {
-          final organizationSettings = await widget.api.call(
-            'organizations.logo',
-            input: {'organizationId': organizationId},
-          );
-          if (organizationSettings is Map &&
-              organizationSettings['organizationId']?.toString() ==
-                  organizationId) {
-            final scopedLogo = organizationSettings['logoUrl']
-                ?.toString()
-                .trim();
-            if (scopedLogo == null || scopedLogo.isEmpty) {
-              mergedSettings['logoUrl'] = null;
-            } else {
-              mergedSettings['logoUrl'] = scopedLogo;
-            }
-            logoLookupSucceeded = true;
-          }
-        } catch (_) {
-          // Preserve the verified account-scoped fallback if logo lookup is unavailable.
-        }
-      } else {
-        mergedSettings['logoUrl'] = null;
-      }
-      if (organizationId != null && organizationId.isNotEmpty) {
-        _logoLookupResolved = true;
-        _logoResolvedOrganizationId = organizationId;
-        _logoResolvedAt = now;
-        _lastLogoLookupSucceeded =
-            logoLookupSucceeded || mergedSettings['logoUrl'] != null;
-      } else {
-        _logoLookupResolved = false;
-        _logoResolvedOrganizationId = null;
-        _logoResolvedAt = null;
-        _lastLogoLookupSucceeded = false;
-      }
-      settings = mergedSettings;
-
-      final logoUrl = settings['logoUrl']?.toString().trim();
-      final rows = list is Map && list['items'] is List
-          ? list['items'] as List
-          : list is List
-          ? list
-          : <dynamic>[];
-      final hasMoreRows = rows.length > 20;
-      final visibleRows = rows.take(20).toList(growable: false);
-      if (mounted) {
-        setState(() {
-          stats = Map<String, dynamic>.from(results[0] as Map);
-          activeOrganizationId = organizationId;
-          activeOrganizationName = organizationContext is Map
-              ? (organizationContext['organizationName'] ??
-                        organizationContext['name'])
-                    ?.toString()
-              : null;
-          activeOrganizationRole = organizationContext is Map
-              ? organizationContext['role']?.toString()
-              : null;
-          activeOrganizationIsActive =
-              organizationContext is Map &&
-              organizationContext['isActive'] == true;
-          activeOrganizationIsOwner =
-              organizationContext is Map &&
-              organizationContext['isOwner'] == true;
-          if (settings is Map) {
-            numberSystem = settings['numberSystem'] == 'arabic'
-                ? 'arabic'
-                : 'latin';
-            _organizationLogoUrl = logoUrl == null || logoUrl.isEmpty
-                ? null
-                : logoUrl;
-          }
-          telegrams = visibleRows;
-          hasNextTelegramPage = hasMoreRows;
-          error = null;
-        });
-      }
-      unawaited(_loadOrganizationLogo(organizationId, _organizationLogoUrl));
-      if (telegramPage == 1 &&
-          section == 0 &&
-          searchQuery.trim().isEmpty &&
-          statusFilter == 'all' &&
-          priorityFilter == 'all' &&
-          classificationFilter == 'all' &&
-          categoryFilter == 'all' &&
-          _filterFrom == null &&
-          _filterTo == null) {
-        await widget.api.cacheDashboard(
-          stats: Map<String, dynamic>.from(results[0] as Map),
-          telegrams: visibleRows,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        final cached = await widget.api.readCachedDashboard();
-        if (cached != null) {
-          final cachedStats = cached['stats'];
-          final cachedTelegrams = cached['telegrams'];
-          setState(() {
-            if (cachedStats is Map) {
-              stats = Map<String, dynamic>.from(cachedStats);
-            }
-            if (cachedTelegrams is List) telegrams = cachedTelegrams;
-            error = 'وضع عدم الاتصال — تُعرض آخر نسخة محفوظة محليًا';
-          });
-        } else {
-          setState(() {
-            error = _dashboardRefreshError(e);
-            // No cached dashboard is available, so report the connection
-            // failure instead of claiming that cached data is being shown.
-          });
-        }
-      }
-    } finally {
-      _refreshInProgress = false;
-      if (mounted && showLoading) setState(() => loading = false);
-      if (mounted && _refreshQueued) {
-        _refreshQueued = false;
-        refresh(showLoading: false);
-      }
     }
   }
 
