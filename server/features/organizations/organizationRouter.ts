@@ -168,10 +168,7 @@ export const organizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (
-        !scope.canAdministrate ||
-        scope.organizationId !== input.id
-      ) {
+      if (!scope.canAdministrate || scope.organizationId !== input.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "رفع شعار الجهة متاح لمدير الجهة فقط.",
@@ -206,9 +203,7 @@ export const organizationRouter = router({
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
       const organizationId = (input.id ?? input.organizationId) as string;
-      if (
-        !(scope.organizationIds ?? []).includes(organizationId)
-      ) {
+      if (!(scope.organizationIds ?? []).includes(organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
       const [dataUrl, logoUrl] = await Promise.all([
@@ -222,9 +217,7 @@ export const organizationRouter = router({
     .input(z.object({ organizationId: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (
-        !(scope.organizationIds ?? []).includes(input.organizationId)
-      ) {
+      if (!(scope.organizationIds ?? []).includes(input.organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
       return {
