@@ -13,9 +13,10 @@ const ORGANIZATION_ACTOR_ROLES = [
   "dispatcher",
 ] as const;
 
-/** Roles allowed to administrate organization settings and documents. */
+/** Stable code of the only organization enabled in this installation. */
 const FIXED_ORGANIZATION_CODE = "ALSHAHBAA";
 
+/** Roles allowed to administrate organization settings and documents. */
 const ORGANIZATION_ADMIN_ROLES = [
   "system_admin",
   "organization_admin",
