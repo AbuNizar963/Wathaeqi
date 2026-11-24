@@ -9,6 +9,7 @@ class _ScreenTestApi extends PoliceApi {
   _ScreenTestApi() : super(baseUrl: 'https://example.test');
 
   final calls = <String>[];
+  final inputs = <String, Map<String, dynamic>?>{};
   Map<String, dynamic>? lastInput;
 
   @override
@@ -19,6 +20,7 @@ class _ScreenTestApi extends PoliceApi {
     bool allowOfflineCache = true,
   }) async {
     calls.add(procedure);
+    inputs[procedure] = input == null ? null : Map<String, dynamic>.from(input);
     if (procedure == 'profile.changePassword') {
       lastInput = input;
     }
@@ -39,6 +41,33 @@ class _ScreenTestApi extends PoliceApi {
         ];
       case 'organizations.context':
         return {'organizationId': 'org-1', 'isOwner': false};
+      case 'organizations.settings.get':
+        return {
+          'organizationId': 'org-1',
+          'organizationName': 'قسم شرطة الشهباء',
+          'departmentName': 'قسم شرطة الشهباء',
+          'unitName': 'وحدة العمليات',
+          'unitChiefRank': 'العقيد',
+          'unitChiefName': 'رئيس الوحدة',
+          'serialPrefix': 'POL',
+          'incomingSerialPrefix': 'POL',
+          'serialStart': 1,
+          'incomingSerialStart': 1,
+          'timezone': 'Asia/Riyadh',
+          'dateFormat': 'yyyy/MM/dd HH:mm:ss',
+          'timeFormat': '24',
+          'numberSystem': 'latin',
+          'logoUrl': null,
+        };
+      case 'organizations.settings.update':
+        return {
+          ...?input,
+          'organizationId': 'org-1',
+          'organizationName': 'قسم شرطة الشهباء',
+          'settingsExists': true,
+        };
+      case 'organizations.logo':
+        return {'organizationId': 'org-1', 'logoUrl': null};
       default:
         throw StateError('Unexpected test procedure: $procedure');
     }
@@ -148,6 +177,31 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('إنهاء الجلسة'), findsOneWidget);
+  });
+
+  testWidgets('department settings use the fixed Appwrite organization API', (
+    tester,
+  ) async {
+    final api = _ScreenTestApi();
+    await tester.pumpWidget(_host(DepartmentSettingsPage(api: api)));
+    await tester.pumpAndSettle();
+
+    expect(api.calls, contains('organizations.settings.get'));
+    expect(api.calls, isNot(contains('settings.get')));
+    expect(api.inputs['organizations.settings.get'], {
+      'organizationId': 'org-1',
+    });
+
+    await tester.ensureVisible(find.text('حفظ إعدادات الجهة'));
+    await tester.tap(find.text('حفظ إعدادات الجهة'));
+    await tester.pumpAndSettle();
+
+    expect(api.calls, contains('organizations.settings.update'));
+    expect(api.calls, isNot(contains('settings.update')));
+    expect(
+      api.inputs['organizations.settings.update']?['organizationId'],
+      'org-1',
+    );
   });
 
   testWidgets('verification screen rejects an empty token locally', (
