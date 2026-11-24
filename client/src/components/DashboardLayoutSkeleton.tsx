@@ -12,9 +12,7 @@ export function DashboardLayoutSkeleton() {
       <div className="flex w-full max-w-sm flex-col items-center gap-6 text-center">
         <BrandMark size="lg" />
         <div className="space-y-2">
-          <h1 className="text-xl font-bold tracking-tight">
-            وثائقي — نظام الوثائق
-          </h1>
+          <h1 className="text-xl font-bold tracking-tight">وثائقي</h1>
           <p className="text-sm text-muted-foreground">
             جارٍ التحقق من جلسة الدخول وتجهيز لوحة التحكم…
           </p>

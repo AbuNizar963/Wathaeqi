@@ -71,6 +71,21 @@ const menuItems = [
   },
 ];
 
+const LAST_NAVIGATION_KEY = "wathaeqi:last-navigation";
+
+function normalizeRoute(route: string) {
+  const pathname = route.split(/[?#]/, 1)[0].replace(/\/+$/, "");
+  return pathname || "/";
+}
+
+function isRouteActive(currentRoute: string, targetRoute: string) {
+  const current = normalizeRoute(currentRoute);
+  const target = normalizeRoute(targetRoute);
+  return target === "/"
+    ? current === "/"
+    : current === target || current.startsWith(`${target}/`);
+}
+
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
@@ -142,13 +157,14 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4">
+      <div className="auth-shell flex min-h-dvh items-center justify-center px-4 py-8">
         <form
-          className="surface-elevated flex w-full max-w-md flex-col gap-6 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
+          className="auth-card surface-elevated flex w-full max-w-md flex-col gap-6 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
           onSubmit={submitLogin}
         >
           <div className="flex flex-col items-center gap-4">
-            <BrandMark size="lg" />
+            <BrandMark size="lg" showLabel />
+            <span className="auth-eyebrow">مساحة عمل موثوقة</span>
             <h1 className="text-2xl font-semibold tracking-tight text-center">
               تسجيل الدخول إلى النظام
             </h1>
@@ -429,7 +445,20 @@ function DashboardLayoutContent({
   );
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = menuItems.find(item =>
+    isRouteActive(location, item.path)
+  );
+
+  const navigateTo = (path: string) => {
+    if (isRouteActive(location, path)) {
+      if (isMobile) setOpenMobile(false);
+      return;
+    }
+
+    window.sessionStorage.setItem(LAST_NAVIGATION_KEY, path);
+    setLocation(path);
+    if (isMobile) setOpenMobile(false);
+  };
 
   useEffect(() => {
     if (isCollapsed) {
@@ -527,17 +556,15 @@ function DashboardLayoutContent({
                     (!item.ownerOnly || isPlatformOwnerAccount)
                 )
                 .map(item => {
-                  const isActive = location === item.path;
+                  const isActive = isRouteActive(location, item.path);
                   return (
                     <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton
                         isActive={isActive}
-                        onClick={() => {
-                          setLocation(item.path);
-                          if (isMobile) setOpenMobile(false);
-                        }}
+                        onClick={() => navigateTo(item.path)}
+                        aria-current={isActive ? "page" : undefined}
                         tooltip={item.label}
-                        className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
+                        className="h-11 rounded-xl px-3 font-medium transition-colors hover:translate-x-[-2px] data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
                       >
                         <item.icon
                           className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
@@ -563,7 +590,7 @@ function DashboardLayoutContent({
         {!isMobile ? (
           <div
             dir="rtl"
-            className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-background/90 px-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur supports-[backdrop-filter]:backdrop-blur"
+            className="app-header flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-background/90 px-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur supports-[backdrop-filter]:backdrop-blur"
           >
             <div className="flex items-center gap-3">
               <SidebarTrigger
@@ -592,7 +619,7 @@ function DashboardLayoutContent({
           </div>
         ) : null}
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="app-header flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <SidebarTrigger
                 className="h-10 w-10 rounded-xl border bg-background shadow-sm"
