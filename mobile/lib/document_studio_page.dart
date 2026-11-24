@@ -971,7 +971,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Future<void> _restoreDocumentVersion(Map<String, dynamic> version) async {
     final document = _selectedDocument;
     final versionNumber = (version['version'] as num?)?.toInt();
-    if (document == null || versionNumber == null || _restoringDocumentVersion) {
+    if (document == null ||
+        versionNumber == null ||
+        _restoringDocumentVersion) {
       return;
     }
     if (document.status != 'draft') {
@@ -1081,7 +1083,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                             null
                         ? 'تاريخ غير متاح'
                         : DateFormat('yyyy/MM/dd – HH:mm').format(
-                            DateTime.parse(version['savedAt'].toString()).toLocal(),
+                            DateTime.parse(version['savedAt'].toString())
+                                .toLocal(),
                           ),
                   ),
                   trailing: document.status == 'draft'
