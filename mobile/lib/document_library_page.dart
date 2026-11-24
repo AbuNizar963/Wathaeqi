@@ -97,14 +97,13 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     }
   }
 
-  List<OfficialDocument> get _filteredDocuments =>
-      filterAndSortDocuments(
-        _documents,
-        search: _searchController.text,
-        category: _category,
-        status: _statusFilter,
-        sort: _sortOrder,
-      );
+  List<OfficialDocument> get _filteredDocuments => filterAndSortDocuments(
+    _documents,
+    search: _searchController.text,
+    category: _category,
+    status: _statusFilter,
+    sort: _sortOrder,
+  );
 
   Future<void> _uploadFile() async {
     if (_uploading) return;
@@ -712,7 +711,10 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                       DropdownMenuItem(value: 'all', child: Text('كل الحالات')),
                       DropdownMenuItem(value: 'draft', child: Text('مسودات')),
                       DropdownMenuItem(value: 'issued', child: Text('صادرة')),
-                      DropdownMenuItem(value: 'archived', child: Text('مؤرشفة')),
+                      DropdownMenuItem(
+                        value: 'archived',
+                        child: Text('مؤرشفة'),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) setState(() => _statusFilter = value);
@@ -730,9 +732,18 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                       isDense: true,
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'updated-desc', child: Text('الأحدث تحديثاً')),
-                      DropdownMenuItem(value: 'updated-asc', child: Text('الأقدم تحديثاً')),
-                      DropdownMenuItem(value: 'title-asc', child: Text('العنوان أبجدياً')),
+                      DropdownMenuItem(
+                        value: 'updated-desc',
+                        child: Text('الأحدث تحديثاً'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'updated-asc',
+                        child: Text('الأقدم تحديثاً'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'title-asc',
+                        child: Text('العنوان أبجدياً'),
+                      ),
                     ],
                     onChanged: (value) {
                       if (value != null) setState(() => _sortOrder = value);
