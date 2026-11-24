@@ -71,6 +71,21 @@ const menuItems = [
   },
 ];
 
+const LAST_NAVIGATION_KEY = "wathaeqi:last-navigation";
+
+function normalizeRoute(route: string) {
+  const pathname = route.split(/[?#]/, 1)[0].replace(/\/+$/, "");
+  return pathname || "/";
+}
+
+function isRouteActive(currentRoute: string, targetRoute: string) {
+  const current = normalizeRoute(currentRoute);
+  const target = normalizeRoute(targetRoute);
+  return target === "/"
+    ? current === "/"
+    : current === target || current.startsWith(`${target}/`);
+}
+
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
 const MIN_WIDTH = 200;
@@ -430,7 +445,20 @@ function DashboardLayoutContent({
   );
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const activeMenuItem = menuItems.find(item =>
+    isRouteActive(location, item.path)
+  );
+
+  const navigateTo = (path: string) => {
+    if (isRouteActive(location, path)) {
+      if (isMobile) setOpenMobile(false);
+      return;
+    }
+
+    window.sessionStorage.setItem(LAST_NAVIGATION_KEY, path);
+    setLocation(path);
+    if (isMobile) setOpenMobile(false);
+  };
 
   useEffect(() => {
     if (isCollapsed) {
@@ -528,17 +556,15 @@ function DashboardLayoutContent({
                     (!item.ownerOnly || isPlatformOwnerAccount)
                 )
                 .map(item => {
-                  const isActive = location === item.path;
+                  const isActive = isRouteActive(location, item.path);
                   return (
                     <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton
                         isActive={isActive}
-                        onClick={() => {
-                          setLocation(item.path);
-                          if (isMobile) setOpenMobile(false);
-                        }}
+                        onClick={() => navigateTo(item.path)}
+                        aria-current={isActive ? "page" : undefined}
                         tooltip={item.label}
-                        className="h-11 rounded-xl px-3 font-medium transition-colors data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
+                        className="h-11 rounded-xl px-3 font-medium transition-colors hover:translate-x-[-2px] data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
                       >
                         <item.icon
                           className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
