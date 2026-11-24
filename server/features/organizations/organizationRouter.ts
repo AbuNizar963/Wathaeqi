@@ -141,6 +141,7 @@ export const organizationRouter = router({
         message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
     }),
+
   update: authenticatedProcedure
     .input(organizationInput.extend({ id: z.string().min(1).max(36) }))
     .mutation(() => {
@@ -149,6 +150,7 @@ export const organizationRouter = router({
         message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
     }),
+
   setActive: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36), isActive: z.boolean() }))
     .mutation(() => {
@@ -157,6 +159,7 @@ export const organizationRouter = router({
         message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
     }),
+
   uploadLogo: authenticatedProcedure
     .input(
       z.object({
@@ -309,6 +312,7 @@ export const organizationRouter = router({
         message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
     }),
+
   purgeArchived: authenticatedProcedure
     .input(
       z.object({
@@ -388,6 +392,4 @@ export const organizationRouter = router({
   }),
 
   routingDirectory: authenticatedProcedure.query(() => []),
-
-
 });
