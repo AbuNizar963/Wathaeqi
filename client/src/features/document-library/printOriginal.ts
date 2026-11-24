@@ -220,7 +220,7 @@ export async function openOriginalPrintWindow(options: {
     const margin = Math.min(20, Math.max(0, options.marginMm ?? 0));
     printWindow.document.open();
     printWindow.document.write(
-      '<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>طباعة الوثيقة</title></head><body></body></html>'
+      '<!doctype html><html lang="ar"><head><meta charset="utf-8"><title>طباعة الوثيقة</title></head><body></body></html>'
     );
     printWindow.document.close();
     printWindow.document.title = `طباعة ${options.fileName}`;
@@ -240,7 +240,7 @@ export async function openOriginalPrintWindow(options: {
     printWindow.document.head.append(wordStyle);
     const hostElement = printWindow.document.createElement("div");
     hostElement.id = "docx-print-host";
-    hostElement.dir = "rtl";
+    hostElement.dir = "auto";
     printWindow.document.body.append(hostElement);
     const host = hostElement;
     await renderAsync(buffer, host, undefined, {
