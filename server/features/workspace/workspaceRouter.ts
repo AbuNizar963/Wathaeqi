@@ -283,7 +283,7 @@ const administrationRouter = router({
           code: String(data.code ?? ""),
           type: String(data.type ?? "department"),
           isActive: data.isActive !== false,
-          parentOrganizationId: parseOptionalText(data.parentOrganizationId),
+          parentOrganizationId: null,
         };
       })
       .filter(item => item.id === scope.organizationId);
