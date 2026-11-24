@@ -20,10 +20,10 @@ export function normalizeDocumentSearch(value: string): string {
   return value
     .normalize("NFKC")
     .toLocaleLowerCase()
-    .replace(/[\\u064B-\\u065F\\u0670\\u0640]/g, "")
-    .replace(/[\\u0622\\u0623\\u0625\\u0671]/g, "ا")
-    .replace(/\\u0649/g, "ي")
-    .replace(/\\u0629/g, "ه")
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[\u0622\u0623\u0625\u0671]/g, "ا")
+    .replace(/\u0649/g, "ي")
+    .replace(/\u0629/g, "ه")
     .trim();
 }
 
