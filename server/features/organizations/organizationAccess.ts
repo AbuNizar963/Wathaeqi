@@ -63,7 +63,8 @@ export async function resolveOrganizationScope(
   ) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "يجب أن يكون حسابك مرتبطاً بقسم شرطة الشهباء للوصول إلى الوثائق.",
+      message:
+        "يجب أن يكون حسابك مرتبطاً بقسم شرطة الشهباء للوصول إلى الوثائق.",
     });
   }
   const organizationId = fixedOrganization.id;
