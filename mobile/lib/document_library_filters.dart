@@ -5,8 +5,8 @@ import 'document_studio_models.dart';
 String normalizeDocumentSearch(String value) {
   return value
       .toLowerCase()
-      .replaceAll(RegExp(r'[\\u064B-\\u065F\\u0670\\u0640]'), '')
-      .replaceAll(RegExp(r'[\\u0622\\u0623\\u0625\\u0671]'), 'ا')
+      .replaceAll(RegExp(r'[\u064B-\u065F\u0670\u0640]'), '')
+      .replaceAll(RegExp(r'[\u0622\u0623\u0625\u0671]'), 'ا')
       .replaceAll('ى', 'ي')
       .replaceAll('ة', 'ه')
       .trim();
