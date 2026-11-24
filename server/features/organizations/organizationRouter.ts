@@ -170,7 +170,7 @@ export const organizationRouter = router({
       const scope = await resolveOrganizationScope(ctx.user);
       if (
         !scope.canAdministrate ||
-        (!scope.isOwner && scope.organizationId !== input.id)
+        scope.organizationId !== input.id
       ) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -242,10 +242,7 @@ export const organizationRouter = router({
     .input(z.object({ organizationId: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (
-        !scope.isOwner &&
-        !(scope.organizationIds ?? []).includes(input.organizationId)
-      ) {
+      if (!(scope.organizationIds ?? []).includes(input.organizationId)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا تملك صلاحية عرض حسابات هذه الجهة",
@@ -344,6 +341,13 @@ export const organizationRouter = router({
       .input(z.object({ organizationId: z.string().min(1).max(36) }))
       .query(async ({ ctx, input }) => {
         requireOwner(ctx);
+        const scope = await resolveOrganizationScope(ctx.user);
+        if (input.organizationId !== scope.organizationId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "إعدادات الجهة الثابتة فقط متاحة لهذا النظام.",
+          });
+        }
         const organization = await getOrganization(input.organizationId);
         if (!organization)
           throw new TRPCError({
@@ -361,6 +365,13 @@ export const organizationRouter = router({
       .input(legacySettingsInput)
       .mutation(async ({ ctx, input }) => {
         requireOwner(ctx);
+        const scope = await resolveOrganizationScope(ctx.user);
+        if (input.organizationId !== scope.organizationId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "إعدادات الجهة الثابتة فقط متاحة لهذا النظام.",
+          });
+        }
         const organization = await getOrganization(input.organizationId);
         if (!organization)
           throw new TRPCError({
