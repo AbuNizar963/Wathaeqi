@@ -95,13 +95,7 @@ export const userManagementRouter = router({
     .input(z.object({ id: z.coerce.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       assertOwner(ctx.user);
-      const user = await getScopedManagedUser(ctx.user, input.id);
-      if (!user)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
-      return user;
+      return getScopedManagedUser(ctx.user, input.id);
     }),
 
   create: authenticatedProcedure
@@ -141,11 +135,6 @@ export const userManagementRouter = router({
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
       const before = await getScopedManagedUser(ctx.user, input.id);
-      if (!before)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
       await assertFixedOrganization(ctx.user, input.organizationId);
       const updated = await updateManagedUser(input.id, input);
       await writeAuditLog({
@@ -248,11 +237,6 @@ export const userManagementRouter = router({
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
       const before = await getScopedManagedUser(ctx.user, input.id);
-      if (!before)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
       try {
         await deleteManagedUser(input.id, {
           id: ctx.user.id,
