@@ -81,6 +81,26 @@ export async function listOrganizations(
   return (result.rows as AppwriteRow[]).map(mapOrganizationRow);
 }
 
+export async function getOrganizationByCode(
+  code: string
+): Promise<OrganizationRecord | null> {
+  const result = await getAppwriteTablesDB().listRows({
+    databaseId: getAppwriteDatabaseId(),
+    tableId: ORGANIZATIONS_TABLE,
+    queries: [Query.equal("code", code), Query.limit(2)],
+    total: false,
+  });
+  const rows = result.rows as AppwriteRow[];
+  if (rows.length > 1) {
+    throw new Error("Appwrite returned duplicate organization codes");
+  }
+  const organization = rows[0] ? mapOrganizationRow(rows[0]) : null;
+  if (!organization || !organization.isActive || organization.deletedAt) {
+    return null;
+  }
+  return organization;
+}
+
 export async function getOrganization(
   organizationId: string
 ): Promise<OrganizationRecord | null> {
