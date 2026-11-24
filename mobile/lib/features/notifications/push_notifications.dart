@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 const MethodChannel _androidAppNotificationChannel = MethodChannel(
-  'com.hadir.police.police_telegrams/telegram_notifications',
+  'com.police_telegrams/telegram_notifications',
 );
 
 bool isLegacyTelegramDeliveryPush(Map<String, dynamic> data) {
