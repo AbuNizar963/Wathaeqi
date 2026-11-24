@@ -5,7 +5,13 @@ export type DocumentSortOrder = "updated-desc" | "updated-asc" | "title-asc";
 
 type FilterableDocument = Pick<
   OfficialDocument,
-  "id" | "title" | "category" | "subject" | "serialCode" | "status" | "updatedAt"
+  | "id"
+  | "title"
+  | "category"
+  | "subject"
+  | "serialCode"
+  | "status"
+  | "updatedAt"
 > & {
   file: Pick<NonNullable<OfficialDocument["file"]>, "fileName"> | null;
 };
