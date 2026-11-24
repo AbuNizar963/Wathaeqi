@@ -359,11 +359,20 @@ void main() {
     await tester.tap(find.text('إلغاء'));
     await tester.pumpAndSettle();
     expect(find.text('الوثائق'), findsOneWidget);
-    expect(find.text('القوالب'), findsNothing);
+    expect(find.text('القوالب'), findsOneWidget);
     expect(find.text('الأرشيف'), findsOneWidget);
     expect(api.calls.containsKey('documentStudio.listDocuments'), isTrue);
     expect(api.calls.containsKey('documentStudio.listTemplates'), isTrue);
     expect(api.calls['documentStudio.getLetterheadSettings'], isEmpty);
+
+    await tester.tap(find.text('القوالب'));
+    await tester.pumpAndSettle();
+    expect(find.text('مكتبة النماذج'), findsOneWidget);
+    expect(find.text('نموذج جديد'), findsOneWidget);
+
+    await tester.tap(find.text('الوثائق'));
+    await tester.pumpAndSettle();
+    expect(find.text('إنشاء وثيقة'), findsOneWidget);
 
     await tester.tap(find.text('الأرشيف'));
     await tester.pumpAndSettle();
