@@ -25,7 +25,6 @@ import './features/organizations/organization_logo_resolution.dart';
 import './features/users/native_user_management_page.dart';
 import './features/platform_settings/platform_document_settings_page.dart';
 
-
 import './features/notifications/push_notifications.dart';
 import 'public_pages.dart';
 import 'telegram_outbox.dart';
