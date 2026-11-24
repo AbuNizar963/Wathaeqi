@@ -62,7 +62,9 @@ async function renderWordPages(
     import("html-to-image"),
   ]);
   const host = window.document.createElement("div");
-  host.setAttribute("dir", "rtl");
+  // Let docx-preview apply paragraph/table bidi settings from the DOCX XML.
+  // A forced RTL ancestor changes mixed Arabic/LTR documents during capture.
+  host.setAttribute("dir", "auto");
   host.style.cssText = [
     "position:fixed",
     "left:-10000px",

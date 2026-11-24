@@ -19,8 +19,16 @@ function makeDocx(pageCount: number): Buffer {
     const pageBreak = index
       ? '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
       : "";
-    return `${pageBreak}<w:p><w:r><w:t>PAGE${index + 1}TOP</w:t></w:r></w:p>`;
+    const richContent =
+      index === 0
+        ? '<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="C00000"/><w:rFonts w:ascii="Arial"/></w:rPr><w:t>LTR FORMAT</w:t></w:r></w:p><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="28"/></w:rPr><w:t>نص عربي منسق</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:r><w:t>جدول</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Table</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="914400" cy="914400"/><wp:docPr id="1" name="fixture-image"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="fixture.png"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rId2" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm><a:prstGeom prst="rect"/></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'
+        : "";
+    return `${pageBreak}${richContent}<w:p><w:r><w:t>PAGE${index + 1}TOP</w:t></w:r></w:p>`;
   }).join("");
+  const fixturePng = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+    "base64"
+  );
   return Buffer.from(
     zipSync({
       "[Content_Types].xml": Buffer.from(
@@ -35,6 +43,7 @@ function makeDocx(pageCount: number): Buffer {
       "word/document.xml": Buffer.from(
         `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}<w:sectPr><w:footerReference w:type="default" r:id="rId1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="180" w:gutter="0"/></w:sectPr></w:body></w:document>`
       ),
+      "word/media/fixture.png": fixturePng,
       "word/footer1.xml": Buffer.from(
         `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:r><w:t>BOTTOMMARK</w:t></w:r></w:p></w:ftr>`
       ),
@@ -179,6 +188,21 @@ describe.skipIf(
             );
           }
         }
+
+        expect(
+          await popup.locator("section.docx").first().locator("img").count(),
+          `embedded images for ${pagesPerSheet}`
+        ).toBe(1);
+        expect(
+          await popup.locator("section.docx").first().locator("table").count(),
+          `tables for ${pagesPerSheet}`
+        ).toBe(1);
+        expect(
+          await popup.locator("section.docx").first().textContent()
+        ).toContain("LTR FORMAT");
+        expect(
+          await popup.locator("section.docx").first().textContent()
+        ).toContain("نص عربي منسق");
 
         const pdf = await popup.pdf({
           format: "A4",

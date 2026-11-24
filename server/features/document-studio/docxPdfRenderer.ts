@@ -406,7 +406,7 @@ export function createDocxToPdfConverter(
       page.setDefaultTimeout(timeoutMs);
       const nonce = randomBytes(18).toString("base64url");
       await page.setContent(
-        `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${makeCsp(nonce)}"></head><body><div id="docx-render-host" dir="rtl"></div></body></html>`,
+        `<!doctype html><html lang="ar"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${makeCsp(nonce)}"></head><body><div id="docx-render-host" dir="auto"></div></body></html>`,
         { timeout: timeoutMs, waitUntil: "domcontentloaded" }
       );
 

@@ -277,7 +277,7 @@ export default function FilePreview({
       ) : null}
       <div
         ref={wordHost}
-        dir="rtl"
+        dir="auto"
         className="document-word-preview mx-auto w-max min-w-full bg-white shadow"
         style={{
           transform: `translateX(-50%) scale(${wordLayout.scale})`,
