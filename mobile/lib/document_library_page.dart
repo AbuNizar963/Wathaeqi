@@ -12,6 +12,7 @@ import 'closable_dialog_title.dart';
 import 'document_studio_models.dart';
 import 'document_file_support.dart';
 import 'document_print_layout.dart';
+import 'document_library_filters.dart';
 
 /// Native mobile counterpart of the web document library.
 ///
@@ -42,6 +43,8 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
   final _searchController = TextEditingController();
   List<OfficialDocument> _documents = const [];
   String _category = '';
+  String _statusFilter = 'all';
+  String _sortOrder = 'updated-desc';
   String? _error;
   bool _loading = true;
   bool _uploading = false;
@@ -94,23 +97,14 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     }
   }
 
-  List<OfficialDocument> get _filteredDocuments {
-    final query = _searchController.text.trim().toLowerCase();
-    return _documents
-        .where((document) {
-          if (_category.isNotEmpty && document.category != _category) {
-            return false;
-          }
-          if (query.isEmpty) return true;
-          final fileName = document.file?.fileName ?? '';
-          return <String>[
-            document.title,
-            document.subject,
-            fileName,
-          ].any((value) => value.toLowerCase().contains(query));
-        })
-        .toList(growable: false);
-  }
+  List<OfficialDocument> get _filteredDocuments =>
+      filterAndSortDocuments(
+        _documents,
+        search: _searchController.text,
+        category: _category,
+        status: _statusFilter,
+        sort: _sortOrder,
+      );
 
   Future<void> _uploadFile() async {
     if (_uploading) return;
@@ -744,7 +738,64 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _statusFilter,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'حالة الوثيقة',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'all', child: Text('كل الحالات')),
+                      DropdownMenuItem(value: 'draft', child: Text('مسودات')),
+                      DropdownMenuItem(value: 'issued', child: Text('صادرة')),
+                      DropdownMenuItem(value: 'archived', child: Text('مؤرشفة')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _statusFilter = value);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _sortOrder,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'الترتيب',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'updated-desc', child: Text('الأحدث تحديثاً')),
+                      DropdownMenuItem(value: 'updated-asc', child: Text('الأقدم تحديثاً')),
+                      DropdownMenuItem(value: 'title-asc', child: Text('العنوان أبجدياً')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) setState(() => _sortOrder = value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'يعرض ${filtered.length} من أصل ${_documents.length} وثيقة',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
