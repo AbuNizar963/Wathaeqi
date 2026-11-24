@@ -45,7 +45,9 @@ export default function PlatformDocumentSettingsPage() {
   });
 
   useEffect(() => {
-    if (settingsQuery.data) setValues(normalizePlatformDocumentSettings(settingsQuery.data));
+    if (settingsQuery.data) {
+      setValues(normalizePlatformDocumentSettings(settingsQuery.data));
+    }
   }, [settingsQuery.data]);
 
   useEffect(() => {
