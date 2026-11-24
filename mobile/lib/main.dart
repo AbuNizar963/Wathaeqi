@@ -2173,15 +2173,6 @@ class _DashboardPageState extends State<DashboardPage>
                       );
                     },
                   ),
-                if (_canManageUsers)
-                  ListTile(
-                    leading: const Icon(LucideIcons.building2),
-                    title: const Text('إدارة الجهات'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _handleAccountAction('organizations');
-                    },
-                  ),
               ],
             ),
           ),
