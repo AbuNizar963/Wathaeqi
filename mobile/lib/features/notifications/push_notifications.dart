@@ -80,41 +80,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 }
 
-String telegramPushNotificationTitle(Map<String, dynamic> data) {
-  final category = '${data['category'] ?? ''}'.toLowerCase();
-  final priority = '${data['priority'] ?? ''}'.toLowerCase();
-  final priorityIsUrgent = const {
-    'urgent',
-    'critical',
-    'high',
-  }.contains(priority);
-  final incoming = data['type'] == 'telegram.incoming';
-
-  if (category == 'emergency') {
-    return priorityIsUrgent ? 'برقية طارئة عاجلة' : 'برقية طارئة';
-  }
-  if (priorityIsUrgent) {
-    return incoming ? 'برقية واردة عاجلة' : 'برقية صادرة عاجلة';
-  }
-  return incoming ? 'برقية واردة جديدة' : 'برقية صادرة جديدة';
-}
-
-String telegramPushNotificationBody(Map<String, dynamic> data) {
-  final rawSerial = '${data['serialCode'] ?? ''}'.trim();
-  var digitStart = rawSerial.length;
-  while (digitStart > 0 && int.tryParse(rawSerial[digitStart - 1]) != null) {
-    digitStart--;
-  }
-  final shortSerial = digitStart < rawSerial.length
-      ? rawSerial.substring(digitStart)
-      : rawSerial;
-  final direction = data['type'] == 'telegram.incoming' ? 'واردة' : 'صادرة';
-
-  return shortSerial.isEmpty
-      ? 'هناك برقية $direction جديدة.'
-      : 'هناك برقية $direction برقم: $shortSerial.';
-}
-
 class PushNotificationService {
   // Resolve Firebase lazily: DashboardPage can be constructed before Firebase
   // is configured, and initialization errors must not crash the app at startup.
@@ -123,18 +88,14 @@ class PushNotificationService {
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
   StreamSubscription<RemoteMessage>? _openedSubscription;
   StreamSubscription<String>? _tokenRefreshSubscription;
-  void Function(int telegramId)? _onTelegramOpened;
-  void Function()? _onAppUpdate;
+    void Function()? _onAppUpdate;
   void Function()? _onOpenNotifications;
 
   Future<void> initialize({
-    required void Function(int telegramId) onTelegramOpened,
-    required void Function(int telegramId) onForegroundTelegram,
     required void Function(String token) onToken,
     void Function()? onAppUpdate,
     void Function()? onOpenNotifications,
   }) async {
-    _onTelegramOpened = onTelegramOpened;
     _onAppUpdate = onAppUpdate;
     _onOpenNotifications = onOpenNotifications;
     await _prepareAndroidNotificationBridge();
@@ -161,21 +122,10 @@ class PushNotificationService {
         _tokenRefreshSubscription = _messaging.onTokenRefresh.listen(onToken);
       }
 
-      // Foreground FCM notifications are not displayed automatically on Android.
-      // Post a native notification using the same sound channel, then refresh the
-      // dashboard without navigating away from the screen currently in use.
-      _foregroundSubscription = FirebaseMessaging.onMessage.listen((
-        message,
-      ) async {
-        if (_isAppUpdate(message)) {
-          onAppUpdate?.call();
-          return;
-        }
-        final id = _telegramId(message);
-        if (id != null) {
-          await _showForegroundTelegramNotification(message, id);
-          onForegroundTelegram(id);
-        }
+      // Only application-update messages remain actionable in the
+      // print-only product. Legacy telegram delivery pushes are ignored.
+      _foregroundSubscription = FirebaseMessaging.onMessage.listen((message) {
+        if (_isAppUpdate(message)) onAppUpdate?.call();
       });
       _openedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
         message,
@@ -184,12 +134,7 @@ class PushNotificationService {
           onAppUpdate?.call();
           return;
         }
-        final id = _telegramId(message);
-        if (id != null) {
-          onTelegramOpened(id);
-        } else {
-          // Notification-only FCM messages may have no data payload. They still
-          // represent a deliberate tap and should open the in-app notification inbox.
+        if (!_isLegacyTelegramPush(message)) {
           _onOpenNotifications?.call();
         }
       });
@@ -198,11 +143,7 @@ class PushNotificationService {
         onAppUpdate?.call();
         return;
       }
-      final initialId = initial == null ? null : _telegramId(initial);
-      if (initialId != null) {
-        onTelegramOpened(initialId);
-      } else if (initial != null) {
-        // A notification-only launch has no data map; fall back to the inbox.
+      if (initial != null && !_isLegacyTelegramPush(initial)) {
         _onOpenNotifications?.call();
       }
     } on FirebaseException {
@@ -215,22 +156,12 @@ class PushNotificationService {
     if (defaultTargetPlatform != TargetPlatform.android) return;
 
     _androidTelegramNotificationChannel.setMethodCallHandler((call) async {
-      if (call.method == 'onTelegramNotificationOpened') {
-        final telegramId = int.tryParse('${call.arguments}');
-        if (telegramId != null && telegramId > 0) {
-          _onTelegramOpened?.call(telegramId);
-        }
-      } else if (call.method == 'onAppUpdateNotificationOpened') {
+      if (call.method == 'onAppUpdateNotificationOpened') {
         _onAppUpdate?.call();
       }
     });
 
     try {
-      final pendingId = await _androidTelegramNotificationChannel
-          .invokeMethod<int>('markTelegramNotificationHandlerReady');
-      if (pendingId != null && pendingId > 0) {
-        _onTelegramOpened?.call(pendingId);
-      }
       final pendingUpdate = await _androidTelegramNotificationChannel
           .invokeMethod<bool>('markAppUpdateNotificationHandlerReady');
       if (pendingUpdate == true) _onAppUpdate?.call();
@@ -242,50 +173,11 @@ class PushNotificationService {
     }
   }
 
-  Future<void> _showForegroundTelegramNotification(
-    RemoteMessage message,
-    int telegramId,
-  ) async {
-    if (defaultTargetPlatform != TargetPlatform.android) return;
-
-    final data = message.data;
-    final urgent = _isUrgentTelegram(data);
-    final title = message.notification?.title ?? _fallbackTitle(data);
-    final body = message.notification?.body ?? _fallbackBody(data);
-
-    try {
-      await _androidTelegramNotificationChannel.invokeMethod<bool>(
-        'showTelegramNotification',
-        <String, Object>{
-          'telegramId': telegramId,
-          'title': title,
-          'body': body,
-          'urgent': urgent,
-        },
-      );
-    } on MissingPluginException {
-      // Keep the dashboard refresh path working on non-Android test runtimes.
-    } on PlatformException {
-      // A notification can be blocked or disabled in system settings.
-    }
-  }
-
-  bool _isUrgentTelegram(Map<String, dynamic> data) {
-    final priority = '${data['priority'] ?? ''}'.toLowerCase();
-    final category = '${data['category'] ?? ''}'.toLowerCase();
-    const urgentPriorities = {'urgent', 'critical', 'high'};
-    return urgentPriorities.contains(priority) || category == 'emergency';
-  }
-
-  String _fallbackTitle(Map<String, dynamic> data) =>
-      telegramPushNotificationTitle(data);
-
-  String _fallbackBody(Map<String, dynamic> data) =>
-      telegramPushNotificationBody(data);
-
-  int? _telegramId(RemoteMessage message) {
-    final raw = message.data['telegramId'] ?? message.data['telegram_id'];
-    return int.tryParse('$raw');
+  bool _isLegacyTelegramPush(RemoteMessage message) {
+    final type = message.data['type']?.toString() ?? '';
+    return type.startsWith('telegram.') ||
+        message.data.containsKey('telegramId') ||
+        message.data.containsKey('telegram_id');
   }
 
   bool _isAppUpdate(RemoteMessage message) =>
@@ -356,7 +248,6 @@ class PushNotificationService {
     _foregroundSubscription = null;
     _openedSubscription = null;
     _tokenRefreshSubscription = null;
-    _onTelegramOpened = null;
     _onAppUpdate = null;
     _onOpenNotifications = null;
 
