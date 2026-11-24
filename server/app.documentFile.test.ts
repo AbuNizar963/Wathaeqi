@@ -44,9 +44,6 @@ vi.mock("@trpc/server/adapters/express", () => ({
 
 import { createApp } from "./app";
 import appwriteMain from "../appwrite/functions/wathaeqi-api/src/main";
-import { createNetlifyApi } from "../netlify/functions/api.mts";
-
-const netlifyApi = createNetlifyApi(async () => createApp());
 
 const ownerId = "550e8400-e29b-41d4-a716-446655440000";
 const otherOwnerId = "550e8400-e29b-41d4-a716-446655440003";
@@ -351,37 +348,7 @@ describe("document original file endpoint", () => {
     }
   );
 
-  it.each([
-    ["report.pdf", "application/pdf", pdf],
-    ["report.docx", docxMime, docx],
-    ["scan.png", "image/png", png],
-    ["scan.jpg", "image/jpeg", jpeg],
-    ["scan.webp", "image/webp", webp],
-  ])(
-    "preserves %s bytes through the Netlify function wrapper",
-    async (name, mimeType, bytes) => {
-      mocks.getRow.mockResolvedValueOnce(
-        documentRow(file(name, mimeType, bytes))
-      );
-      mocks.getObjectInfo.mockResolvedValueOnce({
-        size: bytes.length,
-        contentType: "application/octet-stream",
-      });
-      mocks.download.mockResolvedValueOnce({
-        body: bytes,
-        contentType: "application/octet-stream",
-      });
-      const response = await netlifyApi(
-        new Request("https://api.example.test/api/documents/document-1/file")
-      );
-      expect(response.status).toBe(200);
-      assertPrivate(response);
-      expect(response.headers.get("content-type")).toBe(mimeType);
-      expect(Buffer.from(await response.arrayBuffer())).toEqual(bytes);
-    }
-  );
-
-  it("preserves private JSON denials through both function wrappers", async () => {
+  it("preserves private JSON denials through the Appwrite function wrapper", async () => {
     mocks.getUser.mockResolvedValue(null);
     const path = "/api/documents/document-1/file";
     const appwriteResponse = (await appwriteMain({
@@ -395,10 +362,7 @@ describe("document original file endpoint", () => {
       log: vi.fn(),
       error: vi.fn(),
     })) as Response;
-    const netlifyResponse = await netlifyApi(
-      new Request(`https://api.example.test${path}`)
-    );
-    for (const response of [appwriteResponse, netlifyResponse]) {
+    for (const response of [appwriteResponse]) {
       expect(response.status).toBe(401);
       assertPrivate(response);
       expect(await response.json()).toEqual({

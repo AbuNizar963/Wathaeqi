@@ -14,7 +14,7 @@ describe("saved document views", () => {
         name: "بانتظار الاعتماد",
         search: "تقرير",
         category: "report",
-        status: "all",
+        status: "issued",
         sort: "updated-desc",
       },
     ];
@@ -23,7 +23,7 @@ describe("saved document views", () => {
     expect(parseSavedDocumentViews(JSON.stringify([{ id: 1 }]))).toEqual([]);
   });
 
-  it("upgrades saved views from the previous search-only format", () => {
+  it("upgrades search-only views from the legacy format", () => {
     const legacy = [
       {
         id: "legacy",
@@ -32,9 +32,50 @@ describe("saved document views", () => {
         category: "general",
       },
     ];
+
     expect(parseSavedDocumentViews(JSON.stringify(legacy))).toEqual([
       {
         ...legacy[0],
+        status: "all",
+        sort: "updated-desc",
+      },
+    ]);
+  });
+
+  it("defaults a missing sort while preserving a previously saved status", () => {
+    const legacy = [
+      {
+        id: "legacy-status",
+        name: "بحث سابق",
+        search: "تعميم",
+        category: "general",
+        status: "issued",
+      },
+    ];
+
+    expect(parseSavedDocumentViews(JSON.stringify(legacy))).toEqual([
+      {
+        ...legacy[0],
+        sort: "updated-desc",
+      },
+    ]);
+  });
+
+  it("normalizes unknown status and sort values safely", () => {
+    const invalid = [
+      {
+        id: "invalid",
+        name: "عرض غير صالح",
+        search: "",
+        category: "",
+        status: "unknown",
+        sort: "unknown",
+      },
+    ];
+
+    expect(parseSavedDocumentViews(JSON.stringify(invalid))).toEqual([
+      {
+        ...invalid[0],
         status: "all",
         sort: "updated-desc",
       },
@@ -50,6 +91,7 @@ describe("saved document views", () => {
       status: "all",
       sort: "updated-desc",
     }));
+
     expect(parseSavedDocumentViews(JSON.stringify(views))).toHaveLength(30);
   });
 });
