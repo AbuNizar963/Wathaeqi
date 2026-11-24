@@ -102,9 +102,7 @@ export default function WorkspacePage({
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
     {
-      enabled:
-        section === "dashboard" ||
-        section === "users",
+      enabled: section === "dashboard" || section === "users",
     }
   );
   const utils = trpc.useUtils();
@@ -669,7 +667,8 @@ export default function WorkspacePage({
               onClick={() =>
                 createUser.mutate({
                   ...userForm,
-                  organizationId: organizationContext.data?.organizationId ?? "",
+                  organizationId:
+                    organizationContext.data?.organizationId ?? "",
                 })
               }
               disabled={
