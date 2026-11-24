@@ -70,6 +70,3 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
 
-      # API integration smoke tests will target the Appwrite Functions API
-      # once the owner-authentication endpoint is deployed. Do not probe the
-      # retired Netlify Deploy Preview URL from this workflow.
