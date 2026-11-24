@@ -1178,7 +1178,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Future<void> _loadUnreadNotificationCount() async {
     try {
-      final result = await widget.api.call('notifications.inbox');
+      final result = await widget.api.call('workspace.notifications.list');
       final rows = result is List
           ? result
           : result is Map && result['items'] is List
@@ -1342,12 +1342,8 @@ class _DashboardPageState extends State<DashboardPage>
                             final notification = Map<String, dynamic>.from(
                               visibleRows[index] as Map,
                             );
-                            final telegramId = int.tryParse(
-                              '${notification['telegramId'] ?? ''}',
-                            );
-                            final notificationId = int.tryParse(
-                              '${notification['id'] ?? ''}',
-                            );
+                            final notificationId = notification['id']
+                                ?.toString();
                             final read = notification['readAt'] != null;
                             return ListTile(
                               dense: true,
@@ -1375,29 +1371,24 @@ class _DashboardPageState extends State<DashboardPage>
                                 overflow: TextOverflow.ellipsis,
                               ),
                               trailing: null,
-                              onTap: telegramId == null
-                                  ? null
-                                  : () async {
-                                      if (!read && notificationId != null) {
-                                        try {
-                                          await widget.api.call(
-                                            'notifications.markRead',
-                                            mutation: true,
-                                            input: {'id': notificationId},
-                                          );
-                                        } catch (_) {
-                                          // Opening the telegram still helps
-                                          // the user recover from a mark-read
-                                          // request failure.
-                                        }
+                              onTap: !read && notificationId != null
+                                  ? () async {
+                                      try {
+                                        await widget.api.call(
+                                          'workspace.notifications.markRead',
+                                          mutation: true,
+                                          input: {'id': notificationId},
+                                        );
+                                        await _loadUnreadNotificationCount();
+                                      } catch (_) {
+                                        // Keep the preview usable if marking
+                                        // a notification as read fails.
                                       }
-                                      if (!dialogContext.mounted) return;
-                                      Navigator.pop(dialogContext);
-                                      Toast.info(
-                                        context,
-                                        'إشعارات البرقيات القديمة لا تفتح مستندات في نظام الطباعة فقط.',
-                                      );
-                                    },
+                                      if (dialogContext.mounted) {
+                                        Navigator.pop(dialogContext);
+                                      }
+                                    }
+                                  : null,
                             );
                           },
                         );
