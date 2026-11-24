@@ -170,6 +170,7 @@ class PoliceApi {
     final token = value?.trim();
     return token == null || token.isEmpty ? null : token;
   }
+
   Stream<ApiMutationEvent> get mutationEvents => _mutationEvents.stream;
 
   OfflineVault get offlineVault => _vault;
@@ -394,7 +395,10 @@ class PoliceApi {
 
     final request = http.Request('POST', uri)
       ..followRedirects = false
-      ..headers.addAll({'authorization': 'Bearer $sessionToken', 'accept': 'application/pdf'});
+      ..headers.addAll({
+        'authorization': 'Bearer $sessionToken',
+        'accept': 'application/pdf',
+      });
     late final http.Response response;
     try {
       final streamed = await _httpClient
@@ -457,7 +461,10 @@ class PoliceApi {
             ),
           )
           ..followRedirects = false
-          ..headers.addAll({'authorization': 'Bearer $sessionToken', 'accept': mimeType});
+          ..headers.addAll({
+            'authorization': 'Bearer $sessionToken',
+            'accept': mimeType,
+          });
     late final http.Response response;
     try {
       final streamed = await _httpClient
