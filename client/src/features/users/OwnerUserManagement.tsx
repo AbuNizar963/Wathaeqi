@@ -154,12 +154,7 @@ export default function OwnerUserManagement() {
       (userPage - 1) * userPageSize,
       userPage * userPageSize
     );
-  }, [
-    users.data,
-    userSearch,
-    userPage,
-    userPageSize,
-  ]);
+  }, [users.data, userSearch, userPage, userPageSize]);
   const totalUserPages = Math.max(
     1,
     Math.ceil((users.data?.length ?? 0) / userPageSize)
@@ -360,9 +355,7 @@ export default function OwnerUserManagement() {
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">
-              الجهة الثابتة
-            </p>
+            <p className="text-xs text-muted-foreground">الجهة الثابتة</p>
             <p className="mt-1 text-lg font-bold tabular-nums">
               {selectedOrganization ? 1 : 0}
             </p>
@@ -374,8 +367,8 @@ export default function OwnerUserManagement() {
             </p>
           </div>
           <p className="text-xs leading-5 text-muted-foreground sm:col-span-3">
-            تُربط الحسابات الجديدة تلقائياً بالجهة الوحيدة. يمكنك ضبط الدور الوظيفي
-            وإدارة حالة كل حساب من بطاقة الموظف.
+            تُربط الحسابات الجديدة تلقائياً بالجهة الوحيدة. يمكنك ضبط الدور
+            الوظيفي وإدارة حالة كل حساب من بطاقة الموظف.
           </p>
         </div>
 
