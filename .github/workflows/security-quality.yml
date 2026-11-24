@@ -36,7 +36,7 @@ jobs:
       - name: Scan source code
         env:
           SEMGREP_SEND_METRICS: off
-        run: semgrep scan --metrics off --config p/default --sarif --output semgrep.sarif
+        run: semgrep scan --error --metrics off --config p/default --sarif --output semgrep.sarif
 
       - name: Summarize Semgrep findings in Actions logs
         if: always() && hashFiles('semgrep.sarif') != ''
