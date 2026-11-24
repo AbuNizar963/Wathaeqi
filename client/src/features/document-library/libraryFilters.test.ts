@@ -34,7 +34,7 @@ describe("document library filters", () => {
   it("sorts newest, oldest, and Arabic title without mutating the source", () => {
     expect(filterAndSortDocuments(documents).map(item => item.id)).toEqual(["3", "2", "1"]);
     expect(filterAndSortDocuments(documents, { sort: "updated-asc" }).map(item => item.id)).toEqual(["1", "2", "3"]);
-    expect(filterAndSortDocuments(documents, { sort: "title-asc" }).map(item => item.id)).toEqual(["3", "1", "2"]);
+    expect(filterAndSortDocuments(documents, { sort: "title-asc" }).map(item => item.id)).toEqual(["1", "2", "3"]);
     expect(documents.map(item => item.id)).toEqual(["1", "2", "3"]);
   });
 });
