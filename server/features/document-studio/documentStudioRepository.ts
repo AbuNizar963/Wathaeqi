@@ -454,7 +454,8 @@ export async function updateOfficialDocument(
       existing.subject !== input.subject ||
       existing.documentDate !== input.documentDate ||
       JSON.stringify(existing.content) !== JSON.stringify(input.content) ||
-      JSON.stringify(existing.fieldValues) !== JSON.stringify(input.fieldValues) ||
+      JSON.stringify(existing.fieldValues) !==
+        JSON.stringify(input.fieldValues) ||
       existing.templateId !== input.templateId ||
       existing.templateRevision !== input.templateRevision;
     const now = new Date().toISOString();
@@ -477,22 +478,25 @@ export async function updateOfficialDocument(
         title: input.title,
         category: input.category,
         updatedAt: now,
-        content: encodeOfficialDocumentStorageContent({
-          content: input.content,
-          organizationId: input.organizationId,
-          templateFieldsSnapshot: input.templateFieldsSnapshot,
-          subject: input.subject,
-          fieldValues: input.fieldValues,
-          serialNumber: existing.serialNumber,
-          serialCode: existing.serialCode,
-          documentDate: input.documentDate,
-          status: existing.status,
-          file: existing.file,
-          templateId: input.templateId,
-          templateRevision: input.templateRevision,
-          issuedAt: existing.issuedAt,
-          archivedAt: existing.archivedAt,
-        }, versions),
+        content: encodeOfficialDocumentStorageContent(
+          {
+            content: input.content,
+            organizationId: input.organizationId,
+            templateFieldsSnapshot: input.templateFieldsSnapshot,
+            subject: input.subject,
+            fieldValues: input.fieldValues,
+            serialNumber: existing.serialNumber,
+            serialCode: existing.serialCode,
+            documentDate: input.documentDate,
+            status: existing.status,
+            file: existing.file,
+            templateId: input.templateId,
+            templateRevision: input.templateRevision,
+            issuedAt: existing.issuedAt,
+            archivedAt: existing.archivedAt,
+          },
+          versions
+        ),
       },
     });
     return mapDocumentRow(updated as AppwriteRow);
@@ -540,22 +544,25 @@ export async function issueOfficialDocument(
       transactionId,
       data: {
         updatedAt: input.issuedAt,
-        content: encodeOfficialDocumentStorageContent({
-          content: existing.content,
-          organizationId: input.organizationId,
-          templateFieldsSnapshot: existing.templateFieldsSnapshot,
-          subject: existing.subject,
-          fieldValues: existing.fieldValues,
-          serialNumber: input.serialNumber,
-          serialCode: input.serialCode,
-          documentDate: existing.documentDate,
-          status: "issued",
-          file: existing.file,
-          templateId: existing.templateId,
-          templateRevision: existing.templateRevision,
-          issuedAt: input.issuedAt,
-          archivedAt: null,
-        }, storedContent.versions),
+        content: encodeOfficialDocumentStorageContent(
+          {
+            content: existing.content,
+            organizationId: input.organizationId,
+            templateFieldsSnapshot: existing.templateFieldsSnapshot,
+            subject: existing.subject,
+            fieldValues: existing.fieldValues,
+            serialNumber: input.serialNumber,
+            serialCode: input.serialCode,
+            documentDate: existing.documentDate,
+            status: "issued",
+            file: existing.file,
+            templateId: existing.templateId,
+            templateRevision: existing.templateRevision,
+            issuedAt: input.issuedAt,
+            archivedAt: null,
+          },
+          storedContent.versions
+        ),
       },
     });
     return mapDocumentRow(updated as AppwriteRow);
@@ -694,22 +701,25 @@ export async function archiveOfficialDocument(
       transactionId,
       data: {
         updatedAt: now,
-        content: encodeOfficialDocumentStorageContent({
-          content: existing.content,
-          organizationId: existing.organizationId,
-          templateFieldsSnapshot: existing.templateFieldsSnapshot,
-          subject: existing.subject,
-          fieldValues: existing.fieldValues,
-          serialNumber: existing.serialNumber,
-          serialCode: existing.serialCode,
-          documentDate: existing.documentDate,
-          status: "archived",
-          file: existing.file,
-          templateId: existing.templateId,
-          templateRevision: existing.templateRevision,
-          issuedAt: existing.issuedAt,
-          archivedAt: now,
-        }, storedContent.versions),
+        content: encodeOfficialDocumentStorageContent(
+          {
+            content: existing.content,
+            organizationId: existing.organizationId,
+            templateFieldsSnapshot: existing.templateFieldsSnapshot,
+            subject: existing.subject,
+            fieldValues: existing.fieldValues,
+            serialNumber: existing.serialNumber,
+            serialCode: existing.serialCode,
+            documentDate: existing.documentDate,
+            status: "archived",
+            file: existing.file,
+            templateId: existing.templateId,
+            templateRevision: existing.templateRevision,
+            issuedAt: existing.issuedAt,
+            archivedAt: now,
+          },
+          storedContent.versions
+        ),
       },
     });
     return mapDocumentRow(updated as AppwriteRow);
