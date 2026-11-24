@@ -157,12 +157,26 @@ class _TestPoliceApi extends PoliceApi {
         'items': [_sampleTelegram()],
       },
       'telegrams.get' => _sampleTelegram(),
-      'settings.get' => {
+      'organizations.settings.get' => {
         'organizationId': 'org-1',
+        'organizationName': 'قسم شرطة الشهباء',
         'departmentName': 'قسم شرطة الشهباء',
         'unitName': 'قيادة الأمن الداخلي في محافظة حلب',
+        'unitChiefRank': 'العقيد',
+        'unitChiefName': 'رئيس الوحدة',
+        'serialPrefix': 'POL',
+        'incomingSerialPrefix': 'POL',
+        'serialStart': 1,
+        'incomingSerialStart': 1,
+        'timezone': 'Asia/Riyadh',
+        'dateFormat': 'yyyy/MM/dd HH:mm:ss',
+        'timeFormat': '24',
         'numberSystem': 'latin',
         'logoUrl': organizationLogoUrl,
+      },
+      'organizations.settings.update' => {
+        ...?input,
+        'organizationId': 'org-1',
       },
       'organizations.routingDirectory' => <dynamic>[],
       'platformDocumentSettings.get' => {
@@ -354,9 +368,9 @@ void main() {
     await tester.tap(saveButton);
     await _pumpDashboardFrames(tester, frameCount: 4);
 
-    expect(api.calls['settings.update'], isNotNull);
+    expect(api.calls['organizations.settings.update'], isNotNull);
     expect(
-      api.calls['settings.update']!.containsKey('showVerificationQr'),
+      api.calls['organizations.settings.update']!.containsKey('showVerificationQr'),
       isFalse,
     );
   });
