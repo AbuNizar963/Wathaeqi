@@ -58,7 +58,9 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain(
       'class="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"'
     );
-    expect(markup).toContain('dir="rtl" data-testid="document-letterhead-metadata"');
+    expect(markup).toContain(
+      'dir="rtl" data-testid="document-letterhead-metadata"'
+    );
     expect(markup).toContain("الرقم:");
     expect(markup).toContain("يخصص عند الإصدار");
     expect(markup).toContain("24 نوفمبر 2026");
