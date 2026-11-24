@@ -11,7 +11,7 @@ export const MAX_DOCX_ENTRIES = 4096;
 export const MAX_DOCX_ENTRY_BYTES = 64 * 1024 * 1024;
 export const MAX_DOCX_PAGES = 300;
 export const MAX_PDF_BYTES = 25 * 1024 * 1024;
-// Leave time for server startup and response handling within Netlify's 55s cap.
+// Leave time for server startup and response handling within the function limit.
 export const DOCX_TO_PDF_TIMEOUT_MS = 40_000;
 
 export type DocxConversionErrorCode =

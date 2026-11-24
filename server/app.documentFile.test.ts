@@ -362,13 +362,11 @@ describe("document original file endpoint", () => {
       log: vi.fn(),
       error: vi.fn(),
     })) as Response;
-    for (const response of [appwriteResponse]) {
-      expect(response.status).toBe(401);
-      assertPrivate(response);
-      expect(await response.json()).toEqual({
-        error: "انتهت الجلسة؛ سجّل الدخول مجددًا",
-      });
-    }
+    expect(appwriteResponse.status).toBe(401);
+    assertPrivate(appwriteResponse);
+    expect(await appwriteResponse.json()).toEqual({
+      error: "انتهت الجلسة؛ سجّل الدخول مجددًا",
+    });
   });
 
   it("rate-limits repeated downloads without caching the denial", async () => {

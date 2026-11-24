@@ -130,7 +130,7 @@ describe("DOCX to PDF renderer", () => {
     expect(fake.browser.close).toHaveBeenCalled();
   });
 
-  it("times out before Netlify's request deadline and closes late Chromium startup", async () => {
+  it("times out before the function request deadline and closes late Chromium startup", async () => {
     expect(DOCX_TO_PDF_TIMEOUT_MS).toBeLessThan(55_000);
     const fake = createFakeBrowser();
     let resolveLaunch!: (browser: Browser) => void;

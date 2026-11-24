@@ -70,3 +70,5 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
 
+      # API integration smoke tests target the Appwrite Functions API after
+      # the owner-authentication endpoint is deployed.

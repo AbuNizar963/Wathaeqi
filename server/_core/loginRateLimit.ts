@@ -76,8 +76,8 @@ function consumeLoginRateLimit(
 /**
  * Appwrite Auth enforces provider-side limits. This process-local account/IP
  * guard adds a short-window layer without a separate legacy database rate-limit RPC.
- * Netlify instances are ephemeral, so this is defense in depth rather than
- * the durable cross-instance limiter used before the Appwrite migration.
+ * Function instances are ephemeral, so this is defense in depth rather than
+ * a durable cross-instance limiter.
  */
 export async function enforceLoginRateLimit(
   req: Request,

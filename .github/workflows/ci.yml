@@ -38,10 +38,10 @@ jobs:
             exit 1
           fi
 
-      - name: Reject retired database runtime dependencies
+      - name: Reject retired provider runtime dependencies
         run: |
-          if git grep -niE 'supabase|SUPABASE|@supabase|drizzle/schema|drizzle-orm|drizzle-kit|DATABASE_URL|postgresql' -- client server shared appwrite scripts package.json .env.example vite.config.ts ':!scripts/verify-appwrite-api-bundle.mjs'; then
-            echo "Retired Supabase/PostgreSQL runtime dependency detected"
+          if git grep -niE 'supabase|SUPABASE|@supabase|drizzle/schema|drizzle-orm|drizzle-kit|DATABASE_URL|postgresql|netlify|vercel|NETLIFY|VERCEL' -- client server shared appwrite scripts package.json .env.example vite.config.ts ':!scripts/verify-appwrite-api-bundle.mjs'; then
+            echo "Retired provider runtime dependency detected"
             exit 1
           fi
       - name: Check document studio formatting
