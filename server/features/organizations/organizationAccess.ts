@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import type { PublicUser } from "../../_core/auth";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "./appwriteOwnerOrganizationRepository";
-import { listOrganizationDescendants } from "./organizationService";
 
 /** Roles allowed to act on documents owned by their active organization. */
 const ORGANIZATION_ACTOR_ROLES = [
@@ -62,16 +61,8 @@ export async function resolveOrganizationScope(
   const canManage = isOwner || roleCanAct(role);
   const canAdministrate = isOwner || roleCanAdministrate(role);
 
-  let organizationIds: string[] | null = null;
-  if (!isOwner) {
-    const descendants =
-      role === "regional_admin" || role === "organization_admin"
-        ? await listOrganizationDescendants(organizationId, {
-            activeOnly: true,
-          })
-        : [];
-    organizationIds = [organizationId, ...descendants.map(item => item.id)];
-  }
+  // A single-organization installation never expands access through a hierarchy.
+  const organizationIds = [organizationId];
 
   return {
     userId: user.id,
