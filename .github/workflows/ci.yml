@@ -49,13 +49,6 @@ jobs:
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       # Validate fixed-organization access, user scope, and document-only workflows.
-      - name: Diagnose document scope formatting (temporary)
-        run: |
-          pnpm exec prettier server/documentRoutes.test.ts > /tmp/documentRoutes.formatted.ts
-          diff -u server/documentRoutes.test.ts /tmp/documentRoutes.formatted.ts || true
-          pnpm exec prettier server/features/document-studio/documentStudioRouter.ts > /tmp/documentStudioRouter.formatted.ts
-          diff -u server/features/document-studio/documentStudioRouter.ts /tmp/documentStudioRouter.formatted.ts || true
-
       - name: Check formatting
         run: pnpm lint
 
