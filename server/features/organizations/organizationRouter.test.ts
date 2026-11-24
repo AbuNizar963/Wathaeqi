@@ -117,7 +117,6 @@ describe("organizations.renameCurrent", () => {
   });
 });
 
-
 describe("organizations.settings", () => {
   const settingsInput = {
     organizationId: "org-current",
