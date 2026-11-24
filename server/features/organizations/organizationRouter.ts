@@ -103,17 +103,15 @@ export const organizationRouter = router({
       const organizations = await listOrganizations(
         Boolean(input?.includeInactive) && scope.isOwner
       );
-      if (scope.isOwner) return organizations;
-      const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
-      return organizations.filter(item => allowed.has(item.id));
+      return organizations.filter(item => item.id === scope.organizationId);
     }),
 
   tree: authenticatedProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
     const organizations = await listOrganizations(false);
-    const filtered = scope.organizationIds
-      ? organizations.filter(item => scope.organizationIds?.includes(item.id))
-      : organizations;
+    const filtered = organizations.filter(
+      item => item.id === scope.organizationId
+    );
     return buildOrganizationTree(filtered);
   }),
 
@@ -237,10 +235,8 @@ export const organizationRouter = router({
 
   all: authenticatedProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
-    const organizations = await listOrganizations(scope.isOwner);
-    if (scope.isOwner) return organizations;
-    const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
-    return organizations.filter(item => allowed.has(item.id));
+    const organizations = await listOrganizations(false);
+    return organizations.filter(item => item.id === scope.organizationId);
   }),
 
   accounts: authenticatedProcedure
@@ -286,6 +282,13 @@ export const organizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireOwner(ctx);
+      const scope = await resolveOrganizationScope(ctx.user);
+      if (input.organizationId !== scope.organizationId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "يمكن إنشاء الحسابات ضمن الجهة الثابتة فقط.",
+        });
+      }
       return createManagedUser({
         ...input,
         role: "user",
