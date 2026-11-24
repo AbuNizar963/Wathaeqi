@@ -16,7 +16,9 @@ import { listDocumentTemplates } from "./documentStudioRepository";
 const ownerId = "550e8400-e29b-41d4-a716-446655440000";
 
 function templateRow(index: number) {
-  const timestamp = new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString();
+  const timestamp = new Date(
+    Date.UTC(2026, 0, 1, 0, index)
+  ).toISOString();
   return {
     $id: `template-${index}`,
     $createdAt: timestamp,
@@ -53,14 +55,14 @@ describe("document studio repository pagination", () => {
     const templates = await listDocumentTemplates(ownerId);
 
     expect(templates).toHaveLength(102);
-    expect(templates[0]?.id).toBe('template-1');
-    expect(templates[101]?.id).toBe('template-102');
+    expect(templates[0]?.id).toBe("template-1");
+    expect(templates[101]?.id).toBe("template-102");
     expect(tablesMock.listRows).toHaveBeenCalledTimes(2);
     const secondPageQueries = tablesMock.listRows.mock.calls[1]?.[0].queries;
-    expect(secondPageQueries).toContain(Query.cursorAfter('template-100'));
+    expect(secondPageQueries).toContain(Query.cursorAfter("template-100"));
   });
 
-  it("does not issue an unnecessary extra request for a short page", async () => {
+  it("stops after a short page", async () => {
     tablesMock.listRows.mockResolvedValueOnce({
       rows: [templateRow(1), templateRow(2)],
     });
