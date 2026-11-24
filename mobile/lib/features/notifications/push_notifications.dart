@@ -155,14 +155,14 @@ class PushNotificationService {
   Future<void> _prepareAndroidNotificationBridge() async {
     if (defaultTargetPlatform != TargetPlatform.android) return;
 
-    _androidTelegramNotificationChannel.setMethodCallHandler((call) async {
+    _androidAppNotificationChannel.setMethodCallHandler((call) async {
       if (call.method == 'onAppUpdateNotificationOpened') {
         _onAppUpdate?.call();
       }
     });
 
     try {
-      final pendingUpdate = await _androidTelegramNotificationChannel
+      final pendingUpdate = await _androidAppNotificationChannel
           .invokeMethod<bool>('markAppUpdateNotificationHandlerReady');
       if (pendingUpdate == true) _onAppUpdate?.call();
     } on MissingPluginException {
@@ -252,9 +252,9 @@ class PushNotificationService {
     _onOpenNotifications = null;
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      _androidTelegramNotificationChannel.setMethodCallHandler(null);
+      _androidAppNotificationChannel.setMethodCallHandler(null);
       try {
-        await _androidTelegramNotificationChannel.invokeMethod<void>(
+        await _androidAppNotificationChannel.invokeMethod<void>(
           'markAppUpdateNotificationHandlerNotReady',
         );
       } on MissingPluginException {
