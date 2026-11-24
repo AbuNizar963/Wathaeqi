@@ -142,6 +142,61 @@ describe("Document Studio Appwrite content codecs", () => {
     expect(restored.documentDate).toBe("2026-11-18T10:00:00.000Z");
   });
 
+  it("round-trips document version snapshots and ignores malformed history", () => {
+    const document = {
+      content: {
+        type: "doc",
+        content: [{ type: "paragraph", content: [{ type: "text", text: "نسخة حالية" }] }],
+      },
+      organizationId: "org-1",
+      templateFieldsSnapshot: fields,
+      subject: "موضوع",
+      fieldValues: { employee_name: "أحمد" },
+      serialNumber: 0,
+      serialCode: "",
+      documentDate: "2026-11-24T00:00:00.000Z",
+      status: "draft" as const,
+      file: null,
+      templateId: "template-1",
+      templateRevision: 2,
+      issuedAt: null,
+      archivedAt: null,
+    };
+    const versions = [
+      {
+        version: 1,
+        savedAt: "2026-11-23T10:00:00.000Z",
+        savedByUserId: "user-1",
+        title: "عنوان سابق",
+        category: "general",
+        subject: "موضوع سابق",
+        content: { type: "doc", content: [{ type: "paragraph" }] },
+        fieldValues: { employee_name: "محمد" },
+        documentDate: "2026-11-23T00:00:00.000Z",
+        templateId: "template-1",
+        templateRevision: 1,
+        templateFieldsSnapshot: fields,
+      },
+    ];
+    const encoded = encodeOfficialDocumentStorageContent(document, versions);
+    const restored = decodeOfficialDocumentStorageContent(
+      encoded,
+      "2026-11-24T00:00:00.000Z"
+    );
+
+    expect(restored.versions).toEqual(versions);
+    expect(
+      decodeOfficialDocumentStorageContent(
+        JSON.stringify({
+          format: "wathaeqi-document-v1",
+          editor: { type: "doc" },
+          versions: [{ version: "invalid" }, ...versions],
+        }),
+        "2026-11-24T00:00:00.000Z"
+      ).versions
+    ).toEqual(versions);
+  });
+
   it("preserves legacy template HTML without rewriting it", () => {
     const legacyHtml = "<p>نموذج قديم</p>";
     expect(decodeTemplateStorageContent(legacyHtml).content).toEqual({
