@@ -275,7 +275,9 @@ describe("Flutter tRPC API contract", () => {
       field =>
         !contractFields.has(field) ||
         (dartSource.length > 0 &&
-          !new RegExp(`\\[['"]${field}['"]\\]`).test(dartSource))
+          ![`['${field}']`, `["${field}"]`].some(access =>
+            dartSource.includes(access)
+          ))
     );
     expect(missing).toEqual([]);
   });
