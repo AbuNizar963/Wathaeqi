@@ -6,164 +6,123 @@ import {
 
 type SettingsInput = Partial<PlatformDocumentSettings> | null | undefined;
 
-function textValue(
-  value: unknown,
-  fallback: string,
-  maxLength: number
-): string {
-  return typeof value === "string"
-    ? value.trim().slice(0, maxLength)
-    : fallback;
+function safeText(value: unknown, fallback: string, limit: number): string {
+  if (typeof value !== "string") return fallback;
+  return value.trim().slice(0, limit);
 }
 
-function numberValue(value: unknown, fallback: number): number {
+function safeNumber(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value)
     ? value
     : fallback;
 }
 
-function booleanValue(value: unknown, fallback: boolean): boolean {
+function safeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function normalizeRows(
+function safeRows(
   value: unknown,
   fallback: readonly DocumentTextRow[]
 ): DocumentTextRow[] {
-  if (!Array.isArray(value)) {
-    return fallback.map(row => ({ ...row }));
-  }
+  if (!Array.isArray(value)) return fallback.map(row => ({ ...row }));
 
-  return value.slice(0, 12).map((item): DocumentTextRow => {
+  return value.slice(0, 12).map(item => {
     const row =
-      item && typeof item === "object"
+      item !== null && typeof item === "object"
         ? (item as Record<string, unknown>)
         : {};
-
     return {
-      right: textValue(row.right, "", 255),
-      left: textValue(row.left, "", 255),
+      right: safeText(row.right, "", 255),
+      left: safeText(row.left, "", 255),
     };
   });
 }
 
-/**
- * Treat API data as untrusted at the UI boundary. A malformed legacy row must
- * never crash the settings screen or prevent the owner from correcting it.
- */
 export function normalizePlatformDocumentSettings(
   input: SettingsInput
 ): PlatformDocumentSettings {
   const source =
-    input && typeof input === "object"
-      ? (input as Partial<PlatformDocumentSettings>)
+    input !== null && typeof input === "object"
+      ? input
       : {};
   const defaults = DEFAULT_PLATFORM_DOCUMENT_SETTINGS;
 
-  const headerDividerStyle =
-    source.headerDividerStyle === "solid" ||
-    source.headerDividerStyle === "double" ||
-    source.headerDividerStyle === "dashed" ||
-    source.headerDividerStyle === "dotted" ||
-    source.headerDividerStyle === "tricolor-stars"
-      ? source.headerDividerStyle
-      : defaults.headerDividerStyle;
-  const headerAlignment =
-    source.headerAlignment === "spread" ||
-    source.headerAlignment === "center" ||
-    source.headerAlignment === "right"
-      ? source.headerAlignment
-      : defaults.headerAlignment;
-  const frameStyle =
-    source.frameStyle === "none" ||
-    source.frameStyle === "single" ||
-    source.frameStyle === "double" ||
-    source.frameStyle === "ornate"
-      ? source.frameStyle
-      : defaults.frameStyle;
-
   return {
-    showMinistryWatermarkText: booleanValue(
+    ...defaults,
+    showMinistryWatermarkText: safeBoolean(
       source.showMinistryWatermarkText,
       defaults.showMinistryWatermarkText
     ),
-    watermarkText: textValue(source.watermarkText, defaults.watermarkText, 255),
-    watermarkOpacityPercent: numberValue(
+    watermarkText: safeText(source.watermarkText, defaults.watermarkText, 255),
+    watermarkOpacityPercent: safeNumber(
       source.watermarkOpacityPercent,
       defaults.watermarkOpacityPercent
     ),
-    headerDividerColor: textValue(
+    headerDividerColor: safeText(
       source.headerDividerColor,
       defaults.headerDividerColor,
       7
     ),
-    headerDividerStyle,
-    headerDividerWidthPt: numberValue(
+    headerDividerStyle: [
+      "solid",
+      "double",
+      "dashed",
+      "dotted",
+      "tricolor-stars",
+    ].includes(source.headerDividerStyle ?? "")
+      ? source.headerDividerStyle!
+      : defaults.headerDividerStyle,
+    headerDividerWidthPt: safeNumber(
       source.headerDividerWidthPt,
       defaults.headerDividerWidthPt
     ),
-    headerTitle: textValue(source.headerTitle, defaults.headerTitle, 255),
-    headerSubtitle: textValue(
-      source.headerSubtitle,
-      defaults.headerSubtitle,
-      255
-    ),
-    headerChiefRank: textValue(
-      source.headerChiefRank,
-      defaults.headerChiefRank,
-      120
-    ),
-    headerChiefName: textValue(
-      source.headerChiefName,
-      defaults.headerChiefName,
-      255
-    ),
-    headerShowLogo: booleanValue(
-      source.headerShowLogo,
-      defaults.headerShowLogo
-    ),
-    headerLogoSize: numberValue(source.headerLogoSize, defaults.headerLogoSize),
-    headerTopPaddingMm: numberValue(
+    headerTitle: safeText(source.headerTitle, defaults.headerTitle, 255),
+    headerSubtitle: safeText(source.headerSubtitle, defaults.headerSubtitle, 255),
+    headerChiefRank: safeText(source.headerChiefRank, defaults.headerChiefRank, 120),
+    headerChiefName: safeText(source.headerChiefName, defaults.headerChiefName, 255),
+    headerShowLogo: safeBoolean(source.headerShowLogo, defaults.headerShowLogo),
+    headerLogoSize: safeNumber(source.headerLogoSize, defaults.headerLogoSize),
+    headerTopPaddingMm: safeNumber(
       source.headerTopPaddingMm,
       defaults.headerTopPaddingMm
     ),
-    headerHorizontalPaddingMm: numberValue(
+    headerHorizontalPaddingMm: safeNumber(
       source.headerHorizontalPaddingMm,
       defaults.headerHorizontalPaddingMm
     ),
-    headerBottomPaddingMm: numberValue(
+    headerBottomPaddingMm: safeNumber(
       source.headerBottomPaddingMm,
       defaults.headerBottomPaddingMm
     ),
-    headerAlignment,
-    pageHeaderRows: normalizeRows(
-      source.pageHeaderRows,
-      defaults.pageHeaderRows
-    ),
-    pageFooterRows: normalizeRows(
-      source.pageFooterRows,
-      defaults.pageFooterRows
-    ),
-    pageMarginTopMm: numberValue(
-      source.pageMarginTopMm,
-      defaults.pageMarginTopMm
-    ),
-    pageMarginRightMm: numberValue(
+    headerAlignment: ["spread", "center", "right"].includes(
+      source.headerAlignment ?? ""
+    )
+      ? source.headerAlignment!
+      : defaults.headerAlignment,
+    pageHeaderRows: safeRows(source.pageHeaderRows, defaults.pageHeaderRows),
+    pageFooterRows: safeRows(source.pageFooterRows, defaults.pageFooterRows),
+    pageMarginTopMm: safeNumber(source.pageMarginTopMm, defaults.pageMarginTopMm),
+    pageMarginRightMm: safeNumber(
       source.pageMarginRightMm,
       defaults.pageMarginRightMm
     ),
-    pageMarginBottomMm: numberValue(
+    pageMarginBottomMm: safeNumber(
       source.pageMarginBottomMm,
       defaults.pageMarginBottomMm
     ),
-    pageMarginLeftMm: numberValue(
+    pageMarginLeftMm: safeNumber(
       source.pageMarginLeftMm,
       defaults.pageMarginLeftMm
     ),
-    frameStyle,
-    frameColor: textValue(source.frameColor, defaults.frameColor, 7),
-    frameWidthPt: numberValue(source.frameWidthPt, defaults.frameWidthPt),
-    showVerificationQr: booleanValue(
+    frameStyle: ["none", "single", "double", "ornate"].includes(
+      source.frameStyle ?? ""
+    )
+      ? source.frameStyle!
+      : defaults.frameStyle,
+    frameColor: safeText(source.frameColor, defaults.frameColor, 7),
+    frameWidthPt: safeNumber(source.frameWidthPt, defaults.frameWidthPt),
+    showVerificationQr: safeBoolean(
       source.showVerificationQr,
       defaults.showVerificationQr
     ),
