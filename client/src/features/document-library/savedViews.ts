@@ -4,6 +4,7 @@ export type SavedDocumentView = {
   search: string;
   category: string;
   status: string;
+  sort: string;
 };
 
 export function savedDocumentViewsKey(userId: string | number): string {
@@ -34,6 +35,7 @@ export function parseSavedDocumentViews(
       .map(item => ({
         ...item,
         status: typeof item.status === "string" ? item.status : "",
+        sort: typeof item.sort === "string" ? item.sort : "updated-desc",
       }))
       .slice(0, 30);
   } catch {
