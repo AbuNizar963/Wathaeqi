@@ -66,7 +66,6 @@ beforeEach(() => {
   });
 });
 
-
 describe("platform-owner-only organization procedures", () => {
   it("rejects ordinary authenticated users before any privileged side effect", async () => {
     const api = caller();
@@ -81,9 +80,9 @@ describe("platform-owner-only organization procedures", () => {
       })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
-    await expect(api.delete({ id: "org-target" })).rejects.toMatchObject({
-      code: "FORBIDDEN",
-    });
+    await expect(
+      api.delete({ id: "org-target" })
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
 
     await expect(
       api.purgeArchived({
