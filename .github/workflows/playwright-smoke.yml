@@ -2,9 +2,9 @@ name: Playwright Browser Smoke Test
 
 on:
   push:
-    branches: ["main", "flutter-mobile-app"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "flutter-mobile-app"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
