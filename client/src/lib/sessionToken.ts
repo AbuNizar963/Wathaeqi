@@ -1,12 +1,23 @@
 const SESSION_TOKEN_STORAGE_KEY = "wathaeqi.auth.session";
 
 // The in-memory copy keeps the current page usable when browser storage is
-// restricted. sessionStorage is the persistence boundary: it is cleared when
-// the tab's browsing session ends and is never copied to localStorage.
+// restricted. localStorage is the shared same-origin boundary used by the
+// browser tab and an installed PWA. A sessionStorage fallback only applies
+// when persistent storage is blocked by browser policy.
 let inMemorySessionToken: string | null = null;
 
 export function getSessionToken(): string | null {
   if (inMemorySessionToken) return inMemorySessionToken;
+
+  try {
+    const token = globalThis.localStorage?.getItem(SESSION_TOKEN_STORAGE_KEY);
+    if (token && token.length <= 16_384) {
+      inMemorySessionToken = token;
+      return token;
+    }
+  } catch {
+    // Fall through to the tab-scoped fallback below.
+  }
 
   try {
     const token = globalThis.sessionStorage?.getItem(SESSION_TOKEN_STORAGE_KEY);
@@ -29,14 +40,24 @@ export function setSessionToken(token: string): void {
 
   inMemorySessionToken = token;
   try {
-    globalThis.sessionStorage?.setItem(SESSION_TOKEN_STORAGE_KEY, token);
+    globalThis.localStorage?.setItem(SESSION_TOKEN_STORAGE_KEY, token);
+    globalThis.sessionStorage?.removeItem(SESSION_TOKEN_STORAGE_KEY);
   } catch {
-    // Keep the session available in memory for this page when storage is blocked.
+    try {
+      globalThis.sessionStorage?.setItem(SESSION_TOKEN_STORAGE_KEY, token);
+    } catch {
+      // Keep the session available in memory when browser storage is blocked.
+    }
   }
 }
 
 export function clearSessionToken(): void {
   inMemorySessionToken = null;
+  try {
+    globalThis.localStorage?.removeItem(SESSION_TOKEN_STORAGE_KEY);
+  } catch {
+    // Continue clearing the tab-scoped fallback.
+  }
   try {
     globalThis.sessionStorage?.removeItem(SESSION_TOKEN_STORAGE_KEY);
   } catch {

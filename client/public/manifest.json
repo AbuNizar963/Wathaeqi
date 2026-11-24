@@ -5,7 +5,7 @@
   "id": "/",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
