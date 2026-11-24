@@ -39,7 +39,9 @@
     "userManagement.disable",
     "userManagement.enable",
     "userManagement.list",
-    "userManagement.update"
+    "userManagement.update",
+    "workspace.notifications.list",
+    "workspace.notifications.markRead"
   ],
   "webProcedures": [
     "auth.createInitialOwner",
