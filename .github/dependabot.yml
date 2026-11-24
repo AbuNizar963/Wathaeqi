@@ -6,6 +6,8 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 0
     versioning-strategy: increase
     groups:
@@ -27,6 +29,8 @@ updates:
     directory: "/mobile"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 0
     versioning-strategy: increase
     groups:
@@ -48,6 +52,8 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 0
     commit-message:
       prefix: "ci"
