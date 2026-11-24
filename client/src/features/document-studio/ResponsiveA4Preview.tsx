@@ -4,10 +4,6 @@ import type { PlatformDocumentSettings } from "@shared/features/platform-setting
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
 
-function clampPreviewZoom(value: number): number {
-  return Math.min(2.5, Math.max(0.75, Math.round(value * 100) / 100));
-}
-
 type ResponsiveA4PreviewProps = {
   children: ReactNode;
   pageRef?: { current: HTMLDivElement | null };
@@ -30,60 +26,6 @@ export default function ResponsiveA4Preview({
     scale: 1,
     height: A4_PREVIEW_MIN_HEIGHT,
   });
-  const [zoom, setZoom] = useState(1);
-  const pinchStartRef = useRef<{ distance: number; zoom: number } | null>(null);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const handleTouchStart = (event: TouchEvent) => {
-      if (event.touches.length !== 2) return;
-      const [first, second] = Array.from(event.touches);
-      pinchStartRef.current = {
-        distance: Math.hypot(
-          second.clientX - first.clientX,
-          second.clientY - first.clientY
-        ),
-        zoom,
-      };
-    };
-    const handleTouchMove = (event: TouchEvent) => {
-      const start = pinchStartRef.current;
-      if (!start || event.touches.length !== 2) return;
-      event.preventDefault();
-      const [first, second] = Array.from(event.touches);
-      const distance = Math.hypot(
-        second.clientX - first.clientX,
-        second.clientY - first.clientY
-      );
-      if (start.distance > 0) {
-        setZoom(clampPreviewZoom(start.zoom * (distance / start.distance)));
-      }
-    };
-    const handleTouchEnd = (event: TouchEvent) => {
-      if (event.touches.length < 2) pinchStartRef.current = null;
-    };
-
-    viewport.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    viewport.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
-    viewport.addEventListener("touchend", handleTouchEnd, { passive: true });
-    viewport.addEventListener("touchcancel", handleTouchEnd, {
-      passive: true,
-    });
-
-    return () => {
-      viewport.removeEventListener("touchstart", handleTouchStart);
-      viewport.removeEventListener("touchmove", handleTouchMove);
-      viewport.removeEventListener("touchend", handleTouchEnd);
-      viewport.removeEventListener("touchcancel", handleTouchEnd);
-    };
-  }, [zoom]);
-
   useEffect(() => {
     const viewport = viewportRef.current;
     const page = internalPageRef.current;
@@ -140,47 +82,11 @@ export default function ResponsiveA4Preview({
       style={{
         position: "relative",
         width: "100%",
-        height: Math.ceil(layout.height * zoom),
-        overflow: zoom > 1 ? "auto" : "hidden",
-        touchAction: "pan-x pan-y",
+        height: layout.height,
+        overflow: "hidden",
+        touchAction: "pan-y",
       }}
     >
-      <div
-        className="document-studio-no-print absolute left-2 top-2 z-20 flex items-center gap-1 rounded-lg border bg-white/95 p-1 shadow-sm"
-        role="group"
-        aria-label="تكبير معاينة الورقة"
-        dir="ltr"
-      >
-        <button
-          type="button"
-          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
-          aria-label="تصغير المعاينة"
-          disabled={zoom <= 0.75}
-          onClick={() => setZoom(current => clampPreviewZoom(current - 0.15))}
-        >
-          −
-        </button>
-        <span className="min-w-12 text-center text-xs tabular-nums text-slate-700">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          className="h-8 w-8 rounded-md text-lg font-semibold hover:bg-slate-100 disabled:opacity-40"
-          aria-label="تكبير المعاينة"
-          disabled={zoom >= 2.5}
-          onClick={() => setZoom(current => clampPreviewZoom(current + 0.15))}
-        >
-          +
-        </button>
-        <button
-          type="button"
-          className="rounded-md px-2 py-1 text-xs font-medium hover:bg-slate-100"
-          aria-label="إعادة ضبط التكبير"
-          onClick={() => setZoom(1)}
-        >
-          ملاءمة
-        </button>
-      </div>
       <div
         ref={internalPageRef}
         className="document-a4-page document-a4-preview-page"
@@ -191,7 +97,7 @@ export default function ResponsiveA4Preview({
           minHeight: A4_PREVIEW_MIN_HEIGHT,
           position: "absolute",
           left: "50%",
-          transform: `translateX(-50%) scale(${layout.scale * zoom})`,
+          transform: `translateX(-50%) scale(${layout.scale})`,
           transformOrigin: "top center",
           padding: pagePadding,
           boxSizing: "border-box",
