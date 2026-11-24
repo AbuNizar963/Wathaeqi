@@ -16,6 +16,17 @@ type FilterableDocument = Pick<
   file: Pick<NonNullable<OfficialDocument["file"]>, "fileName"> | null;
 };
 
+export function normalizeDocumentSearch(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[\\u064B-\\u065F\\u0670\\u0640]/g, "")
+    .replace(/[\\u0622\\u0623\\u0625\\u0671]/g, "ا")
+    .replace(/\\u0649/g, "ي")
+    .replace(/\\u0629/g, "ه")
+    .trim();
+}
+
 export function filterAndSortDocuments<T extends FilterableDocument>(
   documents: readonly T[],
   options: {
@@ -25,7 +36,7 @@ export function filterAndSortDocuments<T extends FilterableDocument>(
     sort?: DocumentSortOrder;
   } = {}
 ): T[] {
-  const needle = (options.search ?? "").trim().toLocaleLowerCase();
+  const needle = normalizeDocumentSearch(options.search ?? "");
   const filtered = documents.filter(document => {
     if (options.category && document.category !== options.category) {
       return false;
@@ -43,7 +54,7 @@ export function filterAndSortDocuments<T extends FilterableDocument>(
       document.subject,
       document.file?.fileName ?? "",
       document.serialCode,
-    ].some(value => value.toLocaleLowerCase().includes(needle));
+    ].some(value => normalizeDocumentSearch(value).includes(needle));
   });
 
   const sort = options.sort ?? "updated-desc";
