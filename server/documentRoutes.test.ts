@@ -299,9 +299,7 @@ describe("authenticated document HTTP routes", () => {
         organizationId: "legacy-other-organization",
       });
 
-      const response = await fetch(
-        `${baseUrl}/api/documents/document-1/file`
-      );
+      const response = await fetch(`${baseUrl}/api/documents/document-1/file`);
 
       expect(response.status).toBe(404);
       expect(mocks.getObjectInfo).not.toHaveBeenCalled();
