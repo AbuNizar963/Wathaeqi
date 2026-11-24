@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import type { PublicUser } from "../../_core/auth";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "./appwriteOwnerOrganizationRepository";
+import { getOrganizationByCode } from "./organizationService";
 
 /** Roles allowed to act on documents owned by their active organization. */
 const ORGANIZATION_ACTOR_ROLES = [
@@ -13,6 +14,8 @@ const ORGANIZATION_ACTOR_ROLES = [
 ] as const;
 
 /** Roles allowed to administrate organization settings and documents. */
+const FIXED_ORGANIZATION_CODE = "ALSHAHBAA";
+
 const ORGANIZATION_ADMIN_ROLES = [
   "system_admin",
   "organization_admin",
@@ -41,27 +44,40 @@ function roleCanAdministrate(role: string): boolean {
 export async function resolveOrganizationScope(
   user: PublicUser
 ): Promise<OrganizationScope> {
-  const membership = await getUserOrganizationMembership(user.id);
+  const [membership, fixedOrganization] = await Promise.all([
+    getUserOrganizationMembership(user.id),
+    getOrganizationByCode(FIXED_ORGANIZATION_CODE),
+  ]);
   const isOwner = isPlatformOwner(user);
-  const organizationId = membership?.organizationId ?? user.organizationId;
-  if (!organizationId) {
+  if (!fixedOrganization) {
     throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "حسابك غير مرتبط بجهة عمل. راجع مالك المنصة.",
+      code: "INTERNAL_SERVER_ERROR",
+      message: "تعذر تحديد الجهة الثابتة للنظام. يرجى مراجعة إعدادات المنصة.",
     });
   }
-  if (!membership?.isActive && !isOwner) {
+  if (
+    !isOwner &&
+    (!membership?.isActive ||
+      membership.organizationId !== fixedOrganization.id)
+  ) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "يجب أن تكون لديك عضوية نشطة في جهة العمل للوصول إلى الوثائق.",
+      message: "يجب أن يكون حسابك مرتبطاً بقسم شرطة الشهباء للوصول إلى الوثائق.",
     });
   }
+  const organizationId = fixedOrganization.id;
 
-  const role = membership?.role ?? (isOwner ? "system_admin" : "member");
+  const role =
+    membership?.organizationId === organizationId
+      ? membership.role
+      : isOwner
+        ? "system_admin"
+        : "member";
   const canManage = isOwner || roleCanAct(role);
   const canAdministrate = isOwner || roleCanAdministrate(role);
 
-  // A single-organization installation never expands access through a hierarchy.
+  // Every account is scoped to the one configured organization, never to a
+  // membership-selected organization or a descendant in the old hierarchy.
   const organizationIds = [organizationId];
 
   return {
