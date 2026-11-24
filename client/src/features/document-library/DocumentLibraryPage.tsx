@@ -56,7 +56,11 @@ import {
   formatDate,
 } from "./types";
 import type { OfficialDocument } from "../../../../shared/documentStudio";
-import { filterAndSortDocuments, type DocumentSortOrder, type DocumentStatusFilter } from "./libraryFilters";
+import {
+  filterAndSortDocuments,
+  type DocumentSortOrder,
+  type DocumentStatusFilter,
+} from "./libraryFilters";
 
 function categoryLabel(value: string): string {
   return DOCUMENT_CATEGORIES.find(item => item.value === value)?.label ?? "عام";
@@ -88,8 +92,10 @@ export default function DocumentLibraryPage() {
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [statusFilter, setStatusFilter] = useState<DocumentStatusFilter>("all");
-  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("updated-desc");
+  const [statusFilter, setStatusFilter] =
+    useState<DocumentStatusFilter>("all");
+  const [sortOrder, setSortOrder] =
+    useState<DocumentSortOrder>("updated-desc");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
@@ -134,12 +140,13 @@ export default function DocumentLibraryPage() {
   );
 
   const filtered = useMemo(
-    () => filterAndSortDocuments(documents, {
-      search,
-      category,
-      status: statusFilter,
-      sort: sortOrder,
-    }),
+    () =>
+      filterAndSortDocuments(documents, {
+        search,
+        category,
+        status: statusFilter,
+        sort: sortOrder,
+      }),
     [documents, search, category, statusFilter, sortOrder]
   );
 
@@ -295,7 +302,9 @@ export default function DocumentLibraryPage() {
             حالة الوثيقة
             <select
               value={statusFilter}
-              onChange={event => setStatusFilter(event.target.value as DocumentStatusFilter)}
+              onChange={event =>
+                setStatusFilter(event.target.value as DocumentStatusFilter)
+              }
               className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
             >
               <option value="all">جميع الحالات</option>
@@ -308,7 +317,9 @@ export default function DocumentLibraryPage() {
             ترتيب النتائج
             <select
               value={sortOrder}
-              onChange={event => setSortOrder(event.target.value as DocumentSortOrder)}
+              onChange={event =>
+                setSortOrder(event.target.value as DocumentSortOrder)
+              }
               className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
             >
               <option value="updated-desc">الأحدث تحديثاً</option>
@@ -406,11 +417,12 @@ export default function DocumentLibraryPage() {
         </Card>
       ) : (
         <>
-        <p className="text-xs text-muted-foreground" role="status">
-          يعرض {filtered.length.toLocaleString("ar")} من أصل {documents.length.toLocaleString("ar")} وثيقة
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map(document => {
+          <p className="text-xs text-muted-foreground" role="status">
+            يعرض {filtered.length.toLocaleString("ar")} من أصل{" "}
+            {documents.length.toLocaleString("ar")} وثيقة
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map(document => {
             const file = document.file;
             if (!file) return null;
             return (
@@ -456,7 +468,7 @@ export default function DocumentLibraryPage() {
               </Card>
             );
           })}
-        </div>
+          </div>
         </>
       )}
 
