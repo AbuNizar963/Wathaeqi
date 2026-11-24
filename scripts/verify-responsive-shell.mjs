@@ -121,14 +121,13 @@ assert(
     "مكتبة الوثائق",
     "استوديو الوثائق",
     "إدارة المستخدمين",
-    "إدارة الجهات",
     "إعدادات الوثائق",
   ].every(label => dashboardLayout.includes(`label: "${label}"`)),
   "The sidebar must expose the full Wathaeqi workspace navigation."
 );
 
 assert(
-  ["/dashboard", "/studio", "/users", "/organizations", "/settings"].every(
+  ["/dashboard", "/studio", "/users", "/settings"].every(
     path => appRoutes.includes(`path="${path}"`)
   ),
   "Every restored workspace navigation item must resolve to a registered route."
@@ -136,9 +135,11 @@ assert(
 
 assert(
   workspacePage.includes('section === "users"') &&
-    workspacePage.includes('section === "organizations"') &&
+    !workspacePage.includes('section === "organizations"') &&
+    !dashboardLayout.includes('label: "إدارة الجهات"') &&
+    !appRoutes.includes('path="/organizations"') &&
     workspacePage.includes("trpc.workspace.administration.overview.useQuery"),
-  "The users and organizations workspace pages must be connected to Appwrite-backed API operations."
+  "The workspace must expose user administration without any organization-management route or navigation."
 );
 
 assert(
@@ -150,4 +151,4 @@ assert(
   "Workspace API reads and writes must use the existing Appwrite tables and scope data to the signed-in owner."
 );
 
-console.log("Responsive shell and restored workspace checks passed.");
+console.log("Responsive shell and single-organization print-only checks passed.");
