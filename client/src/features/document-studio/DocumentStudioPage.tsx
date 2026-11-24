@@ -4,6 +4,7 @@ import {
   Eye,
   EyeOff,
   FilePlus2,
+  FileDown,
   FileText,
   FileUp,
   PenLine,
@@ -52,6 +53,7 @@ import DocumentStudioPrintDialog from "./DocumentStudioPrintDialog";
 import {
   documentFileUrl,
   downloadA4PageAsPng,
+  downloadOfficialDocumentAsWord,
   downloadDocumentFile,
   shareDocument,
 } from "./documentActions";
@@ -496,6 +498,26 @@ export default function DocumentStudioPage() {
         downloadError instanceof Error
           ? downloadError.message
           : "تعذر تنزيل الوثيقة"
+      );
+    }
+  }
+
+  async function downloadSelectedDocumentAsWord() {
+    if (!selectedDocument || selectedDocument.file) return;
+    try {
+      await downloadOfficialDocumentAsWord({
+        title: selectedDocument.title,
+        subject: selectedDocument.subject,
+        serialCode: selectedDocument.serialCode,
+        documentDate: formatArabicDate(selectedDocument.documentDate),
+        content: documentPreviewContent,
+      });
+      toast.success("تم تجهيز نسخة Word قابلة للتحرير");
+    } catch (wordError) {
+      toast.error(
+        wordError instanceof Error
+          ? wordError.message
+          : "تعذر تصدير الوثيقة إلى Word"
       );
     }
   }
@@ -1621,6 +1643,21 @@ export default function DocumentStudioPage() {
                   >
                     <Printer className="h-5 w-5" />
                     <span className="text-xs">طباعة</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-16 flex-col gap-1"
+                    disabled={Boolean(selectedDocument.file)}
+                    onClick={() => void downloadSelectedDocumentAsWord()}
+                    title={
+                      selectedDocument.file
+                        ? "الملفات المرفوعة تُنزّل بصيغتها الأصلية"
+                        : "تنزيل نسخة Word قابلة للتحرير"
+                    }
+                  >
+                    <FileDown className="h-5 w-5" />
+                    <span className="text-xs">تنزيل Word</span>
                   </Button>
                   <Button
                     type="button"
