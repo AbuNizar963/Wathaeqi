@@ -528,9 +528,9 @@ export default function PlatformDocumentSettingsPage() {
               </label>
             </section>
             <section className="space-y-4">
-              <h2 className="font-semibold">تحرير رأس الصفحة</h2>
+              <h2 className="font-semibold">بيانات أسفل الوثيقة</h2>
               <p className="text-xs text-muted-foreground">
-                اترك الحقول النصية فارغة لاستخدام بيانات الجهة المسجلة.
+                تظهر هذه البيانات بعد آخر سطر من الوثيقة.
               </p>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">العنوان الرئيسي</span>
@@ -669,7 +669,9 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium">محاذاة عناصر الرأس</span>
+                <span className="text-sm font-medium">
+                  محاذاة بيانات أسفل الوثيقة
+                </span>
                 <select
                   value={values.headerAlignment}
                   onChange={event =>

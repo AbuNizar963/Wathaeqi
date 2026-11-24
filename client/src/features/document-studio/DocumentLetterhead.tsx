@@ -1,10 +1,6 @@
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
 export type DocumentLetterheadProps = {
-  organizationName: string;
-  unitName: string;
-  chiefRank: string;
-  chiefName: string;
   logoUrl: string | null;
   dividerColor: string;
   headerSettings?: PlatformDocumentSettings;
@@ -13,41 +9,19 @@ export type DocumentLetterheadProps = {
 };
 
 /**
- * A4 letterhead shared by the live preview, printing and the PNG export.
- *
- * The three columns use a table row instead of CSS grid or flexbox: html2canvas
- * (the PNG exporter) mishandles both grid placement and flex alignment.
- * The serial/date metadata is rendered in a separate row
- * below the divider so it remains right-aligned in every renderer.
+ * A4 document header shared by preview, printing and PNG export.
+ * Signatory and organization text is intentionally rendered after the
+ * document body by DocumentSignatureBlock, not in this header.
  */
 export default function DocumentLetterhead({
-  organizationName,
-  unitName,
-  chiefRank,
-  chiefName,
   logoUrl,
   dividerColor,
   headerSettings,
   serial,
   date,
 }: DocumentLetterheadProps) {
-  const configuredTitle =
-    headerSettings?.headerTitle.trim() || organizationName;
-  const configuredSubtitle = headerSettings?.headerSubtitle.trim() || unitName;
-  const title = configuredTitle === "إدارة الشرطة" ? "" : configuredTitle;
-  const subtitle =
-    configuredSubtitle === "وحدة العمليات" ? "" : configuredSubtitle;
-  const rank = headerSettings?.headerChiefRank.trim() || chiefRank;
-  const name = headerSettings?.headerChiefName.trim() || chiefName;
   const showLogo = headerSettings?.headerShowLogo !== false;
   const logoSize = headerSettings?.headerLogoSize ?? 120;
-  const alignment = headerSettings?.headerAlignment ?? "spread";
-  const textAlign =
-    alignment === "center"
-      ? "center"
-      : alignment === "right"
-        ? "right"
-        : undefined;
 
   return (
     <header
@@ -64,21 +38,9 @@ export default function DocumentLetterhead({
       dir="rtl"
     >
       <div className="document-letterhead__row">
-        <div className="document-letterhead__cell text-right">
-          {title ? (
-            <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
-              {title}
-            </p>
-          ) : null}
-          {subtitle ? (
-            <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
-          style={{ width: logoSize }}
+          style={{ width: "100%" }}
         >
           {showLogo && logoUrl ? (
             <img
@@ -89,34 +51,7 @@ export default function DocumentLetterhead({
             />
           ) : null}
         </div>
-        <div
-          className="document-letterhead__cell text-left text-[15pt] font-bold leading-[1.5] tracking-[-0.12px]"
-          style={{ textAlign }}
-          dir="rtl"
-        >
-          {rank ? (
-            <p className="whitespace-nowrap text-[12pt] font-semibold">
-              {rank}
-            </p>
-          ) : null}
-          {name ? (
-            <p className="whitespace-nowrap text-[12pt] font-semibold">
-              {name}
-            </p>
-          ) : null}
-        </div>
       </div>
-      {headerSettings?.pageHeaderRows?.map((row, index) => (
-        <div
-          key={`custom-header-${index}`}
-          className="grid grid-cols-2 gap-4 px-2 text-sm font-semibold leading-6"
-        >
-          <span className="text-right">{row.right}</span>
-          <span className="text-left" dir="ltr">
-            {row.left}
-          </span>
-        </div>
-      ))}
       {headerSettings?.headerDividerStyle === "tricolor-stars" ? (
         <div
           className="document-tricolor-stars-divider"
