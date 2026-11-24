@@ -693,7 +693,7 @@ export default function PlatformDocumentSettingsPage() {
 
             <section className="space-y-4">
               <div>
-                <h2 className="font-semibold">سطور رأس وتذييل الصفحة</h2>
+                <h2 className="font-semibold">سطور رأس الصفحة وتذييل الصفحة</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر عدد السطور واكتب نصاً يميناً وآخر يساراً في السطر نفسه،
                   مثل: الجمهورية العربية السورية / Syrian Arab.
@@ -701,7 +701,7 @@ export default function PlatformDocumentSettingsPage() {
               </div>
               {(
                 [
-                  ["pageHeaderRows", "رأس الصفحة"],
+                  ["pageHeaderRows", "سطور رأس الصفحة"],
                   ["pageFooterRows", "تذييل الصفحة"],
                 ] as const
               ).map(([kind, label]) => (
