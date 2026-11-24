@@ -49,13 +49,6 @@ jobs:
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       # Validate the fixed organization boundary and print-only workspace across the full project.
-      - name: Diagnose changed file formatting (temporary)
-        run: |
-          for file in server/features/organizations/organizationRouter.test.ts scripts/verify-responsive-shell.mjs; do
-            pnpm exec prettier "$file" > "/tmp/$(basename "$file").formatted"
-            diff -u "$file" "/tmp/$(basename "$file").formatted" || true
-          done
-
       - name: Check formatting
         run: pnpm lint
 
