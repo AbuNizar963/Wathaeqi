@@ -1195,7 +1195,6 @@ class _DashboardPageState extends State<DashboardPage>
     try {
       final value = await widget.api.call('organizations.context');
       if (value is! Map) return;
-      final organizationId = value['organizationId']?.toString();
       if (!mounted) return;
       setState(() {
         activeOrganizationName = (value['organizationName'] ?? value['name'])
