@@ -5,6 +5,7 @@ import { encodeOfficialDocumentStorageContent } from "../shared/documentStudio";
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   getProfile: vi.fn(),
+  resolveOrganizationScope: vi.fn(),
   getRow: vi.fn(),
   listRows: vi.fn(),
   getObjectInfo: vi.fn(),
@@ -30,6 +31,9 @@ vi.mock("./_core/storageProvider", () => ({
     getObjectInfo: mocks.getObjectInfo,
     download: mocks.download,
   }),
+}));
+vi.mock("./features/organizations/organizationAccess", () => ({
+  resolveOrganizationScope: mocks.resolveOrganizationScope,
 }));
 vi.mock("./features/organizations/organizationService", () => ({
   getOrganizationLogoUrl: vi.fn(),
@@ -174,6 +178,15 @@ describe("document original file endpoint", () => {
       isActive: true,
     });
     mocks.getProfile.mockResolvedValue({ user: { organizationId: "org-a" } });
+    mocks.resolveOrganizationScope.mockResolvedValue({
+      userId: 7,
+      organizationId: "org-a",
+      organizationIds: ["org-a"],
+      role: "member",
+      isOwner: false,
+      canManage: true,
+      canAdministrate: false,
+    });
     mocks.getRow.mockResolvedValue(
       documentRow(file("report.docx", docxMime, docx))
     );
@@ -249,49 +262,48 @@ describe("document original file endpoint", () => {
     });
   });
 
-  it("rejects another owner in the same organization and another organization", async () => {
+  it("rejects another owner and an account outside the fixed organization", async () => {
     await withServer(async baseUrl => {
       mocks.getUser.mockResolvedValue({
         id: 8,
         authUserId: otherOwnerId,
         isActive: true,
       });
-      mocks.getProfile.mockResolvedValue({ user: { organizationId: "org-a" } });
-      const sameOrg = await requestFile(baseUrl);
-      expect(sameOrg.status).toBe(404);
-      assertPrivate(sameOrg);
-      mocks.getProfile.mockResolvedValue({ user: { organizationId: "org-b" } });
-      const otherOrg = await requestFile(baseUrl);
-      expect(otherOrg.status).toBe(404);
-      assertPrivate(otherOrg);
-      expect(mocks.getRow).toHaveBeenCalledTimes(2);
+      const anotherOwner = await requestFile(baseUrl);
+      expect(anotherOwner.status).toBe(404);
+      assertPrivate(anotherOwner);
+
+      mocks.resolveOrganizationScope.mockRejectedValueOnce(
+        Object.assign(new Error("outside fixed organization"), {
+          code: "FORBIDDEN",
+        })
+      );
+      const outsideOrganization = await requestFile(baseUrl);
+      expect(outsideOrganization.status).toBe(404);
+      assertPrivate(outsideOrganization);
+
+      expect(mocks.getRow).toHaveBeenCalledTimes(1);
       expect(mocks.getObjectInfo).not.toHaveBeenCalled();
       expect(mocks.listRows).not.toHaveBeenCalled();
     });
   });
 
-  it("rejects an owner's document from a different organization or without an active membership and organization", async () => {
+  it("rejects documents outside the fixed organization and fails closed without scope", async () => {
     await withServer(async baseUrl => {
       mocks.getRow.mockResolvedValueOnce(
         documentRow(file("report.docx", docxMime, docx), "org-b")
       );
       expect((await requestFile(baseUrl)).status).toBe(404);
-      mocks.listRows.mockResolvedValueOnce({ rows: [] });
+
+      mocks.resolveOrganizationScope.mockRejectedValueOnce(
+        Object.assign(new Error("membership inactive"), { code: "FORBIDDEN" })
+      );
       expect((await requestFile(baseUrl)).status).toBe(404);
-      mocks.listRows
-        .mockResolvedValueOnce({
-          rows: [
-            {
-              $id: "membership-a",
-              organizationId: "org-a",
-              userId: 7,
-              role: "member",
-              isActive: true,
-            },
-          ],
-        })
-        .mockResolvedValueOnce({ rows: [] });
-      expect((await requestFile(baseUrl)).status).toBe(404);
+
+      mocks.resolveOrganizationScope.mockRejectedValueOnce(
+        new Error("organization lookup unavailable")
+      );
+      expect((await requestFile(baseUrl)).status).toBe(502);
       expect(mocks.getObjectInfo).not.toHaveBeenCalled();
     });
   });
