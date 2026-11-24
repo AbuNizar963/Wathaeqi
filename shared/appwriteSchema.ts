@@ -824,6 +824,8 @@ export const appwriteSchema: SchemaTable[] = [
         required: false,
         default: "spread",
       },
+      { key: "pageHeaderRows", type: "longtext", required: false, default: "[]" },
+      { key: "pageFooterRows", type: "longtext", required: false, default: "[]" },
     ],
     indexes: [
       {

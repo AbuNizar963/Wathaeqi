@@ -1,3 +1,8 @@
+export type DocumentTextRow = { right: string; left: string };
+
+
+
+
 export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   showMinistryWatermarkText: true,
   watermarkText: "وزارة الداخلية",
@@ -15,6 +20,8 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   headerHorizontalPaddingMm: 0,
   headerBottomPaddingMm: 6,
   headerAlignment: "spread" as const,
+  pageHeaderRows: [] as DocumentTextRow[],
+  pageFooterRows: [] as DocumentTextRow[],
   pageMarginTopMm: 10,
   pageMarginRightMm: 10,
   pageMarginBottomMm: 10,
@@ -48,6 +55,8 @@ export type PlatformDocumentSettings = {
   headerHorizontalPaddingMm: number;
   headerBottomPaddingMm: number;
   headerAlignment: DocumentHeaderAlignment;
+  pageHeaderRows: DocumentTextRow[];
+  pageFooterRows: DocumentTextRow[];
   pageMarginTopMm: number;
   pageMarginRightMm: number;
   pageMarginBottomMm: number;

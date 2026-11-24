@@ -12,6 +12,7 @@ import {
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
+  type DocumentTextRow,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
 import {
   getAppwriteDatabaseId,
@@ -131,6 +132,8 @@ function mapPlatformDocumentSettings(
       row.headerAlignment === "center" || row.headerAlignment === "right"
         ? row.headerAlignment
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerAlignment,
+    pageHeaderRows: readTextRows(row.pageHeaderRows),
+    pageFooterRows: readTextRows(row.pageFooterRows),
     pageMarginTopMm: boundedInteger(
       row.pageMarginTopMm,
       MAX_PAGE_MARGIN_MM,
@@ -179,6 +182,21 @@ function mapPlatformDocumentSettings(
   };
 }
 
+function readTextRows(value: unknown): DocumentTextRow[] {
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    try { parsed = JSON.parse(value); } catch { parsed = []; }
+  }
+  if (!Array.isArray(parsed)) return [];
+  return parsed.slice(0, 12).map(item => {
+    const row = item && typeof item === "object" ? item as Record<string, unknown> : {};
+    return {
+      right: typeof row.right === "string" ? row.right.trim().slice(0, 255) : "",
+      left: typeof row.left === "string" ? row.left.trim().slice(0, 255) : "",
+    };
+  });
+}
+
 function boundedInteger(value: unknown, max: number, fallback: number): number {
   if (value === null || value === undefined || value === "") return fallback;
   const number = Number(value);
@@ -212,9 +230,12 @@ export async function updatePlatformDocumentSettings(
   updatedByUserId: number
 ): Promise<PlatformDocumentSettings> {
   const now = new Date().toISOString();
+  const { pageHeaderRows, pageFooterRows, ...scalarValues } = values;
   const data = {
     id: 1,
-    ...values,
+    ...scalarValues,
+    pageHeaderRows: JSON.stringify(readTextRows(pageHeaderRows)),
+    pageFooterRows: JSON.stringify(readTextRows(pageFooterRows)),
     updatedByUserId,
     updatedAt: now,
   };
