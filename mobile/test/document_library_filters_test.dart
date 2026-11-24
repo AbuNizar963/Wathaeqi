@@ -47,30 +47,30 @@ void main() {
   test(
     'matches Arabic search despite alef variants, diacritics, and taa marbuta',
     () {
-    final arabicDocument = OfficialDocument(
-      id: 'arabic',
-      ownerId: 'owner',
-      title: 'إِدَارَةُ المُوَارَدِ البَشَرِيَّة',
-      category: 'general',
-      subject: 'موضوع',
-      content: const {},
-      fieldValues: const {},
-      serialNumber: 4,
-      serialCode: 'DOC-arabic',
-      documentDate: DateTime.utc(2026, 4),
-      status: 'issued',
-      createdAt: DateTime.utc(2026, 4),
-      updatedAt: DateTime.utc(2026, 4),
-    );
-
-    expect(
-      filterAndSortDocuments(
-        [arabicDocument],
-        search: 'اداره الموارد البشريه',
-      ).map((item) => item.id),
-      ['arabic'],
-    );
-  });
+      final arabicDocument = OfficialDocument(
+        id: 'arabic',
+        ownerId: 'owner',
+        title: 'إِدَارَةُ المُوَارَدِ البَشَرِيَّة',
+        category: 'general',
+        subject: 'موضوع',
+        content: const {},
+        fieldValues: const {},
+        serialNumber: 4,
+        serialCode: 'DOC-arabic',
+        documentDate: DateTime.utc(2026, 4),
+        status: 'issued',
+        createdAt: DateTime.utc(2026, 4),
+        updatedAt: DateTime.utc(2026, 4),
+      );
+  
+      expect(
+        filterAndSortDocuments(
+          [arabicDocument],
+          search: 'اداره الموارد البشريه',
+        ).map((item) => item.id),
+        ['arabic'],
+      );
+  
 
   test('sorts newest, oldest, and title without mutating source', () {
     expect(filterAndSortDocuments(documents).map((item) => item.id), [
