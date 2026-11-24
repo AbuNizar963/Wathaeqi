@@ -11,7 +11,7 @@ abstract final class AppPalette {
   static const ink = Color(0xFF202B3A);
   static const muted = Color(0xFFF1F2F4);
   static const mutedInk = Color(0xFF5F6B7A);
-  static const border = Color(0xFFE1E5EB);
+  static const border = Color(0xFFDCE5ED);
   static const danger = Color(0xFFB42332);
   static const success = Color(0xFF14745D);
   static const warning = Color(0xFFA05C0C);
@@ -48,7 +48,7 @@ abstract final class AppPalette {
     onTertiary: surface,
     primaryContainer: Color(0xFFE8EDF4),
     onPrimaryContainer: navy,
-    secondaryContainer: Color(0xFFEAF3FF),
+    secondaryContainer: Color(0xFFDDF4F1),
     onSecondaryContainer: navy,
     surfaceTint: navy,
     error: danger,
@@ -75,7 +75,7 @@ abstract final class AppPalette {
     primaryContainer: Color(0xFF263A55),
     onPrimaryContainer: darkInk,
     secondaryContainer: Color(0xFF1D3B5D),
-    onSecondaryContainer: Color(0xFFEAF3FF),
+    onSecondaryContainer: Color(0xFFDDF4F1),
     surfaceTint: brandBlue,
     error: Color(0xFFF97066),
     onError: Color(0xFF341118),
@@ -211,7 +211,7 @@ abstract final class AppTheme {
         ),
         chipTheme: ChipThemeData(
           backgroundColor: AppPalette.muted,
-          selectedColor: const Color(0xFFEAF3FF),
+          selectedColor: const Color(0xFFDDF4F1),
           secondarySelectedColor: AppPalette.muted,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           labelStyle: const TextStyle(
@@ -229,7 +229,7 @@ abstract final class AppTheme {
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFFE1E5EB)),
+            side: const BorderSide(color: Color(0xFFDCE5ED)),
           ),
           textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
         ),
@@ -244,7 +244,7 @@ abstract final class AppTheme {
           iconColor: AppPalette.mutedInk,
           textColor: AppPalette.ink,
           selectedColor: AppPalette.navy,
-          selectedTileColor: const Color(0xFFE9EEF5),
+          selectedTileColor: const Color(0xFFE4EDF3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -257,7 +257,7 @@ abstract final class AppTheme {
         ),
         navigationBarTheme: const NavigationBarThemeData(
           backgroundColor: AppPalette.surface,
-          indicatorColor: Color(0xFFE9EEF5),
+          indicatorColor: Color(0xFFE4EDF3),
           iconTheme: WidgetStateProperty<IconThemeData>.fromMap({
             WidgetState.selected: IconThemeData(color: AppPalette.navy),
             WidgetState.any: IconThemeData(color: AppPalette.mutedInk),
@@ -272,8 +272,46 @@ abstract final class AppTheme {
             ),
           ),
         ),
+        dialogTheme: const DialogThemeData(
+          backgroundColor: AppPalette.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: AppPalette.surface,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppPalette.navy,
+          contentTextStyle: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Cairo',
+            fontWeight: FontWeight.w600,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(14)),
+          ),
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: AppPalette.brandBlue,
+          linearTrackColor: Color(0xFFDDF4F1),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: AppPalette.brandBlue,
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
         dividerTheme: const DividerThemeData(
-          color: Color(0xFFE5E7EB),
+          color: Color(0xFFDCE5ED),
           thickness: 1,
         ),
       ).copyWith(
@@ -282,7 +320,7 @@ abstract final class AppTheme {
         primaryIconTheme: const IconThemeData(color: AppPalette.navy, size: 20),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: AppPalette.navy,
-          selectionColor: Color(0x3310233F),
+          selectionColor: Color(0x330F9F9A),
           selectionHandleColor: AppPalette.navy,
         ),
       );
