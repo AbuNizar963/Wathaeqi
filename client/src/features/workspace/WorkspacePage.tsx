@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import {
-  Building2,
   Bell,
   Contact,
   FileClock,
@@ -25,22 +24,13 @@ import { trpc as appTrpc } from "@/lib/trpc";
 import { useAuth } from "@/features/auth-session/useAuth";
 import { hasUserManagementMenuAccess } from "@/features/admin/menuAccess";
 
-type WorkspaceSection =
-  "dashboard" | "contacts" | "notifications" | "users" | "organizations";
-
-type OrganizationForm = {
-  name: string;
-  code: string;
-  type: string;
-  parentOrganizationId: string;
-};
+type WorkspaceSection = "dashboard" | "contacts" | "notifications" | "users";
 
 type UserForm = {
   name: string;
   username: string;
   email: string;
   password: string;
-  organizationId: string;
   role: "user" | "admin";
 };
 
@@ -51,19 +41,11 @@ type ContactForm = {
   organization: string;
 };
 
-const emptyOrganization: OrganizationForm = {
-  name: "",
-  code: "",
-  type: "department",
-  parentOrganizationId: "",
-};
-
 const emptyUser: UserForm = {
   name: "",
   username: "",
   email: "",
   password: "",
-  organizationId: "",
   role: "user",
 };
 
@@ -79,7 +61,6 @@ const sectionTitles: Record<WorkspaceSection, string> = {
   contacts: "جهات الاتصال",
   notifications: "الإشعارات",
   users: "إدارة المستخدمين",
-  organizations: "إدارة الجهات",
 };
 
 export default function WorkspacePage({
@@ -103,11 +84,6 @@ export default function WorkspacePage({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyContact);
   const [userForm, setUserForm] = useState<UserForm>(emptyUser);
-  const [organizationForm, setOrganizationForm] =
-    useState<OrganizationForm>(emptyOrganization);
-  const [editingOrganizationId, setEditingOrganizationId] = useState<
-    string | null
-  >(null);
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery(undefined, {
     enabled: section === "dashboard",
   });
@@ -128,8 +104,7 @@ export default function WorkspacePage({
     {
       enabled:
         section === "dashboard" ||
-        section === "users" ||
-        section === "organizations",
+        section === "users",
     }
   );
   const utils = trpc.useUtils();
@@ -190,34 +165,6 @@ export default function WorkspacePage({
       onError: error => toast.error(error.message),
     }
   );
-  const createOrganization =
-    trpc.workspace.administration.createOrganization.useMutation({
-      onSuccess: async () => {
-        await utils.workspace.administration.overview.invalidate();
-        setOrganizationForm(emptyOrganization);
-        toast.success("تم إنشاء الجهة");
-      },
-      onError: error => toast.error(error.message),
-    });
-  const updateOrganization =
-    trpc.workspace.administration.updateOrganization.useMutation({
-      onSuccess: async () => {
-        await utils.workspace.administration.overview.invalidate();
-        setEditingOrganizationId(null);
-        setOrganizationForm(emptyOrganization);
-        toast.success("تم تحديث الجهة");
-      },
-      onError: error => toast.error(error.message),
-    });
-  const setOrganizationActive =
-    trpc.workspace.administration.setOrganizationActive.useMutation({
-      onSuccess: async () => {
-        await utils.workspace.administration.overview.invalidate();
-        toast.success("تم تحديث حالة الجهة");
-      },
-      onError: error => toast.error(error.message),
-    });
-
   const contacts = useMemo(() => {
     const rows = contactsQuery.data ?? [];
     const term = search.trim().toLocaleLowerCase("ar");
@@ -239,17 +186,6 @@ export default function WorkspacePage({
         .some(value => String(value).toLocaleLowerCase("ar").includes(term))
     );
   }, [administrationQuery.data?.users, search]);
-
-  const organizations = useMemo(() => {
-    const rows = administrationQuery.data?.organizations ?? [];
-    const term = search.trim().toLocaleLowerCase("ar");
-    if (!term) return rows;
-    return rows.filter(item =>
-      [item.name, item.code, item.type]
-        .filter(Boolean)
-        .some(value => String(value).toLocaleLowerCase("ar").includes(term))
-    );
-  }, [administrationQuery.data?.organizations, search]);
 
   const isLoading =
     section === "dashboard"
@@ -322,10 +258,7 @@ export default function WorkspacePage({
     updateContact.isPending ||
     deleteContact.isPending ||
     createUser.isPending ||
-    setUserActive.isPending ||
-    createOrganization.isPending ||
-    updateOrganization.isPending ||
-    setOrganizationActive.isPending;
+    setUserActive.isPending;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5" dir="rtl">
@@ -341,7 +274,7 @@ export default function WorkspacePage({
             ) : section === "users" ? (
               <Users className="h-6 w-6" />
             ) : (
-              <Building2 className="h-6 w-6" />
+              <Users className="h-6 w-6" />
             )}
           </span>
           <div>
@@ -355,7 +288,7 @@ export default function WorkspacePage({
                     ? "عرض التنبيهات المرتبطة بحسابك وإدارة حالة قراءتها"
                     : section === "users"
                       ? "إدارة حسابات المستخدمين وصلاحياتهم"
-                      : "إدارة الجهات وعلاقاتها التنظيمية"}
+                      : "إدارة حسابات المستخدمين وصلاحياتهم"}
             </p>
           </div>
         </div>
@@ -373,19 +306,6 @@ export default function WorkspacePage({
               إدارة الصلاحيات المتقدمة
             </Button>
           ) : null}
-          {canOpenAdvancedManagement && section === "organizations" ? (
-            <Button
-              variant="outline"
-              onClick={() =>
-                window.dispatchEvent(
-                  new CustomEvent("open-owner-organization-management")
-                )
-              }
-            >
-              <Building2 className="ml-2 h-4 w-4" />
-              إدارة الهيكل والحسابات
-            </Button>
-          ) : null}
           <Button variant="outline" onClick={refresh} disabled={isLoading}>
             <RefreshCw className="ml-2 h-4 w-4" />
             تحديث البيانات
@@ -393,7 +313,7 @@ export default function WorkspacePage({
         </div>
       </header>
 
-      {section === "users" || section === "organizations" ? (
+      {section === "users" ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SummaryCard
             label="المستخدمون"
@@ -404,16 +324,6 @@ export default function WorkspacePage({
             label="المستخدمون النشطون"
             value={administrationQuery.data?.totals.activeUsers}
             icon={<ShieldCheck className="h-4 w-4" />}
-          />
-          <SummaryCard
-            label="الجهات"
-            value={administrationQuery.data?.totals.organizations}
-            icon={<Building2 className="h-4 w-4" />}
-          />
-          <SummaryCard
-            label="الجهات النشطة"
-            value={administrationQuery.data?.totals.activeOrganizations}
-            icon={<Building2 className="h-4 w-4" />}
           />
         </div>
       ) : null}
@@ -456,11 +366,8 @@ export default function WorkspacePage({
               icon={<Contact className="h-4 w-4" />}
             />
             <SummaryCard
-              label="المستخدمون والجهات"
-              value={
-                (administrationQuery.data?.totals.users ?? 0) +
-                (administrationQuery.data?.totals.organizations ?? 0)
-              }
+              label="المستخدمون"
+              value={administrationQuery.data?.totals.users}
               icon={<Users className="h-4 w-4" />}
             />
           </div>
@@ -742,28 +649,6 @@ export default function WorkspacePage({
                 }
               />
               <label className="grid gap-1.5 text-sm font-medium">
-                الجهة
-                <select
-                  className="h-10 rounded-md border bg-background px-3"
-                  value={userForm.organizationId}
-                  onChange={event =>
-                    setUserForm(current => ({
-                      ...current,
-                      organizationId: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="">اختر الجهة</option>
-                  {(administrationQuery.data?.organizations ?? [])
-                    .filter(item => item.isActive)
-                    .map(item => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-sm font-medium">
                 الصلاحية
                 <select
                   className="h-10 rounded-md border bg-background px-3"
@@ -781,14 +666,19 @@ export default function WorkspacePage({
               </label>
             </div>
             <Button
-              onClick={() => createUser.mutate(userForm)}
+              onClick={() =>
+                createUser.mutate({
+                  ...userForm,
+                  organizationId: organizationContext.data?.organizationId ?? "",
+                })
+              }
               disabled={
                 mutationPending ||
                 !userForm.name.trim() ||
                 !userForm.username.trim() ||
                 !userForm.email.trim() ||
                 userForm.password.length < 12 ||
-                !userForm.organizationId
+                !organizationContext.data?.organizationId
               }
             >
               <Plus className="ml-2 h-4 w-4" /> إنشاء الحساب
@@ -889,201 +779,7 @@ export default function WorkspacePage({
             مفاتيح الجلسات.
           </p>
         </Card>
-      ) : (
-        <Card className="space-y-4 p-4 sm:p-5">
-          <div className="space-y-3 rounded-xl border p-4">
-            <h2 className="font-semibold">
-              {editingOrganizationId ? "تعديل بيانات الجهة" : "إضافة جهة جديدة"}
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <Field
-                label="اسم الجهة"
-                value={organizationForm.name}
-                onChange={value =>
-                  setOrganizationForm(current => ({ ...current, name: value }))
-                }
-              />
-              <Field
-                label="رمز الجهة"
-                value={organizationForm.code}
-                onChange={value =>
-                  setOrganizationForm(current => ({
-                    ...current,
-                    code: value.toUpperCase(),
-                  }))
-                }
-              />
-              <label className="grid gap-1.5 text-sm font-medium">
-                نوع الجهة
-                <select
-                  className="h-10 rounded-md border bg-background px-3"
-                  value={organizationForm.type}
-                  onChange={event =>
-                    setOrganizationForm(current => ({
-                      ...current,
-                      type: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="department">إدارة / قسم</option>
-                  <option value="organization">مؤسسة</option>
-                  <option value="unit">وحدة</option>
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-sm font-medium">
-                الجهة الأم
-                <select
-                  className="h-10 rounded-md border bg-background px-3"
-                  value={organizationForm.parentOrganizationId}
-                  onChange={event =>
-                    setOrganizationForm(current => ({
-                      ...current,
-                      parentOrganizationId: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="">بدون جهة أم</option>
-                  {(administrationQuery.data?.organizations ?? [])
-                    .filter(
-                      item => item.isActive && item.id !== editingOrganizationId
-                    )
-                    .map(item => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() =>
-                  editingOrganizationId
-                    ? updateOrganization.mutate({
-                        id: editingOrganizationId,
-                        ...organizationForm,
-                      })
-                    : createOrganization.mutate(organizationForm)
-                }
-                disabled={
-                  mutationPending ||
-                  !organizationForm.name.trim() ||
-                  !organizationForm.code.trim()
-                }
-              >
-                <Save className="ml-2 h-4 w-4" />{" "}
-                {editingOrganizationId ? "حفظ التعديلات" : "إنشاء الجهة"}
-              </Button>
-              {editingOrganizationId ? (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setEditingOrganizationId(null);
-                    setOrganizationForm(emptyOrganization);
-                  }}
-                >
-                  <X className="ml-2 h-4 w-4" /> إلغاء
-                </Button>
-              ) : null}
-            </div>
-          </div>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-            placeholder="ابحث باسم الجهة أو رمزها..."
-          />
-          {isLoading ? (
-            <Loading />
-          ) : isError ? (
-            <ErrorMessage message={errorMessage} onRetry={refresh} />
-          ) : organizations.length === 0 ? (
-            <EmptyState text="لا توجد جهات مسجلة." />
-          ) : (
-            <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[600px] text-sm">
-                <thead className="bg-muted/60 text-right">
-                  <tr>
-                    <th className="p-3">الجهة</th>
-                    <th className="p-3">الرمز</th>
-                    <th className="p-3">النوع</th>
-                    <th className="p-3">الجهة الأم</th>
-                    <th className="p-3">الحالة</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {organizations.map(item => (
-                    <tr key={item.id} className="border-t">
-                      <td className="p-3 font-medium">{item.name}</td>
-                      <td className="p-3" dir="ltr">
-                        {item.code}
-                      </td>
-                      <td className="p-3">{item.type}</td>
-                      <td className="p-3">
-                        {organizations.find(
-                          parent => parent.id === item.parentOrganizationId
-                        )?.name || "—"}
-                      </td>
-                      <td className="p-3">
-                        <Badge
-                          variant={item.isActive ? "default" : "secondary"}
-                        >
-                          {item.isActive ? "نشطة" : "موقوفة"}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingOrganizationId(item.id);
-                              setOrganizationForm({
-                                name: item.name,
-                                code: item.code,
-                                type: item.type,
-                                parentOrganizationId:
-                                  item.parentOrganizationId ?? "",
-                              });
-                            }}
-                            aria-label="تعديل الجهة"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={mutationPending}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  item.isActive
-                                    ? "إيقاف الجهة؟"
-                                    : "إعادة تفعيل الجهة؟"
-                                )
-                              ) {
-                                setOrganizationActive.mutate({
-                                  id: item.id,
-                                  isActive: !item.isActive,
-                                });
-                              }
-                            }}
-                          >
-                            {item.isActive ? "إيقاف" : "تفعيل"}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            يعرض هذا القسم شجرة الجهات المحفوظة في Appwrite. لم تُجرَ أي تغييرات
-            على بيانات الجهات.
-          </p>
-        </Card>
-      )}
+      ) : null}
     </div>
   );
 }
