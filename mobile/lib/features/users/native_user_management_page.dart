@@ -191,10 +191,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
     }
     if (fixedOrganization == null) {
       if (mounted) {
-        Toast.warning(
-          context,
-          'تعذر تحديد قسم شرطة الشهباء لإنشاء الحساب.',
-        );
+        Toast.warning(context, 'تعذر تحديد قسم شرطة الشهباء لإنشاء الحساب.');
       }
       return;
     }
@@ -835,8 +832,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                   items: _roles.entries
                       .where(
                         (entry) =>
-                            entry.key != 'regional_admin' ||
-                            entry.key == _role,
+                            entry.key != 'regional_admin' || entry.key == _role,
                       )
                       .map(
                         (entry) => DropdownMenuItem(
