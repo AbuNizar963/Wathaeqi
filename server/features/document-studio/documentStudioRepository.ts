@@ -4,6 +4,8 @@ import type {
   DocumentTemplateField,
   OfficialDocument,
   UploadedDocumentFile,
+  DocumentVersionSnapshot,
+  DocumentVersionSummary,
 } from "../../../shared/documentStudio";
 import {
   decodeOfficialDocumentStorageContent,
@@ -90,6 +92,39 @@ function mapTemplateRow(row: AppwriteRow): DocumentTemplate {
     createdAt: rowCreatedAt(row),
     updatedAt: isoDate(row.$updatedAt, rowCreatedAt(row)),
   };
+}
+
+function toDocumentVersionSnapshot(
+  document: OfficialDocument,
+  version: number,
+  savedAt: string,
+  savedByUserId: string
+): DocumentVersionSnapshot {
+  return {
+    version,
+    savedAt,
+    savedByUserId,
+    title: document.title,
+    category: document.category,
+    subject: document.subject,
+    content: document.content,
+    fieldValues: document.fieldValues,
+    documentDate: document.documentDate,
+    templateId: document.templateId,
+    templateRevision: document.templateRevision,
+    templateFieldsSnapshot: document.templateFieldsSnapshot,
+  };
+}
+
+function documentVersionSummaries(
+  versions: readonly DocumentVersionSnapshot[]
+): DocumentVersionSummary[] {
+  return versions.map(({ version, savedAt, savedByUserId, title }) => ({
+    version,
+    savedAt,
+    savedByUserId,
+    title,
+  }));
 }
 
 function mapDocumentRow(row: AppwriteRow): OfficialDocument {
@@ -398,6 +433,10 @@ export async function updateOfficialDocument(
     if (!row || rowData(row).ownerId !== ownerId) return null;
 
     const existing = mapDocumentRow(row);
+    const storedContent = decodeOfficialDocumentStorageContent(
+      rowData(row).content,
+      existing.createdAt
+    );
     if (existing.updatedAt !== expectedUpdatedAt) {
       throw new DocumentStudioConflictError(
         "تم تعديل الوثيقة في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
@@ -409,7 +448,26 @@ export async function updateOfficialDocument(
       );
     }
 
+    const hasMeaningfulChanges =
+      existing.title !== input.title ||
+      existing.category !== input.category ||
+      existing.subject !== input.subject ||
+      existing.documentDate !== input.documentDate ||
+      JSON.stringify(existing.content) !== JSON.stringify(input.content) ||
+      JSON.stringify(existing.fieldValues) !== JSON.stringify(input.fieldValues) ||
+      existing.templateId !== input.templateId ||
+      existing.templateRevision !== input.templateRevision;
     const now = new Date().toISOString();
+    const latestVersion = storedContent.versions.reduce(
+      (latest, item) => Math.max(latest, item.version),
+      0
+    );
+    const versions = hasMeaningfulChanges
+      ? [
+          ...storedContent.versions,
+          toDocumentVersionSnapshot(existing, latestVersion + 1, now, ownerId),
+        ].slice(-20)
+      : storedContent.versions;
     const updated = await getAppwriteTablesDB().updateRow({
       databaseId: getAppwriteDatabaseId(),
       tableId: DOCUMENTS_TABLE_ID,
@@ -434,7 +492,7 @@ export async function updateOfficialDocument(
           templateRevision: input.templateRevision,
           issuedAt: existing.issuedAt,
           archivedAt: existing.archivedAt,
-        }),
+        }, versions),
       },
     });
     return mapDocumentRow(updated as AppwriteRow);
@@ -461,6 +519,10 @@ export async function issueOfficialDocument(
     if (!row || rowData(row).ownerId !== ownerId) return null;
 
     const existing = mapDocumentRow(row);
+    const storedContent = decodeOfficialDocumentStorageContent(
+      rowData(row).content,
+      existing.createdAt
+    );
     if (existing.status === "issued") return existing;
     if (existing.status !== "draft") {
       throw new DocumentStudioConflictError("لا يمكن إصدار وثيقة مؤرشفة.");
@@ -493,7 +555,101 @@ export async function issueOfficialDocument(
           templateRevision: existing.templateRevision,
           issuedAt: input.issuedAt,
           archivedAt: null,
-        }),
+        }, storedContent.versions),
+      },
+    });
+    return mapDocumentRow(updated as AppwriteRow);
+  });
+}
+
+export async function listOfficialDocumentVersions(
+  ownerId: string,
+  documentId: string
+): Promise<DocumentVersionSummary[] | null> {
+  const row = await getRowOrNull(DOCUMENTS_TABLE_ID, documentId);
+  if (!row || rowData(row).ownerId !== ownerId) return null;
+  const document = mapDocumentRow(row);
+  const decoded = decodeOfficialDocumentStorageContent(
+    rowData(row).content,
+    document.createdAt
+  );
+  return documentVersionSummaries(decoded.versions).reverse();
+}
+
+export async function restoreOfficialDocumentVersion(
+  ownerId: string,
+  documentId: string,
+  version: number,
+  expectedUpdatedAt: string
+): Promise<OfficialDocument | null> {
+  return withTableTransaction(async transactionId => {
+    const row = await getRowOrNull(
+      DOCUMENTS_TABLE_ID,
+      documentId,
+      transactionId
+    );
+    if (!row || rowData(row).ownerId !== ownerId) return null;
+
+    const existing = mapDocumentRow(row);
+    if (existing.updatedAt !== expectedUpdatedAt) {
+      throw new DocumentStudioConflictError(
+        "تم تعديل الوثيقة في مكان آخر. حدّث الصفحة قبل استعادة النسخة."
+      );
+    }
+    if (existing.status !== "draft") {
+      throw new DocumentStudioConflictError(
+        "يمكن استعادة النسخ للمسودات فقط؛ الوثائق الصادرة والمؤرشفة محمية."
+      );
+    }
+
+    const decoded = decodeOfficialDocumentStorageContent(
+      rowData(row).content,
+      existing.createdAt
+    );
+    const target = decoded.versions.find(item => item.version === version);
+    if (!target) {
+      throw new DocumentStudioConflictError(
+        "النسخة المطلوبة غير موجودة ضمن سجل الوثيقة."
+      );
+    }
+
+    const now = new Date().toISOString();
+    const latestVersion = decoded.versions.reduce(
+      (latest, item) => Math.max(latest, item.version),
+      0
+    );
+    const versions = [
+      ...decoded.versions,
+      toDocumentVersionSnapshot(existing, latestVersion + 1, now, ownerId),
+    ].slice(-20);
+    const updated = await getAppwriteTablesDB().updateRow({
+      databaseId: getAppwriteDatabaseId(),
+      tableId: DOCUMENTS_TABLE_ID,
+      rowId: documentId,
+      transactionId,
+      data: {
+        title: target.title,
+        category: target.category,
+        updatedAt: now,
+        content: encodeOfficialDocumentStorageContent(
+          {
+            content: target.content,
+            organizationId: existing.organizationId,
+            templateFieldsSnapshot: target.templateFieldsSnapshot,
+            subject: target.subject,
+            fieldValues: target.fieldValues,
+            serialNumber: existing.serialNumber,
+            serialCode: existing.serialCode,
+            documentDate: target.documentDate,
+            status: existing.status,
+            file: existing.file,
+            templateId: target.templateId,
+            templateRevision: target.templateRevision,
+            issuedAt: existing.issuedAt,
+            archivedAt: existing.archivedAt,
+          },
+          versions
+        ),
       },
     });
     return mapDocumentRow(updated as AppwriteRow);
