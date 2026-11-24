@@ -337,8 +337,13 @@ export const organizationRouter = router({
     get: authenticatedProcedure
       .input(z.object({ organizationId: z.string().min(1).max(36) }))
       .query(async ({ ctx, input }) => {
-        requireOwner(ctx);
         const scope = await resolveOrganizationScope(ctx.user);
+        if (!scope.canAdministrate) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "إعدادات الجهة متاحة لمدير الجهة أو مالك المنصة فقط.",
+          });
+        }
         if (input.organizationId !== scope.organizationId) {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -361,8 +366,13 @@ export const organizationRouter = router({
     update: authenticatedProcedure
       .input(legacySettingsInput)
       .mutation(async ({ ctx, input }) => {
-        requireOwner(ctx);
         const scope = await resolveOrganizationScope(ctx.user);
+        if (!scope.canAdministrate) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "إعدادات الجهة متاحة لمدير الجهة أو مالك المنصة فقط.",
+          });
+        }
         if (input.organizationId !== scope.organizationId) {
           throw new TRPCError({
             code: "FORBIDDEN",

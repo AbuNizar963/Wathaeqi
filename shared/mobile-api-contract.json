@@ -26,6 +26,8 @@
     "organizations.logoForExport",
     "organizations.routingDirectory",
     "organizations.routingTargets",
+    "organizations.settings.get",
+    "organizations.settings.update",
     "organizations.update",
     "platformDocumentSettings.get",
     "platformDocumentSettings.update",
@@ -37,7 +39,9 @@
     "userManagement.disable",
     "userManagement.enable",
     "userManagement.list",
-    "userManagement.update"
+    "userManagement.update",
+    "workspace.notifications.list",
+    "workspace.notifications.markRead"
   ],
   "webProcedures": [
     "auth.createInitialOwner",
