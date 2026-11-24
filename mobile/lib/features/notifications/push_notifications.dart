@@ -5,7 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-const MethodChannel _androidTelegramNotificationChannel = MethodChannel(
+const MethodChannel _androidAppNotificationChannel = MethodChannel(
   'com.hadir.police.police_telegrams/telegram_notifications',
 );
 
@@ -255,7 +255,7 @@ class PushNotificationService {
       _androidTelegramNotificationChannel.setMethodCallHandler(null);
       try {
         await _androidTelegramNotificationChannel.invokeMethod<void>(
-          'markTelegramNotificationHandlerNotReady',
+          'markAppUpdateNotificationHandlerNotReady',
         );
       } on MissingPluginException {
         // No native bridge is expected in widget tests or preview builds.
