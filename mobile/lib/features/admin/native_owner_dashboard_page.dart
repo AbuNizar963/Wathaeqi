@@ -199,7 +199,7 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
         end: Alignment.bottomLeft,
       ),
       borderRadius: BorderRadius.circular(24),
-      boxShadow: const [
+      boxShadow: [
         BoxShadow(
           color: AppPalette.navy.withOpacity(0.14),
           blurRadius: 18,
