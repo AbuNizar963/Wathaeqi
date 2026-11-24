@@ -750,10 +750,6 @@ class _DashboardPageState extends State<DashboardPage>
     push
         .initialize(
           onToken: _handlePushToken,
-          onTelegramOpened: (_) => _showNotificationsPreview(),
-          onForegroundTelegram: (_) {
-            _loadUnreadNotificationCount();
-          },
           onAppUpdate: _openAppUpdate,
           onOpenNotifications: _showNotificationsPreview,
         )
