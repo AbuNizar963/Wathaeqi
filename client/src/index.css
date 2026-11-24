@@ -243,6 +243,45 @@
     transform: translateY(-1px);
   }
 
+
+  .document-studio-header {
+    align-items: center;
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--border);
+    border-radius: 1.125rem;
+    background:
+      radial-gradient(circle at 96% 0%, color-mix(in srgb, var(--brand-accent) 9%, transparent), transparent 38%),
+      var(--card);
+    box-shadow: 0 3px 14px var(--shadow-color);
+  }
+
+  .document-studio-header h1 {
+    letter-spacing: -0.035em;
+  }
+
+  .document-studio-tabs {
+    align-items: center;
+  }
+
+  .document-studio-tabs > button {
+    min-height: 2.65rem;
+    border-radius: 0.75rem;
+    font-weight: 650;
+  }
+
+  @media (max-width: 639px) {
+    .document-studio-header {
+      align-items: stretch;
+      padding: 0.875rem;
+    }
+
+    .document-studio-tabs > button {
+      min-width: 0;
+      padding-inline: 0.625rem;
+      font-size: 0.8rem;
+    }
+  }
+
   .document-section-label {
     color: var(--muted-foreground);
     font-size: 0.72rem;
