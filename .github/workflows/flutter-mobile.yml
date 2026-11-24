@@ -59,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
-      # Print-only mode keeps legacy telegram queues local; verify document workflows only.
+      # Print-only mode must not sync legacy telegram queues; verify document workflows only.
       # Keep the source-of-truth check strict: CI must never hide unformatted
       # files by silently accepting formatter changes.
       - name: Verify Dart formatting
