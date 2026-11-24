@@ -1595,13 +1595,22 @@ export default function DocumentStudioPage() {
                     />
                   </div>
                   <footer className="space-y-1 pb-8 pt-4 text-xs text-slate-500">
-                    {platformDocumentSettings.data?.pageFooterRows?.map((row, index) => (
-                      <div key={`custom-footer-${index}`} className="grid grid-cols-2 gap-4 font-semibold">
-                        <span className="text-right">{row.right}</span>
-                        <span className="text-left" dir="ltr">{row.left}</span>
-                      </div>
-                    ))}
-                    {!platformDocumentSettings.data?.pageFooterRows?.length ? <div className="text-center">وثائقي</div> : null}
+                    {platformDocumentSettings.data?.pageFooterRows?.map(
+                      (row, index) => (
+                        <div
+                          key={`custom-footer-${index}`}
+                          className="grid grid-cols-2 gap-4 font-semibold"
+                        >
+                          <span className="text-right">{row.right}</span>
+                          <span className="text-left" dir="ltr">
+                            {row.left}
+                          </span>
+                        </div>
+                      )
+                    )}
+                    {!platformDocumentSettings.data?.pageFooterRows?.length ? (
+                      <div className="text-center">وثائقي</div>
+                    ) : null}
                   </footer>
                 </ResponsiveA4Preview>
               )}

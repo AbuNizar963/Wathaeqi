@@ -116,11 +116,30 @@ export default function PlatformDocumentSettingsPage() {
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
 
-  const updateTextRow = (kind: "pageHeaderRows" | "pageFooterRows", index: number, side: "right" | "left", value: string) =>
-    setValues(current => ({ ...current, [kind]: current[kind].map((row, rowIndex) => rowIndex === index ? { ...row, [side]: value } : row) }));
+  const updateTextRow = (
+    kind: "pageHeaderRows" | "pageFooterRows",
+    index: number,
+    side: "right" | "left",
+    value: string
+  ) =>
+    setValues(current => ({
+      ...current,
+      [kind]: current[kind].map((row, rowIndex) =>
+        rowIndex === index ? { ...row, [side]: value } : row
+      ),
+    }));
 
-  const resizeTextRows = (kind: "pageHeaderRows" | "pageFooterRows", count: number) =>
-    setValues(current => ({ ...current, [kind]: Array.from({ length: count }, (_, index) => current[kind][index] ?? { right: "", left: "" }) }));
+  const resizeTextRows = (
+    kind: "pageHeaderRows" | "pageFooterRows",
+    count: number
+  ) =>
+    setValues(current => ({
+      ...current,
+      [kind]: Array.from(
+        { length: count },
+        (_, index) => current[kind][index] ?? { right: "", left: "" }
+      ),
+    }));
 
   const handleLogoFile = async (file: File | undefined) => {
     if (!file || !organizationId) return;
@@ -702,20 +721,63 @@ export default function PlatformDocumentSettingsPage() {
             <section className="space-y-4">
               <div>
                 <h2 className="font-semibold">سطور رأس وتذييل الصفحة</h2>
-                <p className="mt-1 text-xs text-muted-foreground">اختر عدد السطور واكتب نصاً يميناً وآخر يساراً في السطر نفسه، مثل: الجمهورية العربية السورية / Syrian Arab.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  اختر عدد السطور واكتب نصاً يميناً وآخر يساراً في السطر نفسه،
+                  مثل: الجمهورية العربية السورية / Syrian Arab.
+                </p>
               </div>
-              {([['pageHeaderRows', 'رأس الصفحة'], ['pageFooterRows', 'تذييل الصفحة']] as const).map(([kind, label]) => (
+              {(
+                [
+                  ["pageHeaderRows", "رأس الصفحة"],
+                  ["pageFooterRows", "تذييل الصفحة"],
+                ] as const
+              ).map(([kind, label]) => (
                 <div key={kind} className="space-y-2 rounded-lg border p-3">
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-medium">{label}</span>
-                    <select value={values[kind].length} onChange={event => resizeTextRows(kind, Number(event.target.value))} className="rounded-md border bg-background px-2 py-1 text-sm">
-                      {Array.from({ length: 13 }, (_, count) => <option key={count} value={count}>{count} سطر</option>)}
+                    <select
+                      value={values[kind].length}
+                      onChange={event =>
+                        resizeTextRows(kind, Number(event.target.value))
+                      }
+                      className="rounded-md border bg-background px-2 py-1 text-sm"
+                    >
+                      {Array.from({ length: 13 }, (_, count) => (
+                        <option key={count} value={count}>
+                          {count} سطر
+                        </option>
+                      ))}
                     </select>
                   </div>
                   {values[kind].map((row, index) => (
-                    <div key={index} className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                      <input value={row.right} maxLength={255} placeholder={`السطر ${index + 1} — يمين`} onChange={event => updateTextRow(kind, index, 'right', event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" />
-                      <input value={row.left} maxLength={255} dir="ltr" placeholder={`السطر ${index + 1} — يسار`} onChange={event => updateTextRow(kind, index, 'left', event.target.value)} className="rounded-md border bg-background px-3 py-2 text-sm" />
+                    <div
+                      key={index}
+                      className="grid grid-cols-1 gap-2 md:grid-cols-2"
+                    >
+                      <input
+                        value={row.right}
+                        maxLength={255}
+                        placeholder={`السطر ${index + 1} — يمين`}
+                        onChange={event =>
+                          updateTextRow(
+                            kind,
+                            index,
+                            "right",
+                            event.target.value
+                          )
+                        }
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={row.left}
+                        maxLength={255}
+                        dir="ltr"
+                        placeholder={`السطر ${index + 1} — يسار`}
+                        onChange={event =>
+                          updateTextRow(kind, index, "left", event.target.value)
+                        }
+                        className="rounded-md border bg-background px-3 py-2 text-sm"
+                      />
                     </div>
                   ))}
                 </div>

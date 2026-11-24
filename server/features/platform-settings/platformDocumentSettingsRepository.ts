@@ -185,13 +185,19 @@ function mapPlatformDocumentSettings(
 function readTextRows(value: unknown): DocumentTextRow[] {
   let parsed: unknown = value;
   if (typeof value === "string") {
-    try { parsed = JSON.parse(value); } catch { parsed = []; }
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      parsed = [];
+    }
   }
   if (!Array.isArray(parsed)) return [];
   return parsed.slice(0, 12).map(item => {
-    const row = item && typeof item === "object" ? item as Record<string, unknown> : {};
+    const row =
+      item && typeof item === "object" ? (item as Record<string, unknown>) : {};
     return {
-      right: typeof row.right === "string" ? row.right.trim().slice(0, 255) : "",
+      right:
+        typeof row.right === "string" ? row.right.trim().slice(0, 255) : "",
       left: typeof row.left === "string" ? row.left.trim().slice(0, 255) : "",
     };
   });

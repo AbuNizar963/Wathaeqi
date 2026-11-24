@@ -1,8 +1,5 @@
 export type DocumentTextRow = { right: string; left: string };
 
-
-
-
 export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   showMinistryWatermarkText: true,
   watermarkText: "وزارة الداخلية",

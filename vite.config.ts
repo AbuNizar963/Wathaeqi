@@ -89,7 +89,7 @@ export default defineConfig({
     host: true,
     allowedHosts: ["localhost", "127.0.0.1"],
     warmup: {
-      clientFiles: ["./src/main.tsx", "./src/pages/Home.tsx"],
+      clientFiles: ["./src/main.tsx"],
     },
     fs: {
       strict: true,

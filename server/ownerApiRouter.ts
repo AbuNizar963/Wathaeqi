@@ -291,8 +291,22 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(0)
           .max(MAX_HEADER_PADDING_MM),
         headerAlignment: z.enum(["spread", "center", "right"]),
-        pageHeaderRows: z.array(z.object({ right: z.string().trim().max(255), left: z.string().trim().max(255) })).max(12),
-        pageFooterRows: z.array(z.object({ right: z.string().trim().max(255), left: z.string().trim().max(255) })).max(12),
+        pageHeaderRows: z
+          .array(
+            z.object({
+              right: z.string().trim().max(255),
+              left: z.string().trim().max(255),
+            })
+          )
+          .max(12),
+        pageFooterRows: z
+          .array(
+            z.object({
+              right: z.string().trim().max(255),
+              left: z.string().trim().max(255),
+            })
+          )
+          .max(12),
         pageMarginTopMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
         pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
         pageMarginBottomMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
