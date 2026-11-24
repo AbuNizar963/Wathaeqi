@@ -415,7 +415,6 @@ export default function OwnerUserManagement() {
                 ستُربط جميع الحسابات الجديدة بهذه الجهة تلقائياً.
               </p>
             </div>
-            </div>
             <label className="grid gap-1.5 text-sm font-semibold">
               الصلاحية التشغيلية
               <select
@@ -429,7 +428,7 @@ export default function OwnerUserManagement() {
                   موظف تشغيل — إنشاء ومتابعة الوثائق
                 </option>
                 <option value="reviewer">
-                  مراجع — مراجعة واعتماد الإحالات
+                  مراجع — مراجعة الوثائق قبل اعتمادها
                 </option>
                 <option value="reader">قارئ — عرض الوثائق والسجل فقط</option>
                 <option value="auditor">مدقق — مراجعة الوثائق والسجلات</option>
@@ -438,9 +437,6 @@ export default function OwnerUserManagement() {
                 </option>
                 <option value="organization_admin">
                   مدير الجهة — تعديل شعار وإعدادات الجهة وإدارة حساباتها
-                </option>
-                <option value="regional_admin">
-                  مدير جهة — إدارة حسابات الجهة
                 </option>
               </select>
               <span className="text-xs font-normal text-muted-foreground">
@@ -649,8 +645,6 @@ export default function OwnerUserManagement() {
                               ? `${organizationTypeLabels[organization.type] ?? organization.type} · ${organization.code}`
                               : "هذه الحسابات لا تملك جهة مرتبطة"}
                           </p>
-                          {organization && (
-                          )}
                         </div>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
