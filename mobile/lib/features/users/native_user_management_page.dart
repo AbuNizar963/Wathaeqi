@@ -3,10 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../../app_theme.dart';
 import '../notifications/toast.dart';
 import '../../closable_dialog_title.dart';
-
-const _userGold = Color(0xFFD8C38E);
 
 const _roles = <String, String>{
   'dispatcher': 'موظف تشغيل',
@@ -351,8 +350,8 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
           ],
         ),
         floatingActionButton: FloatingActionButton.extended(
-          backgroundColor: _userGold,
-          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          foregroundColor: Theme.of(context).colorScheme.onSecondary,
           onPressed: _loading || _saving ? null : _createUser,
           icon: const Icon(Icons.person_add_alt_1),
           label: const Text('إضافة حساب'),
