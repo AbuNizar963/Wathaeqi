@@ -260,7 +260,6 @@ export default function OwnerUserManagement() {
     );
   }, [userGroups, userSearch]);
 
-  const selectedOrganization = organizationById.get(selectedOrganizationId);
 
   const resetCreateFields = () => {
     setName("");
