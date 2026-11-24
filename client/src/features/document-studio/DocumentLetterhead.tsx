@@ -31,8 +31,10 @@ export default function DocumentLetterhead({
   serial,
   date,
 }: DocumentLetterheadProps) {
-  const configuredTitle = headerSettings?.headerTitle.trim() || organizationName;
-  const configuredSubtitle = headerSettings?.headerSubtitle.trim() || unitName;
+  const configuredTitle =
+    headerSettings?.headerTitle.trim() || organizationName;
+  const configuredSubtitle =
+    headerSettings?.headerSubtitle.trim() || unitName;
   const title = configuredTitle === "إدارة الشرطة" ? "" : configuredTitle;
   const subtitle =
     configuredSubtitle === "وحدة العمليات" ? "" : configuredSubtitle;
