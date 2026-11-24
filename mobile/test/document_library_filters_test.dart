@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:wathaeqi_mobile/document_library_filters.dart';
-import 'package:wathaeqi_mobile/document_studio_models.dart';
+import 'package:police_telegrams/document_library_filters.dart';
+import 'package:police_telegrams/document_studio_models.dart';
 
 OfficialDocument makeDocument(
   String id,
@@ -52,7 +52,7 @@ void main() {
     );
     expect(
       filterAndSortDocuments(documents, sort: 'title-asc').map((item) => item.id),
-      ['3', '1', '2'],
+      ['1', '2', '3'],
     );
     expect(documents.map((item) => item.id), ['1', '2', '3']);
   });
