@@ -937,7 +937,7 @@ class PoliceApi {
     final uri = Uri.parse('$baseUrl/api/trpc/auth.login');
     late final http.Response response;
     try {
-      response = await http
+      response = await _httpClient
           .post(
             uri,
             headers: {
