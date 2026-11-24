@@ -351,6 +351,87 @@ void main() {
   );
 
   test(
+    'scoped organization settings cache is isolated and refreshed after save',
+    () async {
+      var offline = false;
+      final client = MockClient((request) async {
+        if (offline) throw const SocketException('offline');
+
+        final procedure = request.url.pathSegments.last;
+        final requestInput = request.method == 'POST'
+            ? (jsonDecode(request.body) as Map)['json'] as Map?
+            : request.url.queryParameters['input'] == null
+            ? null
+            : (jsonDecode(
+                    request.url.queryParameters['input']!,
+                  ) as Map)['json']
+                  as Map?;
+        final organizationId = requestInput?['organizationId']?.toString();
+        final value = switch (procedure) {
+          'organizations.settings.get' => <String, dynamic>{
+            'organizationId': organizationId,
+            'departmentName': 'قديم',
+          },
+          'organizations.settings.update' => <String, dynamic>{
+            'organizationId': organizationId,
+            'departmentName': 'جديد',
+          },
+          _ => throw StateError('Unexpected procedure: $procedure'),
+        };
+
+        return http.Response(
+          jsonEncode({
+            'result': {
+              'data': {'json': value},
+            },
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+      addTearDown(client.close);
+
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+      const input = {'organizationId': 'org-1'};
+
+      final initial = await api.call(
+        'organizations.settings.get',
+        input: input,
+      );
+      expect(initial['departmentName'], 'قديم');
+
+      final cacheKeys = _secureStorageForTest.keys
+          .where((key) => key.startsWith('offline_organization_settings_'))
+          .toList();
+      expect(cacheKeys, hasLength(1));
+
+      offline = true;
+      final cached = await api.call(
+        'organizations.settings.get',
+        input: input,
+      );
+      expect(cached['departmentName'], 'قديم');
+
+      offline = false;
+      await api.call(
+        'organizations.settings.update',
+        mutation: true,
+        input: {...input, 'departmentName': 'جديد'},
+      );
+
+      offline = true;
+      final refreshed = await api.call(
+        'organizations.settings.get',
+        input: input,
+      );
+      expect(refreshed['departmentName'], 'جديد');
+    },
+  );
+
+  test(
     'mutations invalidate telegram caches and emit live change events',
     () async {
       final client = MockClient((request) async {
