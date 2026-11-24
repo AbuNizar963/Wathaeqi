@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["main", "migration/appwrite-functions-transfer"]
+    branches: ["main", "migration/appwrite-functions-transfer", "feature/enterprise-document-experience"]
   pull_request:
     branches: ["main"]
 
