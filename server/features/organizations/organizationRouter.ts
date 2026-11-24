@@ -123,7 +123,7 @@ export const organizationRouter = router({
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (!scope.isOwner && !(scope.organizationIds ?? []).includes(input.id)) {
+      if (!(scope.organizationIds ?? []).includes(input.id)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
       const organization = await getOrganization(input.id);
@@ -209,7 +209,6 @@ export const organizationRouter = router({
       const scope = await resolveOrganizationScope(ctx.user);
       const organizationId = (input.id ?? input.organizationId) as string;
       if (
-        !scope.isOwner &&
         !(scope.organizationIds ?? []).includes(organizationId)
       ) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
@@ -226,7 +225,6 @@ export const organizationRouter = router({
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
       if (
-        !scope.isOwner &&
         !(scope.organizationIds ?? []).includes(input.organizationId)
       ) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
