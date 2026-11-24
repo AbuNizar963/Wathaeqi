@@ -669,7 +669,7 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium">محاذاة عناصر الرأس</span>
+                <span className="text-sm font-medium">محاذاة بيانات أسفل الوثيقة</span>
                 <select
                   value={values.headerAlignment}
                   onChange={event =>
