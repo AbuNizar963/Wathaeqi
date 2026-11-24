@@ -472,49 +472,6 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Card(
-                          margin: EdgeInsets.zero,
-                          child: ExpansionTile(
-                            initiallyExpanded: true,
-                            title: const Text('إصدارات الوثيقة (1)'),
-                            subtitle: Text(
-                              'الإصدار الحالي · ${DateFormat('yyyy/MM/dd').format(document.updatedAt.toLocal())}',
-                            ),
-                            children: [
-                              ListTile(
-                                dense: true,
-                                leading: const Icon(Icons.history_edu_outlined),
-                                title: Text(
-                                  document.serialCode.isEmpty
-                                      ? 'مسودة الوثيقة'
-                                      : 'الإصدار الحالي',
-                                ),
-                                subtitle: Text(
-                                  'أُنشئت في ${DateFormat('yyyy/MM/dd').format(document.createdAt.toLocal())}',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Card(
-                          margin: EdgeInsets.zero,
-                          child: ExpansionTile(
-                            title: const Text('سجل التدقيق والإجراءات'),
-                            subtitle: const Text('إنشاء الوثيقة وتحديثها'),
-                            children: [
-                              ListTile(
-                                dense: true,
-                                leading: const Icon(Icons.fact_check_outlined),
-                                title: const Text('تم حفظ الوثيقة في المكتبة'),
-                                subtitle: Text(
-                                  DateFormat('yyyy/MM/dd – HH:mm')
-                                      .format(document.updatedAt.toLocal()),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(8),
