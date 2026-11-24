@@ -309,77 +309,12 @@ const administrationRouter = router({
         parentOrganizationId: z.string().trim().max(64).default(""),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      const tables = getAppwriteTablesDB();
-      const databaseId = getAppwriteDatabaseId();
-      const code = input.code.toUpperCase();
-      const duplicate = await tables.listRows({
-        databaseId,
-        tableId: "organizations",
-        queries: [Query.equal("code", code), Query.limit(1)],
-        total: false,
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
-      if (duplicate.rows.length) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "رمز الجهة مستخدم مسبقاً",
-        });
-      }
-      const parentId = input.parentOrganizationId || null;
-      if (parentId) {
-        const parent = await tables.listRows({
-          databaseId,
-          tableId: "organizations",
-          queries: [
-            Query.equal("id", parentId),
-            Query.equal("isActive", true),
-            Query.limit(1),
-          ],
-          total: false,
-        });
-        if (!parent.rows.length) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "الجهة الأم غير موجودة أو غير نشطة",
-          });
-        }
-      }
-      const now = new Date().toISOString();
-      const id = randomUUID();
-      await tables.createRow({
-        databaseId,
-        tableId: "organizations",
-        rowId: randomUUID(),
-        data: {
-          id,
-          parentOrganizationId: parentId,
-          code,
-          name: input.name,
-          type: input.type,
-          isActive: true,
-          deletedAt: null,
-          createdAt: now,
-          updatedAt: now,
-        },
-      });
-      await writeAuditLog({
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
-        action: "organization.created",
-        entityType: "organization",
-        entityId: id,
-        metadata: { code, name: input.name },
-      });
-      return {
-        id,
-        name: input.name,
-        code,
-        type: input.type,
-        isActive: true,
-        parentOrganizationId: parentId,
-      };
     }),
-
   updateOrganization: platformOwnerProcedure
     .input(
       z.object({
@@ -395,142 +330,20 @@ const administrationRouter = router({
         parentOrganizationId: z.string().trim().max(64).default(""),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      const tables = getAppwriteTablesDB();
-      const databaseId = getAppwriteDatabaseId();
-      const found = await tables.listRows({
-        databaseId,
-        tableId: "organizations",
-        queries: [Query.equal("id", input.id), Query.limit(2)],
-        total: false,
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
-      const row = found.rows[0] as unknown as AppwriteRow | undefined;
-      if (!row || found.rows.length !== 1) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
-      }
-      const duplicate = await tables.listRows({
-        databaseId,
-        tableId: "organizations",
-        queries: [
-          Query.equal("code", input.code.toUpperCase()),
-          Query.limit(2),
-        ],
-        total: false,
-      });
-      if (
-        duplicate.rows.some(
-          item => (item as unknown as AppwriteRow).$id !== row.$id
-        )
-      ) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "رمز الجهة مستخدم مسبقاً",
-        });
-      }
-      const parentId = input.parentOrganizationId || null;
-      if (parentId === input.id) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "لا يمكن جعل الجهة تابعة لنفسها",
-        });
-      }
-      if (parentId) {
-        const parent = await tables.listRows({
-          databaseId,
-          tableId: "organizations",
-          queries: [
-            Query.equal("id", parentId),
-            Query.equal("isActive", true),
-            Query.limit(1),
-          ],
-          total: false,
-        });
-        if (!parent.rows.length) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "الجهة الأم غير موجودة أو غير نشطة",
-          });
-        }
-      }
-      await tables.updateRow({
-        databaseId,
-        tableId: "organizations",
-        rowId: row.$id,
-        data: {
-          name: input.name,
-          code: input.code.toUpperCase(),
-          type: input.type,
-          parentOrganizationId: parentId,
-          updatedAt: new Date().toISOString(),
-        },
-      });
-      await writeAuditLog({
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
-        action: "organization.updated",
-        entityType: "organization",
-        entityId: input.id,
-      });
-      return { success: true as const };
     }),
-
   setOrganizationActive: platformOwnerProcedure
     .input(z.object({ id: z.string().min(1).max(64), isActive: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      const tables = getAppwriteTablesDB();
-      const databaseId = getAppwriteDatabaseId();
-      const found = await tables.listRows({
-        databaseId,
-        tableId: "organizations",
-        queries: [Query.equal("id", input.id), Query.limit(2)],
-        total: false,
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
       });
-      const row = found.rows[0] as unknown as AppwriteRow | undefined;
-      if (!row || found.rows.length !== 1) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
-      }
-      if (!input.isActive) {
-        const members = await tables.listRows({
-          databaseId,
-          tableId: "organization_memberships",
-          queries: [
-            Query.equal("organizationId", input.id),
-            Query.equal("isActive", true),
-            Query.limit(1),
-          ],
-          total: false,
-        });
-        if (members.rows.length) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message:
-              "لا يمكن إيقاف جهة لديها أعضاء نشطون؛ انقل الأعضاء أو عطّل عضوياتهم أولاً",
-          });
-        }
-      }
-      const now = new Date().toISOString();
-      await tables.updateRow({
-        databaseId,
-        tableId: "organizations",
-        rowId: row.$id,
-        data: {
-          isActive: input.isActive,
-          deletedAt: input.isActive ? null : now,
-          updatedAt: now,
-        },
-      });
-      await writeAuditLog({
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
-        action: input.isActive
-          ? "organization.activated"
-          : "organization.deactivated",
-        entityType: "organization",
-        entityId: input.id,
-      });
-      return { success: true as const };
     }),
-
   createUser: platformOwnerProcedure
     .input(
       z.object({
