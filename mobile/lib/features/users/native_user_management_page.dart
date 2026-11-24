@@ -58,6 +58,15 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
         .toList();
   }
 
+  String get _fixedOrganizationName {
+    for (final organization in _organizations) {
+      if (organization['code'] == 'ALSHAHBAA') {
+        return _text(organization['name'], 'قسم شرطة الشهباء');
+      }
+    }
+    return 'قسم شرطة الشهباء';
+  }
+
   String _text(dynamic value, [String fallback = '—']) {
     final result = '$value'.trim();
     return result.isEmpty || result == 'null' ? fallback : result;
@@ -582,7 +591,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _text(user['organizationName'], 'دون جهة محددة'),
+                        _fixedOrganizationName,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
