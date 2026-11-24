@@ -230,9 +230,7 @@ export default function PlatformDocumentSettings() {
                   إظهار شعار الجهة
                 </label>
                 <label className="space-y-1 text-sm">
-                  <span className="text-sm">
-                    محاذاة بيانات أسفل الوثيقة
-                  </span>
+                  المحاذاة
                   <select
                     value={values.headerAlignment}
                     onChange={event =>
