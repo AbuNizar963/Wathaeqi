@@ -1726,7 +1726,7 @@ class PoliceApi {
     }
 
     final cookie = (await _storage.read(key: 'session_cookie'))?.trim();
-    if (cookie == null || cookie.isEmpty) {
+    if (sessionToken == null) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
     }
     final uri = Uri.parse('$baseUrl/api/storage/department-logo');
