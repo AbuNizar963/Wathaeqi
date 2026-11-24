@@ -232,9 +232,7 @@ async function createOrganizationAccount(input: {
 }): Promise<{ username: string; password: string; userId: number }> {
   const client = getSupabaseAdmin();
   const prefix = organizationAccountPrefix(input.organization.type);
-  const codeSlug = transliterateOrganizationName(
-    input.organization.code
-  );
+  const codeSlug = transliterateOrganizationName(input.organization.code);
   const prefixMarker = `${prefix}_`;
   const normalizedCodeSlug = codeSlug.toLowerCase().startsWith(prefixMarker)
     ? codeSlug.slice(prefixMarker.length)
