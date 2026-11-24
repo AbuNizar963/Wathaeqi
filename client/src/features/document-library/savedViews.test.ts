@@ -23,6 +23,24 @@ describe("saved document views", () => {
     expect(parseSavedDocumentViews(JSON.stringify([{ id: 1 }]))).toEqual([]);
   });
 
+  it("upgrades saved views from the previous search-only format", () => {
+    const legacy = [
+      {
+        id: "legacy",
+        name: "بحث قديم",
+        search: "عقد",
+        category: "general",
+      },
+    ];
+    expect(parseSavedDocumentViews(JSON.stringify(legacy))).toEqual([
+      {
+        ...legacy[0],
+        status: "all",
+        sort: "updated-desc",
+      },
+    ]);
+  });
+
   it("limits corrupted or oversized storage to thirty views", () => {
     const views = Array.from({ length: 40 }, (_, index) => ({
       id: String(index),
