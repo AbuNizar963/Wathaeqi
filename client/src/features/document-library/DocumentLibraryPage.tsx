@@ -56,6 +56,7 @@ import {
   formatDate,
 } from "./types";
 import type { OfficialDocument } from "../../../../shared/documentStudio";
+import { filterAndSortDocuments, type DocumentSortOrder, type DocumentStatusFilter } from "./libraryFilters";
 
 function categoryLabel(value: string): string {
   return DOCUMENT_CATEGORIES.find(item => item.value === value)?.label ?? "عام";
@@ -87,6 +88,8 @@ export default function DocumentLibraryPage() {
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [statusFilter, setStatusFilter] = useState<DocumentStatusFilter>("all");
+  const [sortOrder, setSortOrder] = useState<DocumentSortOrder>("updated-desc");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
@@ -130,23 +133,29 @@ export default function DocumentLibraryPage() {
     [documentsQuery.data]
   );
 
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return documents.filter(document => {
-      if (category && document.category !== category) return false;
-      if (!needle) return true;
-      return [document.title, document.subject, document.file?.fileName]
-        .filter(Boolean)
-        .some(value => String(value).toLowerCase().includes(needle));
-    });
-  }, [documents, search, category]);
+  const filtered = useMemo(
+    () => filterAndSortDocuments(documents, {
+      search,
+      category,
+      status: statusFilter,
+      sort: sortOrder,
+    }),
+    [documents, search, category, statusFilter, sortOrder]
+  );
 
   const saveCurrentView = () => {
     const name = savedViewName.trim();
     if (!name) return;
     setSavedViews(current =>
       [
-        { id: crypto.randomUUID(), name: name.slice(0, 40), search, category },
+        {
+          id: crypto.randomUUID(),
+          name: name.slice(0, 40),
+          search,
+          category,
+          status: statusFilter,
+          sort: sortOrder,
+        },
         ...current.filter(view => view.name !== name),
       ].slice(0, 30)
     );
@@ -282,6 +291,31 @@ export default function DocumentLibraryPage() {
           ))}
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
+          <label className="flex min-w-36 flex-1 flex-col gap-1 text-[11px] text-muted-foreground sm:max-w-48">
+            حالة الوثيقة
+            <select
+              value={statusFilter}
+              onChange={event => setStatusFilter(event.target.value as DocumentStatusFilter)}
+              className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
+            >
+              <option value="all">جميع الحالات</option>
+              <option value="draft">مسودات</option>
+              <option value="issued">صادرة</option>
+              <option value="archived">مؤرشفة</option>
+            </select>
+          </label>
+          <label className="flex min-w-36 flex-1 flex-col gap-1 text-[11px] text-muted-foreground sm:max-w-48">
+            ترتيب النتائج
+            <select
+              value={sortOrder}
+              onChange={event => setSortOrder(event.target.value as DocumentSortOrder)}
+              className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
+            >
+              <option value="updated-desc">الأحدث تحديثاً</option>
+              <option value="updated-asc">الأقدم تحديثاً</option>
+              <option value="title-asc">العنوان أبجدياً</option>
+            </select>
+          </label>
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
@@ -310,6 +344,8 @@ export default function DocumentLibraryPage() {
                 onClick={() => {
                   setSearch(view.search);
                   setCategory(view.category);
+                  setStatusFilter(view.status);
+                  setSortOrder(view.sort);
                 }}
               >
                 {view.name}
@@ -369,6 +405,10 @@ export default function DocumentLibraryPage() {
           ) : null}
         </Card>
       ) : (
+        <>
+        <p className="text-xs text-muted-foreground" role="status">
+          يعرض {filtered.length.toLocaleString("ar")} من أصل {documents.length.toLocaleString("ar")} وثيقة
+        </p>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map(document => {
             const file = document.file;
@@ -417,6 +457,7 @@ export default function DocumentLibraryPage() {
             );
           })}
         </div>
+        </>
       )}
 
       <Button
