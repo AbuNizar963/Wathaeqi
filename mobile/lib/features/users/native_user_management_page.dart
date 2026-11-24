@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../admin/admin_page_intro.dart';
 import '../../app_theme.dart';
 import '../notifications/toast.dart';
 import '../../closable_dialog_title.dart';
@@ -335,8 +336,6 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          foregroundColor: Theme.of(context).colorScheme.onSurface,
           title: const Text(
             'إدارة المستخدمين',
             style: TextStyle(fontWeight: FontWeight.w900),
@@ -359,7 +358,15 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: const AdminPageIntro(
+                title: 'إدارة المستخدمين',
+                description: 'إدارة الحسابات وربطها بالجهات ومتابعة حالتها',
+                icon: Icons.manage_accounts_outlined,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: TextField(
                 onChanged: _onSearchChanged,
                 decoration: InputDecoration(
