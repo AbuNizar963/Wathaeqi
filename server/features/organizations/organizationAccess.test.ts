@@ -22,7 +22,7 @@ import { resolveOrganizationScope } from "./organizationAccess";
 
 const user = {
   id: 7,
-  organizationId: "org-current",
+  organizationId: "legacy-profile-organization",
 } as never;
 
 beforeEach(() => {
@@ -40,6 +40,25 @@ beforeEach(() => {
     role: "organization_admin",
     isActive: true,
   });
+});
+
+describe("resolveOrganizationScope in single-organization mode", () => {
+  it("uses the global fixed organization instead of the profile organization", async () => {
+    const scope = await resolveOrganizationScope(user);
+
+    expect(scope.organizationId).toBe("wathaeqi-test-central");
+    expect(scope.organizationIds).toEqual(["wathaeqi-test-central"]);
+    expect(mocks.getOrganizationByCode).toHaveBeenCalledWith("ALSHAHBAA");
+  });
+
+  it("keeps platform owners scoped to the fixed organization", async () => {
+    mocks.isPlatformOwner.mockReturnValue(true);
+
+    const scope = await resolveOrganizationScope(user);
+
+    expect(scope.organizationIds).toEqual(["wathaeqi-test-central"]);
+  });
+
   it("rejects users whose active membership belongs to another organization", async () => {
     mocks.getUserOrganizationMembership.mockResolvedValue({
       organizationId: "legacy-other-organization",
@@ -52,22 +71,11 @@ beforeEach(() => {
     });
   });
 
-});
+  it("fails closed if the configured organization is missing", async () => {
+    mocks.getOrganizationByCode.mockResolvedValue(null);
 
-describe("resolveOrganizationScope in single-organization mode", () => {
-  it("does not expand an administrator's scope to child organizations", async () => {
-    const scope = await resolveOrganizationScope(user);
-
-    expect(scope.organizationId).toBe("wathaeqi-test-central");
-    expect(scope.organizationIds).toEqual(["wathaeqi-test-central"]);
-    expect(mocks.getOrganizationByCode).toHaveBeenCalledWith("ALSHAHBAA");
-  });
-
-  it("keeps platform owners scoped to their fixed organization", async () => {
-    mocks.isPlatformOwner.mockReturnValue(true);
-
-    const scope = await resolveOrganizationScope(user);
-
-    expect(scope.organizationIds).toEqual(["wathaeqi-test-central"]);
+    await expect(resolveOrganizationScope(user)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+    });
   });
 });
