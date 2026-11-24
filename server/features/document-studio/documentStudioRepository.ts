@@ -18,7 +18,7 @@ import {
 
 const TEMPLATES_TABLE_ID = "templates";
 const DOCUMENTS_TABLE_ID = "documents";
-const MAX_ROWS = 100;
+const PAGE_SIZE = 100;
 
 type AppwriteRow = Record<string, unknown> & {
   $id: string;
@@ -142,6 +142,36 @@ async function getRowOrNull(
   }
 }
 
+async function listAllRows(
+  tableId: string,
+  baseQueries: string[]
+): Promise<AppwriteRow[]> {
+  const rows: AppwriteRow[] = [];
+  let cursorAfter: string | undefined;
+
+  while (true) {
+    const result = await getAppwriteTablesDB().listRows({
+      databaseId: getAppwriteDatabaseId(),
+      tableId,
+      queries: [
+        ...baseQueries,
+        ...(cursorAfter ? [Query.cursorAfter(cursorAfter)] : []),
+        Query.limit(PAGE_SIZE),
+      ],
+      total: false,
+    });
+    const page = result.rows as AppwriteRow[];
+    rows.push(...page);
+
+    if (page.length < PAGE_SIZE) return rows;
+
+    const nextCursor = page[page.length - 1]?.$id;
+    if (!nextCursor || nextCursor === cursorAfter) {
+      throw new Error(`Appwrite pagination did not advance for table ${tableId}`);
+    }
+    cursorAfter = nextCursor;
+  }
+}
 async function withTableTransaction<T>(
   operation: (transactionId: string) => Promise<T>
 ): Promise<T> {
@@ -179,17 +209,11 @@ async function withTableTransaction<T>(
 export async function listDocumentTemplates(
   ownerId: string
 ): Promise<DocumentTemplate[]> {
-  const result = await getAppwriteTablesDB().listRows({
-    databaseId: getAppwriteDatabaseId(),
-    tableId: TEMPLATES_TABLE_ID,
-    queries: [
-      Query.equal("ownerId", ownerId),
-      Query.orderDesc("$createdAt"),
-      Query.limit(MAX_ROWS),
-    ],
-    total: false,
-  });
-  return (result.rows as AppwriteRow[]).map(mapTemplateRow);
+  const rows = await listAllRows(TEMPLATES_TABLE_ID, [
+    Query.equal("ownerId", ownerId),
+    Query.orderDesc("$createdAt"),
+  ]);
+  return rows.map(mapTemplateRow);
 }
 
 export async function getDocumentTemplate(
@@ -310,17 +334,11 @@ export async function deactivateDocumentTemplate(
 export async function listOfficialDocuments(
   ownerId: string
 ): Promise<OfficialDocument[]> {
-  const result = await getAppwriteTablesDB().listRows({
-    databaseId: getAppwriteDatabaseId(),
-    tableId: DOCUMENTS_TABLE_ID,
-    queries: [
-      Query.equal("ownerId", ownerId),
-      Query.orderDesc("updatedAt"),
-      Query.limit(MAX_ROWS),
-    ],
-    total: false,
-  });
-  return (result.rows as AppwriteRow[]).map(mapDocumentRow);
+  const rows = await listAllRows(DOCUMENTS_TABLE_ID, [
+    Query.equal("ownerId", ownerId),
+    Query.orderDesc("updatedAt"),
+  ]);
+  return rows.map(mapDocumentRow);
 }
 
 export async function getOfficialDocument(
