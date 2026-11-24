@@ -79,6 +79,7 @@ class _DocumentStudioTestApi extends PoliceApi {
         'role': 'organization_admin',
         'isOwner': false,
       },
+      'documentStudio.listDocumentVersions' => <dynamic>[],
       'documentStudio.getLetterheadSettings' => {
         'departmentName': 'الجهة التجريبية',
         'unitName': 'الشؤون الإدارية',
@@ -306,6 +307,15 @@ void main() {
       isNotNull,
     );
     expect(find.text('تعديل الوثيقة'), findsOneWidget);
+    expect(find.text('سجل إصدارات الوثيقة'), findsOneWidget);
+    expect(
+      find.text('لا توجد نسخ سابقة بعد. سيظهر السجل بعد أول تعديل محفوظ.'),
+      findsOneWidget,
+    );
+    expect(
+      api.calls.containsKey('documentStudio.listDocumentVersions'),
+      isTrue,
+    );
 
     await tester.ensureVisible(find.text('طباعة'));
     await tester.pumpAndSettle();
