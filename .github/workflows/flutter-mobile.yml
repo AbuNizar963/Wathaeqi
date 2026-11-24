@@ -59,6 +59,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get --enforce-lockfile
 
+      # Verify the Flutter print-only experience, local document sync, tests, and preview build.
       # Keep the source-of-truth check strict: CI must never hide unformatted
       # files by silently accepting formatter changes.
       - name: Verify Dart formatting

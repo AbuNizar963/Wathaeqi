@@ -5,114 +5,20 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-const MethodChannel _androidTelegramNotificationChannel = MethodChannel(
-  'com.hadir.police.police_telegrams/telegram_notifications',
+const MethodChannel _androidAppNotificationChannel = MethodChannel(
+  'com.police_telegrams/telegram_notifications',
 );
 
-class OrganizationPushTokenRegistration {
-  String? _registeredOrganizationId;
-  bool _syncInProgress = false;
-  String? _pendingOrganizationId;
-
-  String? get registeredOrganizationId => _registeredOrganizationId;
-
-  void markRegistered(String? organizationId) {
-    final normalized = organizationId?.trim();
-    if (normalized != null && normalized.isNotEmpty) {
-      _registeredOrganizationId = normalized;
-    }
-  }
-
-  void clear() {
-    _registeredOrganizationId = null;
-    _pendingOrganizationId = null;
-  }
-
-  Future<bool> ensureRegistered({
-    required String? organizationId,
-    required Future<bool> Function() notificationsEnabled,
-    required Future<String?> Function() currentToken,
-    required Future<bool> Function(String token) registerToken,
-  }) async {
-    final requested = organizationId?.trim();
-    if (requested == null || requested.isEmpty) return false;
-    if (_syncInProgress) {
-      _pendingOrganizationId = requested;
-      return false;
-    }
-    if (requested == _registeredOrganizationId) return true;
-
-    _syncInProgress = true;
-    String? target = requested;
-    var requestedOrganizationRegistered = false;
-    try {
-      while (target != null && target.isNotEmpty) {
-        if (target == _registeredOrganizationId) {
-          if (target == requested) {
-            requestedOrganizationRegistered = true;
-          }
-          target = _pendingOrganizationId;
-          _pendingOrganizationId = null;
-          continue;
-        }
-        if (!await notificationsEnabled()) return false;
-        final token = await currentToken();
-        if (token == null || token.trim().isEmpty) return false;
-        if (!await registerToken(token)) return false;
-
-        _registeredOrganizationId = target;
-        if (target == requested) {
-          requestedOrganizationRegistered = true;
-        }
-        target = _pendingOrganizationId;
-        _pendingOrganizationId = null;
-      }
-      return requestedOrganizationRegistered;
-    } finally {
-      _syncInProgress = false;
-      _pendingOrganizationId = null;
-    }
-  }
+bool isLegacyTelegramDeliveryPush(Map<String, dynamic> data) {
+  final type = data['type']?.toString() ?? '';
+  return type.startsWith('telegram.') ||
+      data.containsKey('telegramId') ||
+      data.containsKey('telegram_id');
 }
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-}
-
-String telegramPushNotificationTitle(Map<String, dynamic> data) {
-  final category = '${data['category'] ?? ''}'.toLowerCase();
-  final priority = '${data['priority'] ?? ''}'.toLowerCase();
-  final priorityIsUrgent = const {
-    'urgent',
-    'critical',
-    'high',
-  }.contains(priority);
-  final incoming = data['type'] == 'telegram.incoming';
-
-  if (category == 'emergency') {
-    return priorityIsUrgent ? 'برقية طارئة عاجلة' : 'برقية طارئة';
-  }
-  if (priorityIsUrgent) {
-    return incoming ? 'برقية واردة عاجلة' : 'برقية صادرة عاجلة';
-  }
-  return incoming ? 'برقية واردة جديدة' : 'برقية صادرة جديدة';
-}
-
-String telegramPushNotificationBody(Map<String, dynamic> data) {
-  final rawSerial = '${data['serialCode'] ?? ''}'.trim();
-  var digitStart = rawSerial.length;
-  while (digitStart > 0 && int.tryParse(rawSerial[digitStart - 1]) != null) {
-    digitStart--;
-  }
-  final shortSerial = digitStart < rawSerial.length
-      ? rawSerial.substring(digitStart)
-      : rawSerial;
-  final direction = data['type'] == 'telegram.incoming' ? 'واردة' : 'صادرة';
-
-  return shortSerial.isEmpty
-      ? 'هناك برقية $direction جديدة.'
-      : 'هناك برقية $direction برقم: $shortSerial.';
 }
 
 class PushNotificationService {
@@ -122,26 +28,18 @@ class PushNotificationService {
 
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
   StreamSubscription<RemoteMessage>? _openedSubscription;
-  StreamSubscription<String>? _tokenRefreshSubscription;
-  void Function(int telegramId)? _onTelegramOpened;
   void Function()? _onAppUpdate;
   void Function()? _onOpenNotifications;
 
   Future<void> initialize({
-    required void Function(int telegramId) onTelegramOpened,
-    required void Function(int telegramId) onForegroundTelegram,
-    required void Function(String token) onToken,
     void Function()? onAppUpdate,
     void Function()? onOpenNotifications,
   }) async {
-    _onTelegramOpened = onTelegramOpened;
     _onAppUpdate = onAppUpdate;
     _onOpenNotifications = onOpenNotifications;
     await _prepareAndroidNotificationBridge();
     await _foregroundSubscription?.cancel();
     await _openedSubscription?.cancel();
-    await _tokenRefreshSubscription?.cancel();
-    _tokenRefreshSubscription = null;
 
     try {
       await Firebase.initializeApp();
@@ -154,28 +52,10 @@ class PushNotificationService {
         );
       }
 
-      final settings = await _messaging.getNotificationSettings();
-      if (_isAuthorized(settings.authorizationStatus)) {
-        final token = await _messaging.getToken();
-        if (token != null && token.isNotEmpty) onToken(token);
-        _tokenRefreshSubscription = _messaging.onTokenRefresh.listen(onToken);
-      }
-
-      // Foreground FCM notifications are not displayed automatically on Android.
-      // Post a native notification using the same sound channel, then refresh the
-      // dashboard without navigating away from the screen currently in use.
-      _foregroundSubscription = FirebaseMessaging.onMessage.listen((
-        message,
-      ) async {
-        if (_isAppUpdate(message)) {
-          onAppUpdate?.call();
-          return;
-        }
-        final id = _telegramId(message);
-        if (id != null) {
-          await _showForegroundTelegramNotification(message, id);
-          onForegroundTelegram(id);
-        }
+      // Only application-update messages remain actionable in the
+      // print-only product. Legacy telegram delivery pushes are ignored.
+      _foregroundSubscription = FirebaseMessaging.onMessage.listen((message) {
+        if (_isAppUpdate(message)) onAppUpdate?.call();
       });
       _openedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
         message,
@@ -184,12 +64,7 @@ class PushNotificationService {
           onAppUpdate?.call();
           return;
         }
-        final id = _telegramId(message);
-        if (id != null) {
-          onTelegramOpened(id);
-        } else {
-          // Notification-only FCM messages may have no data payload. They still
-          // represent a deliberate tap and should open the in-app notification inbox.
+        if (!isLegacyTelegramDeliveryPush(message.data)) {
           _onOpenNotifications?.call();
         }
       });
@@ -198,11 +73,7 @@ class PushNotificationService {
         onAppUpdate?.call();
         return;
       }
-      final initialId = initial == null ? null : _telegramId(initial);
-      if (initialId != null) {
-        onTelegramOpened(initialId);
-      } else if (initial != null) {
-        // A notification-only launch has no data map; fall back to the inbox.
+      if (initial != null && !isLegacyTelegramDeliveryPush(initial.data)) {
         _onOpenNotifications?.call();
       }
     } on FirebaseException {
@@ -214,24 +85,14 @@ class PushNotificationService {
   Future<void> _prepareAndroidNotificationBridge() async {
     if (defaultTargetPlatform != TargetPlatform.android) return;
 
-    _androidTelegramNotificationChannel.setMethodCallHandler((call) async {
-      if (call.method == 'onTelegramNotificationOpened') {
-        final telegramId = int.tryParse('${call.arguments}');
-        if (telegramId != null && telegramId > 0) {
-          _onTelegramOpened?.call(telegramId);
-        }
-      } else if (call.method == 'onAppUpdateNotificationOpened') {
+    _androidAppNotificationChannel.setMethodCallHandler((call) async {
+      if (call.method == 'onAppUpdateNotificationOpened') {
         _onAppUpdate?.call();
       }
     });
 
     try {
-      final pendingId = await _androidTelegramNotificationChannel
-          .invokeMethod<int>('markTelegramNotificationHandlerReady');
-      if (pendingId != null && pendingId > 0) {
-        _onTelegramOpened?.call(pendingId);
-      }
-      final pendingUpdate = await _androidTelegramNotificationChannel
+      final pendingUpdate = await _androidAppNotificationChannel
           .invokeMethod<bool>('markAppUpdateNotificationHandlerReady');
       if (pendingUpdate == true) _onAppUpdate?.call();
     } on MissingPluginException {
@@ -242,129 +103,22 @@ class PushNotificationService {
     }
   }
 
-  Future<void> _showForegroundTelegramNotification(
-    RemoteMessage message,
-    int telegramId,
-  ) async {
-    if (defaultTargetPlatform != TargetPlatform.android) return;
-
-    final data = message.data;
-    final urgent = _isUrgentTelegram(data);
-    final title = message.notification?.title ?? _fallbackTitle(data);
-    final body = message.notification?.body ?? _fallbackBody(data);
-
-    try {
-      await _androidTelegramNotificationChannel.invokeMethod<bool>(
-        'showTelegramNotification',
-        <String, Object>{
-          'telegramId': telegramId,
-          'title': title,
-          'body': body,
-          'urgent': urgent,
-        },
-      );
-    } on MissingPluginException {
-      // Keep the dashboard refresh path working on non-Android test runtimes.
-    } on PlatformException {
-      // A notification can be blocked or disabled in system settings.
-    }
-  }
-
-  bool _isUrgentTelegram(Map<String, dynamic> data) {
-    final priority = '${data['priority'] ?? ''}'.toLowerCase();
-    final category = '${data['category'] ?? ''}'.toLowerCase();
-    const urgentPriorities = {'urgent', 'critical', 'high'};
-    return urgentPriorities.contains(priority) || category == 'emergency';
-  }
-
-  String _fallbackTitle(Map<String, dynamic> data) =>
-      telegramPushNotificationTitle(data);
-
-  String _fallbackBody(Map<String, dynamic> data) =>
-      telegramPushNotificationBody(data);
-
-  int? _telegramId(RemoteMessage message) {
-    final raw = message.data['telegramId'] ?? message.data['telegram_id'];
-    return int.tryParse('$raw');
-  }
-
   bool _isAppUpdate(RemoteMessage message) =>
       message.data['type'] == 'app.update';
-
-  Future<bool> notificationsEnabled() async {
-    try {
-      await Firebase.initializeApp();
-      final settings = await _messaging.getNotificationSettings();
-      return _isAuthorized(settings.authorizationStatus);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> enableNotifications({
-    required void Function(String token) onToken,
-  }) async {
-    try {
-      await Firebase.initializeApp();
-      final settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-      if (!_isAuthorized(settings.authorizationStatus)) return false;
-      final token = await _messaging.getToken();
-      if (token == null || token.isEmpty) return false;
-      await _tokenRefreshSubscription?.cancel();
-      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen(onToken);
-      onToken(token);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> disableNotifications() async {
-    await _tokenRefreshSubscription?.cancel();
-    _tokenRefreshSubscription = null;
-    try {
-      await _messaging.deleteToken();
-    } catch (_) {
-      // The server registration is still removed if Firebase is unavailable.
-    }
-  }
-
-  bool _isAuthorized(AuthorizationStatus status) =>
-      status == AuthorizationStatus.authorized ||
-      status == AuthorizationStatus.provisional;
-
-  /// Returns the current device token when Firebase is configured.
-  /// A missing or unavailable Firebase configuration must not block logout.
-  Future<String?> currentToken() async {
-    try {
-      final token = await _messaging.getToken();
-      return token == null || token.isEmpty ? null : token;
-    } catch (_) {
-      return null;
-    }
-  }
 
   Future<void> dispose() async {
     await _foregroundSubscription?.cancel();
     await _openedSubscription?.cancel();
-    await _tokenRefreshSubscription?.cancel();
     _foregroundSubscription = null;
     _openedSubscription = null;
-    _tokenRefreshSubscription = null;
-    _onTelegramOpened = null;
     _onAppUpdate = null;
     _onOpenNotifications = null;
 
     if (defaultTargetPlatform == TargetPlatform.android) {
-      _androidTelegramNotificationChannel.setMethodCallHandler(null);
+      _androidAppNotificationChannel.setMethodCallHandler(null);
       try {
-        await _androidTelegramNotificationChannel.invokeMethod<void>(
-          'markTelegramNotificationHandlerNotReady',
+        await _androidAppNotificationChannel.invokeMethod<void>(
+          'markAppUpdateNotificationHandlerNotReady',
         );
       } on MissingPluginException {
         // No native bridge is expected in widget tests or preview builds.

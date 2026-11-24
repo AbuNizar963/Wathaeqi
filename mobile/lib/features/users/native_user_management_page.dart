@@ -58,6 +58,15 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
         .toList();
   }
 
+  String get _fixedOrganizationName {
+    for (final organization in _organizations) {
+      if (organization['code'] == 'ALSHAHBAA') {
+        return _text(organization['name'], 'قسم شرطة الشهباء');
+      }
+    }
+    return 'قسم شرطة الشهباء';
+  }
+
   String _text(dynamic value, [String fallback = '—']) {
     final result = '$value'.trim();
     return result.isEmpty || result == 'null' ? fallback : result;
@@ -172,16 +181,32 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
   }
 
   Future<void> _createUser() async {
-    if (_organizations.isEmpty) {
+    Map<String, dynamic>? fixedOrganization;
+    for (final organization in _organizations) {
+      if (organization['code'] == 'ALSHAHBAA' &&
+          organization['isActive'] == true) {
+        fixedOrganization = organization;
+        break;
+      }
+    }
+    if (fixedOrganization == null) {
       if (mounted) {
-        Toast.warning(context, 'لا توجد جهات مفعلة متاحة لإنشاء حسابات.');
+        Toast.warning(
+          context,
+          'تعذر تحديد قسم شرطة الشهباء لإنشاء الحساب.',
+        );
       }
       return;
     }
+    final organizationId = '${fixedOrganization['id']}';
+    final organizationName = '${fixedOrganization['name']}';
     final form = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _UserFormDialog(organizations: _organizations),
+      builder: (_) => _UserFormDialog(
+        organizationId: organizationId,
+        organizationName: organizationName,
+      ),
     );
     if (form == null) return;
     await _run(() async {
@@ -198,8 +223,11 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
     final form = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          _UserFormDialog(organizations: _organizations, user: user),
+      builder: (_) => _UserFormDialog(
+        organizationId: '${user['organizationId'] ?? ''}',
+        organizationName: '${user['organizationName'] ?? 'قسم شرطة الشهباء'}',
+        user: user,
+      ),
     );
     if (form == null) return;
     final password = form['password'] as String? ?? '';
@@ -563,7 +591,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _text(user['organizationName'], 'دون جهة محددة'),
+                        _fixedOrganizationName,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -680,9 +708,14 @@ class _UserSummaryCard extends StatelessWidget {
 }
 
 class _UserFormDialog extends StatefulWidget {
-  const _UserFormDialog({required this.organizations, this.user});
+  const _UserFormDialog({
+    required this.organizationId,
+    required this.organizationName,
+    this.user,
+  });
 
-  final List<Map<String, dynamic>> organizations;
+  final String organizationId;
+  final String organizationName;
   final Map<String, dynamic>? user;
 
   @override
@@ -698,7 +731,6 @@ class _UserFormDialogState extends State<_UserFormDialog> {
   late final TextEditingController _phone;
   late final TextEditingController _rank;
   late final TextEditingController _unit;
-  late String _organizationId;
   late String _role;
 
   bool get _editing => widget.user != null;
@@ -714,15 +746,8 @@ class _UserFormDialogState extends State<_UserFormDialog> {
     _phone = TextEditingController(text: '${user?['phone'] ?? ''}');
     _rank = TextEditingController(text: '${user?['rank'] ?? ''}');
     _unit = TextEditingController(text: '${user?['unit'] ?? ''}');
-    _organizationId = '${user?['organizationId'] ?? ''}';
     _role = '${user?['membershipRole'] ?? 'dispatcher'}';
     if (!_roles.containsKey(_role)) _role = 'dispatcher';
-    if (!_editing && widget.organizations.isNotEmpty) {
-      final active = widget.organizations.where(
-        (item) => item['isActive'] == true,
-      );
-      _organizationId = active.isNotEmpty ? '${active.first['id']}' : '';
-    }
   }
 
   @override
@@ -754,7 +779,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
     child: AlertDialog(
       title: closableDialogTitle(
         context,
-        Text(_editing ? 'تعديل الحساب' : 'إنشاء حساب ضمن جهة محددة'),
+        Text(_editing ? 'تعديل الحساب' : 'إنشاء حساب ضمن قسم شرطة الشهباء'),
       ),
       content: SizedBox(
         width: MediaQuery.sizeOf(context).width * 0.82,
@@ -765,24 +790,12 @@ class _UserFormDialogState extends State<_UserFormDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!_editing)
-                  DropdownButtonFormField<String>(
-                    initialValue: _organizationId.isEmpty
-                        ? null
-                        : _organizationId,
+                  InputDecorator(
                     decoration: const InputDecoration(labelText: 'الجهة'),
-                    items: widget.organizations
-                        .where((item) => item['isActive'] == true)
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: '${item['id']}',
-                            child: Text('${item['name']}'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) =>
-                        setState(() => _organizationId = value ?? ''),
-                    validator: (value) =>
-                        value == null || value.isEmpty ? 'اختر الجهة.' : null,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(widget.organizationName),
+                    ),
                   ),
                 const SizedBox(height: 8),
                 TextFormField(
@@ -820,6 +833,11 @@ class _UserFormDialogState extends State<_UserFormDialog> {
                   initialValue: _role,
                   decoration: const InputDecoration(labelText: 'الصلاحية'),
                   items: _roles.entries
+                      .where(
+                        (entry) =>
+                            entry.key != 'regional_admin' ||
+                            entry.key == _role,
+                      )
                       .map(
                         (entry) => DropdownMenuItem(
                           value: entry.key,
@@ -863,7 +881,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
           onPressed: () {
             if (!_formKey.currentState!.validate()) return;
             Navigator.pop(context, {
-              if (!_editing) 'organizationId': _organizationId,
+              if (!_editing) 'organizationId': widget.organizationId,
               'name': _name.text.trim(),
               'username': _username.text.trim().toLowerCase(),
               'password': _password.text,

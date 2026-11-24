@@ -26,9 +26,8 @@ String _stringValue(dynamic value, [String fallback = '—']) {
 }
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key, required this.api, this.onOpenTelegram});
+  const NotificationsPage({super.key, required this.api});
   final PoliceApi api;
-  final ValueChanged<int>? onOpenTelegram;
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -59,7 +58,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Future<void> load({bool showLoading = true}) async {
     if (showLoading) setState(() => loading = true);
     try {
-      final result = await widget.api.call('notifications.inbox');
+      final result = await widget.api.call('workspace.notifications.list');
       if (!mounted) return;
       setState(() {
         notifications = result is List ? result : const [];
@@ -72,12 +71,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Future<void> markRead(int id) async {
+  Future<void> markRead(String id) async {
     try {
       await widget.api.call(
-        'notifications.markRead',
+        'workspace.notifications.markRead',
         mutation: true,
-        input: {'id': id},
+        input: {'id': id.toString()},
       );
       if (!mounted) return;
       await load();
@@ -113,10 +112,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       final notification = Map<String, dynamic>.from(
                         item as Map,
                       );
-                      final id = int.tryParse('${notification['id']}');
-                      final telegramId = int.tryParse(
-                        '${notification['telegramId'] ?? ''}',
-                      );
+                      final id = notification['id']?.toString();
                       final read = notification['readAt'] != null;
                       return Card(
                         child: ListTile(
@@ -145,15 +141,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             '${_stringValue(notification['body'] ?? notification['content'])}\n${_stringValue(notification['createdAt'])}',
                           ),
                           isThreeLine: true,
-                          onTap:
-                              telegramId != null &&
-                                  widget.onOpenTelegram != null
-                              ? () {
-                                  if (!read && id != null) {
-                                    markRead(id);
-                                  }
-                                  widget.onOpenTelegram!(telegramId);
-                                }
+                          onTap: !read && id != null
+                              ? () => markRead(id)
                               : null,
                           trailing: !read && id != null
                               ? IconButton(

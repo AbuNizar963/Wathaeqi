@@ -62,28 +62,20 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
       _error = null;
     });
     try {
-      final legacyResult = await widget.outbox.sync(widget.api);
+      // Print-only mode synchronizes document-studio drafts only.
+      // Legacy telegram queue entries remain local and are never transmitted.
       final documentResult = await _documentOutbox.sync();
       await _load();
       if (!mounted) return;
-      if (legacyResult.permanentFailures > 0) {
-        final details = legacyResult.permanentErrorMessages.isEmpty
-            ? 'تحقق من الصلاحيات'
-            : legacyResult.permanentErrorMessages.join('، ');
-        setState(() {
-          _error =
-              'توجد ${legacyResult.permanentFailures} عملية محفوظة من إصدار سابق تحتاج إلى مراجعة: $details';
-        });
-      } else if (documentResult.lastError != null) {
+      if (documentResult.lastError != null) {
         setState(() {
           _error = 'تعذرت مزامنة بعض الوثائق: ${documentResult.lastError}';
         });
       } else {
-        final total = legacyResult.synced + documentResult.synced;
         _showMessage(
-          total > 0
-              ? 'تمت مزامنة $total عملية بنجاح'
-              : 'لا توجد تغييرات محلية معلقة',
+          documentResult.synced > 0
+              ? 'تمت مزامنة ${documentResult.synced} عملية وثائق بنجاح'
+              : 'لا توجد وثائق بانتظار المزامنة',
         );
       }
     } catch (exception) {
@@ -91,31 +83,6 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
-  }
-
-  Future<void> _remove(TelegramOutboxEntry entry) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('حذف سجل محلي قديم؟'),
-        content: const Text(
-          'سيُحذف هذا التغيير المحفوظ من إصدار سابق ولن تتم مزامنته. لا يؤثر ذلك في الوثائق الحالية.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await widget.outbox.remove(entry.id);
-    await _load();
   }
 
   void _showMessage(String message) {
@@ -136,7 +103,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
 
   @override
   Widget build(BuildContext context) {
-    final totalPending = _pendingDocuments + _legacyEntries.length;
+    final totalPending = _pendingDocuments;
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -197,7 +164,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  '${_legacyEntries.length} تغييرات محفوظة من إصدار سابق. ستبقى محفوظة حتى مزامنتها أو حذفها يدوياً.',
+                                  '${_legacyEntries.length} تغييرات محفوظة من إصدار سابق. تبقى محلياً كما هي ولا تُرسل في نظام الطباعة فقط.',
                                 ),
                               ),
                             ],
@@ -208,7 +175,10 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                       ..._legacyEntries.map(_legacyEntryCard),
                     ],
                     if (_error != null) _errorCard(_error!),
-                    if (totalPending == 0 && _error == null) _emptyState(),
+                    if (totalPending == 0 &&
+                        _legacyEntries.isEmpty &&
+                        _error == null)
+                      _emptyState(),
                   ],
                 ),
               ),
@@ -222,18 +192,9 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
   Widget _legacyEntryCard(TelegramOutboxEntry entry) => Card(
     child: ListTile(
       leading: const Icon(Icons.history_outlined, color: _outboxGold),
-      title: const Text('تغيير محفوظ من إصدار سابق'),
-      subtitle: Text(
-        'حُفظ في ${_date(entry.createdAt)} · محاولات المزامنة: ${entry.attempts}',
-      ),
-      trailing: IconButton(
-        tooltip: 'حذف السجل المحلي',
-        onPressed: _syncing ? null : () => _remove(entry),
-        icon: Icon(
-          Icons.delete_outline,
-          color: Theme.of(context).colorScheme.error,
-        ),
-      ),
+      title: const Text('سجل محلي قديم محفوظ'),
+      subtitle: Text('حُفظ في ${_date(entry.createdAt)} · لم يُرسل إلى الخادم'),
+      trailing: const Icon(Icons.lock_outline),
     ),
   );
 
