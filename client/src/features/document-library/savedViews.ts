@@ -22,8 +22,9 @@ export function parseSavedDocumentViews(
       .filter(
         (
           item
-        ): item is Omit<SavedDocumentView, "status"> & {
+        ): item is Omit<SavedDocumentView, "status" | "sort"> & {
           status?: unknown;
+          sort?: unknown;
         } =>
           Boolean(item) &&
           typeof item === "object" &&
