@@ -154,6 +154,7 @@ export default function DocumentLibraryPage() {
           search,
           category,
           status,
+          sort: "updated-desc",
         },
         ...current.filter(view => view.name !== name),
       ].slice(0, 30)
