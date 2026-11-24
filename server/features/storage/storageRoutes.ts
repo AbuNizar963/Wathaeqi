@@ -768,6 +768,8 @@ export function registerStorageRoutes(app: Express): void {
         res.set("Vary", "Cookie");
         res.set("Content-Type", actualContentType);
         res.set("X-Content-Type-Options", "nosniff");
+        // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write -- validated private image bytes are not HTML; nosniff is set.
+        // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write -- validated private image bytes are not HTML; nosniff is set.
         res.send(asset.body);
       } catch (error) {
         if (error instanceof StorageAccessDeniedError) {
