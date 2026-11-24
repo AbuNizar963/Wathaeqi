@@ -1007,7 +1007,8 @@ export default function DocumentStudioPage() {
                     </p>
                   ) : documentVersionsQuery.isError ? (
                     <p className="text-sm text-destructive">
-                      تعذر تحميل سجل الإصدارات: {documentVersionsQuery.error.message}
+                      تعذر تحميل سجل الإصدارات:{" "}
+                      {documentVersionsQuery.error.message}
                     </p>
                   ) : (documentVersionsQuery.data ?? []).length === 0 ? (
                     <p className="text-sm text-muted-foreground">
