@@ -17,12 +17,10 @@ export type DocumentLetterheadProps = {
  *
  * The three columns use a table row instead of CSS grid or flexbox: html2canvas
  * (the PNG exporter) mishandles both grid placement and flex alignment, which
- * used to paint the tricolor divider on top of the serial/date block in
- * downloaded images. Tables keep the same geometry in every renderer.
+ * downloaded images. The serial/date metadata is rendered in a separate row
+ * below the divider so it remains right-aligned in every renderer.
  */
 export default function DocumentLetterhead({
-  organizationName,
-  unitName,
   chiefRank,
   chiefName,
   logoUrl,
@@ -80,16 +78,6 @@ export default function DocumentLetterhead({
           style={{ textAlign }}
           dir="rtl"
         >
-          {serial ? (
-            <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
-              <strong>الرقم:</strong> {serial}
-            </p>
-          ) : null}
-          {date ? (
-            <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
-              <strong>التاريخ:</strong> {date}
-            </p>
-          ) : null}
           {rank ? (
             <p className="whitespace-nowrap text-[12pt] font-semibold">
               {rank}
@@ -131,7 +119,7 @@ export default function DocumentLetterhead({
           </svg>
           <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--green" />
         </div>
-) : null}
+      ) : null}
       {serial || date ? (
         <div
           className="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"
