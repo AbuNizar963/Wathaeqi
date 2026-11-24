@@ -438,6 +438,7 @@ describe("authenticated document HTTP routes", () => {
     await withServer(async baseUrl => {
       mocks.getOfficialDocument.mockResolvedValueOnce({
         id: "document-pdf",
+        organizationId: "org-1",
         file: {
           storageKey: pdfStorageKey,
           fileName: pdfFileName,
