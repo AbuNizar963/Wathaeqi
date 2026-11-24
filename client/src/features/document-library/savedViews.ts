@@ -3,6 +3,8 @@ export type SavedDocumentView = {
   name: string;
   search: string;
   category: string;
+  status: "all" | "draft" | "issued" | "archived";
+  sort: "updated-desc" | "updated-asc" | "title-asc";
 };
 
 export function savedDocumentViewsKey(userId: string | number): string {
@@ -26,6 +28,15 @@ export function parseSavedDocumentViews(
           typeof item.search === "string" &&
           typeof item.category === "string"
       )
+      .map(item => ({
+        ...item,
+        status: item.status === "draft" || item.status === "issued" || item.status === "archived"
+          ? item.status
+          : "all",
+        sort: item.sort === "updated-asc" || item.sort === "title-asc"
+          ? item.sort
+          : "updated-desc",
+      }))
       .slice(0, 30);
   } catch {
     return [];
