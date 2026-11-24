@@ -98,6 +98,18 @@ describe("single-organization mode", () => {
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
+
+  it("does not let platform owners read organizations outside their fixed scope", async () => {
+    mocks.resolveOrganizationScope.mockResolvedValue({
+      ...adminScope,
+      isOwner: true,
+    });
+
+    await expect(
+      caller().get({ id: "org-other" })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
   it("returns no routing destinations or descendants", async () => {
     await expect(caller().routingTargets()).resolves.toEqual([]);
     await expect(caller().descendants()).resolves.toEqual([]);
