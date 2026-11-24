@@ -16,9 +16,7 @@ import { listDocumentTemplates } from "./documentStudioRepository";
 const ownerId = "550e8400-e29b-41d4-a716-446655440000";
 
 function templateRow(index: number) {
-  const timestamp = new Date(
-    Date.UTC(2026, 0, 1, 0, index)
-  ).toISOString();
+  const timestamp = new Date(Date.UTC(2026, 0, 1, 0, index)).toISOString();
   return {
     $id: `template-${index}`,
     $createdAt: timestamp,
