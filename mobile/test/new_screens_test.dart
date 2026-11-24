@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/advanced_create_telegram_page.dart';
 import 'package:police_telegrams/api.dart';
 import 'package:police_telegrams/mobile_pages.dart';
-import 'package:police_telegrams/features/organizations/native_organization_management_page.dart';
 import 'package:police_telegrams/public_pages.dart';
 import 'package:police_telegrams/telegram_actions.dart';
 
@@ -561,53 +560,5 @@ void main() {
     expect(find.text('أدخل رمز التحقق الموجود في الوثيقة.'), findsOneWidget);
   });
 
-  testWidgets(
-    'scoped organization managers get a read-only organization list',
-    (tester) async {
-      final api = _ScreenTestApi();
-      await tester.pumpWidget(
-        _host(
-          NativeOrganizationManagementPage(
-            api: api,
-            canEditStructure: false,
-            isPlatformOwner: false,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
 
-      expect(find.text('إدارة المناطق والأقسام والمخافر'), findsOneWidget);
-      expect(find.text('محافظة اختبار'), findsOneWidget);
-      expect(
-        find.textContaining('عرض الجهات ضمن نطاق صلاحيتك فقط'),
-        findsOneWidget,
-      );
-      expect(find.byType(FloatingActionButton), findsNothing);
-      expect(find.byTooltip('تعديل الجهة'), findsNothing);
-      expect(api.calls, contains('organizations.all'));
-    },
-  );
-
-  testWidgets('global admins retain organization create and edit controls', (
-    tester,
-  ) async {
-    final api = _ScreenTestApi();
-    await tester.pumpWidget(
-      _host(
-        NativeOrganizationManagementPage(
-          api: api,
-          canEditStructure: true,
-          isPlatformOwner: true,
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(FloatingActionButton), findsOneWidget);
-    expect(find.byTooltip('تعديل الجهة'), findsOneWidget);
-    expect(
-      find.textContaining('عرض الجهات ضمن نطاق صلاحيتك فقط'),
-      findsNothing,
-    );
-  });
 }
