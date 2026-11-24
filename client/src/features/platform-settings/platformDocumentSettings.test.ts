@@ -3,6 +3,7 @@ import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
+import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import {
   DOCUMENT_SETTINGS_LOAD_ERROR,
   loadDocumentSettingsForExport,
@@ -67,5 +68,58 @@ describe("document settings for export", () => {
           }) as PlatformDocumentSettings
       )
     ).rejects.toThrow(DOCUMENT_SETTINGS_LOAD_ERROR);
+  });
+});
+
+describe("platform document settings UI normalization", () => {
+  it("uses defaults for malformed fields and preserves valid false and zero", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      showMinistryWatermarkText: false,
+      watermarkOpacityPercent: 0,
+      watermarkText: null as unknown as string,
+      pageHeaderRows:
+        null as unknown as PlatformDocumentSettings["pageHeaderRows"],
+      pageFooterRows: [
+        { right: 12, left: null },
+      ] as unknown as PlatformDocumentSettings["pageFooterRows"],
+      headerLogoSize: Number.NaN,
+    });
+
+    expect(normalized.showMinistryWatermarkText).toBe(false);
+    expect(normalized.watermarkOpacityPercent).toBe(0);
+    expect(normalized.watermarkText).toBe(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkText
+    );
+    expect(normalized.pageHeaderRows).toEqual([]);
+    expect(normalized.pageFooterRows).toEqual([{ right: "", left: "" }]);
+    expect(normalized.headerLogoSize).toBe(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerLogoSize
+    );
+  });
+
+  it("returns complete defaults for missing settings", () => {
+    expect(normalizePlatformDocumentSettings(null)).toMatchObject(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS
+    );
+    expect(normalizePlatformDocumentSettings(undefined)).toMatchObject(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS
+    );
+  });
+
+  it("limits text rows and sanitizes row values", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      pageHeaderRows: Array.from({ length: 15 }, (_, index) => ({
+        right: index === 0 ? (42 as unknown as string) : `يمين ${index}`,
+        left: `left ${index}`,
+      })),
+    });
+
+    expect(normalized.pageHeaderRows).toHaveLength(12);
+    expect(normalized.pageHeaderRows[0]).toEqual({
+      right: "",
+      left: "left 0",
+    });
   });
 });

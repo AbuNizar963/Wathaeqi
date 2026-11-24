@@ -8,6 +8,7 @@ import {
   prepareOrganizationLogoUpload,
   uploadOrganizationLogoDirect,
 } from "@/features/organizations/organizationLogoUpload";
+import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
@@ -21,37 +22,6 @@ import {
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
 type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
-
-function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
-  return {
-    showMinistryWatermarkText: settings.showMinistryWatermarkText,
-    watermarkText: settings.watermarkText,
-    watermarkOpacityPercent: settings.watermarkOpacityPercent,
-    headerDividerColor: settings.headerDividerColor,
-    headerDividerStyle: settings.headerDividerStyle,
-    headerDividerWidthPt: settings.headerDividerWidthPt,
-    headerTitle: settings.headerTitle,
-    headerSubtitle: settings.headerSubtitle,
-    headerChiefRank: settings.headerChiefRank,
-    headerChiefName: settings.headerChiefName,
-    headerShowLogo: settings.headerShowLogo,
-    headerLogoSize: settings.headerLogoSize,
-    headerTopPaddingMm: settings.headerTopPaddingMm,
-    headerHorizontalPaddingMm: settings.headerHorizontalPaddingMm,
-    headerBottomPaddingMm: settings.headerBottomPaddingMm,
-    headerAlignment: settings.headerAlignment,
-    pageHeaderRows: settings.pageHeaderRows.map(row => ({ ...row })),
-    pageFooterRows: settings.pageFooterRows.map(row => ({ ...row })),
-    pageMarginTopMm: settings.pageMarginTopMm,
-    pageMarginRightMm: settings.pageMarginRightMm,
-    pageMarginBottomMm: settings.pageMarginBottomMm,
-    pageMarginLeftMm: settings.pageMarginLeftMm,
-    frameStyle: settings.frameStyle,
-    frameColor: settings.frameColor,
-    frameWidthPt: settings.frameWidthPt,
-    showVerificationQr: settings.showVerificationQr,
-  };
-}
 
 export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
@@ -75,7 +45,9 @@ export default function PlatformDocumentSettingsPage() {
   });
 
   useEffect(() => {
-    if (settingsQuery.data) setValues(toFormSettings(settingsQuery.data));
+    if (settingsQuery.data) {
+      setValues(normalizePlatformDocumentSettings(settingsQuery.data));
+    }
   }, [settingsQuery.data]);
 
   useEffect(() => {
@@ -90,7 +62,7 @@ export default function PlatformDocumentSettingsPage() {
 
   const saveMutation = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
-      setValues(toFormSettings(saved));
+      setValues(normalizePlatformDocumentSettings(saved));
       await utils.platformDocumentSettings.get.invalidate();
       toast.success("تم حفظ إعدادات الوثائق");
     },
