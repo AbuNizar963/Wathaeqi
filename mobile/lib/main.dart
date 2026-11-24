@@ -21,7 +21,6 @@ import './features/admin/mobile_access_policy.dart';
 import 'mobile_pages.dart';
 import './features/admin/native_operations_page.dart';
 import './features/admin/native_owner_dashboard_page.dart';
-import './features/organizations/organization_logo_resolution.dart';
 import './features/users/native_user_management_page.dart';
 import './features/platform_settings/platform_document_settings_page.dart';
 
