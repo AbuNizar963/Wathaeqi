@@ -23,7 +23,6 @@ import './features/admin/mobile_access_policy.dart';
 import 'mobile_pages.dart';
 import './features/admin/native_operations_page.dart';
 import './features/admin/native_owner_dashboard_page.dart';
-import './features/organizations/native_organization_management_page.dart';
 import './features/organizations/organization_logo_resolution.dart';
 import './features/users/native_user_management_page.dart';
 import './features/platform_settings/platform_document_settings_page.dart';
@@ -34,7 +33,6 @@ import './features/notifications/push_notifications.dart';
 import 'public_pages.dart';
 import 'telegram_display.dart';
 import 'telegram_actions.dart';
-import 'telegram_routes.dart';
 import './features/reports/telegram_report_labels.dart';
 import 'telegram_edit_dialog.dart';
 import 'telegram_outbox.dart';
@@ -1136,17 +1134,6 @@ class _DashboardPageState extends State<DashboardPage>
           _pushPage(PlatformDocumentSettingsPage(api: widget.api));
         }
         break;
-      case 'organizations':
-        _pushPage(
-          NativeOrganizationManagementPage(
-            api: widget.api,
-            canEditStructure: hasMobileOrganizationStructureEditAccess(
-              accountRole: _account['role']?.toString(),
-            ),
-            isPlatformOwner: _isPlatformOwner,
-          ),
-        );
-        break;
       case 'users':
         if (_canManageUsers) {
           _pushPage(NativeUserManagementPage(api: widget.api));
@@ -1996,13 +1983,6 @@ class _DashboardPageState extends State<DashboardPage>
                     title: 'إدارة المستخدمين',
                   ),
                 ),
-                const PopupMenuItem(
-                  value: 'organizations',
-                  child: _AccountMenuItem(
-                    icon: Icons.account_tree_outlined,
-                    title: 'إدارة الجهات',
-                  ),
-                ),
               ],
               const PopupMenuDivider(),
               const PopupMenuItem(
@@ -2764,12 +2744,6 @@ class _TelegramDetailsPageState extends State<TelegramDetailsPage> {
                     onChanged: load,
                   ),
                   const SizedBox(height: 12),
-                  TelegramRoutesPanel(
-                    api: widget.api,
-                    telegramId: widget.telegramId,
-                    canOperate: _canOperate,
-                    onChanged: load,
-                  ),
                 ],
               ),
       ),
