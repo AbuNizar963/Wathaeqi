@@ -48,7 +48,7 @@ jobs:
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
-      # Validate the fixed organization boundary and print-only workspace across the full project.
+      # Validate fixed-organization access, user administration, and print-only workspace changes.
       - name: Check formatting
         run: pnpm lint
 
