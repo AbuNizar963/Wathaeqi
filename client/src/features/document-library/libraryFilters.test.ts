@@ -56,6 +56,17 @@ describe("document library filters", () => {
     ).toEqual(["3"]);
   });
 
+  it("matches Arabic search despite alef variants, diacritics, and taa marbuta", () => {
+    const arabicDocument = {
+      ...documents[0],
+      title: "إِدَارَةُ المُوَارَدِ البَشَرِيَّة",
+    };
+
+    expect(
+      filterAndSortDocuments([arabicDocument], { search: "اداره الموارد البشريه" })
+    ).toEqual([arabicDocument]);
+  });
+
   it("sorts newest, oldest, and Arabic title without mutating the source", () => {
     expect(filterAndSortDocuments(documents).map(item => item.id)).toEqual([
       "3",
