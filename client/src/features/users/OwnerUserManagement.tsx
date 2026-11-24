@@ -3,7 +3,6 @@ import { toast } from "@/lib/toast";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { OrganizationTreePicker } from "@/features/organizations/OrganizationTreePicker";
 import { organizationTypeLabels } from "@/lib/uiLabels";
 import {
   Ban,
@@ -41,7 +40,6 @@ type ManagedOrganization = {
   name: string;
   code: string;
   type: string;
-  parentOrganizationId: string | null;
   isActive: boolean;
 };
 
@@ -66,7 +64,6 @@ type EditForm = {
 type OrganizationUserGroup = {
   id: string;
   organization: ManagedOrganization | null;
-  path: string;
   users: ManagedUser[];
 };
 
@@ -82,7 +79,7 @@ const emptyEditForm: EditForm = {
 };
 
 const membershipRoleLabels: Record<string, string> = {
-  regional_admin: "مدير منطقة",
+  regional_admin: "مسؤول إداري للجهة",
   organization_supervisor: "مشرف جهة",
   organization_admin: "مدير جهة",
   system_admin: "مسؤول نظام",
@@ -119,7 +116,6 @@ export default function OwnerUserManagement() {
   const [unit, setUnit] = useState("");
   const [accountRole, setAccountRole] = useState(
     "dispatcher" as
-      | "regional_admin"
       | "organization_supervisor"
       | "organization_admin"
       | "dispatcher"
@@ -130,8 +126,6 @@ export default function OwnerUserManagement() {
   const [userSearch, setUserSearch] = useState("");
   const [userPage, setUserPage] = useState(1);
   const [userPageSize, setUserPageSize] = useState(25);
-  const [organizationRootFilter, setOrganizationRootFilter] = useState("");
-  const [organizationBranchFilter, setOrganizationBranchFilter] = useState("");
   const [editing, setEditing] = useState<ManagedUser | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyEditForm);
   const [enablePassword, setEnablePassword] = useState<Record<number, string>>(
@@ -153,64 +147,20 @@ export default function OwnerUserManagement() {
 
   const managedUsers = useMemo(() => {
     const query = userSearch.trim().toLocaleLowerCase("ar");
-    const organizationId = organizationBranchFilter || organizationRootFilter;
-    const filtered = (users.data ?? []).filter(
-      user =>
-        (!organizationId || user.organizationId === organizationId) &&
-        matchesUserSearch(user, query)
+    const filtered = (users.data ?? []).filter(user =>
+      matchesUserSearch(user, query)
     );
     return filtered.slice(
       (userPage - 1) * userPageSize,
       userPage * userPageSize
     );
-  }, [
-    users.data,
-    userSearch,
-    organizationBranchFilter,
-    organizationRootFilter,
-    userPage,
-    userPageSize,
-  ]);
+  }, [users.data, userSearch, userPage, userPageSize]);
   const totalUserPages = Math.max(
     1,
     Math.ceil((users.data?.length ?? 0) / userPageSize)
   );
   const managedOrganizations = (organizations.data ??
     []) as ManagedOrganization[];
-  const rootOrganizations = managedOrganizations.filter(
-    organization => !organization.parentOrganizationId
-  );
-  const branchOrganizations = managedOrganizations.filter(
-    organization => organization.parentOrganizationId === organizationRootFilter
-  );
-  const organizationById = useMemo(
-    () =>
-      new Map(
-        managedOrganizations.map(organization => [
-          organization.id,
-          organization,
-        ])
-      ),
-    [managedOrganizations]
-  );
-  const organizationPathById = useMemo(() => {
-    const paths = new Map<string, string>();
-    for (const organization of managedOrganizations) {
-      const segments = [organization.name];
-      const visited = new Set([organization.id]);
-      let parentId = organization.parentOrganizationId;
-      while (parentId && !visited.has(parentId)) {
-        const parent = organizationById.get(parentId);
-        if (!parent) break;
-        segments.unshift(parent.name);
-        visited.add(parent.id);
-        parentId = parent.parentOrganizationId;
-      }
-      paths.set(organization.id, segments.join(" ← "));
-    }
-    return paths;
-  }, [managedOrganizations, organizationById]);
-
   const userGroups = useMemo(() => {
     const usersByOrganization = new Map<string, ManagedUser[]>();
     for (const user of managedUsers) {
@@ -220,47 +170,41 @@ export default function OwnerUserManagement() {
       usersByOrganization.set(organizationId, group);
     }
 
-    const groups: OrganizationUserGroup[] = managedOrganizations
-      .map(organization => ({
+    const groups: OrganizationUserGroup[] = managedOrganizations.map(
+      organization => ({
         id: organization.id,
         organization,
-        path: organizationPathById.get(organization.id) ?? organization.name,
         users: (usersByOrganization.get(organization.id) ?? []).sort(
           (left, right) =>
             (left.name ?? "").localeCompare(right.name ?? "", "ar")
         ),
-      }))
-      .sort((left, right) => left.path.localeCompare(right.path, "ar"));
+      })
+    );
 
     const unassignedUsers = usersByOrganization.get("unassigned") ?? [];
     if (unassignedUsers.length > 0) {
       groups.push({
         id: "unassigned",
         organization: null,
-        path: "حسابات بحاجة إلى مراجعة",
         users: unassignedUsers.sort((left, right) =>
           (left.name ?? "").localeCompare(right.name ?? "", "ar")
         ),
       });
     }
     return groups;
-  }, [managedOrganizations, managedUsers, organizationPathById]);
+  }, [managedOrganizations, managedUsers]);
 
   const visibleGroups = useMemo(() => {
     const query = userSearch.trim().toLocaleLowerCase("ar");
-    return (
-      userGroups
-        .map(group => ({
-          ...group,
-          users: group.users.filter(user => matchesUserSearch(user, query)),
-        }))
-        // The server already paginates users. Showing every organization with no
-        // user in this page turned a focused search into a long, misleading tree.
-        .filter(group => group.users.length > 0)
-    );
+    return userGroups
+      .map(group => ({
+        ...group,
+        users: group.users.filter(user => matchesUserSearch(user, query)),
+      }))
+      .filter(group => group.users.length > 0);
   }, [userGroups, userSearch]);
 
-  const selectedOrganization = organizationById.get(selectedOrganizationId);
+  const selectedOrganization = managedOrganizations[0];
 
   const resetCreateFields = () => {
     setName("");
@@ -273,9 +217,9 @@ export default function OwnerUserManagement() {
     setAccountRole("dispatcher");
   };
 
-  const openCreateForm = (organizationId = "") => {
+  const openCreateForm = () => {
     resetCreateFields();
-    setSelectedOrganizationId(organizationId);
+    setSelectedOrganizationId(managedOrganizations[0]?.id ?? "");
     setShowCreateForm(true);
   };
 
@@ -334,12 +278,7 @@ export default function OwnerUserManagement() {
 
   useEffect(() => {
     setUserPage(1);
-  }, [
-    userSearch,
-    userPageSize,
-    organizationRootFilter,
-    organizationBranchFilter,
-  ]);
+  }, [userSearch, userPageSize]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -389,7 +328,7 @@ export default function OwnerUserManagement() {
                   إدارة المستخدمين
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  لكل جهة مساحة مستقلة تعرض حساباتها وصلاحياتها التشغيلية.
+                  إدارة حسابات مستخدمي الجهة الثابتة وصلاحياتهم التشغيلية.
                 </p>
               </div>
             </div>
@@ -426,11 +365,9 @@ export default function OwnerUserManagement() {
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">
-              الجهات المتاحة ضمن نطاقك
-            </p>
+            <p className="text-xs text-muted-foreground">الجهة الثابتة</p>
             <p className="mt-1 text-lg font-bold tabular-nums">
-              {managedOrganizations.length}
+              {selectedOrganization ? 1 : 0}
             </p>
           </div>
           <div>
@@ -440,8 +377,8 @@ export default function OwnerUserManagement() {
             </p>
           </div>
           <p className="text-xs leading-5 text-muted-foreground sm:col-span-3">
-            اختر الجهة لتحديد نطاق الحساب، ثم اضبط الدور الوظيفي. حالة الحساب
-            وإجراءات تعديله أو تعطيله تظهر داخل بطاقة الموظف.
+            تُربط الحسابات الجديدة تلقائياً بالجهة الوحيدة. يمكنك ضبط الدور
+            الوظيفي وإدارة حالة كل حساب من بطاقة الموظف.
           </p>
         </div>
 
@@ -454,11 +391,11 @@ export default function OwnerUserManagement() {
               <div>
                 <h3 className="flex items-center gap-2 font-bold">
                   <UserPlus className="h-4 w-4 text-brand-accent" />
-                  إنشاء حساب ضمن جهة محددة
+                  إنشاء حساب ضمن الجهة الثابتة
                 </h3>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  سيشاهد الحساب جميع الوثائق والسجلات الخاصة بالجهة المختارة،
-                  وليس سجلات جهات أخرى.
+                  سيشاهد الحساب وثائق وسجلات الجهة الثابتة فقط، دون أي اختيار
+                  لجهات أخرى.
                 </p>
               </div>
               <Button
@@ -472,24 +409,12 @@ export default function OwnerUserManagement() {
             </div>
 
             <div className="rounded-xl border border-[#b4945a]/30 bg-background/70 p-3">
-              <label className="grid gap-1.5 text-sm font-semibold">
-                جهة الحساب
-                <OrganizationTreePicker
-                  options={managedOrganizations.map(organization => ({
-                    ...organization,
-                    isSelectable: organization.isActive,
-                  }))}
-                  value={selectedOrganizationId}
-                  onValueChange={setSelectedOrganizationId}
-                  placeholder="اختر الجهة التي سيعمل فيها الحساب"
-                  ariaLabel="اختيار جهة الحساب"
-                  emptyMessage="لا توجد جهات مفعلة متاحة لإنشاء حسابات."
-                />
-              </label>
+              <p className="text-sm font-semibold">الجهة الثابتة</p>
+              <p className="mt-1 text-sm">
+                {selectedOrganization?.name ?? "جارٍ تحميل بيانات الجهة..."}
+              </p>
               <p className="mt-2 text-xs text-muted-foreground">
-                {selectedOrganization
-                  ? `الحساب الجديد سيُربط بـ ${selectedOrganization.name}.`
-                  : "الاختيار إلزامي لضمان ظهور سجلات الجهة للحساب الجديد."}
+                ستُربط جميع الحسابات الجديدة بهذه الجهة تلقائياً.
               </p>
             </div>
             <label className="grid gap-1.5 text-sm font-semibold">
@@ -505,7 +430,7 @@ export default function OwnerUserManagement() {
                   موظف تشغيل — إنشاء ومتابعة الوثائق
                 </option>
                 <option value="reviewer">
-                  مراجع — مراجعة واعتماد الإحالات
+                  مراجع — مراجعة الوثائق قبل اعتمادها
                 </option>
                 <option value="reader">قارئ — عرض الوثائق والسجل فقط</option>
                 <option value="auditor">مدقق — مراجعة الوثائق والسجلات</option>
@@ -515,13 +440,9 @@ export default function OwnerUserManagement() {
                 <option value="organization_admin">
                   مدير الجهة — تعديل شعار وإعدادات الجهة وإدارة حساباتها
                 </option>
-                <option value="regional_admin">
-                  مدير المنطقة — إدارة الجهات التابعة
-                </option>
               </select>
               <span className="text-xs font-normal text-muted-foreground">
-                مدير المنطقة ومشرف الجهة متاحان لمالك النظام، ويبقى نطاق كل دور
-                محصورًا بالجهة أو المنطقة التابعة له.
+                تُطبق الصلاحيات داخل الجهة الثابتة فقط.
               </span>
             </label>
 
@@ -642,9 +563,9 @@ export default function OwnerUserManagement() {
         <section className="mt-5 min-w-0">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 className="font-bold">الحسابات بحسب الجهة</h3>
+              <h3 className="font-bold">حسابات المستخدمين</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                تظهر الجهات الفارغة أيضًا لتتمكن من إضافة حساب مباشرةً إليها.
+                جميع الحسابات المعروضة مرتبطة بالجهة الثابتة.
               </p>
             </div>
             <div className="relative w-full sm:w-80">
@@ -652,53 +573,15 @@ export default function OwnerUserManagement() {
               <Input
                 value={userSearch}
                 onChange={event => setUserSearch(event.target.value)}
-                placeholder="بحث داخل حسابات جميع الجهات"
+                placeholder="بحث في حسابات الجهة"
                 aria-label="البحث في حسابات المستخدمين"
                 className="pr-9"
               />
             </div>
           </div>
-          <div className="mb-4 grid gap-2 rounded-xl border bg-muted/20 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px]">
-            <label className="grid gap-1 text-xs font-semibold">
-              المحافظة أو الجهة العليا
-              <select
-                className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
-                value={organizationRootFilter}
-                onChange={event => {
-                  setOrganizationRootFilter(event.target.value);
-                  setOrganizationBranchFilter("");
-                }}
-              >
-                <option value="">كل الجهات</option>
-                {rootOrganizations.map(organization => (
-                  <option key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-xs font-semibold">
-              المركز أو الجهة التابعة
-              <select
-                className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
-                value={organizationBranchFilter}
-                disabled={
-                  !organizationRootFilter || branchOrganizations.length === 0
-                }
-                onChange={event =>
-                  setOrganizationBranchFilter(event.target.value)
-                }
-              >
-                <option value="">كل الجهات التابعة</option>
-                {branchOrganizations.map(organization => (
-                  <option key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-xs font-semibold">
-              في الصفحة
+          <div className="mb-4 flex justify-end rounded-xl border bg-muted/20 p-3">
+            <label className="grid w-full max-w-[140px] gap-1 text-xs font-semibold">
+              عدد الحسابات في الصفحة
               <select
                 className="h-10 rounded-md border bg-background px-3 text-sm font-normal"
                 value={userPageSize}
@@ -764,11 +647,6 @@ export default function OwnerUserManagement() {
                               ? `${organizationTypeLabels[organization.type] ?? organization.type} · ${organization.code}`
                               : "هذه الحسابات لا تملك جهة مرتبطة"}
                           </p>
-                          {organization && (
-                            <p className="mt-1 truncate text-[10px] text-muted-foreground">
-                              {group.path}
-                            </p>
-                          )}
                         </div>
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
@@ -782,7 +660,7 @@ export default function OwnerUserManagement() {
                             variant="outline"
                             className="h-8 text-xs"
                             disabled={!organization.isActive}
-                            onClick={() => openCreateForm(organization.id)}
+                            onClick={() => openCreateForm()}
                           >
                             <UserPlus className="ml-1 h-3.5 w-3.5" />
                             إضافة حساب
@@ -807,7 +685,7 @@ export default function OwnerUserManagement() {
                               type="button"
                               variant="link"
                               className="mt-2 h-auto p-0 text-brand-accent"
-                              onClick={() => openCreateForm(organization.id)}
+                              onClick={() => openCreateForm()}
                             >
                               أنشئ أول حساب لهذه الجهة
                             </Button>

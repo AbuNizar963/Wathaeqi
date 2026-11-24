@@ -3,23 +3,15 @@ import { z } from "zod";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
-import { getRequestAuditContext } from "../../auditContext";
-import { writeAuditLog } from "../audit/appwriteAuditRepository";
 import { resolveOrganizationScope } from "./organizationAccess";
 import {
   buildOrganizationTree,
-  getRoutingDirectory,
-  createOrganization,
   getOrganization,
   getOrganizationLogoDataUrl,
   getOrganizationLogoUrl,
   listOrganizations,
-  listOrganizationDescendants,
-  listRoutingTargets,
   renameOrganization,
   saveOrganizationLogo,
-  setOrganizationActive,
-  updateOrganization,
 } from "./organizationService";
 import { createManagedUser, listManagedUsers } from "../users/userService";
 import {
@@ -111,37 +103,29 @@ export const organizationRouter = router({
       const organizations = await listOrganizations(
         Boolean(input?.includeInactive) && scope.isOwner
       );
-      if (scope.isOwner) return organizations;
-      const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
-      return organizations.filter(item => allowed.has(item.id));
+      return organizations
+        .filter(item => item.id === scope.organizationId)
+        .map(item => ({ ...item, parentOrganizationId: null }));
     }),
 
   tree: authenticatedProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
     const organizations = await listOrganizations(false);
-    const filtered = scope.organizationIds
-      ? organizations.filter(item => scope.organizationIds?.includes(item.id))
-      : organizations;
+    const filtered = organizations
+      .filter(item => item.id === scope.organizationId)
+      .map(item => ({ ...item, parentOrganizationId: null }));
     return buildOrganizationTree(filtered);
   }),
 
-  routingTargets: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveOrganizationScope(ctx.user);
-    return listRoutingTargets(scope.organizationId);
-  }),
+  routingTargets: authenticatedProcedure.query(() => []),
 
-  descendants: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveOrganizationScope(ctx.user);
-    return listOrganizationDescendants(scope.organizationId, {
-      activeOnly: true,
-    });
-  }),
+  descendants: authenticatedProcedure.query(() => []),
 
   get: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (!scope.isOwner && !(scope.organizationIds ?? []).includes(input.id)) {
+      if (!(scope.organizationIds ?? []).includes(input.id)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
       const organization = await getOrganization(input.id);
@@ -151,56 +135,29 @@ export const organizationRouter = router({
       return organization;
     }),
 
-  create: authenticatedProcedure
-    .input(organizationInput)
-    .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
-      const created = await createOrganization(input);
-      await writeAuditLog({
-        ...getRequestAuditContext(ctx.req),
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? "مالك المنصة",
-        action: "organization.create",
-        entityType: "organization",
-        entityId: created.id,
-        organizationId: created.id,
-        afterState: created,
-      }).catch(() => undefined);
-      return created;
-    }),
+  create: authenticatedProcedure.input(organizationInput).mutation(() => {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+    });
+  }),
 
   update: authenticatedProcedure
     .input(organizationInput.extend({ id: z.string().min(1).max(36) }))
-    .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
-      const before = await getOrganization(input.id);
-      const updated = await updateOrganization(input.id, input);
-      await writeAuditLog({
-        ...getRequestAuditContext(ctx.req),
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? "مالك المنصة",
-        action: "organization.update",
-        entityType: "organization",
-        entityId: updated.id,
-        organizationId: updated.id,
-        beforeState: before,
-        afterState: updated,
-      }).catch(() => undefined);
-      return updated;
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
 
   setActive: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36), isActive: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
-      if (input.id === ctx.user.organizationId && !input.isActive) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "لا يمكن تعطيل جهة حسابك الحالي.",
-        });
-      }
-      await setOrganizationActive(input.id, input.isActive);
-      return { success: true as const };
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
 
   uploadLogo: authenticatedProcedure
@@ -213,10 +170,7 @@ export const organizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (
-        !scope.canAdministrate ||
-        (!scope.isOwner && scope.organizationId !== input.id)
-      ) {
+      if (!scope.canAdministrate || scope.organizationId !== input.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "رفع شعار الجهة متاح لمدير الجهة فقط.",
@@ -251,10 +205,7 @@ export const organizationRouter = router({
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
       const organizationId = (input.id ?? input.organizationId) as string;
-      if (
-        !scope.isOwner &&
-        !(scope.organizationIds ?? []).includes(organizationId)
-      ) {
+      if (!(scope.organizationIds ?? []).includes(organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
       const [dataUrl, logoUrl] = await Promise.all([
@@ -268,10 +219,7 @@ export const organizationRouter = router({
     .input(z.object({ organizationId: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (
-        !scope.isOwner &&
-        !(scope.organizationIds ?? []).includes(input.organizationId)
-      ) {
+      if (!(scope.organizationIds ?? []).includes(input.organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
       return {
@@ -281,20 +229,17 @@ export const organizationRouter = router({
 
   all: authenticatedProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
-    const organizations = await listOrganizations(scope.isOwner);
-    if (scope.isOwner) return organizations;
-    const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
-    return organizations.filter(item => allowed.has(item.id));
+    const organizations = await listOrganizations(false);
+    return organizations
+      .filter(item => item.id === scope.organizationId)
+      .map(item => ({ ...item, parentOrganizationId: null }));
   }),
 
   accounts: authenticatedProcedure
     .input(z.object({ organizationId: z.string().min(1).max(36) }))
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
-      if (
-        !scope.isOwner &&
-        !(scope.organizationIds ?? []).includes(input.organizationId)
-      ) {
+      if (!(scope.organizationIds ?? []).includes(input.organizationId)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا تملك صلاحية عرض حسابات هذه الجهة",
@@ -330,6 +275,13 @@ export const organizationRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       requireOwner(ctx);
+      const scope = await resolveOrganizationScope(ctx.user);
+      if (input.organizationId !== scope.organizationId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "يمكن إنشاء الحسابات ضمن الجهة الثابتة فقط.",
+        });
+      }
       return createManagedUser({
         ...input,
         role: "user",
@@ -344,13 +296,11 @@ export const organizationRouter = router({
 
   delete: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
-    .mutation(async ({ ctx, input }) => {
-      requireOwner(ctx);
-      const organization = await getOrganization(input.id);
-      if (!organization)
-        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
-      await setOrganizationActive(input.id, false);
-      return { success: true as const };
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
 
   purgeArchived: authenticatedProcedure
@@ -388,6 +338,13 @@ export const organizationRouter = router({
       .input(z.object({ organizationId: z.string().min(1).max(36) }))
       .query(async ({ ctx, input }) => {
         requireOwner(ctx);
+        const scope = await resolveOrganizationScope(ctx.user);
+        if (input.organizationId !== scope.organizationId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "إعدادات الجهة الثابتة فقط متاحة لهذا النظام.",
+          });
+        }
         const organization = await getOrganization(input.organizationId);
         if (!organization)
           throw new TRPCError({
@@ -405,6 +362,13 @@ export const organizationRouter = router({
       .input(legacySettingsInput)
       .mutation(async ({ ctx, input }) => {
         requireOwner(ctx);
+        const scope = await resolveOrganizationScope(ctx.user);
+        if (input.organizationId !== scope.organizationId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "إعدادات الجهة الثابتة فقط متاحة لهذا النظام.",
+          });
+        }
         const organization = await getOrganization(input.organizationId);
         if (!organization)
           throw new TRPCError({
@@ -431,14 +395,5 @@ export const organizationRouter = router({
       }),
   }),
 
-  routingDirectory: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveOrganizationScope(ctx.user);
-    const directory = await getRoutingDirectory();
-    const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
-    return directory.map(entry => ({
-      ...entry,
-      isSelectable: entry.id !== scope.organizationId && allowed.has(entry.id),
-      label: entry.path,
-    }));
-  }),
+  routingDirectory: authenticatedProcedure.query(() => []),
 });

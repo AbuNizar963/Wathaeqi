@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => {
 vi.mock("./documentStudioRepository", () => mocks);
 
 const dbMocks = vi.hoisted(() => ({
-  getUserOrganizationMembership: vi.fn(),
+  resolveOrganizationScope: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
 
@@ -47,9 +47,8 @@ const storageMocks = vi.hoisted(() => ({
 
 vi.mock("./documentOrganizationRepository", () => documentOrganizationMocks);
 
-vi.mock("../organizations/appwriteOwnerOrganizationRepository", () => ({
-  getOrganizationById: vi.fn(),
-  getUserOrganizationMembership: dbMocks.getUserOrganizationMembership,
+vi.mock("../organizations/organizationAccess", () => ({
+  resolveOrganizationScope: dbMocks.resolveOrganizationScope,
 }));
 
 vi.mock("../audit/appwriteAuditRepository", () => ({
@@ -168,10 +167,14 @@ const documentInput = {
 describe("document studio authorization and API", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    dbMocks.getUserOrganizationMembership.mockResolvedValue({
-      isActive: true,
+    dbMocks.resolveOrganizationScope.mockResolvedValue({
+      userId: 7,
       organizationId: "org-1",
+      organizationIds: ["org-1"],
       role: "organization_admin",
+      isOwner: true,
+      canManage: true,
+      canAdministrate: true,
     });
     documentOrganizationMocks.getDocumentOrganizationSettings.mockResolvedValue(
       {

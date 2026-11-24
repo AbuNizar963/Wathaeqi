@@ -5,7 +5,6 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashboardLayout from "./components/DashboardLayout";
 import OwnerUserManagement from "./features/users/OwnerUserManagement";
-import OwnerOrganizationManagement from "./features/organizations/OwnerOrganizationManagement";
 import PlatformDocumentSettingsPage from "./features/platform-settings/PlatformDocumentSettingsPage";
 import WorkspacePage from "./features/workspace/WorkspacePage";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -26,7 +25,6 @@ function DashboardPage({ children }: { children: React.ReactNode }) {
     <>
       <DashboardLayout>{children}</DashboardLayout>
       <OwnerUserManagement />
-      <OwnerOrganizationManagement />
     </>
   );
 }
@@ -68,11 +66,6 @@ function Router() {
         <Route path="/users">
           <DashboardPage>
             <WorkspacePage section="users" />
-          </DashboardPage>
-        </Route>
-        <Route path="/organizations">
-          <DashboardPage>
-            <WorkspacePage section="organizations" />
           </DashboardPage>
         </Route>
         <Route path="/about">

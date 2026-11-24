@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import type { PublicUser } from "../../_core/auth";
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "./appwriteOwnerOrganizationRepository";
-import { listOrganizationDescendants } from "./organizationService";
+import { getOrganizationByCode } from "./organizationService";
 
 /** Roles allowed to act on documents owned by their active organization. */
 const ORGANIZATION_ACTOR_ROLES = [
@@ -12,6 +12,9 @@ const ORGANIZATION_ACTOR_ROLES = [
   "reviewer",
   "dispatcher",
 ] as const;
+
+/** Stable code of the only organization enabled in this installation. */
+const FIXED_ORGANIZATION_CODE = "ALSHAHBAA";
 
 /** Roles allowed to administrate organization settings and documents. */
 const ORGANIZATION_ADMIN_ROLES = [
@@ -25,7 +28,7 @@ export type OrganizationScope = {
   organizationId: string;
   role: string;
   isOwner: boolean;
-  /** null means the platform owner can read every organization. */
+  /** Only the one fixed organization is in scope for every account. */
   organizationIds: string[] | null;
   canManage: boolean;
   canAdministrate: boolean;
@@ -42,36 +45,42 @@ function roleCanAdministrate(role: string): boolean {
 export async function resolveOrganizationScope(
   user: PublicUser
 ): Promise<OrganizationScope> {
-  const membership = await getUserOrganizationMembership(user.id);
+  const [membership, fixedOrganization] = await Promise.all([
+    getUserOrganizationMembership(user.id),
+    getOrganizationByCode(FIXED_ORGANIZATION_CODE),
+  ]);
   const isOwner = isPlatformOwner(user);
-  const organizationId = membership?.organizationId ?? user.organizationId;
-  if (!organizationId) {
+  if (!fixedOrganization) {
     throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "حسابك غير مرتبط بجهة عمل. راجع مالك المنصة.",
+      code: "INTERNAL_SERVER_ERROR",
+      message: "تعذر تحديد الجهة الثابتة للنظام. يرجى مراجعة إعدادات المنصة.",
     });
   }
-  if (!membership?.isActive && !isOwner) {
+  if (
+    !isOwner &&
+    (!membership?.isActive ||
+      membership.organizationId !== fixedOrganization.id)
+  ) {
     throw new TRPCError({
       code: "FORBIDDEN",
-      message: "يجب أن تكون لديك عضوية نشطة في جهة العمل للوصول إلى الوثائق.",
+      message:
+        "يجب أن يكون حسابك مرتبطاً بقسم شرطة الشهباء للوصول إلى الوثائق.",
     });
   }
+  const organizationId = fixedOrganization.id;
 
-  const role = membership?.role ?? (isOwner ? "system_admin" : "member");
+  const role =
+    membership?.organizationId === organizationId
+      ? membership.role
+      : isOwner
+        ? "system_admin"
+        : "member";
   const canManage = isOwner || roleCanAct(role);
   const canAdministrate = isOwner || roleCanAdministrate(role);
 
-  let organizationIds: string[] | null = null;
-  if (!isOwner) {
-    const descendants =
-      role === "regional_admin" || role === "organization_admin"
-        ? await listOrganizationDescendants(organizationId, {
-            activeOnly: true,
-          })
-        : [];
-    organizationIds = [organizationId, ...descendants.map(item => item.id)];
-  }
+  // Every account is scoped to the one configured organization, never to a
+  // membership-selected organization or a descendant in the old hierarchy.
+  const organizationIds = [organizationId];
 
   return {
     userId: user.id,

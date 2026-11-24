@@ -5,6 +5,7 @@ import { isPlatformOwner } from "../../ownerAccess";
 import { getRequestAuditContext } from "../../auditContext";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 import { verifyAppwriteUserPassword } from "../../_core/appwriteAuth";
+import { resolveOrganizationScope } from "../organizations/organizationAccess";
 import {
   createManagedUser,
   deleteManagedUser,
@@ -54,23 +55,47 @@ function assertOwner(user: Parameters<typeof isPlatformOwner>[0]): void {
   }
 }
 
+async function assertFixedOrganization(
+  user: Parameters<typeof resolveOrganizationScope>[0],
+  organizationId: string
+): Promise<void> {
+  const scope = await resolveOrganizationScope(user);
+  if (organizationId !== scope.organizationId) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "يمكن إدارة الحسابات ضمن الجهة الثابتة فقط.",
+    });
+  }
+}
+
+async function getScopedManagedUser(
+  user: Parameters<typeof resolveOrganizationScope>[0],
+  id: number
+) {
+  const scope = await resolveOrganizationScope(user);
+  const managedUser = await getManagedUser(id);
+  if (!managedUser || managedUser.organizationId !== scope.organizationId) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "المستخدم غير موجود ضمن الجهة الحالية",
+    });
+  }
+  return managedUser;
+}
+
 export const userManagementRouter = router({
   list: authenticatedProcedure.query(async ({ ctx }) => {
     assertOwner(ctx.user);
-    return listManagedUsers();
+    const scope = await resolveOrganizationScope(ctx.user);
+    const users = await listManagedUsers();
+    return users.filter(user => user.organizationId === scope.organizationId);
   }),
 
   get: authenticatedProcedure
     .input(z.object({ id: z.coerce.number().int().positive() }))
     .query(async ({ ctx, input }) => {
       assertOwner(ctx.user);
-      const user = await getManagedUser(input.id);
-      if (!user)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
-      return user;
+      return getScopedManagedUser(ctx.user, input.id);
     }),
 
   create: authenticatedProcedure
@@ -82,6 +107,7 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
+      await assertFixedOrganization(ctx.user, input.organizationId);
       const created = await createManagedUser({
         ...input,
         bio: null,
@@ -108,12 +134,8 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
-      const before = await getManagedUser(input.id);
-      if (!before)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
+      const before = await getScopedManagedUser(ctx.user, input.id);
+      await assertFixedOrganization(ctx.user, input.organizationId);
       const updated = await updateManagedUser(input.id, input);
       await writeAuditLog({
         ...getRequestAuditContext(ctx.req),
@@ -138,6 +160,7 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
+      await getScopedManagedUser(ctx.user, input.id);
       await setManagedUserActive(input.id, input.isActive, {
         id: ctx.user.id,
         authUserId: ctx.user.authUserId,
@@ -162,6 +185,7 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
+      await getScopedManagedUser(ctx.user, input.id);
       if (input.confirmPassword) {
         const valid = await verifyAppwriteUserPassword(
           ctx.user.username ?? ctx.user.email ?? "",
@@ -190,6 +214,7 @@ export const userManagementRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
+      await getScopedManagedUser(ctx.user, input.id);
       const valid = await verifyAppwriteUserPassword(
         ctx.user.username ?? ctx.user.email ?? "",
         input.confirmPassword
@@ -211,12 +236,7 @@ export const userManagementRouter = router({
     .input(z.object({ id: z.coerce.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
       assertOwner(ctx.user);
-      const before = await getManagedUser(input.id);
-      if (!before)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "المستخدم غير موجود",
-        });
+      const before = await getScopedManagedUser(ctx.user, input.id);
       try {
         await deleteManagedUser(input.id, {
           id: ctx.user.id,
