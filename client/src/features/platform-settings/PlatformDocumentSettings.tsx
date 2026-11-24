@@ -185,7 +185,7 @@ export default function PlatformDocumentSettings() {
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  العنوان الفرعي / الوحدة
+                  العنوان الفرعي / اسم الوحدة
                   <input
                     value={values.headerSubtitle}
                     maxLength={255}
@@ -230,7 +230,7 @@ export default function PlatformDocumentSettings() {
                   إظهار شعار الجهة
                 </label>
                 <label className="space-y-1 text-sm">
-                  محاذاة الرأس
+                  محاذاة بيانات أسفل الوثيقة
                   <select
                     value={values.headerAlignment}
                     onChange={event =>
