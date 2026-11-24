@@ -82,7 +82,7 @@ void main() {
       const sessionToken = 'appwrite-encrypted-session-token';
       final user = <String, dynamic>{
         'id': 7,
-        'name': 'مستخدم تجريبي',
+        'name': 'Test User',
         'username': 'field.user',
         'role': 'user',
         'organizationId': 'org-1',
