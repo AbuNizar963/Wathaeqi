@@ -20,7 +20,9 @@ export function savedDocumentViewsKey(userId: string | number): string {
   return `wathaeqi:saved-document-views:${String(userId)}`;
 }
 
-function isSavedDocumentViewInput(value: unknown): value is SavedDocumentViewInput {
+function isSavedDocumentViewInput(
+  value: unknown
+): value is SavedDocumentViewInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
@@ -32,6 +34,26 @@ function isSavedDocumentViewInput(value: unknown): value is SavedDocumentViewInp
     typeof item.search === "string" &&
     typeof item.category === "string"
   );
+}
+
+function normalizeSavedDocumentStatus(
+  status: unknown
+): SavedDocumentView["status"] {
+  if (status === "draft" || status === "issued" || status === "archived") {
+    return status;
+  }
+
+  return "all";
+}
+
+function normalizeSavedDocumentSort(
+  sort: unknown
+): SavedDocumentView["sort"] {
+  if (sort === "updated-asc" || sort === "title-asc") {
+    return sort;
+  }
+
+  return "updated-desc";
 }
 
 export function parseSavedDocumentViews(
@@ -50,16 +72,8 @@ export function parseSavedDocumentViews(
         name: item.name,
         search: item.search,
         category: item.category,
-        status:
-          item.status === "draft" ||
-          item.status === "issued" ||
-          item.status === "archived"
-            ? item.status
-            : "all",
-        sort:
-          item.sort === "updated-asc" || item.sort === "title-asc"
-            ? item.sort
-            : "updated-desc",
+        status: normalizeSavedDocumentStatus(item.status),
+        sort: normalizeSavedDocumentSort(item.sort),
       }))
       .slice(0, 30);
   } catch {
