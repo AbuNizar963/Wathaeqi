@@ -16,9 +16,9 @@ export type DocumentLetterheadProps = {
  * A4 letterhead shared by the live preview, printing and the PNG export.
  *
  * The three columns use a table row instead of CSS grid or flexbox: html2canvas
- * (the PNG exporter) mishandles both grid placement and flex alignment, which
- * used to paint the tricolor divider on top of the serial/date block in
- * downloaded images. Tables keep the same geometry in every renderer.
+ * (the PNG exporter) mishandles both grid placement and flex alignment.
+ * The serial/date metadata is rendered in a separate row
+ * below the divider so it remains right-aligned in every renderer.
  */
 export default function DocumentLetterhead({
   organizationName,
@@ -31,8 +31,12 @@ export default function DocumentLetterhead({
   serial,
   date,
 }: DocumentLetterheadProps) {
-  const title = headerSettings?.headerTitle.trim() || organizationName;
-  const subtitle = headerSettings?.headerSubtitle.trim() || unitName;
+  const configuredTitle =
+    headerSettings?.headerTitle.trim() || organizationName;
+  const configuredSubtitle = headerSettings?.headerSubtitle.trim() || unitName;
+  const title = configuredTitle === "إدارة الشرطة" ? "" : configuredTitle;
+  const subtitle =
+    configuredSubtitle === "وحدة العمليات" ? "" : configuredSubtitle;
   const rank = headerSettings?.headerChiefRank.trim() || chiefRank;
   const name = headerSettings?.headerChiefName.trim() || chiefName;
   const showLogo = headerSettings?.headerShowLogo !== false;
@@ -60,13 +64,12 @@ export default function DocumentLetterhead({
       dir="rtl"
     >
       <div className="document-letterhead__row">
-        <div
-          className="document-letterhead__cell text-right"
-          style={{ textAlign }}
-        >
-          <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
-            {title}
-          </p>
+        <div className="document-letterhead__cell text-right">
+          {title ? (
+            <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
+              {title}
+            </p>
+          ) : null}
           {subtitle ? (
             <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
               {subtitle}
@@ -91,16 +94,6 @@ export default function DocumentLetterhead({
           style={{ textAlign }}
           dir="rtl"
         >
-          {serial ? (
-            <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
-              <strong>الرقم:</strong> {serial}
-            </p>
-          ) : null}
-          {date ? (
-            <p className="whitespace-nowrap [transform:scaleX(0.86)] [transform-origin:left_center]">
-              <strong>التاريخ:</strong> {date}
-            </p>
-          ) : null}
           {rank ? (
             <p className="whitespace-nowrap text-[12pt] font-semibold">
               {rank}
@@ -141,6 +134,24 @@ export default function DocumentLetterhead({
             <path d="M49.5 1.2 51.4 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4 1.9-4.8Z" />
           </svg>
           <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--green" />
+        </div>
+      ) : null}
+      {serial || date ? (
+        <div
+          className="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"
+          dir="rtl"
+          data-testid="document-letterhead-metadata"
+        >
+          {serial ? (
+            <p className="whitespace-nowrap">
+              <strong>الرقم:</strong> {serial}
+            </p>
+          ) : null}
+          {date ? (
+            <p className="whitespace-nowrap">
+              <strong>التاريخ:</strong> {date}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </header>

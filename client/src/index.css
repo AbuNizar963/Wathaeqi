@@ -794,8 +794,7 @@
   margin: 0 auto;
 }
 .document-tricolor-stars-divider {
-  /* The letterhead row is a table so html2canvas (PNG export) keeps the divider
-     below the serial/date block instead of painting it over the text. */
+  /* Keep the tricolor divider on its own row; serial/date metadata follows it. */
   display: flex;
   align-items: center;
   gap: 0.38rem;

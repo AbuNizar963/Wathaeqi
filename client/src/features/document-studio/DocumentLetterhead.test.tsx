@@ -20,15 +20,15 @@ const solidSettings: PlatformDocumentSettings = {
 function render(settings: PlatformDocumentSettings): string {
   return renderToStaticMarkup(
     <DocumentLetterhead
-      organizationName="جهة اختبار"
-      unitName="وحدة الاختبار"
+      organizationName="إدارة الشرطة"
+      unitName="وحدة العمليات"
       chiefRank="العقيد"
       chiefName="رئيس الوحدة"
       logoUrl={null}
       dividerColor="#14532d"
       headerSettings={settings}
       serial="يخصص عند الإصدار"
-      date="23 نوفمبر 2026"
+      date="24 نوفمبر 2026"
     />
   );
 }
@@ -45,15 +45,46 @@ describe("DocumentLetterhead", () => {
     );
   });
 
-  it("places the tricolor divider after the serial and date block", () => {
+  it("places serial and date metadata below the tricolor divider, aligned right", () => {
     const markup = render(tricolorSettings);
-    const dateIndex = markup.indexOf("التاريخ:");
     const dividerIndex = markup.indexOf("document-tricolor-stars-divider");
-    expect(dateIndex).toBeGreaterThan(-1);
-    expect(dividerIndex).toBeGreaterThan(dateIndex);
-    // The divider must be a direct child of the header so it can take a full
-    // flex row under the three columns.
-    expect(markup).toContain('class="document-tricolor-stars-divider"');
+    const metadataIndex = markup.indexOf(
+      'data-testid="document-letterhead-metadata"'
+    );
+    const dateIndex = markup.indexOf("التاريخ:");
+    expect(dividerIndex).toBeGreaterThan(-1);
+    expect(metadataIndex).toBeGreaterThan(dividerIndex);
+    expect(dateIndex).toBeGreaterThan(metadataIndex);
+    expect(markup).toContain(
+      'class="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"'
+    );
+    expect(markup).toContain(
+      'dir="rtl" data-testid="document-letterhead-metadata"'
+    );
+    expect(markup).toContain("الرقم:");
+    expect(markup).toContain("يخصص عند الإصدار");
+    expect(markup).toContain("24 نوفمبر 2026");
+    expect(markup).toContain("رئيس الوحدة");
+  });
+
+  it("does not render the organization and unit titles in the letterhead", () => {
+    const markup = render({
+      ...tricolorSettings,
+      headerTitle: "إدارة الشرطة",
+      headerSubtitle: "وحدة العمليات",
+    });
+    expect(markup).not.toContain("إدارة الشرطة");
+    expect(markup).not.toContain("وحدة العمليات");
+  });
+
+  it("continues to render other configured organization and unit titles", () => {
+    const markup = render({
+      ...tricolorSettings,
+      headerTitle: "مكتب المراسلات",
+      headerSubtitle: "قسم الصادر",
+    });
+    expect(markup).toContain("مكتب المراسلات");
+    expect(markup).toContain("قسم الصادر");
   });
 
   it("keeps a plain border and no divider markup for solid dividers", () => {
@@ -65,7 +96,7 @@ describe("DocumentLetterhead", () => {
   it("honours the logo size and centre alignment settings", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead
-        organizationName="جهة اختبار"
+        organizationName=""
         unitName=""
         chiefRank=""
         chiefName=""
