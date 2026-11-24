@@ -72,19 +72,7 @@ void main() {
     );
     expect(
       isOfficialOrganizationLogoStorageSource(
-        'https://project.supabase.co/storage/v1/object/public/telegram-files/department/logos/550e8400-e29b-41d4-a716-446655440000/logo.png',
-      ),
-      isTrue,
-    );
-    expect(
-      isOfficialOrganizationLogoStorageSource(
         'https://police.example.test/api/storage/department/logos/org-1/logo.png',
-      ),
-      isTrue,
-    );
-    expect(
-      isOfficialOrganizationLogoStorageSource(
-        'https://project.supabase.co/storage/v1/object/sign/telegram-files/department/logos/logo.png?token=temporary',
       ),
       isTrue,
     );

@@ -25,7 +25,7 @@ These rules are mandatory for all code-generation, review, and refactoring work 
 - Authorization: server-side object-level checks, least privilege, tenant isolation, IDOR/BOLA, privilege escalation, and deny-by-default behavior.
 - API/input: schema validation, canonicalization, injection, XSS, CSRF, SSRF, path traversal, mass assignment, rate limits, resource limits, replay, and safe errors.
 - Data/storage: encryption in transit, secret handling, private object storage, short-lived signed URLs, upload signature/size validation, export safety, and sensitive logging.
-- Database/Supabase: RLS, tenant predicates, UPDATE USING/WITH CHECK, view security, SECURITY DEFINER grants/search_path, and service-role bypass review.
+- Appwrite TablesDB/Storage: document permissions, tenant predicates, private buckets, signed URLs, and server-side authorization review.
 - Mobile: secure storage, local PIN throttling, deep links, WebViews, platform permissions, cleartext traffic, backups, signing, and client-side secret exposure.
 - Supply chain/CI: lockfiles, dependency review, action permissions, third-party action integrity, secret isolation, and branch-specific security checks.
 
@@ -34,7 +34,7 @@ These rules are mandatory for all code-generation, review, and refactoring work 
 - Shared functional/security fixes must be implemented on both maintained branches where the corresponding component exists.
 - `main` uses web/TypeScript technologies; `flutter-mobile-app` uses Dart/Flutter for mobile code.
 - Test and push each branch independently. Do not copy platform-specific implementation code across branches.
-- Supabase service-role operations bypass RLS: every server-side privileged operation must independently verify the authenticated user's organization, role, and target object.
+- Appwrite server-side operations can bypass client permissions: every privileged operation must independently verify the authenticated user's organization, role, and target object.
 - UI visibility is never an authorization boundary. The server and data/storage layer must enforce access.
 
 Do not claim OWASP compliance, certification, or a completed penetration test based only on static review or automated CI.

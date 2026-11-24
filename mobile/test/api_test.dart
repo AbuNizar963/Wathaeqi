@@ -37,8 +37,6 @@ void main() {
     final api = PoliceApi();
 
     expect(api.baseUrl, 'https://wathaeqi-api.fra.appwrite.run');
-    expect(api.baseUrl, isNot(contains('netlify.app')));
-    expect(api.baseUrl, isNot(contains('vercel.app')));
   });
 
   setUp(() {
@@ -1572,7 +1570,7 @@ void main() {
       final client = MockClient((request) async {
         expect(request.url.path, '/api/telegram-render');
         return http.Response(
-          'Vercel Runtime Timeout Error: Task timed out after 60 seconds',
+          'Appwrite Function Timeout: Task timed out after 60 seconds',
           504,
           headers: {'content-type': 'text/plain'},
         );

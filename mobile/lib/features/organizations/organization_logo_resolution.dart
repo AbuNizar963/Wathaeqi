@@ -32,8 +32,7 @@ String? resolveOrganizationLogoSourceIdentity(
   return identity.isEmpty ? null : identity;
 }
 
-/// Accepts only the protected application storage route or a Supabase object
-/// URL that can be resolved by the server's configured storage bucket.
+/// Accepts only the protected application storage route served by Appwrite.
 ///
 /// This is an early client-side guard only; the export endpoint independently
 /// validates the URL, object key, image signature, and organization ownership.
@@ -41,10 +40,5 @@ bool isOfficialOrganizationLogoStorageSource(String? source) {
   final value = source?.trim() ?? '';
   if (value.isEmpty) return false;
   final uri = Uri.tryParse(value);
-  if (uri != null && uri.path.startsWith('/api/storage/')) return true;
-
-  return RegExp(
-    r'/storage/v1/object/(?:sign|public|authenticated)/[^/]+/department/logos/',
-    caseSensitive: false,
-  ).hasMatch(value);
+  return uri != null && uri.path.startsWith('/api/storage/');
 }

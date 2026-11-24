@@ -16,7 +16,7 @@
 - [ ] Verified server-side authentication, object authorization, and tenant scoping.
 - [ ] Considered relevant OWASP risks (auth, access control, injection, SSRF, XSS/CSRF, file handling, resource exhaustion, logging).
 - [ ] Added regression tests, including negative/cross-tenant tests where relevant.
-- [ ] Reviewed privileged Supabase/service-role paths, RLS, views, and RPCs if touched.
+- [ ] Reviewed privileged Appwrite TablesDB/Storage paths, permissions, and signed URLs if touched.
 - [ ] Reviewed secrets, dependencies, workflows, and permissions if touched.
 - [ ] Confirmed no feature was disabled and no file was truncated or compressed.
 

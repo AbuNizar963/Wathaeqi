@@ -1,102 +1,44 @@
-# منصة برقيات الشرطة
+# تطبيق وثائقي للهاتف
 
-منصة عربية آمنة لإدارة البرقيات والعمليات الشرطية بواجهة ويب متجاوبة وخادم API مركزي. تطبيق Flutter عميل مستقل على الفرع `flutter-mobile-app` ويتصل بالخادم نفسه. تشمل المنصة دورة حياة البرقيات، الجهات والصلاحيات، المرفقات، سجل التدقيق، التقارير، الاستيراد والتصدير، والإشعارات.
+هذا الفرع (`flutter-mobile-app`) هو تطبيق Flutter للهاتف لنظام وثائقي. يتصل التطبيق مباشرة بواجهة Appwrite Function المنشورة، ولا يحتوي على نسخة ويب أو خادم أو قاعدة بيانات بديلة.
 
-## البنية التقنية
+## المتطلبات والتشغيل
 
-- **الواجهة:** React وTypeScript وVite وTailwind CSS، مع دعم RTL والوضعين الفاتح والداكن.
-- **الخادم:** Express وtRPC، مع التحقق من المدخلات والصلاحيات في الخادم.
-- **البيانات والتخزين:** Supabase PostgreSQL وStorage وDrizzle ORM.
-- **تطبيق الهاتف:** Flutter على فرع التطوير المستقل `flutter-mobile-app`، مع تخزين جلسة آمن ومزامنة العمل دون اتصال وإشعارات Firebase.
-- **النشر:** إعداد Vercel للواجهة وواجهات API.
-
-## المتطلبات
-
-- Node.js 24 أو أحدث؛ الإصدار مثبت أيضًا في ملف `.nvmrc`.
-- pnpm 12.14.0، ويمكن تفعيله عبر Corepack.
-- مشروع Supabase للتشغيل المتصل الفعلي.
-- Docker وSupabase CLI عند تشغيل قاعدة الاختبار المحلية.
-- Flutter 3.47.2 للعمل على تطبيق الهاتف بعد الانتقال إلى فرعه المستقل.
-
-## بدء العمل على الويب والخادم
+- Flutter وDart بالإصدار المثبت في `mobile/.fvmrc`.
+- Android Studio أو Xcode بحسب المنصة.
+- محاكي أو جهاز اختبار.
 
 ```bash
-corepack enable
-pnpm install --frozen-lockfile
-cp .env.example .env
-```
-
-املأ قيم البيئة المطلوبة في `.env`، ولا ترفع هذا الملف أو أي أسرار إلى Git. ثم شغّل بيئة التطوير:
-
-```bash
-pnpm dev
-```
-
-لإنشاء نسخة الإنتاج وتشغيلها:
-
-```bash
-pnpm build
-pnpm start
-```
-
-## فحوص الجودة
-
-```bash
-pnpm lint
-pnpm check
-pnpm check:responsive-shell
-pnpm test
-pnpm build
-```
-
-عند تعديل قاعدة البيانات، اتبع سير العمل المحلي في `.github/workflows/ci.yml`، وشغّل الترحيلات واختبارات Supabase في بيئة معزولة. لا تستخدم قاعدة الإنتاج للاختبار، ولا تعدّل ترحيلًا سبق تطبيقه لتغيير التاريخ المخفي للمخطط.
-
-الويب والهاتف واجهتان للنظام نفسه، لكن مصدر الشيفرة منفصل: يحتوي `main` الويب والخادم، ويحتوي `flutter-mobile-app` عميل Flutter وفحوصه. يتصل الهاتف بـAPI الخادم نفسه؛ تظل المصادقة والصلاحيات ونطاق الجهة مسؤولية الخادم. يجب مراجعة تغييرات API والبيانات من الفرعين معًا، وفق `docs/WEB_MOBILE_INTEGRATION_AR.md`.
-
-## تطبيق الهاتف
-
-للحصول على نسخة التطبيق لأول مرة:
-
-```bash
-git fetch origin
-git switch --track origin/flutter-mobile-app
 cd mobile
+flutter pub get --enforce-lockfile
+flutter run
 ```
 
-بعدها شغّل فحوص Flutter من مجلد `mobile/`:
+عنوان Appwrite Function الافتراضي:
+
+```text
+https://wathaeqi-api.fra.appwrite.run
+```
+
+يمكن تغييره أثناء التطوير دون وضع أسرار داخل التطبيق:
 
 ```bash
-flutter pub get
-dart format --output=none --set-exit-if-changed lib test
+flutter run --dart-define=API_BASE_URL=https://your-appwrite-function.example
+```
+
+## الفحوص
+
+من مجلد `mobile`:
+
+```bash
+./tool/format_dart.sh --check
 flutter analyze
-flutter test
+flutter test --concurrency=1 --reporter expanded
 flutter build apk --debug
 ```
 
-يستخدم التطبيق عنوان الخادم الافتراضي الموضح في `mobile/lib/api.dart`، ويمكن تغييره أثناء التطوير:
+## GitHub Actions والإصدار
 
-```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
-```
+يشغّل `.github/workflows/flutter-mobile.yml` فحوص التنسيق والتحليل والاختبارات وبناء APK تجريبي عند تغييرات `mobile/`. بناء APK الموقّع ونشر الإصدار العام متاحان يدوياً فقط عبر `workflow_dispatch` وعلى فرع `flutter-mobile-app`. لا توجد في هذا الفرع مهام نشر تلقائي أو إشعارات تلقائية عند الدفع المباشر.
 
-راجع `mobile/README.md` و`mobile/FIREBASE_SETUP_AR.md` لتفاصيل الهاتف والإشعارات.
-
-## أهم المجلدات
-
-| المسار                      | المحتوى                                              |
-| --------------------------- | ---------------------------------------------------- |
-| `client/src`                | صفحات الويب والمكونات وأدوات العرض والتصدير          |
-| `server`                    | إجراءات tRPC والصلاحيات والتخزين والاختبارات         |
-| `shared`                    | الأنواع والقواعد المشتركة بين الواجهة والخادم        |
-| `supabase`                  | الترحيلات وسياسات قاعدة البيانات واختباراتها         |
-| `flutter-mobile-app:mobile` | تطبيق Flutter واختباراته على فرع مستقل               |
-| `docs`                      | التشغيل والأمان والصلاحيات والتصميم والنسخ الاحتياطي |
-
-## قواعد التعديل الآمن
-
-- حافظ على جميع الميزات ومسارات الصلاحيات الحالية، وأضف اختبارات للتغييرات السلوكية.
-- لا تعتمد إخفاء زر في الواجهة بديلًا عن التحقق من الصلاحية في الخادم.
-- لا تسجل كلمات المرور أو الجلسات أو البيانات الحساسة، ولا تضع أسرار الخادم في متغيرات تبدأ بـ`VITE_`.
-- استخدم فرعًا مستقلًا وطلب مراجعة، وانتظر نجاح GitHub Actions قبل الدمج.
-
-لمزيد من الإرشادات راجع `CONTRIBUTING.md` و`SECURITY.md` و`docs/OPERATIONS_AR.md`.
+لا تضع مفاتيح Appwrite أو Firebase أو أي أسرار إدارية في Git أو داخل حزمة التطبيق. تُفرض المصادقة والصلاحيات وعزل بيانات الجهات في Appwrite API، بينما يحتفظ التطبيق برمز الجلسة في التخزين الآمن.

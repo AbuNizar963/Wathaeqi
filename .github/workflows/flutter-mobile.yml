@@ -6,16 +6,12 @@ on:
       - flutter-mobile-app
     paths:
       - "mobile/**"
-      - "server/**"
-      - "shared/**"
       - ".github/workflows/flutter-mobile.yml"
   pull_request:
     branches:
       - flutter-mobile-app
     paths:
       - "mobile/**"
-      - "server/**"
-      - "shared/**"
       - ".github/workflows/flutter-mobile.yml"
   workflow_dispatch:
 

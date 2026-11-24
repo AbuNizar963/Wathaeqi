@@ -59,18 +59,12 @@ mobile/ios/Runner/GoogleService-Info.plist
 
 ## إعداد الخادم
 
-بعد دمج ونشر تغييرات الخادم، أضف هذه المتغيرات السرية إلى بيئة الخادم أو Vercel، ولا تضعها داخل تطبيق الهاتف:
+تُدار هذه المتغيرات في إعدادات Appwrite/خدمة الإشعارات، ولا تضعها داخل تطبيق الهاتف:
 
 ```text
 FIREBASE_PROJECT_ID=...
 FIREBASE_CLIENT_EMAIL=firebase-adminsdk-...@....iam.gserviceaccount.com
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-```
-
-ثم طبّق ترحيل قاعدة البيانات إن لم يكن مطبقًا:
-
-```text
-supabase/migrations/20261013200000_add_mobile_fcm_tokens.sql
 ```
 
 بعد تسجيل الدخول ومنح إذن الإشعارات، يسجل تطبيق Flutter الـFCM token عبر `notifications.registerMobileToken`. وعند وصول البرقية إلى الجهة يرسل الخادم الإشعار إلى أجهزة أعضائها، ويحذف الرموز المنتهية تلقائيًا.
