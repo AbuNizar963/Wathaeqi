@@ -2,8 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { getRequestAuditContext } from "../../auditContext";
-import { isPlatformOwner } from "../../ownerAccess";
-import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
+import { resolveOrganizationScope } from "../organizations/organizationAccess";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 import {
   allocateDocumentOrganizationSerialNumber,
@@ -221,18 +220,9 @@ export const documentStudioRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const membership = await getUserOrganizationMembership(ctx.user.id);
-      const ownerOrganizationId =
-        ctx.user.organizationId ??
-        (membership?.isActive ? membership.organizationId : undefined);
-      const organizationId = input.organizationId ?? ownerOrganizationId;
-      if (!organizationId) return null;
-      if (
-        !ownerOrganizationId ||
-        organizationId !== ownerOrganizationId ||
-        !membership?.isActive ||
-        membership.organizationId !== organizationId
-      ) {
+      const scope = await resolveOrganizationScope(ctx.user);
+      const organizationId = input.organizationId ?? scope.organizationId;
+      if (organizationId !== scope.organizationId) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا تملك صلاحية عرض ترويسة هذه الجهة.",
@@ -421,7 +411,7 @@ export const documentStudioRouter = router({
           message: "محتوى الملف لا يطابق بياناته أو أنه تالف",
         });
       }
-      const membership = await getUserOrganizationMembership(ctx.user.id);
+      const scope = await resolveOrganizationScope(ctx.user);
       const created = await createOfficialDocument(ctx.user.authUserId, {
         title: input.title,
         category: input.category,
@@ -429,7 +419,7 @@ export const documentStudioRouter = router({
         content: { type: "doc", content: [{ type: "paragraph" }] },
         fieldValues: {},
         documentDate: input.documentDate ?? new Date().toISOString(),
-        organizationId: membership?.isActive ? membership.organizationId : null,
+        organizationId: scope.organizationId,
         templateId: null,
         templateRevision: null,
         templateFieldsSnapshot: [],
@@ -487,7 +477,7 @@ export const documentStudioRouter = router({
         input.templateRevision,
         input.fieldValues
       );
-      const membership = await getUserOrganizationMembership(ctx.user.id);
+      const scope = await resolveOrganizationScope(ctx.user);
       return createOfficialDocument(ctx.user.authUserId, {
         title: input.title,
         category: input.category,
@@ -495,7 +485,7 @@ export const documentStudioRouter = router({
         content: input.content,
         fieldValues: input.fieldValues,
         documentDate: input.documentDate ?? new Date().toISOString(),
-        organizationId: membership?.isActive ? membership.organizationId : null,
+        organizationId: scope.organizationId,
         ...snapshot,
       });
     }),
@@ -626,17 +616,8 @@ export const documentStudioRouter = router({
         });
       }
 
-      const membership = await getUserOrganizationMembership(ctx.user.id);
-      if (!membership?.isActive) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "يجب أن تكون لديك عضوية نشطة في جهة العمل لإصدار الوثيقة.",
-        });
-      }
-      if (
-        !isPlatformOwner(ctx.user) &&
-        !["system_admin", "organization_admin"].includes(membership.role)
-      ) {
+      const scope = await resolveOrganizationScope(ctx.user);
+      if (!scope.canAdministrate) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "لا تملك صلاحية إصدار الوثائق الرسمية في هذه الجهة.",
@@ -644,7 +625,7 @@ export const documentStudioRouter = router({
       }
       if (
         existing.organizationId &&
-        existing.organizationId !== membership.organizationId
+        existing.organizationId !== scope.organizationId
       ) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -653,7 +634,7 @@ export const documentStudioRouter = router({
       }
 
       const organizationId =
-        existing.organizationId ?? membership.organizationId;
+        existing.organizationId ?? scope.organizationId;
       const settings = await getDocumentOrganizationSettings(organizationId);
       if (!settings) {
         throw new TRPCError({
