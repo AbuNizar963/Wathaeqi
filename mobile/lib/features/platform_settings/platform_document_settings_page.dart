@@ -2,10 +2,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
+import '../../app_theme.dart';
 import '../organizations/organization_logo_upload.dart';
 import '../notifications/toast.dart';
-
-const _navy = Color(0xFF10233F);
 
 String _settingsErrorMessage(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
@@ -610,7 +609,7 @@ class _PlatformDocumentSettingsPageState
                             Text(
                               '${_watermarkOpacityPercent.round()}%',
                               style: const TextStyle(
-                                color: _navy,
+                                color: AppPalette.navy,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
