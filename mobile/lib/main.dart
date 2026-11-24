@@ -1221,7 +1221,7 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Future<void> _showNotificationsPreview() async {
-    final notifications = widget.api.call('notifications.inbox');
+    final notifications = widget.api.call('workspace.notifications.list');
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
