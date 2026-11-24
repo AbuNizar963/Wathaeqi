@@ -58,9 +58,7 @@ const legacySettingsInput = z.object({
   logoUrl: z.string().max(1024).nullable(),
 });
 
-function requireOwner(ctx: {
-  user: Parameters<typeof isPlatformOwner>[0];
-}) {
+function requireOwner(ctx: { user: Parameters<typeof isPlatformOwner>[0] }) {
   if (!isPlatformOwner(ctx.user)) {
     throw new TRPCError({
       code: "FORBIDDEN",
