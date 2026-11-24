@@ -968,28 +968,23 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     try {
-      final legacyResult = await _outbox.sync(widget.api);
+      // Only the document studio queue is synchronized. Legacy telegram
+      // outbox entries remain local and are never sent in print-only mode.
       final documentResult = await _documentStudioOutbox.sync();
-      final totalSynced = legacyResult.synced + documentResult.synced;
 
-      if (totalSynced > 0) _loadUnreadNotificationCount();
+      if (documentResult.synced > 0) _loadUnreadNotificationCount();
       if (!mounted || !showProgress) return;
 
-      if (legacyResult.permanentFailures > 0) {
-        final details = legacyResult.permanentErrorMessages.isEmpty
-            ? 'تحقق أو صلاحيات'
-            : legacyResult.permanentErrorMessages.join('، ');
-        Toast.error(
-          context,
-          'تم رفض ${legacyResult.permanentFailures} عملية قديمة من الخادم: $details',
-        );
-      } else if (documentResult.lastError != null) {
+      if (documentResult.lastError != null) {
         Toast.error(
           context,
           'تعذرت مزامنة الوثائق: ${documentResult.lastError}',
         );
-      } else if (totalSynced > 0) {
-        Toast.success(context, 'تمت مزامنة $totalSynced عملية بنجاح');
+      } else if (documentResult.synced > 0) {
+        Toast.success(
+          context,
+          'تمت مزامنة ${documentResult.synced} عملية وثائق بنجاح',
+        );
       }
     } catch (_) {
       if (mounted && showProgress) {
