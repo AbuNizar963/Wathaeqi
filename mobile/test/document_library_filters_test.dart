@@ -32,7 +32,10 @@ void main() {
 
   test('filters by status and serial number', () {
     expect(
-      filterAndSortDocuments(documents, status: 'issued').map((item) => item.id),
+      filterAndSortDocuments(
+        documents,
+        status: 'issued',
+      ).map((item) => item.id),
       ['2'],
     );
     expect(
@@ -42,16 +45,23 @@ void main() {
   });
 
   test('sorts newest, oldest, and title without mutating source', () {
+    expect(filterAndSortDocuments(documents).map((item) => item.id), [
+      '3',
+      '2',
+      '1',
+    ]);
     expect(
-      filterAndSortDocuments(documents).map((item) => item.id),
-      ['3', '2', '1'],
-    );
-    expect(
-      filterAndSortDocuments(documents, sort: 'updated-asc').map((item) => item.id),
+      filterAndSortDocuments(
+        documents,
+        sort: 'updated-asc',
+      ).map((item) => item.id),
       ['1', '2', '3'],
     );
     expect(
-      filterAndSortDocuments(documents, sort: 'title-asc').map((item) => item.id),
+      filterAndSortDocuments(
+        documents,
+        sort: 'title-asc',
+      ).map((item) => item.id),
       ['1', '2', '3'],
     );
     expect(documents.map((item) => item.id), ['1', '2', '3']);
