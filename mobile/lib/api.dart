@@ -960,7 +960,9 @@ class PoliceApi {
       throw const NetworkException(
         'استغرق الاتصال بالخادم وقتًا أطول من المتوقع',
       );
-    } catch (_) {
+    } on IOException {
+      throw const NetworkException();
+    } on http.ClientException {
       throw const NetworkException();
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
