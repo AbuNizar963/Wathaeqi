@@ -49,6 +49,11 @@ jobs:
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       # Validate fixed-organization access, user administration, and print-only workspace changes.
+      - name: Diagnose fixed-organization user UI formatting (temporary)
+        run: |
+          pnpm exec prettier client/src/features/users/OwnerUserManagement.tsx > /tmp/OwnerUserManagement.formatted.tsx
+          diff -u client/src/features/users/OwnerUserManagement.tsx /tmp/OwnerUserManagement.formatted.tsx || true
+
       - name: Check formatting
         run: pnpm lint
 
