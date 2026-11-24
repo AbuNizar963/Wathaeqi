@@ -122,7 +122,7 @@ void main() {
       expect(_secureStorageForTest['session_token'], sessionToken);
       expect(_secureStorageForTest['cached_account'], jsonEncode(user));
       expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
-      expect(await api.restoreSession(), user);
+      expect(await api.call('auth.me'), user);
       expect(requests, hasLength(2));
       expect(requests[0].url.path, endsWith('/auth.login'));
       expect(requests[0].headers['authorization'], isNull);
