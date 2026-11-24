@@ -127,8 +127,8 @@ assert(
 );
 
 assert(
-  ["/dashboard", "/studio", "/users", "/settings"].every(
-    path => appRoutes.includes(`path="${path}"`)
+  ["/dashboard", "/studio", "/users", "/settings"].every(path =>
+    appRoutes.includes(`path="${path}"`)
   ),
   "Every restored workspace navigation item must resolve to a registered route."
 );
@@ -151,4 +151,6 @@ assert(
   "Workspace API reads and writes must use the existing Appwrite tables and scope data to the signed-in owner."
 );
 
-console.log("Responsive shell and single-organization print-only checks passed.");
+console.log(
+  "Responsive shell and single-organization print-only checks passed."
+);
