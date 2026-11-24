@@ -23,6 +23,12 @@ export function getSessionToken(): string | null {
     const token = globalThis.sessionStorage?.getItem(SESSION_TOKEN_STORAGE_KEY);
     if (token && token.length <= 16_384) {
       inMemorySessionToken = token;
+      try {
+        globalThis.localStorage?.setItem(SESSION_TOKEN_STORAGE_KEY, token);
+        globalThis.sessionStorage?.removeItem(SESSION_TOKEN_STORAGE_KEY);
+      } catch {
+        // Keep using the legacy tab session when migration is blocked.
+      }
       return token;
     }
   } catch {

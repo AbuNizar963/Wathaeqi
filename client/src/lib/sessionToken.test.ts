@@ -56,6 +56,30 @@ describe("shared PWA session token", () => {
     );
   });
 
+  it("migrates a legacy tab session into shared storage", () => {
+    const localStorage = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+    const sessionStorage = {
+      getItem: vi.fn(() => "legacy-token"),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+    vi.stubGlobal("localStorage", localStorage);
+    vi.stubGlobal("sessionStorage", sessionStorage);
+
+    expect(getSessionToken()).toBe("legacy-token");
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      "wathaeqi.auth.session",
+      "legacy-token"
+    );
+    expect(sessionStorage.removeItem).toHaveBeenCalledWith(
+      "wathaeqi.auth.session"
+    );
+  });
+
   it("keeps the current page usable if browser storage is blocked", () => {
     const blockedStorage = {
       get getItem() {
