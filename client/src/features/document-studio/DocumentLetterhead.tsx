@@ -31,8 +31,6 @@ export default function DocumentLetterhead({
   serial,
   date,
 }: DocumentLetterheadProps) {
-  const title = headerSettings?.headerTitle.trim() || organizationName;
-  const subtitle = headerSettings?.headerSubtitle.trim() || unitName;
   const rank = headerSettings?.headerChiefRank.trim() || chiefRank;
   const name = headerSettings?.headerChiefName.trim() || chiefName;
   const showLogo = headerSettings?.headerShowLogo !== false;
@@ -61,18 +59,9 @@ export default function DocumentLetterhead({
     >
       <div className="document-letterhead__row">
         <div
-          className="document-letterhead__cell text-right"
-          style={{ textAlign }}
-        >
-          <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
-            {title}
-          </p>
-          {subtitle ? (
-            <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
+          className="document-letterhead__cell"
+          aria-hidden="true"
+        />
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
           style={{ width: logoSize }}
@@ -141,6 +130,24 @@ export default function DocumentLetterhead({
             <path d="M49.5 1.2 51.4 6l5.8.4-4.4 3.7 1.4 5.6-4.7-3-4.7 3 1.4-5.6-4.4-3.7 5.8-.4 1.9-4.8Z" />
           </svg>
           <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--green" />
+        </div>
+) : null}
+      {serial || date ? (
+        <div
+          className="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"
+          dir="rtl"
+          data-testid="document-letterhead-metadata"
+        >
+          {serial ? (
+            <p className="whitespace-nowrap">
+              <strong>الرقم:</strong> {serial}
+            </p>
+          ) : null}
+          {date ? (
+            <p className="whitespace-nowrap">
+              <strong>التاريخ:</strong> {date}
+            </p>
+          ) : null}
         </div>
       ) : null}
     </header>
