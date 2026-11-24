@@ -24,7 +24,7 @@ export type OrganizationScope = {
   organizationId: string;
   role: string;
   isOwner: boolean;
-  /** null means the platform owner can read every organization. */
+  /** Only the one fixed organization is in scope for every account. */
   organizationIds: string[] | null;
   canManage: boolean;
   canAdministrate: boolean;
