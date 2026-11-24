@@ -66,32 +66,28 @@ void main() {
   });
 
   test(
-    'outbox keeps attachments encrypted and coalesces offline edits',
+    'legacy telegram outbox reads existing records without mutation',
     () async {
-      final outbox = TelegramOutbox(storage: storage, vault: vault);
-      await outbox.enqueue(
-        payload: const {'subject': 'بلاغ', 'body': 'نص'},
-        attachment: {
-          'fileName': 'a.pdf',
-          'contentType': 'application/pdf',
-          'base64': base64Encode([1, 2, 3]),
+      final raw = jsonEncode([
+        {
+          'id': 'legacy-telegram-1',
+          'idempotencyKey': List<String>.filled(24, 'x').join(),
+          'payload': {'subject': 'مستند محفوظ'},
+          'createdAt': '2026-11-24T20:00:00.000Z',
+          'operation': 'create',
+          'attempts': 0,
         },
-      );
-      final raw = await storage.read(key: TelegramOutbox.storageKey);
-      expect(raw!.contains('base64'), isFalse);
-      expect(raw.contains('vaultRef'), isTrue);
+      ]);
+      await storage.write(key: TelegramOutbox.storageKey, value: raw);
 
-      await outbox.enqueueUpdate(payload: const {'id': 5, 'subject': 'أول'});
-      await outbox.enqueueUpdate(payload: const {'id': 5, 'subject': 'ثاني'});
-
+      final outbox = TelegramOutbox(storage: storage);
       final entries = await outbox.list();
-      expect(entries, hasLength(2));
-      expect(entries.last.isUpdate, isTrue);
-      expect(entries.last.payload['subject'], 'ثاني');
-      expect((await outbox.pendingUpdateFor(5))?['subject'], 'ثاني');
 
-      await outbox.remove(entries.first.id);
-      expect(await vault.read('outbox_attachment_${entries.first.id}'), isNull);
+      expect(entries, hasLength(1));
+      expect(entries.single.id, 'legacy-telegram-1');
+      expect(entries.single.payload['subject'], 'مستند محفوظ');
+      expect(await outbox.pendingCount(), 1);
+      expect(await storage.read(key: TelegramOutbox.storageKey), raw);
     },
   );
 }

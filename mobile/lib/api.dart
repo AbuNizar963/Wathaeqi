@@ -767,6 +767,16 @@ class PoliceApi {
     }
     if (procedure == 'settings.update') {
       await _writeOfflineResponse('settings.get', null, value);
+      return;
+    }
+    if (procedure == 'organizations.settings.update') {
+      final organizationId = input?['organizationId']?.toString().trim();
+      if (organizationId != null && organizationId.isNotEmpty) {
+        await _writeOfflineResponse('organizations.settings.get', {
+          'organizationId': organizationId,
+        }, value);
+      }
+      return;
     }
     if (!procedure.startsWith('telegrams.')) return;
 
@@ -864,6 +874,12 @@ class PoliceApi {
         return 'offline_profile';
       case 'settings.get':
         return 'offline_settings';
+      case 'organizations.settings.get':
+        final organizationId = input?['organizationId']?.toString().trim();
+        if (organizationId == null || organizationId.isEmpty) return null;
+        return _offlineInputResponseKey('offline_organization_settings', {
+          'organizationId': organizationId,
+        });
       case 'platformDocumentSettings.get':
         return 'offline_platform_document_settings';
       case 'organizations.routingDirectory':
