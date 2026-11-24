@@ -56,7 +56,7 @@ function assertOwner(user: Parameters<typeof isPlatformOwner>[0]): void {
 }
 
 async function assertFixedOrganization(
-  user: Parameters<typeof isPlatformOwner>[0],
+  user: Parameters<typeof resolveOrganizationScope>[0],
   organizationId: string
 ): Promise<void> {
   const scope = await resolveOrganizationScope(user);
@@ -69,7 +69,7 @@ async function assertFixedOrganization(
 }
 
 async function getScopedManagedUser(
-  user: Parameters<typeof isPlatformOwner>[0],
+  user: Parameters<typeof resolveOrganizationScope>[0],
   id: number
 ) {
   const scope = await resolveOrganizationScope(user);
