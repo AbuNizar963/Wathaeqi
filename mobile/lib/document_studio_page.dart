@@ -1286,10 +1286,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           showSelectedIcon: false,
           style: ButtonStyle(
             visualDensity: VisualDensity.compact,
-            padding: const WidgetStatePropertyAll(
+            padding: const MaterialStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
-            shape: WidgetStatePropertyAll(
+            shape: MaterialStatePropertyAll(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
