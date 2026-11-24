@@ -142,13 +142,14 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex min-h-dvh items-center justify-center px-4">
+      <div className="auth-shell flex min-h-dvh items-center justify-center px-4 py-8">
         <form
-          className="surface-elevated flex w-full max-w-md flex-col gap-6 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
+          className="auth-card surface-elevated flex w-full max-w-md flex-col gap-6 rounded-[1.5rem] border bg-card/95 p-6 shadow-lg backdrop-blur sm:p-8"
           onSubmit={submitLogin}
         >
           <div className="flex flex-col items-center gap-4">
-            <BrandMark size="lg" />
+            <BrandMark size="lg" showLabel />
+            <span className="auth-eyebrow">مساحة عمل موثوقة</span>
             <h1 className="text-2xl font-semibold tracking-tight text-center">
               تسجيل الدخول إلى النظام
             </h1>
@@ -563,7 +564,7 @@ function DashboardLayoutContent({
         {!isMobile ? (
           <div
             dir="rtl"
-            className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-background/90 px-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur supports-[backdrop-filter]:backdrop-blur"
+            className="app-header flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-background/90 px-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur supports-[backdrop-filter]:backdrop-blur"
           >
             <div className="flex items-center gap-3">
               <SidebarTrigger
@@ -592,7 +593,7 @@ function DashboardLayoutContent({
           </div>
         ) : null}
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="app-header flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <SidebarTrigger
                 className="h-10 w-10 rounded-xl border bg-background shadow-sm"
