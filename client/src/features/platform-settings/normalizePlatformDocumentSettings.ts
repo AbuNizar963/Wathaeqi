@@ -12,7 +12,9 @@ function safeText(value: unknown, fallback: string, limit: number): string {
 }
 
 function safeNumber(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallback;
 }
 
 function safeBoolean(value: unknown, fallback: boolean): boolean {
@@ -40,7 +42,8 @@ function safeRows(
 export function normalizePlatformDocumentSettings(
   input: SettingsInput
 ): PlatformDocumentSettings {
-  const source = input !== null && typeof input === "object" ? input : {};
+  const source =
+    input !== null && typeof input === "object" ? input : {};
   const defaults = DEFAULT_PLATFORM_DOCUMENT_SETTINGS;
 
   return {
