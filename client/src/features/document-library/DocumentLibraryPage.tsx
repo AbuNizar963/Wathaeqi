@@ -87,6 +87,7 @@ export default function DocumentLibraryPage() {
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [status, setStatus] = useState<OfficialDocument["status"] | "">("");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
@@ -134,19 +135,26 @@ export default function DocumentLibraryPage() {
     const needle = search.trim().toLowerCase();
     return documents.filter(document => {
       if (category && document.category !== category) return false;
+      if (status && document.status !== status) return false;
       if (!needle) return true;
       return [document.title, document.subject, document.file?.fileName]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(needle));
     });
-  }, [documents, search, category]);
+  }, [documents, search, category, status]);
 
   const saveCurrentView = () => {
     const name = savedViewName.trim();
     if (!name) return;
     setSavedViews(current =>
       [
-        { id: crypto.randomUUID(), name: name.slice(0, 40), search, category },
+        {
+          id: crypto.randomUUID(),
+          name: name.slice(0, 40),
+          search,
+          category,
+          status,
+        },
         ...current.filter(view => view.name !== name),
       ].slice(0, 30)
     );
@@ -282,6 +290,29 @@ export default function DocumentLibraryPage() {
           ))}
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                ["", "كل الحالات"],
+                ["draft", "مسودة"],
+                ["issued", "صادرة"],
+                ["archived", "مؤرشفة"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value || "all-statuses"}
+                type="button"
+                onClick={() => setStatus(value)}
+                className={`rounded-full px-3 py-1.5 text-xs transition ${
+                  status === value
+                    ? "bg-primary text-primary-foreground"
+                    : "border bg-card text-muted-foreground hover:border-primary/40"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
@@ -310,6 +341,7 @@ export default function DocumentLibraryPage() {
                 onClick={() => {
                   setSearch(view.search);
                   setCategory(view.category);
+                  setStatus(view.status as OfficialDocument["status"] | "");
                 }}
               >
                 {view.name}

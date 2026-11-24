@@ -3,6 +3,7 @@ export type SavedDocumentView = {
   name: string;
   search: string;
   category: string;
+  status: string;
 };
 
 export function savedDocumentViewsKey(userId: string | number): string {
@@ -18,7 +19,11 @@ export function parseSavedDocumentViews(
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter(
-        (item): item is SavedDocumentView =>
+        (
+          item
+        ): item is Omit<SavedDocumentView, "status"> & {
+          status?: unknown;
+        } =>
           Boolean(item) &&
           typeof item === "object" &&
           typeof item.id === "string" &&
@@ -26,6 +31,10 @@ export function parseSavedDocumentViews(
           typeof item.search === "string" &&
           typeof item.category === "string"
       )
+      .map(item => ({
+        ...item,
+        status: typeof item.status === "string" ? item.status : "",
+      }))
       .slice(0, 30);
   } catch {
     return [];
