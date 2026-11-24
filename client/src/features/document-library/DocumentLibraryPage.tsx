@@ -389,7 +389,20 @@ export default function DocumentLibraryPage() {
             <Button className="mt-4 gap-2" onClick={() => setUploadOpen(true)}>
               <Plus className="size-4" /> رفع وثيقة
             </Button>
-          ) : null}
+          ) : (
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setSearch("");
+                setCategory("");
+                setStatusFilter("all");
+                setSortOrder("updated-desc");
+              }}
+            >
+              مسح عوامل التصفية
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
