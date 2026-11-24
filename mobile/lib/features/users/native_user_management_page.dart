@@ -189,12 +189,14 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
       }
       return;
     }
+    final organizationId = '${fixedOrganization['id']}';
+    final organizationName = '${fixedOrganization['name']}';
     final form = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
       builder: (_) => _UserFormDialog(
-        organizationId: '${fixedOrganization!['id']}',
-        organizationName: '${fixedOrganization['name']}',
+        organizationId: organizationId,
+        organizationName: organizationName,
       ),
     );
     if (form == null) return;
