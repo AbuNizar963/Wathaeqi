@@ -62,28 +62,20 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
       _error = null;
     });
     try {
-      final legacyResult = await widget.outbox.sync(widget.api);
+      // Print-only mode synchronizes document-studio drafts only.
+      // Legacy telegram queue entries remain local and are never transmitted.
       final documentResult = await _documentOutbox.sync();
       await _load();
       if (!mounted) return;
-      if (legacyResult.permanentFailures > 0) {
-        final details = legacyResult.permanentErrorMessages.isEmpty
-            ? 'تحقق من الصلاحيات'
-            : legacyResult.permanentErrorMessages.join('، ');
-        setState(() {
-          _error =
-              'توجد ${legacyResult.permanentFailures} عملية محفوظة من إصدار سابق تحتاج إلى مراجعة: $details';
-        });
-      } else if (documentResult.lastError != null) {
+      if (documentResult.lastError != null) {
         setState(() {
           _error = 'تعذرت مزامنة بعض الوثائق: ${documentResult.lastError}';
         });
       } else {
-        final total = legacyResult.synced + documentResult.synced;
         _showMessage(
-          total > 0
-              ? 'تمت مزامنة $total عملية بنجاح'
-              : 'لا توجد تغييرات محلية معلقة',
+          documentResult.synced > 0
+              ? 'تمت مزامنة ${documentResult.synced} عملية وثائق بنجاح'
+              : 'لا توجد وثائق بانتظار المزامنة',
         );
       }
     } catch (exception) {
@@ -136,7 +128,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
 
   @override
   Widget build(BuildContext context) {
-    final totalPending = _pendingDocuments + _legacyEntries.length;
+    final totalPending = _pendingDocuments;
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -208,7 +200,7 @@ class _TelegramOutboxPageState extends State<TelegramOutboxPage> {
                       ..._legacyEntries.map(_legacyEntryCard),
                     ],
                     if (_error != null) _errorCard(_error!),
-                    if (totalPending == 0 && _error == null) _emptyState(),
+                    if (totalPending == 0 && _legacyEntries.isEmpty && _error == null) _emptyState(),
                   ],
                 ),
               ),
