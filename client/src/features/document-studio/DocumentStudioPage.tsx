@@ -329,7 +329,9 @@ export default function DocumentStudioPage() {
         setDocumentDate(dateInputValue(saved.documentDate));
         setDocumentContent(saved.content);
         setDocumentFieldValues(saved.fieldValues);
-        toast.success("تمت استعادة النسخة وحفظ الحالة السابقة في سجل الإصدارات");
+        toast.success(
+          "تمت استعادة النسخة وحفظ الحالة السابقة في سجل الإصدارات"
+        );
       },
       onError: error => toast.error(error.message),
     });
@@ -998,7 +1000,9 @@ export default function DocumentStudioPage() {
                     </span>
                   </div>
                   {documentVersionsQuery.isLoading ? (
-                    <p className="text-sm text-muted-foreground">جارٍ تحميل سجل الإصدارات...</p>
+                    <p className="text-sm text-muted-foreground">
+                      جارٍ تحميل سجل الإصدارات...
+                    </p>
                   ) : documentVersionsQuery.isError ? (
                     <p className="text-sm text-destructive">
                       تعذر تحميل سجل الإصدارات: {documentVersionsQuery.error.message}
@@ -1033,12 +1037,18 @@ export default function DocumentStudioPage() {
                             }
                             onClick={() => {
                               if (hasUnsavedDocumentChanges) {
-                                toast.error("احفظ التعديلات الحالية أو ألغها قبل استعادة نسخة سابقة");
+                                toast.error(
+                                  "احفظ التعديلات الحالية أو ألغها قبل استعادة نسخة سابقة"
+                                );
                                 return;
                               }
-                              if (!window.confirm(
-                                `استعادة النسخة ${version.version}؟ سيُحفظ المحتوى الحالي كنسخة قبل الاستعادة.`
-                              )) return;
+                              if (
+                                !window.confirm(
+                                  `استعادة النسخة ${version.version}؟ سيُحفظ المحتوى الحالي كنسخة قبل الاستعادة.`
+                                )
+                              ) {
+                                return;
+                              }
                               restoreDocumentVersionMutation.mutate({
                                 id: selectedDocument.id,
                                 version: version.version,
