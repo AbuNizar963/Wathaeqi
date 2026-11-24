@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  Building2,
   FileSpreadsheet,
   FileText,
   History,
@@ -53,13 +52,6 @@ const menuItems = [
     icon: Users,
     label: "إدارة المستخدمين",
     path: "/users",
-    adminOnly: true,
-  },
-  {
-    key: "workspace-organizations",
-    icon: Building2,
-    label: "إدارة الجهات",
-    path: "/organizations",
     adminOnly: true,
   },
   {
