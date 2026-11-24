@@ -49,10 +49,8 @@ jobs:
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
       # Validate fixed-organization access, user scope, and document-only workflows.
-      - name: Format changed settings files for diagnosis
-        run: |
-          pnpm exec prettier --write client/src/features/platform-settings/normalizePlatformDocumentSettings.ts client/src/features/platform-settings/platformDocumentSettings.test.ts
-          git diff -- client/src/features/platform-settings/normalizePlatformDocumentSettings.ts client/src/features/platform-settings/platformDocumentSettings.test.ts
+      - name: Check formatting
+        run: pnpm lint
 
       - name: Verify responsive application shell
         run: pnpm check:responsive-shell
