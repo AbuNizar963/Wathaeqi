@@ -3,7 +3,6 @@ import { ImagePlus, Save, Settings2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ownerTrpc as ownerTrpc } from "@/lib/ownerTrpc";
 import { trpc } from "@/lib/trpc";
 import {
   prepareOrganizationLogoUpload,
@@ -56,7 +55,7 @@ function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
 
 export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
-  const settingsQuery = ownerTrpc.platformDocumentSettings.get.useQuery();
+  const settingsQuery = trpc.platformDocumentSettings.get.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
   const organizationId = organizationContext.data?.organizationId;
   const [organizationName, setOrganizationName] = useState("");
@@ -89,7 +88,7 @@ export default function PlatformDocumentSettingsPage() {
     setLogoUrl(organizationLogoQuery.data?.dataUrl ?? "");
   }, [organizationLogoQuery.data?.dataUrl]);
 
-  const saveMutation = ownerTrpc.platformDocumentSettings.update.useMutation({
+  const saveMutation = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
       setValues(toFormSettings(saved));
       await utils.platformDocumentSettings.get.invalidate();
