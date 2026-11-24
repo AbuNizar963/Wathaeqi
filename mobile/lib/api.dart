@@ -533,9 +533,7 @@ class PoliceApi {
       'content-type': 'application/json',
       'accept': 'application/pdf, image/png',
     };
-    if (sessionToken != null) {
-      headers['authorization'] = 'Bearer $sessionToken';
-    }
+    headers['authorization'] = 'Bearer $sessionToken';
 
     final body = <String, Object>{
       'format': format,
