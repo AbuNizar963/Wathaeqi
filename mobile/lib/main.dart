@@ -739,11 +739,30 @@ class _DashboardPageState extends State<DashboardPage>
       if (mounted) unawaited(_checkForAppUpdate());
     });
     unawaited(
-      push.initialize(
-        onAppUpdate: _openAppUpdate,
-        onOpenNotifications: _showNotificationsPreview,
-      ),
+      push
+          .initialize(
+            onToken: (_) {},
+            onAppUpdate: _openAppUpdate,
+            onOpenNotifications: _showNotificationsPreview,
+          )
+          .then((_) => _unregisterLegacyPushToken()),
     );
+  }
+
+  Future<void> _unregisterLegacyPushToken() async {
+    try {
+      final token = await push.currentToken();
+      if (token != null) {
+        await widget.api.call(
+          'notifications.unregisterMobileToken',
+          mutation: true,
+          input: {'token': token},
+        );
+      }
+    } catch (_) {
+      // Invalidate the device token even if the old server registration is unavailable.
+    }
+    await push.disableNotifications();
   }
 
   void _handleMutation(ApiMutationEvent event) {
