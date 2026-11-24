@@ -117,13 +117,15 @@ assert(
 );
 
 assert(
-  [
-    "مكتبة الوثائق",
-    "استوديو الوثائق",
-    "إدارة المستخدمين",
-    "إعدادات الوثائق",
-  ].every(label => dashboardLayout.includes(`label: "${label}"`)),
-  "The sidebar must expose the full Wathaeqi workspace navigation."
+  ["مكتبة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
+    dashboardLayout.includes(`label: "${label}"`)
+  ),
+  "The sidebar must expose the library and administrative navigation."
+);
+
+assert(
+  !dashboardLayout.includes('label: "استوديو الوثائق"'),
+  "The document studio must not appear as a separate sidebar item."
 );
 
 assert(

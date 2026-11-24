@@ -14,7 +14,6 @@ import {
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   FileSpreadsheet,
-  FileText,
   History,
   LayoutDashboard,
   LockKeyhole,
@@ -40,12 +39,6 @@ const menuItems = [
     icon: LayoutDashboard,
     label: "مكتبة الوثائق",
     path: "/",
-  },
-  {
-    key: "studio",
-    icon: FileText,
-    label: "استوديو الوثائق",
-    path: "/studio",
   },
   {
     key: "workspace-users",
