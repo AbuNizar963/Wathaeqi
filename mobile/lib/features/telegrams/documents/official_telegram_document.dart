@@ -17,7 +17,6 @@ import 'package:police_telegrams/features/organizations/organization_logo_resolu
 import 'package:police_telegrams/telegram_display.dart';
 import 'package:police_telegrams/features/reports/telegram_report_labels.dart';
 import 'package:police_telegrams/features/notifications/toast.dart';
-import 'package:police_telegrams/telegram_actions.dart';
 
 const _documentPageWidth = 794;
 const _documentPageHeight = 1123;
@@ -207,24 +206,10 @@ class OfficialTelegramDocumentPage extends StatefulWidget {
     super.key,
     required this.api,
     required this.telegramId,
-    this.onEdit,
-    this.onDelete,
-    this.onSubmitForReview,
-    this.canReissue = false,
-    this.canOperate = false,
-    this.isAdmin = false,
-    this.onWorkflowChanged,
   });
 
   final PoliceApi api;
   final int telegramId;
-  final Future<void> Function()? onEdit;
-  final Future<void> Function()? onDelete;
-  final Future<void> Function()? onSubmitForReview;
-  final bool canReissue;
-  final bool canOperate;
-  final bool isAdmin;
-  final VoidCallback? onWorkflowChanged;
 
   @override
   State<OfficialTelegramDocumentPage> createState() =>
@@ -738,7 +723,7 @@ class _OfficialTelegramDocumentPageState
   String get _fileBaseName {
     final serial = _displaySerial == '—' ? 'telegram' : _displaySerial;
     final safe = serial.replaceAll(RegExp(r'[\\/:*?"<>|\u0000-\u001f]'), '-');
-    return 'telegram-$safe';
+    return 'document-$safe';
   }
 
   String get _displaySerial {
@@ -966,148 +951,6 @@ class _OfficialTelegramDocumentPageState
     await load(versionNumber: versionNumber);
   }
 
-  Future<void> _reissue() async {
-    if (!widget.canReissue || busy) return;
-    final reasonController = TextEditingController();
-    String? reasonError;
-    final reason = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('إعادة إصدار البرقية'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'سيُنشأ إصدار موثق جديد بالشعار الحالي، مع الاحتفاظ بنفس الرقم الرسمي والنسخ السابقة.',
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: reasonController,
-                  minLines: 2,
-                  maxLines: 4,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    labelText: 'سبب إعادة الإصدار',
-                    hintText: 'اكتب سبباً واضحاً (5 أحرف على الأقل)',
-                    errorText: reasonError,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('إلغاء'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final value = reasonController.text.trim();
-                  if (value.length < 5) {
-                    setDialogState(
-                      () => reasonError =
-                          'سبب إعادة الإصدار مطلوب ويجب ألا يقل عن 5 أحرف',
-                    );
-                    return;
-                  }
-                  Navigator.of(dialogContext).pop(value);
-                },
-                child: const Text('تأكيد إعادة الإصدار'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    reasonController.dispose();
-    if (reason == null || !mounted) return;
-
-    setState(() => busy = true);
-    try {
-      final result = await widget.api.call(
-        'telegrams.reissue',
-        mutation: true,
-        input: {'id': widget.telegramId, 'reason': reason},
-      );
-      final newVersionNumber = result is Map
-          ? result['versionNumber'] as int?
-          : null;
-      if (newVersionNumber == null) {
-        throw Exception('لم يُرجع الخادم رقم الإصدار الجديد.');
-      }
-      await load(versionNumber: newVersionNumber);
-      if (!mounted) return;
-      Toast.success(
-        context,
-        'تم إنشاء الإصدار $newVersionNumber مع الاحتفاظ بالرقم الرسمي.',
-      );
-      if (result is Map &&
-          (result['actionLogRecorded'] == false ||
-              result['auditLogRecorded'] == false)) {
-        Toast.warning(
-          context,
-          'تم حفظ الإصدار، لكن تعذر تسجيل أحد سجلات التدقيق الثانوية',
-        );
-      }
-    } catch (exception) {
-      if (!mounted) return;
-      Toast.error(
-        context,
-        exception.toString().replaceFirst('Exception: ', ''),
-      );
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  Future<String?> _showOutputFormatSheet({required bool share}) =>
-      showModalBottomSheet<String>(
-        context: context,
-        useSafeArea: true,
-        showDragHandle: true,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        builder: (sheetContext) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-                  child: Text(
-                    share ? 'اختر صيغة المشاركة' : 'اختر صيغة التنزيل',
-                    style: Theme.of(sheetContext).textTheme.titleMedium
-                        ?.copyWith(
-                          fontFamily: 'Cairo',
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.picture_as_pdf_outlined),
-                  title: Text(share ? 'مشاركة ملف PDF' : 'تنزيل ملف PDF'),
-                  onTap: () => Navigator.of(sheetContext).pop('pdf'),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.image_outlined),
-                  title: Text(
-                    share ? 'مشاركة صور الصفحات' : 'تنزيل صور الصفحات',
-                  ),
-                  onTap: () => Navigator.of(sheetContext).pop('image'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
   Future<void> _showDownloadOptions() async {
     final format = await _showOutputFormatSheet(share: false);
     if (!mounted || format == null) return;
@@ -1208,112 +1051,6 @@ class _OfficialTelegramDocumentPageState
       );
     }
   }, title: 'حفظ صور الوثيقة');
-
-  Future<void> _attachFile() => _perform(() async {
-    final result = await FilePicker.pickFiles(
-      withData: true,
-      type: FileType.custom,
-      allowedExtensions: const [
-        'jpg',
-        'jpeg',
-        'png',
-        'webp',
-        'pdf',
-        'mp3',
-        'wav',
-        'webm',
-      ],
-    );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.single;
-    if (file.bytes == null || file.bytes!.isEmpty) {
-      throw Exception('تعذر قراءة الملف المحدد.');
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      throw Exception('حجم المرفق يتجاوز 10 ميغابايت.');
-    }
-    final contentType = _attachmentContentType(file.extension);
-    if (contentType == null) throw Exception('نوع الملف غير مسموح');
-    await widget.api.uploadTelegramAttachment(
-      telegramId: widget.telegramId,
-      fileName: file.name,
-      contentType: contentType,
-      bytes: file.bytes!,
-    );
-    if (mounted) {
-      Toast.success(context, 'تم إرفاق الملف بالبرقية');
-    }
-  });
-
-  String? _attachmentContentType(String? extension) {
-    switch ((extension ?? '').toLowerCase()) {
-      case 'jpg':
-      case 'jpeg':
-        return 'image/jpeg';
-      case 'png':
-        return 'image/png';
-      case 'webp':
-        return 'image/webp';
-      case 'pdf':
-        return 'application/pdf';
-      case 'mp3':
-        return 'audio/mpeg';
-      case 'wav':
-        return 'audio/wav';
-      case 'webm':
-        return 'audio/webm';
-    }
-    return null;
-  }
-
-  Future<void> _showWorkflowActions() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) => FractionallySizedBox(
-        heightFactor: 0.9,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            12,
-            12,
-            12,
-            MediaQuery.viewInsetsOf(sheetContext).bottom + 20,
-          ),
-          child: TelegramActionsPanel(
-            api: widget.api,
-            telegramId: widget.telegramId,
-            telegramStatus: '${telegram?['status'] ?? 'draft'}',
-            canOperate: widget.canOperate,
-            isAdmin: widget.isAdmin,
-            onChanged: widget.onWorkflowChanged ?? () {},
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showLocation() async {
-    final latitude = telegram?['gpsLatitude'];
-    final longitude = telegram?['gpsLongitude'];
-    final message = latitude == null || longitude == null
-        ? 'لا يوجد موقع مسجل لهذه البرقية.'
-        : 'إحداثيات الموقع: $latitude, $longitude';
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('موقع البرقية'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('إغلاق'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _documentAction({
     required String label,
@@ -1429,12 +1166,7 @@ class _OfficialTelegramDocumentPageState
         ),
         actions: [
           IconButton(
-            tooltip: 'سير العمل والمرفقات وسجل الإجراءات',
-            onPressed: _showWorkflowActions,
-            icon: const Icon(Icons.account_tree_outlined),
-          ),
-          IconButton(
-            tooltip: 'إغلاق تفاصيل البرقية',
+            tooltip: 'إغلاق معاينة الوثيقة',
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.close_rounded, size: 20),
           ),
@@ -1842,11 +1574,6 @@ class _OfficialTelegramDocumentPageState
                             (constraints.maxWidth - spacing * 2) / 3;
                         final actions = <Widget>[
                           _documentAction(
-                            label: 'إرفاق ملف',
-                            icon: Icons.attach_file,
-                            onPressed: busy ? null : _attachFile,
-                          ),
-                          _documentAction(
                             label: busy ? 'جارٍ التجهيز...' : 'طباعة',
                             icon: Icons.print_outlined,
                             primary: true,
@@ -1864,31 +1591,6 @@ class _OfficialTelegramDocumentPageState
                             icon: Icons.share_outlined,
                             onPressed: busy ? null : () => _showShareOptions(),
                           ),
-                          _documentAction(
-                            label: 'الموقع',
-                            icon: Icons.my_location_outlined,
-                            onPressed: busy ? null : _showLocation,
-                          ),
-                          _documentAction(
-                            label: 'تعديل البرقية',
-                            icon: Icons.edit_outlined,
-                            onPressed: busy || widget.onEdit == null
-                                ? null
-                                : () => widget.onEdit!(),
-                          ),
-                          if (widget.canReissue)
-                            _documentAction(
-                              label: busy ? 'جارٍ التجهيز...' : 'إعادة إصدار',
-                              icon: Icons.history_edu_outlined,
-                              onPressed: busy ? null : _reissue,
-                            ),
-                          _documentAction(
-                            label: 'إرسال للمراجعة',
-                            icon: Icons.send_outlined,
-                            onPressed: busy || widget.onSubmitForReview == null
-                                ? null
-                                : () => widget.onSubmitForReview!(),
-                          ),
                         ];
                         return Directionality(
                           textDirection: TextDirection.rtl,
@@ -1898,19 +1600,6 @@ class _OfficialTelegramDocumentPageState
                             children: [
                               for (final action in actions)
                                 SizedBox(width: itemWidth, child: action),
-                              SizedBox(
-                                width: (actions.length + 1) % 3 == 1
-                                    ? constraints.maxWidth
-                                    : itemWidth,
-                                child: _documentAction(
-                                  label: 'حذف نهائي',
-                                  icon: Icons.delete_outline,
-                                  danger: true,
-                                  onPressed: busy || widget.onDelete == null
-                                      ? null
-                                      : () => widget.onDelete!(),
-                                ),
-                              ),
                             ],
                           ),
                         );
