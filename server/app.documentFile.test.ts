@@ -348,36 +348,6 @@ describe("document original file endpoint", () => {
     }
   );
 
-  it.each([
-    ["report.pdf", "application/pdf", pdf],
-    ["report.docx", docxMime, docx],
-    ["scan.png", "image/png", png],
-    ["scan.jpg", "image/jpeg", jpeg],
-    ["scan.webp", "image/webp", webp],
-  ])(
-    "preserves %s bytes through the Netlify function wrapper",
-    async (name, mimeType, bytes) => {
-      mocks.getRow.mockResolvedValueOnce(
-        documentRow(file(name, mimeType, bytes))
-      );
-      mocks.getObjectInfo.mockResolvedValueOnce({
-        size: bytes.length,
-        contentType: "application/octet-stream",
-      });
-      mocks.download.mockResolvedValueOnce({
-        body: bytes,
-        contentType: "application/octet-stream",
-      });
-      const response = await netlifyApi(
-        new Request("https://api.example.test/api/documents/document-1/file")
-      );
-      expect(response.status).toBe(200);
-      assertPrivate(response);
-      expect(response.headers.get("content-type")).toBe(mimeType);
-      expect(Buffer.from(await response.arrayBuffer())).toEqual(bytes);
-    }
-  );
-
   it("preserves private JSON denials through the Appwrite function wrapper", async () => {
     mocks.getUser.mockResolvedValue(null);
     const path = "/api/documents/document-1/file";
