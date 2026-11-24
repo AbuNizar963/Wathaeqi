@@ -5,9 +5,6 @@ import 'package:flutter/material.dart';
 import '../../api.dart';
 import '../../app_theme.dart';
 
-const _navy = Color(0xFF10233F);
-const _gold = Color(0xFFD8C38E);
-
 class NativeOwnerDashboardPage extends StatefulWidget {
   const NativeOwnerDashboardPage({super.key, required this.api});
 
@@ -197,14 +194,14 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
       gradient: const LinearGradient(
-        colors: [_navy, Color(0xFF24506A)],
+        colors: [AppPalette.navy, AppPalette.sidebarAccent],
         begin: Alignment.topRight,
         end: Alignment.bottomLeft,
       ),
       borderRadius: BorderRadius.circular(24),
       boxShadow: const [
         BoxShadow(
-          color: Color(0x2410233F),
+          color: AppPalette.navy.withValues(alpha: 0.14),
           blurRadius: 18,
           offset: Offset(0, 8),
         ),
@@ -217,14 +214,14 @@ class _NativeOwnerDashboardPageState extends State<NativeOwnerDashboardPage> {
           children: [
             const Icon(
               Icons.workspace_premium_outlined,
-              color: _gold,
+              color: AppPalette.brandBlue,
               size: 19,
             ),
             const SizedBox(width: 7),
             Text(
               'مالك المنصة  ·  نظرة شاملة لآخر $_days يومًا',
               style: const TextStyle(
-                color: _gold,
+                color: AppPalette.brandBlue,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
               ),
