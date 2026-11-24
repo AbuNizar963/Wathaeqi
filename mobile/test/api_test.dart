@@ -124,13 +124,13 @@ void main() {
   );
 
   test('document upload links metadata in one request without exposing storage credentials', () async {
-    const sessionCookie = 'sid=document-session';
+    const sessionToken = 'document-token';
     final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
-    _secureStorageForTest['session_cookie'] = sessionCookie;
+    _secureStorageForTest['session_token'] = sessionToken;
     final requests = <http.BaseRequest>[];
     final client = MockClient((request) async {
       requests.add(request);
-      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['authorization'], 'Bearer $sessionToken');
       if (request.url.path == '/api/documents/upload') {
         expect(request.method, 'POST');
         expect(request.headers['content-type'], 'application/octet-stream');
@@ -182,19 +182,19 @@ void main() {
       _secureStorageForTest.keys.where((key) => key.startsWith('offline_')),
       isEmpty,
     );
-    expect(_secureStorageForTest['session_cookie'], sessionCookie);
+    expect(_secureStorageForTest['session_token'], sessionToken);
   });
 
   test('document print PDF requires an authenticated same-host request and validates bytes', () async {
-    const sessionCookie = 'sid=print-session';
+    const sessionToken = 'print-token';
     final pdfBytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
-    _secureStorageForTest['session_cookie'] = sessionCookie;
+    _secureStorageForTest['session_token'] = sessionToken;
     var requestCount = 0;
     final client = MockClient((request) async {
       requestCount++;
       expect(request.method, 'POST');
       expect(request.url.path, '/api/documents/document-1/print-pdf');
-      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['authorization'], 'Bearer $sessionToken');
       expect(request.headers['accept'], 'application/pdf');
       expect(request.followRedirects, isFalse);
       return http.Response.bytes(
@@ -249,7 +249,7 @@ void main() {
         ),
         throwsA(isA<ApiException>()),
       );
-      _secureStorageForTest['session_cookie'] = 'sid=valid';
+      _secureStorageForTest['session_token'] = 'valid-token';
       await expectLater(
         plainHttpApi.uploadDocumentFile(
           fileName: 'report.pdf',
@@ -693,7 +693,7 @@ void main() {
   });
 
   test('logout clears offline caches and invalidates the outbox', () async {
-    _secureStorageForTest['session_cookie'] = 'session=value';
+    _secureStorageForTest['session_token'] = 'stored-token';
     _secureStorageForTest['offline_settings'] = '{"departmentName":"old"}';
     _secureStorageForTest['offline_telegrams_list_e30'] = '{"items":[]}';
     _secureStorageForTest['cached_dashboard'] = '{"stats":{},"telegrams":[]}';
@@ -717,7 +717,7 @@ void main() {
 
     await api.logout();
 
-    expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
+    expect(_secureStorageForTest.containsKey('session_token'), isFalse);
     expect(_secureStorageForTest.containsKey('offline_settings'), isFalse);
     expect(
       _secureStorageForTest.containsKey('offline_telegrams_list_e30'),
@@ -733,7 +733,7 @@ void main() {
 
   test('logout clears dynamic offline caches when readAll fails', () async {
     const dynamicCacheKey = 'offline_telegrams_list_eyJwYWdlIjoxfQ';
-    _secureStorageForTest['session_cookie'] = 'session=value';
+    _secureStorageForTest['session_token'] = 'stored-token';
     _secureStorageForTest[dynamicCacheKey] = '{"items":[]}';
     _secureStorageForTest['offline_cache_key_registry_v1'] = jsonEncode([
       dynamicCacheKey,
@@ -763,7 +763,7 @@ void main() {
       _secureStorageForTest.containsKey('offline_cache_key_registry_v1'),
       isFalse,
     );
-    expect(_secureStorageForTest.containsKey('session_cookie'), isFalse);
+    expect(_secureStorageForTest.containsKey('session_token'), isFalse);
   });
 
   test('organization logo is reused when a signed URL token rotates', () async {
@@ -934,17 +934,17 @@ void main() {
     );
     addTearDown(() => cacheDirectory.delete(recursive: true));
     const organizationId = '550e8400-e29b-41d4-a716-446655440000';
-    const sessionCookie = 'sid=authenticated-session';
+    const sessionToken = 'authenticated-token';
     final imageBytes = Uint8List.fromList(
       base64Decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGP4DwQACfsD/fteaysAAAAASUVORK5CYII=',
       ),
     );
-    _secureStorageForTest['session_cookie'] = sessionCookie;
+    _secureStorageForTest['session_token'] = sessionToken;
     var imageRequestCount = 0;
     var logoApiRequestCount = 0;
     final client = MockClient((request) async {
-      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['authorization'], 'Bearer $sessionToken');
       if (request.url.path.endsWith('/organizations.logoForExport')) {
         logoApiRequestCount++;
         return http.Response(
@@ -1037,15 +1037,15 @@ void main() {
   });
 
   test('recovers an attachment after a lost upload response', () async {
-    const sessionCookie = 'sid=recovery-session';
+    const sessionToken = 'recovery-token';
     const storageKey =
         'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
     final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
-    _secureStorageForTest['session_cookie'] = sessionCookie;
+    _secureStorageForTest['session_token'] = sessionToken;
     final requests = <String>[];
     final client = MockClient((request) async {
       requests.add(request.url.path);
-      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['authorization'], 'Bearer $sessionToken');
       if (request.url.path.endsWith('/attachments/upload-url')) {
         return http.Response(jsonEncode({'key': storageKey}), 200);
       }
@@ -1091,15 +1091,15 @@ void main() {
   });
 
   test('telegram attachments upload through authenticated server storage', () async {
-    const sessionCookie = 'sid=authenticated-session';
+    const sessionToken = 'authenticated-token';
     const storageKey =
         'organizations/550e8400-e29b-41d4-a716-446655440000/telegrams/7/attachments/550e8400-e29b-41d4-a716-446655440001-report.pdf';
     final bytes = Uint8List.fromList(utf8.encode('%PDF-1.7\nfixture'));
-    _secureStorageForTest['session_cookie'] = sessionCookie;
+    _secureStorageForTest['session_token'] = sessionToken;
     final requests = <Uri>[];
     final client = MockClient((request) async {
       requests.add(request.url);
-      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['authorization'], 'Bearer $sessionToken');
       if (request.url.path.endsWith('/attachments/upload-url')) {
         expect(request.method, 'POST');
         expect(jsonDecode(request.body), {
@@ -1206,7 +1206,7 @@ void main() {
 
   test('organization logos upload as authenticated binary bytes', () async {
     const organizationId = '550e8400-e29b-41d4-a716-446655440000';
-    const sessionCookie = 'sid=authenticated-session';
+    const sessionToken = 'authenticated-token';
     final imageBytes = Uint8List.fromList([
       0x89,
       0x50,
@@ -1217,11 +1217,11 @@ void main() {
       0x1a,
       0x0a,
     ]);
-    _secureStorageForTest['session_cookie'] = sessionCookie;
+    _secureStorageForTest['session_token'] = sessionToken;
     final client = MockClient((request) async {
       expect(request.method, 'PUT');
       expect(request.url.path, '/api/storage/department-logo');
-      expect(request.headers['cookie'], sessionCookie);
+      expect(request.headers['authorization'], 'Bearer $sessionToken');
       expect(request.headers['content-type'], 'image/png');
       expect(request.headers['x-organization-id'], organizationId);
       expect(request.headers['x-file-name'], 'badge.png');
@@ -1292,9 +1292,9 @@ void main() {
   });
 
   test('binary logo upload surfaces server authorization errors', () async {
-    _secureStorageForTest['session_cookie'] = 'sid=valid-session';
+    _secureStorageForTest['session_token'] = 'valid-token';
     final client = MockClient((request) async {
-      expect(request.headers['cookie'], 'sid=valid-session');
+      expect(request.headers['authorization'], 'Bearer valid-token');
       return http.Response(
         jsonEncode({'error': 'لا تملك صلاحية رفع شعار هذه الجهة'}),
         403,
@@ -1329,10 +1329,10 @@ void main() {
   test(
     'binary logo upload surfaces an expired server session clearly',
     () async {
-      const sessionCookie = 'police_telegrams_session=expired-session';
-      _secureStorageForTest['session_cookie'] = sessionCookie;
+      const sessionToken = 'expired-token';
+      _secureStorageForTest['session_token'] = sessionToken;
       final client = MockClient((request) async {
-        expect(request.headers['cookie'], sessionCookie);
+        expect(request.headers['authorization'], 'Bearer $sessionToken');
         return http.Response(
           jsonEncode({'error': 'انتهت الجلسة؛ سجّل الدخول مجددًا'}),
           401,
@@ -1371,17 +1371,17 @@ void main() {
       const organizationId = '550e8400-e29b-41d4-a716-446655440000';
       const logoSource =
           '/api/storage/department/logos/$organizationId/logo.png';
-      const sessionCookie = 'sid=authenticated-session';
+      const sessionToken = 'authenticated-token';
       const html = '<img src="telegram-logo://official" alt="الشعار الرسمي" />';
       final pdfBytes = Uint8List.fromList(
         utf8.encode('%PDF-1.7\\nChromium rendered document'),
       );
-      _secureStorageForTest['session_cookie'] = sessionCookie;
+      _secureStorageForTest['session_token'] = sessionToken;
 
       final client = MockClient((request) async {
         expect(request.method, 'POST');
         expect(request.url.path, '/api/telegram-render');
-        expect(request.headers['cookie'], sessionCookie);
+        expect(request.headers['authorization'], 'Bearer $sessionToken');
         expect(request.headers['content-type'], 'application/json');
         expect(jsonDecode(request.body), {
           'format': 'pdf',
@@ -1551,9 +1551,9 @@ void main() {
   test(
     'surfaces server authorization failures for document rendering',
     () async {
-      _secureStorageForTest['session_cookie'] = 'sid=expired-session';
+      _secureStorageForTest['session_token'] = 'expired-token';
       final client = MockClient((request) async {
-        expect(request.headers['cookie'], 'sid=expired-session');
+        expect(request.headers['authorization'], 'Bearer expired-token');
         return http.Response(
           jsonEncode({'error': 'يجب تسجيل الدخول أولًا'}),
           401,
