@@ -64,10 +64,9 @@ void main() {
       );
 
       expect(
-        filterAndSortDocuments(
-          [arabicDocument],
-          search: 'اداره الموارد البشريه',
-        ).map((item) => item.id),
+        filterAndSortDocuments([
+          arabicDocument,
+        ], search: 'اداره الموارد البشريه').map((item) => item.id),
         ['arabic'],
       );
     },
