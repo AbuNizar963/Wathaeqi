@@ -42,6 +42,8 @@ const documentStudioSharedApiProcedures = new Set([
   "documentStudio.createTemplate",
   "documentStudio.updateTemplate",
   "documentStudio.deactivateTemplate",
+  "documentStudio.listDocumentVersions",
+  "documentStudio.restoreDocumentVersion",
 ]);
 
 // The Flutter client now targets the Appwrite tRPC router implemented on the
