@@ -31,10 +31,7 @@ void main() {
         }),
         isFalse,
       );
-      expect(
-        isLegacyTelegramDeliveryPush({'type': 'app.update'}),
-        isFalse,
-      );
+      expect(isLegacyTelegramDeliveryPush({'type': 'app.update'}), isFalse);
     });
   });
 }
