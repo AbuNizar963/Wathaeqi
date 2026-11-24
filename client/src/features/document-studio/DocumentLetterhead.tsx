@@ -1,8 +1,6 @@
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
 export type DocumentLetterheadProps = {
-  organizationName: string;
-  unitName: string;
   chiefRank: string;
   chiefName: string;
   logoUrl: string | null;
@@ -16,8 +14,8 @@ export type DocumentLetterheadProps = {
  * A4 letterhead shared by the live preview, printing and the PNG export.
  *
  * The three columns use a table row instead of CSS grid or flexbox: html2canvas
- * (the PNG exporter) mishandles both grid placement and flex alignment, which
- * downloaded images. The serial/date metadata is rendered in a separate row
+ * (the PNG exporter) mishandles both grid placement and flex alignment.
+ * The serial/date metadata is rendered in a separate row
  * below the divider so it remains right-aligned in every renderer.
  */
 export default function DocumentLetterhead({
