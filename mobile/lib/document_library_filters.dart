@@ -22,7 +22,9 @@ List<OfficialDocument> filterAndSortDocuments(
 
   result.sort((left, right) {
     if (sort == 'title-asc') {
-      final titleOrder = left.title.toLowerCase().compareTo(right.title.toLowerCase());
+      final titleOrder = left.title.toLowerCase().compareTo(
+        right.title.toLowerCase(),
+      );
       return titleOrder != 0 ? titleOrder : left.id.compareTo(right.id);
     }
     final dateOrder = left.updatedAt.compareTo(right.updatedAt);
