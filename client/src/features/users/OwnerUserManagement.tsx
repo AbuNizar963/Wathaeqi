@@ -116,7 +116,6 @@ export default function OwnerUserManagement() {
   const [unit, setUnit] = useState("");
   const [accountRole, setAccountRole] = useState(
     "dispatcher" as
-      | "regional_admin"
       | "organization_supervisor"
       | "organization_admin"
       | "dispatcher"
