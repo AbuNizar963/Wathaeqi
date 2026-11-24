@@ -59,10 +59,10 @@ function paragraphXml(
   options: { style?: string; prefix?: string; align?: string } = {}
 ): string {
   const paragraphProperties = [
-    "<w:bidi/>",
-    `<w:jc w:val="${options.align ?? "right"}"/>`,
-    '<w:spacing w:after="160" w:line="360" w:lineRule="auto"/>',
     options.style ? `<w:pStyle w:val="${options.style}"/>` : "",
+    "<w:bidi/>",
+    '<w:spacing w:after="160" w:line="360" w:lineRule="auto"/>',
+    `<w:jc w:val="${options.align ?? "right"}"/>`,
   ].join("");
   const prefix = options.prefix
     ? `<w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:rtl/></w:rPr><w:t xml:space="preserve">${xml(options.prefix)}</w:t></w:r>`
@@ -178,7 +178,7 @@ export async function buildOfficialDocumentDocx(
   zip.folder("word")!.file("styles.xml", stylesXml);
   zip.folder("word")!.folder("_rels")!.file("document.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
-  const bytes = await zip.generateAsync({ type: "uint8array" });
+  const bytes = await zip.generateAsync({ type: "arraybuffer" });
   return new Blob([bytes], { type: WORD_MIME });
 }
 
