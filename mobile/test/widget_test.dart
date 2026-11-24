@@ -174,10 +174,7 @@ class _TestPoliceApi extends PoliceApi {
         'numberSystem': 'latin',
         'logoUrl': organizationLogoUrl,
       },
-      'organizations.settings.update' => {
-        ...?input,
-        'organizationId': 'org-1',
-      },
+      'organizations.settings.update' => {...?input, 'organizationId': 'org-1'},
       'organizations.routingDirectory' => <dynamic>[],
       'platformDocumentSettings.get' => {
         'showMinistryWatermarkText': true,
@@ -370,7 +367,9 @@ void main() {
 
     expect(api.calls['organizations.settings.update'], isNotNull);
     expect(
-      api.calls['organizations.settings.update']!.containsKey('showVerificationQr'),
+      api.calls['organizations.settings.update']!.containsKey(
+        'showVerificationQr',
+      ),
       isFalse,
     );
   });
