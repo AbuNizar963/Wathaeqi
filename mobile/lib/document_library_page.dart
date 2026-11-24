@@ -783,7 +783,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                         return Card(
                           margin: const EdgeInsets.only(bottom: 10),
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                             onTap: () => _preview(document),
                             child: Padding(
                               padding: const EdgeInsets.all(14),
@@ -910,11 +910,42 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     );
   }
 
-  Widget _statChip(BuildContext context, String label, String value) => Chip(
-    avatar: const Icon(Icons.insert_drive_file_outlined, size: 16),
-    label: Text('$label: $value'),
-    visualDensity: VisualDensity.compact,
-  );
+  Widget _statChip(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.insert_drive_file_outlined,
+            size: 17,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            value,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _categoryChip(String label, String value) => Padding(
     padding: const EdgeInsetsDirectional.only(end: 6),
