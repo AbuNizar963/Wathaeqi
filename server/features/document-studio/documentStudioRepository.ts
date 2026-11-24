@@ -670,6 +670,10 @@ export async function archiveOfficialDocument(
     if (!row || rowData(row).ownerId !== ownerId) return null;
 
     const existing = mapDocumentRow(row);
+    const storedContent = decodeOfficialDocumentStorageContent(
+      rowData(row).content,
+      existing.createdAt
+    );
     if (existing.updatedAt !== expectedUpdatedAt) {
       throw new DocumentStudioConflictError(
         "تم تعديل الوثيقة في مكان آخر. حدّث الصفحة ثم أعد المحاولة."
@@ -705,7 +709,7 @@ export async function archiveOfficialDocument(
           templateRevision: existing.templateRevision,
           issuedAt: existing.issuedAt,
           archivedAt: now,
-        }),
+        }, storedContent.versions),
       },
     });
     return mapDocumentRow(updated as AppwriteRow);
