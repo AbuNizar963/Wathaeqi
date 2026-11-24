@@ -125,3 +125,18 @@ export async function shareDocument(input: {
     "تعذر نسخ رابط الوثيقة بأمان؛ استخدم متصفحًا يدعم المشاركة أو النسخ"
   );
 }
+
+export async function downloadOfficialDocumentAsWord(input: {
+  title: string;
+  subject: string;
+  serialCode: string;
+  documentDate: string;
+  content: Record<string, unknown>;
+}): Promise<void> {
+  const { buildOfficialDocumentDocx } = await import("./docxExport");
+  const blob = await buildOfficialDocumentDocx(input);
+  const baseName = (input.title || "وثيقة")
+    .replace(/[\\\\/:*?"<>|]+/g, "-")
+    .trim();
+  triggerBlobDownload(blob, `${baseName || "وثيقة"}.docx`);
+}
