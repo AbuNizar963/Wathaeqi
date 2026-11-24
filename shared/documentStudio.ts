@@ -41,6 +41,28 @@ export interface DocumentTemplate {
   updatedAt: string;
 }
 
+export interface DocumentVersionSnapshot {
+  version: number;
+  savedAt: string;
+  savedByUserId: string;
+  title: string;
+  category: string;
+  subject: string;
+  content: Record<string, unknown>;
+  fieldValues: Record<string, string>;
+  documentDate: string;
+  templateId: string | null;
+  templateRevision: number | null;
+  templateFieldsSnapshot: DocumentTemplateField[];
+}
+
+export interface DocumentVersionSummary {
+  version: number;
+  savedAt: string;
+  savedByUserId: string;
+  title: string;
+}
+
 export interface OfficialDocument {
   id: string;
   ownerId: string;
@@ -252,6 +274,7 @@ export function decodeTemplateStorageContent(
 }
 
 export interface DecodedOfficialDocumentContent {
+  versions: DocumentVersionSnapshot[];
   content: Record<string, unknown>;
   organizationId: string | null;
   templateFieldsSnapshot: DocumentTemplateField[];
@@ -290,7 +313,8 @@ export function encodeOfficialDocumentStorageContent(
     | "templateRevision"
     | "issuedAt"
     | "archivedAt"
-  >
+  >,
+  versions: readonly DocumentVersionSnapshot[] = []
 ): string {
   return JSON.stringify({
     format: DOCUMENT_CONTENT_FORMAT,
@@ -308,7 +332,31 @@ export function encodeOfficialDocumentStorageContent(
     templateRevision: document.templateRevision,
     issuedAt: document.issuedAt,
     archivedAt: document.archivedAt,
+    versions: versions.slice(-20),
   });
+}
+
+function isDocumentVersionSnapshot(
+  value: unknown
+): value is DocumentVersionSnapshot {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.version === "number" &&
+    Number.isSafeInteger(value.version) &&
+    value.version > 0 &&
+    typeof value.savedAt === "string" &&
+    typeof value.savedByUserId === "string" &&
+    typeof value.title === "string" &&
+    typeof value.category === "string" &&
+    typeof value.subject === "string" &&
+    isRecord(value.content) &&
+    isRecord(value.fieldValues) &&
+    typeof value.documentDate === "string" &&
+    (typeof value.templateId === "string" || value.templateId === null) &&
+    (typeof value.templateRevision === "number" ||
+      value.templateRevision === null) &&
+    Array.isArray(value.templateFieldsSnapshot)
+  );
 }
 
 export function decodeOfficialDocumentStorageContent(
@@ -325,7 +373,11 @@ export function decodeOfficialDocumentStorageContent(
       parsed.status === "issued" || parsed.status === "archived"
         ? parsed.status
         : "draft";
+    const versions = Array.isArray(parsed.versions)
+      ? parsed.versions.filter(isDocumentVersionSnapshot).slice(-20)
+      : [];
     return {
+      versions,
       content: parsed.editor,
       organizationId:
         typeof parsed.organizationId === "string"
@@ -370,6 +422,7 @@ export function decodeOfficialDocumentStorageContent(
   }
 
   return {
+    versions: [],
     content: isRecord(parsed)
       ? parsed
       : typeof parsed === "string" && parsed.length > 0
