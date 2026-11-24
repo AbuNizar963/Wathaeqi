@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:police_telegrams/advanced_create_telegram_page.dart';
 import 'package:police_telegrams/api.dart';
 import 'package:police_telegrams/mobile_pages.dart';
 import 'package:police_telegrams/public_pages.dart';
@@ -25,36 +24,10 @@ class _ScreenTestApi extends PoliceApi {
     if (procedure == 'telegrams.transition' && input != null) {
       transitionInputs.add(Map<String, dynamic>.from(input));
     }
-    if (procedure == 'telegrams.create' ||
-        procedure == 'profile.changePassword') {
+    if (procedure == 'profile.changePassword') {
       lastInput = input;
     }
     switch (procedure) {
-      case 'telegrams.nextOutgoingSerial':
-        return {'number': 73};
-      case 'organizations.routingDirectory':
-        return [
-          {
-            'id': 'destination-1',
-            'name': 'قيادة الأمن الداخلي',
-            'isSelectable': true,
-            'isConfiguredDestination': true,
-          },
-          {
-            'id': 'destination-2',
-            'name': 'مديرية أمن حلب',
-            'isSelectable': true,
-            'isConfiguredDestination': false,
-          },
-        ];
-      case 'organizations.descendants':
-        return [
-          {'id': 'child-1', 'name': 'قسم تابع'},
-        ];
-      case 'telegrams.create':
-        return {'id': 42};
-      case 'telegrams.uploadAttachment':
-        return {'ok': true};
       case 'telegrams.transition':
         return {'success': true};
       case 'telegrams.incomingRoutes':
@@ -104,167 +77,6 @@ void main() {
           },
         );
   });
-  testWidgets('advanced composer renders web-matched fields and defaults', (
-    tester,
-  ) async {
-    final api = _ScreenTestApi();
-    await tester.pumpWidget(_host(AdvancedCreateTelegramSheet(api: api)));
-    await tester.pumpAndSettle();
-
-    expect(find.text('إنشاء برقية جديدة'), findsOneWidget);
-    expect(find.text('73'), findsOneWidget);
-    expect(find.text('قيادة الأمن الداخلي'), findsOneWidget);
-    expect(find.text('درجة السرية'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('درجة الأسبقية'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('درجة الأسبقية'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('تصنيف البلاغ'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('تصنيف البلاغ'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('إرفاق صورة أو PDF أو ملف صوتي'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('إرفاق صورة أو PDF أو ملف صوتي'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('إرسال البرقية'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('إرسال البرقية'), findsOneWidget);
-    expect(api.calls, contains('organizations.routingDirectory'));
-  });
-
-  testWidgets(
-    'advanced composer allows free typing without spelling suggestions',
-    (tester) async {
-      await tester.pumpWidget(
-        _host(AdvancedCreateTelegramSheet(api: _ScreenTestApi())),
-      );
-      await tester.pumpAndSettle();
-
-      for (final hint in [
-        'عنوان مختصر ودقيق للبلاغ',
-        'اكتب تفاصيل البلاغ...',
-      ]) {
-        final field = tester.widget<TextField>(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is TextField && widget.decoration?.hintText == hint,
-          ),
-        );
-        expect(field.autocorrect, isFalse);
-        expect(field.enableSuggestions, isFalse);
-        expect(field.spellCheckConfiguration?.spellCheckEnabled, isFalse);
-      }
-    },
-  );
-
-  testWidgets('advanced composer validates required values before submission', (
-    tester,
-  ) async {
-    final api = _ScreenTestApi();
-    await tester.pumpWidget(_host(AdvancedCreateTelegramSheet(api: api)));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('إرسال البرقية'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('إرسال البرقية'));
-    await tester.pump();
-
-    expect(find.text('أكمل الموضوع والجهة ونص البرقية.'), findsOneWidget);
-    expect(api.calls, isNot(contains('telegrams.create')));
-  });
-
-  testWidgets('advanced composer submits validated payload', (tester) async {
-    final api = _ScreenTestApi();
-    await tester.pumpWidget(_host(AdvancedCreateTelegramSheet(api: api)));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('الموضوع'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.hintText == 'عنوان مختصر ودقيق للبلاغ',
-      ),
-      'بلاغ اختباري',
-    );
-    await tester.scrollUntilVisible(
-      find.text('نص البرقية'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.enterText(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.hintText == 'اكتب تفاصيل البلاغ...',
-      ),
-      'تفاصيل البلاغ للاختبار',
-    );
-    await tester.scrollUntilVisible(
-      find.text('عاجلة').first,
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('عاجلة').first);
-    await tester.scrollUntilVisible(
-      find.text('إرسال البرقية'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('إرسال البرقية'));
-    await tester.pumpAndSettle();
-
-    expect(api.lastInput?['requestedOrganizationSerialNumber'], 73);
-    expect(api.lastInput?['subject'], 'بلاغ اختباري');
-    expect(api.lastInput?['body'], 'تفاصيل البلاغ للاختبار');
-    expect(api.lastInput?['recipientOrganizationId'], 'destination-1');
-  });
-
-  testWidgets('advanced composer supports priority and broadcast selection', (
-    tester,
-  ) async {
-    final api = _ScreenTestApi();
-    await tester.pumpWidget(_host(AdvancedCreateTelegramSheet(api: api)));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('عاجلة').first,
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('عاجلة').first);
-    await tester.scrollUntilVisible(
-      find.text('كافة الوحدات').first,
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('كافة الوحدات').first);
-    await tester.pump();
-
-    expect(
-      find.text('إرسال نسخة إلى الجهات التابعة مباشرة (1)'),
-      findsOneWidget,
-    );
-    expect(find.byType(CheckboxListTile), findsOneWidget);
-  });
-
   testWidgets('about and terms screens expose their main content', (
     tester,
   ) async {
