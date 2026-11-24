@@ -3,23 +3,15 @@ import { z } from "zod";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
-import { getRequestAuditContext } from "../../auditContext";
-import { writeAuditLog } from "../audit/appwriteAuditRepository";
 import { resolveOrganizationScope } from "./organizationAccess";
 import {
   buildOrganizationTree,
-  getRoutingDirectory,
-  createOrganization,
   getOrganization,
   getOrganizationLogoDataUrl,
   getOrganizationLogoUrl,
   listOrganizations,
-  listOrganizationDescendants,
-  listRoutingTargets,
   renameOrganization,
   saveOrganizationLogo,
-  setOrganizationActive,
-  updateOrganization,
 } from "./organizationService";
 import { createManagedUser, listManagedUsers } from "../users/userService";
 import {
