@@ -1018,6 +1018,22 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
             label: const Text('رفع وثيقة'),
           ),
         ),
+      ] else ...[
+        const SizedBox(height: 14),
+        Center(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                _category = '';
+                _statusFilter = 'all';
+                _sortOrder = 'updated-desc';
+              });
+            },
+            icon: const Icon(Icons.restart_alt),
+            label: const Text('مسح عوامل التصفية'),
+          ),
+        ),
       ],
     ],
   );
