@@ -48,11 +48,6 @@ jobs:
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
-      - name: Temporary formatting diagnostic
-        run: |
-          pnpm exec prettier --write client/src/features/document-library/DocumentLibraryStatusControls.tsx client/src/features/document-library/savedViews.ts client/src/features/document-library/libraryFilters.ts client/src/index.css
-          git --no-pager diff -- client/src/features/document-library/DocumentLibraryStatusControls.tsx client/src/features/document-library/savedViews.ts client/src/features/document-library/libraryFilters.ts client/src/index.css
-
       - name: Check formatting
         run: pnpm lint
 
