@@ -82,4 +82,25 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain("text-align:center");
     expect(markup).toContain('alt="الشعار الرسمي"');
   });
+  it("renders each configured custom header row exactly once", () => {
+    const settings: PlatformDocumentSettings = {
+      ...tricolorSettings,
+      pageHeaderRows: [
+        { right: "السطر الأيمن الأول", left: "First left row" },
+        { right: "السطر الأيمن الثاني", left: "Second left row" },
+        { right: "السطر الأيمن الثالث", left: "Third left row" },
+        { right: "السطر الأيمن الرابع", left: "Fourth left row" },
+      ],
+    };
+    const markup = render(settings);
+    for (const value of [
+      "السطر الأيمن الأول",
+      "السطر الأيمن الثاني",
+      "السطر الأيمن الثالث",
+      "السطر الأيمن الرابع",
+    ]) {
+      expect(markup.split(value)).toHaveLength(2);
+    }
+  });
+
 });
