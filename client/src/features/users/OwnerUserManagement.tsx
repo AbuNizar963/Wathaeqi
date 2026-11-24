@@ -79,7 +79,7 @@ const emptyEditForm: EditForm = {
 };
 
 const membershipRoleLabels: Record<string, string> = {
-  regional_admin: "مدير منطقة",
+  regional_admin: "مسؤول إداري للجهة",
   organization_supervisor: "مشرف جهة",
   organization_admin: "مدير جهة",
   system_admin: "مسؤول نظام",
