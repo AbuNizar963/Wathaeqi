@@ -36,7 +36,7 @@ function serializeSessionCookie(
     SESSION_COOKIE + "=" + encodeURIComponent(value),
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    "SameSite=" + ENV.appwriteSessionCookieSameSite,
     "Max-Age=" + options.maxAge,
   ];
 

@@ -4,6 +4,19 @@ const splitCsv = (value: string | undefined): string[] =>
     .map(item => item.trim().toLowerCase())
     .filter(Boolean);
 
+const resolveSessionCookieSameSite = (
+  value: string | undefined,
+  isProduction: boolean
+): "Lax" | "None" | "Strict" => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "none") return "None";
+  if (normalized === "strict") return "Strict";
+  if (normalized === "lax") return "Lax";
+  return isProduction ? "None" : "Lax";
+};
+
+const isProduction = process.env.NODE_ENV === "production";
+
 export const ENV = {
   // Appwrite configuration for the platform settings repository.
   appwriteEndpoint:
@@ -31,6 +44,10 @@ export const ENV = {
     process.env.SUPABASE_STORAGE_BUCKET ?? "telegram-files",
   adminEmails: splitCsv(process.env.ADMIN_EMAILS),
   authSessionSecret: process.env.AUTH_SESSION_SECRET ?? "",
+  appwriteSessionCookieSameSite: resolveSessionCookieSameSite(
+    process.env.APPWRITE_SESSION_COOKIE_SAMESITE,
+    isProduction
+  ),
   ownerUsername: process.env.OWNER_USERNAME ?? "AbuNizar",
   ownerPasswordHash: process.env.OWNER_PASSWORD_HASH ?? "",
   ownerInitialPassword: process.env.OWNER_INITIAL_PASSWORD ?? "",
@@ -45,7 +62,7 @@ export const ENV = {
     "\n"
   ),
   releaseNotificationSecret: process.env.RELEASE_NOTIFICATION_SECRET ?? "",
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction,
 };
 
 export function assertProductionEnvironment(env: typeof ENV = ENV): void {

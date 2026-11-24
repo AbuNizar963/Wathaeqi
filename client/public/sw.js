@@ -1,4 +1,4 @@
-const CACHE_NAME = "police-telegrams-shell-v8";
+const CACHE_NAME = "police-telegrams-shell-v9";
 const SHELL = [
   "/",
   "/manifest.json",
