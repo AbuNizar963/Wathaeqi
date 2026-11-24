@@ -530,7 +530,8 @@ export default function PlatformDocumentSettingsPage() {
             <section className="space-y-4">
               <h2 className="font-semibold">بيانات أسفل الوثيقة</h2>
               <p className="text-xs text-muted-foreground">
-                تظهر هذه البيانات بعد آخر سطر من محتوى الوثيقة. اترك الحقول فارغة لاستخدام بيانات الجهة المسجلة.
+                تظهر هذه البيانات بعد آخر سطر من محتوى الوثيقة.
+                اترك الحقول فارغة لاستخدام بيانات الجهة المسجلة.
               </p>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">العنوان الرئيسي</span>
