@@ -61,6 +61,7 @@ import {
   type DocumentSortOrder,
   type DocumentStatusFilter,
 } from "./libraryFilters";
+import DocumentLibraryStatusControls from "./DocumentLibraryStatusControls";
 
 function categoryLabel(value: string): string {
   return DOCUMENT_CATEGORIES.find(item => item.value === value)?.label ?? "عام";
@@ -295,36 +296,13 @@ export default function DocumentLibraryPage() {
             </button>
           ))}
         </div>
+        <DocumentLibraryStatusControls
+          status={statusFilter}
+          sort={sortOrder}
+          onStatusChange={setStatusFilter}
+          onSortChange={setSortOrder}
+        />
         <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
-          <label className="flex min-w-36 flex-1 flex-col gap-1 text-[11px] text-muted-foreground sm:max-w-48">
-            حالة الوثيقة
-            <select
-              value={statusFilter}
-              onChange={event =>
-                setStatusFilter(event.target.value as DocumentStatusFilter)
-              }
-              className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
-            >
-              <option value="all">جميع الحالات</option>
-              <option value="draft">مسودات</option>
-              <option value="issued">صادرة</option>
-              <option value="archived">مؤرشفة</option>
-            </select>
-          </label>
-          <label className="flex min-w-36 flex-1 flex-col gap-1 text-[11px] text-muted-foreground sm:max-w-48">
-            ترتيب النتائج
-            <select
-              value={sortOrder}
-              onChange={event =>
-                setSortOrder(event.target.value as DocumentSortOrder)
-              }
-              className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
-            >
-              <option value="updated-desc">الأحدث تحديثاً</option>
-              <option value="updated-asc">الأقدم تحديثاً</option>
-              <option value="title-asc">العنوان أبجدياً</option>
-            </select>
-          </label>
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
