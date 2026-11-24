@@ -9,70 +9,11 @@ const MethodChannel _androidAppNotificationChannel = MethodChannel(
   'com.hadir.police.police_telegrams/telegram_notifications',
 );
 
-class OrganizationPushTokenRegistration {
-  String? _registeredOrganizationId;
-  bool _syncInProgress = false;
-  String? _pendingOrganizationId;
-
-  String? get registeredOrganizationId => _registeredOrganizationId;
-
-  void markRegistered(String? organizationId) {
-    final normalized = organizationId?.trim();
-    if (normalized != null && normalized.isNotEmpty) {
-      _registeredOrganizationId = normalized;
-    }
-  }
-
-  void clear() {
-    _registeredOrganizationId = null;
-    _pendingOrganizationId = null;
-  }
-
-  Future<bool> ensureRegistered({
-    required String? organizationId,
-    required Future<bool> Function() notificationsEnabled,
-    required Future<String?> Function() currentToken,
-    required Future<bool> Function(String token) registerToken,
-  }) async {
-    final requested = organizationId?.trim();
-    if (requested == null || requested.isEmpty) return false;
-    if (_syncInProgress) {
-      _pendingOrganizationId = requested;
-      return false;
-    }
-    if (requested == _registeredOrganizationId) return true;
-
-    _syncInProgress = true;
-    String? target = requested;
-    var requestedOrganizationRegistered = false;
-    try {
-      while (target != null && target.isNotEmpty) {
-        if (target == _registeredOrganizationId) {
-          if (target == requested) {
-            requestedOrganizationRegistered = true;
-          }
-          target = _pendingOrganizationId;
-          _pendingOrganizationId = null;
-          continue;
-        }
-        if (!await notificationsEnabled()) return false;
-        final token = await currentToken();
-        if (token == null || token.trim().isEmpty) return false;
-        if (!await registerToken(token)) return false;
-
-        _registeredOrganizationId = target;
-        if (target == requested) {
-          requestedOrganizationRegistered = true;
-        }
-        target = _pendingOrganizationId;
-        _pendingOrganizationId = null;
-      }
-      return requestedOrganizationRegistered;
-    } finally {
-      _syncInProgress = false;
-      _pendingOrganizationId = null;
-    }
-  }
+bool isLegacyTelegramDeliveryPush(Map<String, dynamic> data) {
+  final type = data['type']?.toString() ?? '';
+  return type.startsWith('telegram.') ||
+      data.containsKey('telegramId') ||
+      data.containsKey('telegram_id');
 }
 
 @pragma('vm:entry-point')
@@ -87,12 +28,10 @@ class PushNotificationService {
 
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
   StreamSubscription<RemoteMessage>? _openedSubscription;
-  StreamSubscription<String>? _tokenRefreshSubscription;
   void Function()? _onAppUpdate;
   void Function()? _onOpenNotifications;
 
   Future<void> initialize({
-    required void Function(String token) onToken,
     void Function()? onAppUpdate,
     void Function()? onOpenNotifications,
   }) async {
@@ -101,8 +40,6 @@ class PushNotificationService {
     await _prepareAndroidNotificationBridge();
     await _foregroundSubscription?.cancel();
     await _openedSubscription?.cancel();
-    await _tokenRefreshSubscription?.cancel();
-    _tokenRefreshSubscription = null;
 
     try {
       await Firebase.initializeApp();
@@ -113,13 +50,6 @@ class PushNotificationService {
           badge: true,
           sound: true,
         );
-      }
-
-      final settings = await _messaging.getNotificationSettings();
-      if (_isAuthorized(settings.authorizationStatus)) {
-        final token = await _messaging.getToken();
-        if (token != null && token.isNotEmpty) onToken(token);
-        _tokenRefreshSubscription = _messaging.onTokenRefresh.listen(onToken);
       }
 
       // Only application-update messages remain actionable in the
@@ -134,7 +64,7 @@ class PushNotificationService {
           onAppUpdate?.call();
           return;
         }
-        if (!_isLegacyTelegramPush(message)) {
+        if (!isLegacyTelegramDeliveryPush(message.data)) {
           _onOpenNotifications?.call();
         }
       });
@@ -143,7 +73,7 @@ class PushNotificationService {
         onAppUpdate?.call();
         return;
       }
-      if (initial != null && !_isLegacyTelegramPush(initial)) {
+      if (initial != null && !isLegacyTelegramDeliveryPush(initial.data)) {
         _onOpenNotifications?.call();
       }
     } on FirebaseException {
@@ -173,81 +103,14 @@ class PushNotificationService {
     }
   }
 
-  bool _isLegacyTelegramPush(RemoteMessage message) {
-    final type = message.data['type']?.toString() ?? '';
-    return type.startsWith('telegram.') ||
-        message.data.containsKey('telegramId') ||
-        message.data.containsKey('telegram_id');
-  }
-
   bool _isAppUpdate(RemoteMessage message) =>
       message.data['type'] == 'app.update';
-
-  Future<bool> notificationsEnabled() async {
-    try {
-      await Firebase.initializeApp();
-      final settings = await _messaging.getNotificationSettings();
-      return _isAuthorized(settings.authorizationStatus);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> enableNotifications({
-    required void Function(String token) onToken,
-  }) async {
-    try {
-      await Firebase.initializeApp();
-      final settings = await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-      if (!_isAuthorized(settings.authorizationStatus)) return false;
-      final token = await _messaging.getToken();
-      if (token == null || token.isEmpty) return false;
-      await _tokenRefreshSubscription?.cancel();
-      _tokenRefreshSubscription = _messaging.onTokenRefresh.listen(onToken);
-      onToken(token);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> disableNotifications() async {
-    await _tokenRefreshSubscription?.cancel();
-    _tokenRefreshSubscription = null;
-    try {
-      await _messaging.deleteToken();
-    } catch (_) {
-      // The server registration is still removed if Firebase is unavailable.
-    }
-  }
-
-  bool _isAuthorized(AuthorizationStatus status) =>
-      status == AuthorizationStatus.authorized ||
-      status == AuthorizationStatus.provisional;
-
-  /// Returns the current device token when Firebase is configured.
-  /// A missing or unavailable Firebase configuration must not block logout.
-  Future<String?> currentToken() async {
-    try {
-      final token = await _messaging.getToken();
-      return token == null || token.isEmpty ? null : token;
-    } catch (_) {
-      return null;
-    }
-  }
 
   Future<void> dispose() async {
     await _foregroundSubscription?.cancel();
     await _openedSubscription?.cancel();
-    await _tokenRefreshSubscription?.cancel();
     _foregroundSubscription = null;
     _openedSubscription = null;
-    _tokenRefreshSubscription = null;
     _onAppUpdate = null;
     _onOpenNotifications = null;
 
