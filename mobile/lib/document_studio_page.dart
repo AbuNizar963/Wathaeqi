@@ -63,6 +63,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   String? _loadError;
   bool _canIssueDocuments = false;
   bool _isPlatformOwner = false;
+  List<Map<String, dynamic>> _documentVersions = const [];
+  bool _loadingDocumentVersions = false;
+  bool _restoringDocumentVersion = false;
   Map<String, dynamic> _letterhead = {};
   Map<String, dynamic> _platformDocumentSettings = {
     'showMinistryWatermarkText': true,
@@ -926,10 +929,174 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
     final displayContent = _documentContentForDisplay(document);
     _replaceDocumentEditor(displayContent);
+    unawaited(_loadDocumentVersions(document.id));
     setState(
       () => _tab = document.status == 'archived'
           ? DocumentStudioTab.archive
           : DocumentStudioTab.documents,
+    );
+  }
+
+  Future<void> _loadDocumentVersions(String documentId) async {
+    if (mounted) {
+      setState(() => _loadingDocumentVersions = true);
+    }
+    try {
+      final raw = await widget.api.call(
+        'documentStudio.listDocumentVersions',
+        input: {'id': documentId},
+        allowOfflineCache: false,
+      );
+      final versions = raw is List
+          ? raw
+                .whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item))
+                .toList(growable: false)
+          : const <Map<String, dynamic>>[];
+      if (!mounted || _selectedDocument?.id != documentId) return;
+      setState(() {
+        _documentVersions = versions;
+        _loadingDocumentVersions = false;
+      });
+    } catch (error) {
+      if (!mounted || _selectedDocument?.id != documentId) return;
+      setState(() {
+        _documentVersions = const [];
+        _loadingDocumentVersions = false;
+      });
+      _showMessage('تعذر تحميل سجل الإصدارات: $error');
+    }
+  }
+
+  Future<void> _restoreDocumentVersion(Map<String, dynamic> version) async {
+    final document = _selectedDocument;
+    final versionNumber = (version['version'] as num?)?.toInt();
+    if (document == null || versionNumber == null || _restoringDocumentVersion) {
+      return;
+    }
+    if (document.status != 'draft') {
+      _showMessage('استعادة النسخ متاحة للمسودات فقط');
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: closableDialogTitle(
+          dialogContext,
+          const Text('استعادة نسخة سابقة'),
+        ),
+        content: Text(
+          'استعادة النسخة $versionNumber؟ سيُحفظ المحتوى الحالي أولاً في سجل الإصدارات.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('استعادة النسخة'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _restoringDocumentVersion = true);
+    try {
+      await widget.api.call(
+        'documentStudio.restoreDocumentVersion',
+        input: {
+          'id': document.id,
+          'version': versionNumber,
+          'expectedUpdatedAt': document.expectedUpdatedAt,
+        },
+        mutation: true,
+        allowOfflineCache: false,
+      );
+      await _load();
+      if (!mounted) return;
+      final refreshed = _documents.where((item) => item.id == document.id);
+      if (refreshed.isNotEmpty) {
+        _selectDocument(refreshed.first);
+      }
+      _showMessage('تمت استعادة النسخة وحفظ النسخة السابقة بأمان');
+    } catch (error) {
+      _showMessage('تعذرت استعادة النسخة: $error');
+    } finally {
+      if (mounted) setState(() => _restoringDocumentVersion = false);
+    }
+  }
+
+  Widget _buildDocumentVersionHistory() {
+    final document = _selectedDocument;
+    if (document == null) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'سجل إصدارات الوثيقة',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text('${_documentVersions.length} نسخة'),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'تُحفظ نسخة قبل كل تعديل فعلي، ويمكن استعادتها للمسودات.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            if (_loadingDocumentVersions)
+              const LinearProgressIndicator()
+            else if (_documentVersions.isEmpty)
+              const Text(
+                'لا توجد نسخ سابقة بعد. سيظهر السجل بعد أول تعديل محفوظ.',
+                textAlign: TextAlign.center,
+              )
+            else
+              for (final version in _documentVersions)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    radius: 18,
+                    child: Text('${version['version'] ?? '-'}'),
+                  ),
+                  title: Text(
+                    version['title']?.toString() ?? 'نسخة سابقة',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    DateTime.tryParse(version['savedAt']?.toString() ?? '') ==
+                            null
+                        ? 'تاريخ غير متاح'
+                        : DateFormat('yyyy/MM/dd – HH:mm').format(
+                            DateTime.parse(version['savedAt'].toString()).toLocal(),
+                          ),
+                  ),
+                  trailing: document.status == 'draft'
+                      ? TextButton(
+                          onPressed: _restoringDocumentVersion
+                              ? null
+                              : () => _restoreDocumentVersion(version),
+                          child: const Text('استعادة'),
+                        )
+                      : null,
+                ),
+            if (_restoringDocumentVersion) const LinearProgressIndicator(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1690,6 +1857,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           ],
         ),
         const SizedBox(height: 10),
+        _buildDocumentVersionHistory(),
         if (isNativeDocument)
           _buildA4Editor(controller: _documentEditor, editable: false)
         else if (isWord)
