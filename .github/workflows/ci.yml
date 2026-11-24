@@ -48,6 +48,11 @@ jobs:
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
+      - name: Diagnose organization router formatting (temporary)
+        run: |
+          pnpm exec prettier server/features/organizations/organizationRouter.ts > /tmp/organizationRouter.formatted.ts
+          diff -u server/features/organizations/organizationRouter.ts /tmp/organizationRouter.formatted.ts || true
+
       - name: Check formatting
         run: pnpm lint
 
