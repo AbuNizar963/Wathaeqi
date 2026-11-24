@@ -48,7 +48,9 @@ describe("DocumentLetterhead", () => {
   it("places serial and date metadata below the tricolor divider, aligned right", () => {
     const markup = render(tricolorSettings);
     const dividerIndex = markup.indexOf("document-tricolor-stars-divider");
-    const metadataIndex = markup.indexOf('data-testid="document-letterhead-metadata"');
+    const metadataIndex = markup.indexOf(
+      'data-testid="document-letterhead-metadata"'
+    );
     const dateIndex = markup.indexOf("التاريخ:");
     expect(dividerIndex).toBeGreaterThan(-1);
     expect(metadataIndex).toBeGreaterThan(dividerIndex);
