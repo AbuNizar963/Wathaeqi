@@ -88,7 +88,7 @@ class PushNotificationService {
   StreamSubscription<RemoteMessage>? _foregroundSubscription;
   StreamSubscription<RemoteMessage>? _openedSubscription;
   StreamSubscription<String>? _tokenRefreshSubscription;
-    void Function()? _onAppUpdate;
+  void Function()? _onAppUpdate;
   void Function()? _onOpenNotifications;
 
   Future<void> initialize({
