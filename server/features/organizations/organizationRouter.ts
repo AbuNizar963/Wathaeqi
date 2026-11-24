@@ -125,17 +125,9 @@ export const organizationRouter = router({
     return buildOrganizationTree(filtered);
   }),
 
-  routingTargets: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveOrganizationScope(ctx.user);
-    return listRoutingTargets(scope.organizationId);
-  }),
+  routingTargets: authenticatedProcedure.query(() => []),
 
-  descendants: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveOrganizationScope(ctx.user);
-    return listOrganizationDescendants(scope.organizationId, {
-      activeOnly: true,
-    });
-  }),
+  descendants: authenticatedProcedure.query(() => []),
 
   get: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
@@ -153,56 +145,28 @@ export const organizationRouter = router({
 
   create: authenticatedProcedure
     .input(organizationInput)
-    .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
-      const created = await createOrganization(input);
-      await writeAuditLog({
-        ...getRequestAuditContext(ctx.req),
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? "مالك المنصة",
-        action: "organization.create",
-        entityType: "organization",
-        entityId: created.id,
-        organizationId: created.id,
-        afterState: created,
-      }).catch(() => undefined);
-      return created;
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
-
   update: authenticatedProcedure
     .input(organizationInput.extend({ id: z.string().min(1).max(36) }))
-    .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
-      const before = await getOrganization(input.id);
-      const updated = await updateOrganization(input.id, input);
-      await writeAuditLog({
-        ...getRequestAuditContext(ctx.req),
-        actorUserId: ctx.user.id,
-        actorName: ctx.user.name ?? "مالك المنصة",
-        action: "organization.update",
-        entityType: "organization",
-        entityId: updated.id,
-        organizationId: updated.id,
-        beforeState: before,
-        afterState: updated,
-      }).catch(() => undefined);
-      return updated;
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
-
   setActive: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36), isActive: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      await requireOwner(ctx);
-      if (input.id === ctx.user.organizationId && !input.isActive) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "لا يمكن تعطيل جهة حسابك الحالي.",
-        });
-      }
-      await setOrganizationActive(input.id, input.isActive);
-      return { success: true as const };
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
-
   uploadLogo: authenticatedProcedure
     .input(
       z.object({
@@ -344,15 +308,12 @@ export const organizationRouter = router({
 
   delete: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
-    .mutation(async ({ ctx, input }) => {
-      requireOwner(ctx);
-      const organization = await getOrganization(input.id);
-      if (!organization)
-        throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
-      await setOrganizationActive(input.id, false);
-      return { success: true as const };
+    .mutation(() => {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "النظام يعمل بجهة واحدة؛ إدارة الهيكل التنظيمي معطّلة.",
+      });
     }),
-
   purgeArchived: authenticatedProcedure
     .input(
       z.object({
@@ -431,14 +392,7 @@ export const organizationRouter = router({
       }),
   }),
 
-  routingDirectory: authenticatedProcedure.query(async ({ ctx }) => {
-    const scope = await resolveOrganizationScope(ctx.user);
-    const directory = await getRoutingDirectory();
-    const allowed = new Set(scope.organizationIds ?? [scope.organizationId]);
-    return directory.map(entry => ({
-      ...entry,
-      isSelectable: entry.id !== scope.organizationId && allowed.has(entry.id),
-      label: entry.path,
-    }));
-  }),
+  routingDirectory: authenticatedProcedure.query(() => []),
+
+
 });
