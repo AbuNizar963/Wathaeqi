@@ -257,23 +257,25 @@ const administrationRouter = router({
       }),
     ]);
 
-    const users = usersResult.rows.map(row => {
-      const data = rowData(row as AppwriteRow);
-      return {
-        id: String(data.id ?? (row as AppwriteRow).$id),
-        name:
-          parseOptionalText(data.name) ??
-          parseOptionalText(data.username) ??
-          "بدون اسم",
-        username: parseOptionalText(data.username),
-        email: parseOptionalText(data.email),
-        organizationId: parseOptionalText(data.organizationId),
-        role: String(data.role ?? "user"),
-        isActive: data.isActive === true,
-        isPlatformOwner: data.isPlatformOwner === true,
-        lastSignedIn: parseOptionalText(data.lastSignedIn),
-      };
-    });
+    const users = usersResult.rows
+      .map(row => {
+        const data = rowData(row as AppwriteRow);
+        return {
+          id: String(data.id ?? (row as AppwriteRow).$id),
+          name:
+            parseOptionalText(data.name) ??
+            parseOptionalText(data.username) ??
+            "بدون اسم",
+          username: parseOptionalText(data.username),
+          email: parseOptionalText(data.email),
+          organizationId: parseOptionalText(data.organizationId),
+          role: String(data.role ?? "user"),
+          isActive: data.isActive === true,
+          isPlatformOwner: data.isPlatformOwner === true,
+          lastSignedIn: parseOptionalText(data.lastSignedIn),
+        };
+      })
+      .filter(user => user.organizationId === scope.organizationId);
     const organizations = organizationsResult.rows
       .map(row => {
         const data = rowData(row as AppwriteRow);
@@ -291,7 +293,7 @@ const administrationRouter = router({
       users,
       organizations,
       totals: {
-        users: usersResult.total,
+        users: users.length,
         activeUsers: users.filter(user => user.isActive).length,
         organizations: organizations.length,
         activeOrganizations: organizations.filter(item => item.isActive).length,
