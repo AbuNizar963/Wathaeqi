@@ -62,7 +62,7 @@ void main() {
         createdAt: DateTime.utc(2026, 4),
         updatedAt: DateTime.utc(2026, 4),
       );
-  
+
       expect(
         filterAndSortDocuments(
           [arabicDocument],
@@ -70,7 +70,8 @@ void main() {
         ).map((item) => item.id),
         ['arabic'],
       );
-  
+    },
+  );
 
   test('sorts newest, oldest, and title without mutating source', () {
     expect(filterAndSortDocuments(documents).map((item) => item.id), [
