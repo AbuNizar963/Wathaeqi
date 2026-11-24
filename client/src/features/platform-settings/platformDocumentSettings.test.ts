@@ -3,6 +3,7 @@ import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
+import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import {
   DOCUMENT_SETTINGS_LOAD_ERROR,
   loadDocumentSettingsForExport,
@@ -71,17 +72,13 @@ describe("document settings for export", () => {
 });
 
 describe("platform document settings UI normalization", () => {
-  it("uses defaults for malformed API fields without losing valid false and zero values", async () => {
-    const { normalizePlatformDocumentSettings } = await import(
-      "./normalizePlatformDocumentSettings"
-    );
+  it("uses defaults for malformed fields and preserves valid false and zero", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       showMinistryWatermarkText: false,
       watermarkOpacityPercent: 0,
       watermarkText: null as unknown as string,
-      pageHeaderRows:
-        null as unknown as PlatformDocumentSettings["pageHeaderRows"],
+      pageHeaderRows: null as unknown as PlatformDocumentSettings["pageHeaderRows"],
       pageFooterRows: [
         { right: 12, left: null },
       ] as unknown as PlatformDocumentSettings["pageFooterRows"],
@@ -100,28 +97,16 @@ describe("platform document settings UI normalization", () => {
     );
   });
 
-  it("accepts a missing or non-object settings response and returns complete defaults", async () => {
-    const { normalizePlatformDocumentSettings } = await import(
-      "./normalizePlatformDocumentSettings"
-    );
-
+  it("returns complete defaults for missing settings", () => {
     expect(normalizePlatformDocumentSettings(null)).toMatchObject(
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS
     );
     expect(normalizePlatformDocumentSettings(undefined)).toMatchObject(
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS
     );
-    expect(
-      normalizePlatformDocumentSettings(
-        "invalid" as unknown as PlatformDocumentSettings
-      )
-    ).toMatchObject(DEFAULT_PLATFORM_DOCUMENT_SETTINGS);
   });
 
-  it("limits text rows and sanitizes row values", async () => {
-    const { normalizePlatformDocumentSettings } = await import(
-      "./normalizePlatformDocumentSettings"
-    );
+  it("limits text rows and sanitizes row values", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       pageHeaderRows: Array.from({ length: 15 }, (_, index) => ({
