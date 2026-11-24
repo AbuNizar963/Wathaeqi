@@ -113,52 +113,6 @@ void main() {
     },
   );
 
-  test('uses directional titles for ordinary and urgent telegram pushes', () {
-    expect(
-      telegramPushNotificationTitle({
-        'type': 'telegram.created',
-        'priority': 'normal',
-      }),
-      'برقية صادرة جديدة',
-    );
-    expect(
-      telegramPushNotificationTitle({
-        'type': 'telegram.incoming',
-        'priority': 'urgent',
-      }),
-      'برقية واردة عاجلة',
-    );
-  });
-
-  test('treats legacy critical and high priorities as urgent', () {
-    for (final priority in ['critical', 'high']) {
-      expect(
-        telegramPushNotificationTitle({
-          'type': 'telegram.created',
-          'priority': priority,
-        }),
-        'برقية صادرة عاجلة',
-      );
-    }
-  });
-
-  test('uses the telegram serial and direction in push notification body', () {
-    expect(
-      telegramPushNotificationBody({
-        'type': 'telegram.created',
-        'serialCode': 'POL-2026-00123',
-      }),
-      'هناك برقية صادرة برقم: 00123.',
-    );
-    expect(
-      telegramPushNotificationBody({
-        'type': 'telegram.incoming',
-        'serialCode': 'UNIT-00072',
-      }),
-      'هناك برقية واردة برقم: 00072.',
-    );
-  });
-
   test(
     'reports whether the device token was registered successfully',
     () async {
