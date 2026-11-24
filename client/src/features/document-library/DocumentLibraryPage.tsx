@@ -440,6 +440,7 @@ export default function DocumentLibraryPage() {
             );
           })}
         </div>
+      )}
 
       <Button
         type="button"
