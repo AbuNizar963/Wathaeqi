@@ -56,6 +56,7 @@ import {
   formatDate,
 } from "./types";
 import type { OfficialDocument } from "../../../../shared/documentStudio";
+import { filterAndSortDocuments, type DocumentSortOrder } from "./libraryFilters";
 
 function categoryLabel(value: string): string {
   return DOCUMENT_CATEGORIES.find(item => item.value === value)?.label ?? "عام";
@@ -88,6 +89,8 @@ export default function DocumentLibraryPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState<OfficialDocument["status"] | "">("");
+  const [sortOrder, setSortOrder] =
+    useState<DocumentSortOrder>("updated-desc");
   const [savedViews, setSavedViews] = useState<SavedDocumentView[]>([]);
   const [savedViewsUserId, setSavedViewsUserId] = useState<string | null>(null);
   const [savedViewName, setSavedViewName] = useState("");
@@ -131,17 +134,16 @@ export default function DocumentLibraryPage() {
     [documentsQuery.data]
   );
 
-  const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase();
-    return documents.filter(document => {
-      if (category && document.category !== category) return false;
-      if (status && document.status !== status) return false;
-      if (!needle) return true;
-      return [document.title, document.subject, document.file?.fileName]
-        .filter(Boolean)
-        .some(value => String(value).toLowerCase().includes(needle));
-    });
-  }, [documents, search, category, status]);
+  const filtered = useMemo(
+    () =>
+      filterAndSortDocuments(documents, {
+        search,
+        category,
+        status,
+        sort: sortOrder,
+      }),
+    [documents, search, category, status, sortOrder]
+  );
 
   const saveCurrentView = () => {
     const name = savedViewName.trim();
@@ -154,6 +156,7 @@ export default function DocumentLibraryPage() {
           search,
           category,
           status,
+          sort: sortOrder,
         },
         ...current.filter(view => view.name !== name),
       ].slice(0, 30)
@@ -313,6 +316,20 @@ export default function DocumentLibraryPage() {
               </button>
             ))}
           </div>
+          <label className="flex min-w-36 flex-1 flex-col gap-1 text-xs text-muted-foreground sm:max-w-48">
+            ترتيب النتائج
+            <select
+              value={sortOrder}
+              onChange={event =>
+                setSortOrder(event.target.value as DocumentSortOrder)
+              }
+              className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
+            >
+              <option value="updated-desc">الأحدث تحديثاً</option>
+              <option value="updated-asc">الأقدم تحديثاً</option>
+              <option value="title-asc">العنوان أبجدياً</option>
+            </select>
+          </label>
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
@@ -342,6 +359,7 @@ export default function DocumentLibraryPage() {
                   setSearch(view.search);
                   setCategory(view.category);
                   setStatus(view.status as OfficialDocument["status"] | "");
+                  setSortOrder(view.sort);
                 }}
               >
                 {view.name}
