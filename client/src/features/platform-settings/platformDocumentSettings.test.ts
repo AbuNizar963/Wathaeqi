@@ -78,7 +78,8 @@ describe("platform document settings UI normalization", () => {
       showMinistryWatermarkText: false,
       watermarkOpacityPercent: 0,
       watermarkText: null as unknown as string,
-      pageHeaderRows: null as unknown as PlatformDocumentSettings["pageHeaderRows"],
+      pageHeaderRows:
+        null as unknown as PlatformDocumentSettings["pageHeaderRows"],
       pageFooterRows: [
         { right: 12, left: null },
       ] as unknown as PlatformDocumentSettings["pageFooterRows"],
