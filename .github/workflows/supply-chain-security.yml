@@ -41,6 +41,7 @@ jobs:
 
   osv-offline:
     name: Scan dependencies against a local OSV database
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
