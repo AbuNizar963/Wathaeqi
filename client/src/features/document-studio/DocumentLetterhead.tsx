@@ -1,6 +1,8 @@
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 
 export type DocumentLetterheadProps = {
+  organizationName: string;
+  unitName: string;
   chiefRank: string;
   chiefName: string;
   logoUrl: string | null;
@@ -19,6 +21,8 @@ export type DocumentLetterheadProps = {
  * below the divider so it remains right-aligned in every renderer.
  */
 export default function DocumentLetterhead({
+  organizationName,
+  unitName,
   chiefRank,
   chiefName,
   logoUrl,
@@ -27,6 +31,11 @@ export default function DocumentLetterhead({
   serial,
   date,
 }: DocumentLetterheadProps) {
+  const configuredTitle = headerSettings?.headerTitle.trim() || organizationName;
+  const configuredSubtitle = headerSettings?.headerSubtitle.trim() || unitName;
+  const title = configuredTitle === "إدارة الشرطة" ? "" : configuredTitle;
+  const subtitle =
+    configuredSubtitle === "وحدة العمليات" ? "" : configuredSubtitle;
   const rank = headerSettings?.headerChiefRank.trim() || chiefRank;
   const name = headerSettings?.headerChiefName.trim() || chiefName;
   const showLogo = headerSettings?.headerShowLogo !== false;
@@ -54,10 +63,18 @@ export default function DocumentLetterhead({
       dir="rtl"
     >
       <div className="document-letterhead__row">
-        <div
-          className="document-letterhead__cell"
-          aria-hidden="true"
-        />
+        <div className="document-letterhead__cell text-right">
+          {title ? (
+            <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
+              {title}
+            </p>
+          ) : null}
+          {subtitle ? (
+            <p className="whitespace-nowrap text-[15pt] font-bold leading-[1.5] tracking-[-0.12px] [transform:scaleX(0.86)] [transform-origin:right_center]">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
           style={{ width: logoSize }}
