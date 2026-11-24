@@ -85,3 +85,23 @@ describe("organizations.renameCurrent", () => {
     expect(mocks.renameOrganization).not.toHaveBeenCalled();
   });
 });
+
+
+describe("single-organization mode", () => {
+  it("blocks creating additional organizations", async () => {
+    await expect(
+      caller().create({
+        name: "جهة إضافية",
+        code: "EXTRA",
+        type: "department",
+        parentOrganizationId: null,
+      })
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  it("returns no routing destinations or descendants", async () => {
+    await expect(caller().routingTargets()).resolves.toEqual([]);
+    await expect(caller().descendants()).resolves.toEqual([]);
+    await expect(caller().routingDirectory()).resolves.toEqual([]);
+  });
+});
