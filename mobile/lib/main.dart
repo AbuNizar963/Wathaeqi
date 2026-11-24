@@ -46,12 +46,12 @@ const brandBlue = AppPalette.brandBlue;
 const canvas = AppPalette.canvas;
 
 void main() {
-  PoliceTelegramsApp.restoreThemeMode();
-  runApp(const PoliceTelegramsApp());
+  WathaeqiApp.restoreThemeMode();
+  runApp(const WathaeqiApp());
 }
 
-class PoliceTelegramsApp extends StatelessWidget {
-  const PoliceTelegramsApp({super.key, this.api});
+class WathaeqiApp extends StatelessWidget {
+  const WathaeqiApp({super.key, this.api});
 
   static final ValueNotifier<ThemeMode> _themeMode = ValueNotifier<ThemeMode>(
     ThemeMode.system,
@@ -1812,9 +1812,9 @@ class _DashboardPageState extends State<DashboardPage>
           PopupMenuButton<ThemeMode>(
             tooltip: 'إعدادات المظهر',
             icon: const Icon(Icons.brightness_6_outlined),
-            onSelected: PoliceTelegramsApp.setThemeMode,
+            onSelected: WathaeqiApp.setThemeMode,
             itemBuilder: (context) {
-              final selectedMode = PoliceTelegramsApp.themeMode;
+              final selectedMode = WathaeqiApp.themeMode;
               Widget option({
                 required IconData icon,
                 required String title,

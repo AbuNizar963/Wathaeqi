@@ -846,7 +846,7 @@ void main() {
     tester,
   ) async {
     final api = _TestPoliceApi(signedIn: true);
-    await tester.pumpWidget(PoliceTelegramsApp(api: api));
+    await tester.pumpWidget(WathaeqiApp(api: api));
     await _pumpDashboardFrames(tester, frameCount: 12);
 
     expect(find.text('تسجيل الدخول'), findsOneWidget);
@@ -916,7 +916,7 @@ void main() {
     tester,
   ) async {
     _setMobileViewport(tester);
-    await tester.pumpWidget(PoliceTelegramsApp(api: _TestPoliceApi()));
+    await tester.pumpWidget(WathaeqiApp(api: _TestPoliceApi()));
     await tester.pumpAndSettle();
 
     expect(find.text('برقيات الشرطة'), findsOneWidget);
