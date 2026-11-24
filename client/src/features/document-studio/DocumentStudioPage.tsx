@@ -217,7 +217,9 @@ export default function DocumentStudioPage() {
   const documentVersionsQuery =
     trpc.documentStudio.listDocumentVersions.useQuery(
       { id: selectedDocument?.id ?? "" },
-      { enabled: Boolean(selectedDocument) }
+      {
+        enabled: Boolean(selectedDocument && activeTab !== "templates"),
+      }
     );
   const importedFileUrlQuery = trpc.documentStudio.getFileUrl.useQuery(
     { id: selectedDocument?.id ?? "" },
@@ -331,6 +333,9 @@ export default function DocumentStudioPage() {
         setDocumentDate(dateInputValue(saved.documentDate));
         setDocumentContent(saved.content);
         setDocumentFieldValues(saved.fieldValues);
+        setSelectedTemplateId(saved.templateId);
+        setSelectedTemplateRevision(saved.templateRevision);
+        setTemplateValuesApplied(true);
         toast.success(
           "تمت استعادة النسخة وحفظ الحالة السابقة في سجل الإصدارات"
         );
