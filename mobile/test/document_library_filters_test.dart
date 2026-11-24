@@ -44,7 +44,9 @@ void main() {
     );
   });
 
-  test('matches Arabic search despite alef variants, diacritics, and taa marbuta', () {
+  test(
+    'matches Arabic search despite alef variants, diacritics, and taa marbuta',
+    () {
     final arabicDocument = OfficialDocument(
       id: 'arabic',
       ownerId: 'owner',
