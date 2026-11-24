@@ -282,7 +282,7 @@ describe("document original file endpoint", () => {
       expect(outsideOrganization.status).toBe(404);
       assertPrivate(outsideOrganization);
 
-      expect(mocks.getRow).toHaveBeenCalledTimes(1);
+      expect(mocks.getRow).toHaveBeenCalledTimes(2);
       expect(mocks.getObjectInfo).not.toHaveBeenCalled();
       expect(mocks.listRows).not.toHaveBeenCalled();
     });
@@ -407,7 +407,7 @@ describe("document original file endpoint", () => {
       const error = await requestFile(baseUrl);
       expect(error.status).toBe(502);
       expect(await error.text()).not.toContain("private database detail");
-      mocks.listRows.mockRejectedValueOnce(
+      mocks.resolveOrganizationScope.mockRejectedValueOnce(
         new Error("private membership detail")
       );
       const membershipError = await requestFile(baseUrl);
