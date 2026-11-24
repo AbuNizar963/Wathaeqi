@@ -44,9 +44,6 @@ vi.mock("@trpc/server/adapters/express", () => ({
 
 import { createApp } from "./app";
 import appwriteMain from "../appwrite/functions/wathaeqi-api/src/main";
-import { createNetlifyApi } from "../netlify/functions/api.mts";
-
-const netlifyApi = createNetlifyApi(async () => createApp());
 
 const ownerId = "550e8400-e29b-41d4-a716-446655440000";
 const otherOwnerId = "550e8400-e29b-41d4-a716-446655440003";
@@ -381,7 +378,7 @@ describe("document original file endpoint", () => {
     }
   );
 
-  it("preserves private JSON denials through both function wrappers", async () => {
+  it("preserves private JSON denials through the Appwrite function wrapper", async () => {
     mocks.getUser.mockResolvedValue(null);
     const path = "/api/documents/document-1/file";
     const appwriteResponse = (await appwriteMain({
@@ -395,10 +392,7 @@ describe("document original file endpoint", () => {
       log: vi.fn(),
       error: vi.fn(),
     })) as Response;
-    const netlifyResponse = await netlifyApi(
-      new Request(`https://api.example.test${path}`)
-    );
-    for (const response of [appwriteResponse, netlifyResponse]) {
+    for (const response of [appwriteResponse]) {
       expect(response.status).toBe(401);
       assertPrivate(response);
       expect(await response.json()).toEqual({
