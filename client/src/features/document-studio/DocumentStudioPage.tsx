@@ -320,7 +320,9 @@ export default function DocumentStudioPage() {
       onSuccess: async saved => {
         await Promise.all([
           utils.documentStudio.listDocuments.invalidate(),
-          utils.documentStudio.listDocumentVersions.invalidate({ id: saved.id }),
+          utils.documentStudio.listDocumentVersions.invalidate({
+            id: saved.id,
+          }),
         ]);
         setSelectedDocumentId(saved.id);
         setDocumentTitle(saved.title);
