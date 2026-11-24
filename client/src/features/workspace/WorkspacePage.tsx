@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import { trpc as appTrpc } from "@/lib/trpc";
 import { useAuth } from "@/features/auth-session/useAuth";
+import { hasUserManagementMenuAccess } from "@/features/admin/menuAccess";
 
 type WorkspaceSection = "dashboard" | "contacts" | "notifications" | "users";
 
@@ -72,6 +73,13 @@ export default function WorkspacePage({
     undefined,
     { enabled: Boolean(user), staleTime: 30_000 }
   );
+  const canOpenAdvancedManagement = hasUserManagementMenuAccess({
+    accountRole: user?.role,
+    organizationRole: organizationContext.data?.role,
+    isPlatformOwner:
+      user?.isPlatformOwner === true ||
+      organizationContext.data?.isOwner === true,
+  });
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyContact);
