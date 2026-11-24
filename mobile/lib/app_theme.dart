@@ -140,7 +140,7 @@ abstract final class AppTheme {
           margin: const EdgeInsets.symmetric(vertical: 5),
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             side: const BorderSide(color: AppPalette.border),
           ),
         ),
@@ -152,7 +152,7 @@ abstract final class AppTheme {
             vertical: 14,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: AppPalette.border),
           ),
           enabledBorder: OutlineInputBorder(
