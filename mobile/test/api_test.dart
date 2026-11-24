@@ -362,9 +362,7 @@ void main() {
             ? (jsonDecode(request.body) as Map)['json'] as Map?
             : request.url.queryParameters['input'] == null
             ? null
-            : (jsonDecode(
-                    request.url.queryParameters['input']!,
-                  ) as Map)['json']
+            : (jsonDecode(request.url.queryParameters['input']!) as Map)['json']
                   as Map?;
         final organizationId = requestInput?['organizationId']?.toString();
         final value = switch (procedure) {
@@ -409,10 +407,7 @@ void main() {
       expect(cacheKeys, hasLength(1));
 
       offline = true;
-      final cached = await api.call(
-        'organizations.settings.get',
-        input: input,
-      );
+      final cached = await api.call('organizations.settings.get', input: input);
       expect(cached['departmentName'], 'قديم');
 
       offline = false;
