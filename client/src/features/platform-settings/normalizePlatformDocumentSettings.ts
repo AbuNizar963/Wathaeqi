@@ -6,24 +6,40 @@ import {
 
 type SettingsInput = Partial<PlatformDocumentSettings> | null | undefined;
 
-function textValue(value: unknown, fallback: string, maxLength: number): string {
-  return typeof value === "string" ? value.trim().slice(0, maxLength) : fallback;
+function textValue(
+  value: unknown,
+  fallback: string,
+  maxLength: number
+): string {
+  return typeof value === "string"
+    ? value.trim().slice(0, maxLength)
+    : fallback;
 }
 
 function numberValue(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallback;
 }
 
 function booleanValue(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function normalizeRows(value: unknown, fallback: readonly DocumentTextRow[]): DocumentTextRow[] {
-  if (!Array.isArray(value)) return fallback.map(row => ({ ...row }));
+function normalizeRows(
+  value: unknown,
+  fallback: readonly DocumentTextRow[]
+): DocumentTextRow[] {
+  if (!Array.isArray(value)) {
+    return fallback.map(row => ({ ...row }));
+  }
+
   return value.slice(0, 12).map((item): DocumentTextRow => {
-    const row = item && typeof item === "object"
-      ? (item as Record<string, unknown>)
-      : {};
+    const row =
+      item && typeof item === "object"
+        ? (item as Record<string, unknown>)
+        : {};
+
     return {
       right: textValue(row.right, "", 255),
       left: textValue(row.left, "", 255),
@@ -87,10 +103,25 @@ export function normalizePlatformDocumentSettings(
       defaults.headerDividerWidthPt
     ),
     headerTitle: textValue(source.headerTitle, defaults.headerTitle, 255),
-    headerSubtitle: textValue(source.headerSubtitle, defaults.headerSubtitle, 255),
-    headerChiefRank: textValue(source.headerChiefRank, defaults.headerChiefRank, 120),
-    headerChiefName: textValue(source.headerChiefName, defaults.headerChiefName, 255),
-    headerShowLogo: booleanValue(source.headerShowLogo, defaults.headerShowLogo),
+    headerSubtitle: textValue(
+      source.headerSubtitle,
+      defaults.headerSubtitle,
+      255
+    ),
+    headerChiefRank: textValue(
+      source.headerChiefRank,
+      defaults.headerChiefRank,
+      120
+    ),
+    headerChiefName: textValue(
+      source.headerChiefName,
+      defaults.headerChiefName,
+      255
+    ),
+    headerShowLogo: booleanValue(
+      source.headerShowLogo,
+      defaults.headerShowLogo
+    ),
     headerLogoSize: numberValue(source.headerLogoSize, defaults.headerLogoSize),
     headerTopPaddingMm: numberValue(
       source.headerTopPaddingMm,
@@ -105,12 +136,30 @@ export function normalizePlatformDocumentSettings(
       defaults.headerBottomPaddingMm
     ),
     headerAlignment,
-    pageHeaderRows: normalizeRows(source.pageHeaderRows, defaults.pageHeaderRows),
-    pageFooterRows: normalizeRows(source.pageFooterRows, defaults.pageFooterRows),
-    pageMarginTopMm: numberValue(source.pageMarginTopMm, defaults.pageMarginTopMm),
-    pageMarginRightMm: numberValue(source.pageMarginRightMm, defaults.pageMarginRightMm),
-    pageMarginBottomMm: numberValue(source.pageMarginBottomMm, defaults.pageMarginBottomMm),
-    pageMarginLeftMm: numberValue(source.pageMarginLeftMm, defaults.pageMarginLeftMm),
+    pageHeaderRows: normalizeRows(
+      source.pageHeaderRows,
+      defaults.pageHeaderRows
+    ),
+    pageFooterRows: normalizeRows(
+      source.pageFooterRows,
+      defaults.pageFooterRows
+    ),
+    pageMarginTopMm: numberValue(
+      source.pageMarginTopMm,
+      defaults.pageMarginTopMm
+    ),
+    pageMarginRightMm: numberValue(
+      source.pageMarginRightMm,
+      defaults.pageMarginRightMm
+    ),
+    pageMarginBottomMm: numberValue(
+      source.pageMarginBottomMm,
+      defaults.pageMarginBottomMm
+    ),
+    pageMarginLeftMm: numberValue(
+      source.pageMarginLeftMm,
+      defaults.pageMarginLeftMm
+    ),
     frameStyle,
     frameColor: textValue(source.frameColor, defaults.frameColor, 7),
     frameWidthPt: numberValue(source.frameWidthPt, defaults.frameWidthPt),
@@ -119,7 +168,8 @@ export function normalizePlatformDocumentSettings(
       defaults.showVerificationQr
     ),
     updatedAt:
-      typeof source.updatedAt === "string" || source.updatedAt instanceof Date
+      typeof source.updatedAt === "string" ||
+      source.updatedAt instanceof Date
         ? source.updatedAt
         : null,
   };
