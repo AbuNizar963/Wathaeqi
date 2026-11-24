@@ -48,13 +48,18 @@ describe("DocumentLetterhead", () => {
         headerSettings={{
           ...tricolorSettings,
           pageHeaderRows: [
-            { right: "الجمهورية العربية السورية", left: "Syrian Arab Republic" },
+            {
+              right: "الجمهورية العربية السورية",
+              left: "Syrian Arab Republic",
+            },
             { right: "وزارة الداخلية", left: "Ministry of Interior" },
           ],
         }}
       />
     );
-    const rowsIndex = markup.indexOf('data-testid="document-custom-header-rows"');
+    const rowsIndex = markup.indexOf(
+      'data-testid="document-custom-header-rows"'
+    );
     const logoIndex = markup.indexOf('class="document-letterhead__row"');
     expect(rowsIndex).toBeGreaterThan(-1);
     expect(rowsIndex).toBeLessThan(logoIndex);
