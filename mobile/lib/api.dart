@@ -772,11 +772,9 @@ class PoliceApi {
     if (procedure == 'organizations.settings.update') {
       final organizationId = input?['organizationId']?.toString().trim();
       if (organizationId != null && organizationId.isNotEmpty) {
-        await _writeOfflineResponse(
-          'organizations.settings.get',
-          {'organizationId': organizationId},
-          value,
-        );
+        await _writeOfflineResponse('organizations.settings.get', {
+          'organizationId': organizationId,
+        }, value);
       }
       return;
     }
@@ -879,10 +877,9 @@ class PoliceApi {
       case 'organizations.settings.get':
         final organizationId = input?['organizationId']?.toString().trim();
         if (organizationId == null || organizationId.isEmpty) return null;
-        return _offlineInputResponseKey(
-          'offline_organization_settings',
-          {'organizationId': organizationId},
-        );
+        return _offlineInputResponseKey('offline_organization_settings', {
+          'organizationId': organizationId,
+        });
       case 'platformDocumentSettings.get':
         return 'offline_platform_document_settings';
       case 'organizations.routingDirectory':
