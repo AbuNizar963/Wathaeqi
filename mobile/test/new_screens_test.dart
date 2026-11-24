@@ -192,8 +192,16 @@ void main() {
       'organizationId': 'org-1',
     });
 
-    await tester.ensureVisible(find.text('حفظ إعدادات الجهة'));
-    await tester.tap(find.text('حفظ إعدادات الجهة'));
+    final saveButton = find.widgetWithText(
+      FilledButton,
+      'حفظ إعدادات الجهة',
+    );
+    await tester.scrollUntilVisible(
+      saveButton,
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(saveButton);
     await tester.pumpAndSettle();
 
     expect(api.calls, contains('organizations.settings.update'));
