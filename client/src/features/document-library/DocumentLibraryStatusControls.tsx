@@ -1,7 +1,4 @@
-import type {
-  DocumentSortOrder,
-  DocumentStatusFilter,
-} from "./libraryFilters";
+import type { DocumentSortOrder, DocumentStatusFilter } from "./libraryFilters";
 
 type DocumentLibraryStatusControlsProps = {
   status: DocumentStatusFilter;
