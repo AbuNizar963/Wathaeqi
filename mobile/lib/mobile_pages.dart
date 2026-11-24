@@ -71,7 +71,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
-  Future<void> markRead(int id) async {
+  Future<void> markRead(String id) async {
     try {
       await widget.api.call(
         'workspace.notifications.markRead',
