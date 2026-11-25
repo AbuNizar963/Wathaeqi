@@ -56,7 +56,7 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
     { watermarkText: "   " },
-    { headerLogoSize: 200 },
+    { headerLogoSize: 221 },
     { headerTopPaddingMm: -1 },
     { headerAlignment: "invalid" },
   ])("blocks export with invalid effective settings: %o", async invalid => {
