@@ -115,7 +115,9 @@ assert(
 assert(
   documentStudio.includes("معاينة الوثيقة") &&
     documentStudio.includes("watermarkText") &&
-    documentStudio.includes('import DocumentWatermark from "./DocumentWatermark"') &&
+    documentStudio.includes(
+      'import DocumentWatermark from "./DocumentWatermark"'
+    ) &&
     documentWatermarkComponent.includes("buildDocumentWatermarkCss") &&
     documentStudio.includes("watermarkScalePercent") &&
     documentStudio.includes("editable={!previewMode}"),
