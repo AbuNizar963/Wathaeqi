@@ -19,6 +19,7 @@ type PlatformDocumentPreviewProps = {
   updatedAt?: string | Date | null;
 };
 
+// prettier-ignore
 export default function PlatformDocumentPreview({
   settings,
   logoUrl,
