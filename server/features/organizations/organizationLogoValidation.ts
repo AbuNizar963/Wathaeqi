@@ -118,6 +118,7 @@ type XmlNode = Record<string, unknown>;
  * presentation allowlist. Active content and external references are rejected;
  * local fragment references remain supported for gradients, masks and filters.
  */
+// prettier-ignore
 export function isSafeSvgLogo(bytes: Buffer): boolean {
   try {
     if (bytes.length === 0) return false;
