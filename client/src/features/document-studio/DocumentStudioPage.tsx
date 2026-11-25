@@ -57,12 +57,6 @@ import {
   downloadDocumentFile,
   shareDocument,
 } from "./documentActions";
-import {
-  buildDocumentWatermarkCss,
-  DOCUMENT_WATERMARK_COLUMNS,
-  DOCUMENT_WATERMARK_ROWS,
-  getA4PreviewPageCount,
-} from "./documentWatermark";
 
 type StudioTab = "documents" | "templates" | "archive";
 
@@ -1187,6 +1181,9 @@ export default function DocumentStudioPage() {
                   opacityPercent={
                     platformDocumentSettings.data?.watermarkOpacityPercent ?? 12
                   }
+                  scalePercent={
+                    platformDocumentSettings.data?.watermarkScalePercent ?? 100
+                  }
                   showMinistryText={
                     platformDocumentSettings.data?.showMinistryWatermarkText ??
                     true
@@ -1570,6 +1567,10 @@ export default function DocumentStudioPage() {
                     opacityPercent={
                       platformDocumentSettings.data?.watermarkOpacityPercent ??
                       12
+                    }
+                    scalePercent={
+                      platformDocumentSettings.data?.watermarkScalePercent ??
+                      100
                     }
                     showMinistryText={
                       platformDocumentSettings.data
