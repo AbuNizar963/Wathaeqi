@@ -37,6 +37,7 @@ void main() {
       showWatermarkText: true,
       watermarkText: 'عبارة أمنية اختبارية',
       watermarkOpacity: 0.12,
+      watermarkScalePercent: 150,
     );
 
     expect(bytes.length, greaterThan(1000));
