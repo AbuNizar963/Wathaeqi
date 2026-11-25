@@ -194,7 +194,9 @@ export default function PlatformDocumentSettingsPage() {
           <a
             key={id}
             href={"#" + id}
-            className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={
+              "rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            }
           >
             {label}
           </a>
@@ -227,7 +229,9 @@ export default function PlatformDocumentSettingsPage() {
             <section
               id="organization-identity-settings"
               aria-labelledby="organization-identity-title"
-              className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+              className={
+                "space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+              }
             >
               <div className="flex items-center gap-2">
                 <ImagePlus className="h-5 w-5 text-primary" />
@@ -269,7 +273,9 @@ export default function PlatformDocumentSettingsPage() {
                         onChange={event =>
                           setOrganizationName(event.target.value)
                         }
-                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                        className={
+                    "w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  }
                         autoComplete="organization"
                       />
                     </label>
@@ -429,7 +435,9 @@ export default function PlatformDocumentSettingsPage() {
                   </label>
                   <output
                     htmlFor="watermark-opacity"
-                    className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
+                    className={
+                      "rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
+                    }
                   >
                     {values.watermarkOpacityPercent}%
                   </output>
@@ -449,7 +457,9 @@ export default function PlatformDocumentSettingsPage() {
                   }
                   className="w-full accent-primary"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground">
+                <div
+                  className="flex justify-between text-xs text-muted-foreground"
+                >
                   <span>شفاف تماماً</span>
                   <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
                 </div>
@@ -466,7 +476,9 @@ export default function PlatformDocumentSettingsPage() {
             <section
               id="page-layout-settings"
               aria-labelledby="page-layout-title"
-              className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+              className={
+                "space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+              }
             >
               <div>
                 <h2 id="page-layout-title" className="font-semibold">
