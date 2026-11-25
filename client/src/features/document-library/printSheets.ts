@@ -242,6 +242,7 @@ export async function printHtmlDocument(
   printWindow: Window,
   html: string
 ): Promise<void> {
+  printWindow.opener = null;
   const documentUrl = URL.createObjectURL(
     new Blob([html], { type: "text/html;charset=utf-8" })
   );
@@ -316,6 +317,7 @@ export async function openPrintWindow(
   const hasPdfPageSizes = pages.every(
     page =>
       "widthPt" in page &&
+      "heightPt" in page &&
       Number.isFinite(page.widthPt) &&
       Number.isFinite(page.heightPt)
   );
