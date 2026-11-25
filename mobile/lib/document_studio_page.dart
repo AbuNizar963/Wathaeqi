@@ -2808,14 +2808,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       'headerSubtitle',
       _letterhead['unitName']?.toString() ?? '',
     );
-    final chiefRank = _headerSetting(
-      'headerChiefRank',
-      _letterhead['unitChiefRank']?.toString() ?? '',
-    );
-    final chiefName = _headerSetting(
-      'headerChiefName',
-      _letterhead['unitChiefName']?.toString() ?? '',
-    );
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
     final logoSize =
@@ -2883,40 +2875,30 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Transform.scale(
-                                scaleX: 0.86,
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  headerTitle,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: blockAlignment ?? TextAlign.right,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                    height: 1.5,
-                                  ),
+                              Text(
+                                'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
                               ),
-                              if (headerSubtitle.isNotEmpty)
-                                Transform.scale(
-                                  scaleX: 0.86,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    headerSubtitle,
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    textAlign:
-                                        blockAlignment ?? TextAlign.right,
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                      height: 1.5,
-                                    ),
-                                  ),
+                              Text(
+                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+                                maxLines: 1,
+                                softWrap: false,
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  height: 1.5,
                                 ),
+                              ),
                             ],
                           ),
                         ),
@@ -2967,31 +2949,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                     height: 1.4,
                                   ),
                                 ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
-                                maxLines: 1,
-                                softWrap: false,
-                                textAlign: TextAlign.left,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  height: 1.4,
-                                ),
-                              ),
-                              Text(
-                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
-                                maxLines: 1,
-                                softWrap: false,
-                                textAlign: TextAlign.left,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  height: 1.4,
-                                ),
-                              ),
+
                             ],
                           ),
                         ),
