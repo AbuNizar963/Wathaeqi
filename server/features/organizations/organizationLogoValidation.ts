@@ -16,6 +16,8 @@ const SVG_ELEMENTS = new Set([
   "mask",
   "title",
   "desc",
+  "text",
+  "tspan",
 ]);
 
 const SVG_ATTRIBUTES = new Set([
@@ -58,6 +60,20 @@ const SVG_ATTRIBUTES = new Set([
   "gradientTransform",
   "spreadMethod",
   "clip-rule",
+  "clip-path",
+  "mask",
+  "font-family",
+  "font-size",
+  "font-style",
+  "font-weight",
+  "text-anchor",
+  "dominant-baseline",
+  "alignment-baseline",
+  "letter-spacing",
+  "dx",
+  "dy",
+  "textLength",
+  "lengthAdjust",
 ]);
 
 const SAFE_XML_ENTITIES = /&(?:amp|quot|apos|lt|gt);/g;
