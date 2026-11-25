@@ -207,9 +207,9 @@ export default function PlatformDocumentSettings() {
             <div className="rounded-xl border p-4">
               <h3 className="font-bold">بيانات أسفل الوثيقة</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                تظهر هذه البيانات أسفل متن الوثيقة في سطرين بمحاذاة اليسار؛
+                تظهر هذه البيانات أسفل متن الوثيقة في سطرين بمحاذاة الوسط؛
                 السطر الأول لرتبة واسم رئيس الوحدة، والثاني لصفة المسؤول واسم
-                الوحدة. يظهر الشعار أعلى الوثيقة وفوق النص.
+                الوحدة. يظهر الشعار في منتصف رأس الوثيقة أعلى الصفحة.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
