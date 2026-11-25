@@ -40,3 +40,12 @@ export function isDocumentFormDirty(
     JSON.stringify(saved.fieldValues) !== JSON.stringify(form.fieldValues)
   );
 }
+
+export function missingRequiredTemplateFields(
+  fields: readonly DocumentTemplateField[],
+  values: Readonly<Record<string, string>>
+): DocumentTemplateField[] {
+  return fields.filter(
+    field => field.required && !(values[field.key] ?? "").trim()
+  );
+}
