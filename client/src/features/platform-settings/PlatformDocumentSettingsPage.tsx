@@ -457,9 +457,7 @@ export default function PlatformDocumentSettingsPage() {
                   }
                   className="w-full accent-primary"
                 />
-                <div
-                  className="flex justify-between text-xs text-muted-foreground"
-                >
+                <div className="flex justify-between text-xs text-muted-foreground">
                   <span>شفاف تماماً</span>
                   <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
                 </div>
