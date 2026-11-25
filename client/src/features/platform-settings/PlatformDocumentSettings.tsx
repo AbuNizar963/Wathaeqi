@@ -284,7 +284,8 @@ export default function PlatformDocumentSettings() {
               </div>
               <label className="mt-4 block space-y-1 text-sm">
                 <span className="flex justify-between">
-                  حجم الشعار <output>{values.headerLogoSize}px</output>
+                  حجم شعار الوثيقة (تكبير / تصغير)
+                  <output>{values.headerLogoSize}px</output>
                 </span>
                 <input
                   type="range"
