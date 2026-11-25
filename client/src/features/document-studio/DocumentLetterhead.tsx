@@ -21,7 +21,7 @@ export default function DocumentLetterhead({
   date,
 }: DocumentLetterheadProps) {
   const showLogo = headerSettings?.headerShowLogo !== false;
-  const logoSize = headerSettings?.headerLogoSize ?? 120;
+  const logoSize = headerSettings?.headerLogoSize ?? 160;
 
   return (
     <header
@@ -63,7 +63,7 @@ export default function DocumentLetterhead({
       <div className="document-letterhead__row">
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
-          style={{ width: "100%" }}
+          style={{ width: "100%", textAlign: "center" }}
         >
           {showLogo && logoUrl ? (
             <img
