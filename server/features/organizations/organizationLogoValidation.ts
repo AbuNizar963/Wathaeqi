@@ -215,7 +215,10 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
           (!attributes ||
             typeof attributes !== "object" ||
             Array.isArray(attributes) ||
-            !validateAttributes(\n              attributes as Record<string, unknown>,\n              elementName\n            ))
+            !validateAttributes(
+              attributes as Record<string, unknown>,
+              elementName
+            ))
         ) {
           return false;
         }
@@ -252,7 +255,10 @@ function isTextAllowed(ancestors: string[]): boolean {
   );
 }
 
-function validateAttributes(\n  attributes: Record<string, unknown>,\n  elementName: string\n): boolean {
+function validateAttributes(
+  attributes: Record<string, unknown>,
+  elementName: string
+): boolean {
   for (const [name, rawValue] of Object.entries(attributes)) {
     if (typeof rawValue !== "string") return false;
 
