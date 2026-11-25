@@ -351,7 +351,7 @@ export default function PlatformDocumentSettingsPage() {
                 <p className="mt-1 text-xs text-muted-foreground">اجمع إعدادات ظهور العلامة الأمنية ونصها وشفافيتها في مكان واحد.</p>
               </div>
               <div className="space-y-2">
-  
+
                 <label className="flex items-center justify-between gap-3">
                   <span>
                     <span className="block font-semibold">
@@ -376,7 +376,7 @@ export default function PlatformDocumentSettingsPage() {
               </div>
               <div className="h-px bg-border" />
               <div className="space-y-2">
-  
+
                 <label
                   htmlFor="document-watermark-text"
                   className="font-semibold"
@@ -430,7 +430,7 @@ export default function PlatformDocumentSettingsPage() {
                     <span>شفاف تماماً</span>
                     <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
                   </div>
-                </section
+                </section>
               {!values.watermarkText.trim() ? (
                 <p className="text-xs text-destructive">لا يمكن ترك نص العلامة الأمنية فارغاً.</p>
               ) : null}
