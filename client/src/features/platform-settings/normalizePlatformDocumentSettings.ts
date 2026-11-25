@@ -79,11 +79,9 @@ export function normalizePlatformDocumentSettings(
     headerTitle:
       safeText(source.headerTitle, defaults.headerTitle, 255) ||
       defaults.headerTitle,
-    headerSubtitle: safeText(
-      source.headerSubtitle,
+    headerSubtitle:
+      safeText(source.headerSubtitle, defaults.headerSubtitle, 255) ||
       defaults.headerSubtitle,
-      255
-    ) || defaults.headerSubtitle,
     headerChiefRank: safeText(
       source.headerChiefRank,
       defaults.headerChiefRank,
