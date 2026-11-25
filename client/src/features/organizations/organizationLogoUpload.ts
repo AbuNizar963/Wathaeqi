@@ -8,11 +8,12 @@ const MAX_SOURCE_LOGO_PIXELS = 60_000_000;
 const INITIAL_MAX_DIMENSION = 1600;
 const MINIMUM_DIMENSION = 256;
 
-type OrganizationLogoContentType = "image/png" | "image/jpeg";
+type OrganizationLogoContentType = "image/png" | "image/jpeg" | "image/svg+xml";
 
 /**
  * Downsample organization logos before binary transport. The image stays in its
- * original PNG/JPEG format and within the server's strict upload size limit.
+ * original format and within the server's strict upload size limit. SVG files
+ * are passed through unchanged and validated by the server before storage.
  */
 export async function prepareOrganizationLogoUpload(
   file: File
@@ -21,8 +22,19 @@ export async function prepareOrganizationLogoUpload(
   if (file.size > MAX_SOURCE_LOGO_BYTES) {
     throw new Error("حجم ملف الشعار الأصلي يجب ألا يتجاوز 5 ميغابايت");
   }
+  const isSvg =
+    file.type === "image/svg+xml" ||
+    (/\.svg$/i.test(file.name) &&
+      (file.type === "" || file.type === "application/octet-stream"));
+  if (isSvg) {
+    if (file.size > MAX_ORGANIZATION_LOGO_BYTES) {
+      throw new Error("حجم ملف SVG يجب ألا يتجاوز 2.5 ميغابايت");
+    }
+    return { blob: file, contentType: "image/svg+xml" };
+  }
+
   if (file.type !== "image/png" && file.type !== "image/jpeg") {
-    throw new Error("صيغة الشعار يجب أن تكون PNG أو JPG");
+    throw new Error("صيغة الشعار يجب أن تكون SVG أو PNG أو JPG");
   }
 
   const objectUrl = URL.createObjectURL(file);

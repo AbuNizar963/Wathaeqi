@@ -55,6 +55,47 @@ describe("prepared organization logo size", () => {
     }
   );
 
+  it("passes SVG files through unchanged", async () => {
+    const source = [
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">',
+      '<path d="M0 0 L10 10"/>',
+      "</svg>",
+    ].join("");
+    const file = new File([source], "organization-logo.svg", {
+      type: "image/svg+xml",
+    });
+
+    const result = await prepareOrganizationLogoUpload(file);
+
+    expect(result.blob).toBe(file);
+    expect(result.contentType).toBe("image/svg+xml");
+  });
+
+  it("recognizes Android SVG files with a generic MIME type", async () => {
+    const file = new File(
+      ['<svg xmlns="http://www.w3.org/2000/svg"/>'],
+      "organization-logo.svg",
+      { type: "application/octet-stream" }
+    );
+
+    const result = await prepareOrganizationLogoUpload(file);
+
+    expect(result.blob).toBe(file);
+    expect(result.contentType).toBe("image/svg+xml");
+  });
+
+  it("rejects SVG files larger than the server upload limit", async () => {
+    const file = new File(
+      [new Uint8Array(MAX_ORGANIZATION_LOGO_BYTES + 1)],
+      "organization-logo.svg",
+      { type: "image/svg+xml" }
+    );
+
+    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow(
+      "2.5 ميغابايت"
+    );
+  });
+
   it("automatically downsizes valid images larger than 40 megapixels", async () => {
     const canvas = {
       width: 0,

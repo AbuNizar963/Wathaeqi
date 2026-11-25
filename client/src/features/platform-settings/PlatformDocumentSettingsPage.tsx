@@ -401,8 +401,8 @@ export default function PlatformDocumentSettingsPage() {
                           }}
                         />
                         <p className="text-xs text-muted-foreground">
-                          PNG أو JPG، بحد أقصى 5 ميغابايت. احتفظ بخلفية شفافة
-                          عند الحاجة.
+                          SVG أو PNG أو JPG، بحد أقصى 2.5 ميغابايت بعد التجهيز.
+                          تُفحص ملفات SVG على الخادم قبل حفظها.
                         </p>
                         <p className="text-xs text-muted-foreground">
                           يُحفظ الشعار مباشرة بعد اكتمال الرفع، ويُعاد تحميل

@@ -2,6 +2,7 @@ import express, { type Express, type RequestHandler } from "express";
 import { randomUUID } from "node:crypto";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
+import { isSafeSvgLogo } from "./features/organizations/organizationLogoValidation";
 import { ownerApiRouter } from "./ownerApiRouter";
 import { createContext } from "./_core/context";
 import { serveStatic } from "./_core/static";
@@ -243,8 +244,12 @@ export function createApp(
         typeof rawContentType === "string"
           ? rawContentType.split(";")[0]?.trim()
           : undefined;
-      if (contentType !== "image/png" && contentType !== "image/jpeg") {
-        res.status(415).json({ error: "صيغة الشعار يجب أن تكون PNG أو JPG" });
+      if (
+        contentType !== "image/png" &&
+        contentType !== "image/jpeg" &&
+        contentType !== "image/svg+xml"
+      ) {
+        res.status(415).json({ error: "صيغة الشعار يجب أن تكون SVG أو PNG أو JPG" });
         return;
       }
 
@@ -275,6 +280,12 @@ export function createApp(
         (contentType === "image/jpeg" && !isJpeg)
       ) {
         res.status(415).json({ error: "محتوى الصورة لا يطابق صيغتها" });
+        return;
+      }
+      if (contentType === "image/svg+xml" && !isSafeSvgLogo(body)) {
+        res.status(415).json({
+          error: "ملف SVG غير صالح أو يحتوي على عناصر غير مسموح بها",
+        });
         return;
       }
 
