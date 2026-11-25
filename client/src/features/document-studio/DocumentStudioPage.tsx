@@ -45,6 +45,11 @@ import DocumentEditor from "./DocumentEditor";
 import DocumentLetterhead from "./DocumentLetterhead";
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 import DocumentWatermark from "./DocumentWatermark";
+import {
+  DOCUMENT_RECIPIENT_LABEL_KEY,
+  DOCUMENT_RECIPIENT_VALUE_KEY,
+  getDocumentRecipientFields,
+} from "./documentRecipient";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import {
   isDocumentFormDirty,
@@ -480,7 +485,11 @@ export default function DocumentStudioPage() {
         ),
         getDocumentSystemVariables()
       ),
-      fieldValues: documentFieldValues,
+      fieldValues: {
+        ...documentFieldValues,
+        [DOCUMENT_RECIPIENT_LABEL_KEY]: documentRecipient.label,
+        [DOCUMENT_RECIPIENT_VALUE_KEY]: documentRecipient.value,
+      },
       documentDate: validDate,
       templateId: selectedTemplateId,
       templateRevision: selectedTemplateRevision,
@@ -728,6 +737,7 @@ export default function DocumentStudioPage() {
         templateRevision: selectedTemplateRevision,
       })
     : false;
+  const documentRecipient = getDocumentRecipientFields(documentFieldValues);
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1468,6 +1478,51 @@ export default function DocumentStudioPage() {
                 </div>
               </div>
 
+              <div
+                className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
+              >
+                <div className="space-y-1">
+                  <label
+                    htmlFor="document-recipient-label"
+                    className="text-sm font-medium"
+                  >
+                    تسمية جهة التوجيه
+                  </label>
+                  <Input
+                    id="document-recipient-label"
+                    value={documentRecipient.label}
+                    onChange={event =>
+                      setDocumentFieldValues(current => ({
+                        ...current,
+                        [DOCUMENT_RECIPIENT_LABEL_KEY]: event.target.value,
+                      }))
+                    }
+                    placeholder="إلى"
+                    disabled={!canEditDocument}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label
+                    htmlFor="document-recipient-value"
+                    className="text-sm font-medium"
+                  >
+                    الجهة المستلمة
+                  </label>
+                  <Input
+                    id="document-recipient-value"
+                    value={documentRecipient.value}
+                    onChange={event =>
+                      setDocumentFieldValues(current => ({
+                        ...current,
+                        [DOCUMENT_RECIPIENT_VALUE_KEY]: event.target.value,
+                      }))
+                    }
+                    placeholder="مثال: الإدارة العامة"
+                    disabled={!canEditDocument}
+                  />
+                </div>
+              </div>
+
               {documentTemplateFields.length > 0 && !previewMode ? (
                 <section className="space-y-3 rounded-lg border bg-muted/20 p-3 document-studio-no-print">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1613,6 +1668,14 @@ export default function DocumentStudioPage() {
                     date={formatArabicDate(makeDocumentDate(documentDate))}
                   />
                   <div className="pt-6">
+                    {documentRecipient.value ? (
+                      <p className="mb-4 text-right">
+                        <span className="font-semibold">
+                          {documentRecipient.label}:
+                        </span>{" "}
+                        {documentRecipient.value}
+                      </p>
+                    ) : null}
                     {documentSubject ? (
                       <p className="mb-4 text-right font-semibold">
                         الموضوع: {documentSubject}
