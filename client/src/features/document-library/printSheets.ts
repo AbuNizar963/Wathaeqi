@@ -32,6 +32,11 @@ export interface PrintWindowContent {
   title?: string;
 }
 
+/** Android browsers are more reliable when printing follows an explicit tap. */
+export function requiresManualPrint(userAgent: string): boolean {
+  return /Android/i.test(userAgent);
+}
+
 function safeImageSource(source: string): string {
   if (/^data:image\/(?:png|jpeg|webp|gif|svg\+xml);base64,/i.test(source)) {
     return source;
@@ -258,8 +263,31 @@ export async function openPrintWindow(
     .cell { min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; border: .2mm solid #e2e8f0; background: #fff; direction: rtl; }
     .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
     @media screen { body { background: #e2e8f0; padding: 8mm 0; } .sheet { margin: 0 auto 8mm; box-shadow: 0 2mm 8mm rgba(15,23,42,.18); } }
+    .print-action { position: sticky; top: 0; z-index: 10; display: block; width: min(92%, 420px); min-height: 48px; margin: 12px auto; padding: 12px 18px; border: 0; border-radius: 10px; background: #155eef; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    .print-help { margin: 0 auto 12px; padding: 0 16px; text-align: center; font-size: 14px; }
+    @media print { .print-action, .print-help { display: none !important; } }
   `;
   doc.head.append(style);
+  const manualPrint = requiresManualPrint(navigator.userAgent);
+  if (manualPrint) {
+    const action = doc.createElement("button");
+    action.type = "button";
+    action.className = "print-action";
+    action.textContent = "اضغط هنا لفتح الطباعة";
+    action.addEventListener("click", () => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch {
+        const help = doc.querySelector<HTMLElement>(".print-help");
+        if (help) help.textContent = "تعذر فتح نافذة الطباعة. افتح قائمة المتصفح واختر طباعة.";
+      }
+    });
+    const help = doc.createElement("p");
+    help.className = "print-help";
+    help.textContent = "تم تجهيز الوثيقة. اضغط الزر لعرض خيارات الطباعة أو حفظ PDF.";
+    doc.body.append(action, help);
+  }
   sheets.forEach((sheetPages, sheetIndex) => {
     const sheet = doc.createElement("section");
     sheet.className = "sheet";
@@ -333,5 +361,5 @@ export async function openPrintWindow(
   );
   await new Promise(resolve => window.setTimeout(resolve, 350));
   printWindow.focus();
-  printWindow.print();
+  if (!manualPrint) printWindow.print();
 }
