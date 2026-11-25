@@ -67,6 +67,7 @@ describe("isSafeSvgLogo", () => {
     '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill: url(https://example.com/a.svg)" d="M0 0"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><path style="@import url(https://example.com/x.css)" d="M0 0"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><style>@import url(https://example.com/a.css);</style></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>.mark { fill: u/**/rl(https://example.com/a.svg); }</style></svg>',
     '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"/>',
     '<?xml-stylesheet href="https://example.com/a.css"?><svg xmlns="http://www.w3.org/2000/svg"/>',
     '<svg xmlns="http://www.w3.org/2000/svg"><!-- malformed comment --!><path d="M0 0"/></svg>',
