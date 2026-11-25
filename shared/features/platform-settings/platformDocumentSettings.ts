@@ -13,7 +13,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   headerChiefRank: "",
   headerChiefName: "",
   headerShowLogo: true,
-  headerLogoSize: 120,
+  headerLogoSize: 160,
   headerTopPaddingMm: 0,
   headerHorizontalPaddingMm: 0,
   headerBottomPaddingMm: 6,
@@ -70,8 +70,8 @@ export type PlatformDocumentSettings = {
 export const MAX_WATERMARK_OPACITY_PERCENT = 60;
 export const MIN_WATERMARK_SCALE_PERCENT = 40;
 export const MAX_WATERMARK_SCALE_PERCENT = 180;
-export const MAX_HEADER_LOGO_SIZE = 128;
-export const MIN_HEADER_LOGO_SIZE = 32;
+export const MAX_HEADER_LOGO_SIZE = 160;
+export const MIN_HEADER_LOGO_SIZE = 90;
 export const MAX_HEADER_PADDING_MM = 30;
 export const MAX_PAGE_MARGIN_MM = 35;
 export const MIN_DIVIDER_WIDTH_PT = 0.5;
