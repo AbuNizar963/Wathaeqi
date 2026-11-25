@@ -2385,10 +2385,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       text: values['watermarkText']?.toString() ?? 'وزارة الداخلية',
     );
     final titleController = TextEditingController(
-      text: values['headerTitle']?.toString() ?? '',
+      text: values['headerTitle']?.toString().trim().isNotEmpty == true
+          ? values['headerTitle'].toString()
+          : 'المقدم غسان صالح كنو',
     );
     final subtitleController = TextEditingController(
-      text: values['headerSubtitle']?.toString() ?? '',
+      text: values['headerSubtitle']?.toString().trim().isNotEmpty == true
+          ? values['headerSubtitle'].toString()
+          : 'رئيس قسم شرطة الشهباء',
     );
     final rankController = TextEditingController(
       text: values['headerChiefRank']?.toString() ?? '',
