@@ -11,10 +11,13 @@ export function buildDocumentWatermarkCss(
   const safeOpacity = Number.isFinite(opacity)
     ? Math.min(0.6, Math.max(0, opacity))
     : DOCUMENT_WATERMARK_DEFAULT_OPACITY;
+  const safeScale = Number.isFinite(scale)
+    ? Math.min(1.8, Math.max(0.4, scale))
+    : 1;
   return [
     ".document-watermark-layer {",
     `  --document-watermark-opacity: ${safeOpacity};`,
-    `  --document-watermark-scale: ${Number.isFinite(scale) ? Math.min(1.8, Math.max(0.4, scale)) : 1};`,
+    `  --document-watermark-scale: ${safeScale};`,
     "}",
   ].join("\n");
 }
