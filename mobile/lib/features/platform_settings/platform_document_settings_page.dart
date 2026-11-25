@@ -136,9 +136,12 @@ class _PlatformDocumentSettingsPageState
 
   void _resizeRows(bool header, int count) {
     final current = header ? _pageHeaderRows : _pageFooterRows;
-    final next = List.generate(count, (index) => index < current.length
-        ? Map<String, String>.from(current[index])
-        : <String, String>{'right': '', 'left': ''});
+    final next = List.generate(
+      count,
+      (index) => index < current.length
+          ? Map<String, String>.from(current[index])
+          : <String, String>{'right': '', 'left': ''},
+    );
     setState(() => header ? _pageHeaderRows = next : _pageFooterRows = next);
   }
 
@@ -147,37 +150,67 @@ class _PlatformDocumentSettingsPageState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(children: [
-          Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w800))),
-          SizedBox(width: 120, child: DropdownButtonFormField<int>(
-            isExpanded: true,
-            initialValue: rows.length,
-            decoration: const InputDecoration(labelText: 'عدد السطور'),
-            items: List.generate(13, (count) => DropdownMenuItem(value: count, child: Text('$count سطر'))),
-            onChanged: _saving ? null : (value) { if (value != null) _resizeRows(header, value); },
-          )),
-        ]),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+            SizedBox(
+              width: 120,
+              child: DropdownButtonFormField<int>(
+                isExpanded: true,
+                initialValue: rows.length,
+                decoration: const InputDecoration(labelText: 'عدد السطور'),
+                items: List.generate(
+                  13,
+                  (count) =>
+                      DropdownMenuItem(value: count, child: Text('$count سطر')),
+                ),
+                onChanged: _saving
+                    ? null
+                    : (value) {
+                        if (value != null) _resizeRows(header, value);
+                      },
+              ),
+            ),
+          ],
+        ),
         for (var index = 0; index < rows.length; index++)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Row(children: [
-              Expanded(child: TextFormField(
-                key: ValueKey('${header ? 'h' : 'f'}-r-$index'),
-                initialValue: rows[index]['right'],
-                enabled: !_saving,
-                decoration: InputDecoration(labelText: 'السطر ${index + 1} — يمين'),
-                onChanged: (value) => setState(() => rows[index]['right'] = value),
-              )),
-              const SizedBox(width: 8),
-              Expanded(child: TextFormField(
-                key: ValueKey('${header ? 'h' : 'f'}-l-$index'),
-                initialValue: rows[index]['left'],
-                enabled: !_saving,
-                textDirection: TextDirection.ltr,
-                decoration: InputDecoration(labelText: 'السطر ${index + 1} — يسار'),
-                onChanged: (value) => setState(() => rows[index]['left'] = value),
-              )),
-            ]),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    key: ValueKey('${header ? 'h' : 'f'}-r-$index'),
+                    initialValue: rows[index]['right'],
+                    enabled: !_saving,
+                    decoration: InputDecoration(
+                      labelText: 'السطر ${index + 1} — يمين',
+                    ),
+                    onChanged: (value) =>
+                        setState(() => rows[index]['right'] = value),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    key: ValueKey('${header ? 'h' : 'f'}-l-$index'),
+                    initialValue: rows[index]['left'],
+                    enabled: !_saving,
+                    textDirection: TextDirection.ltr,
+                    decoration: InputDecoration(
+                      labelText: 'السطر ${index + 1} — يسار',
+                    ),
+                    onChanged: (value) =>
+                        setState(() => rows[index]['left'] = value),
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );
@@ -723,9 +756,8 @@ class _PlatformDocumentSettingsPageState
                           40,
                           180,
                           '%',
-                          (value) => setState(
-                            () => _watermarkScalePercent = value,
-                          ),
+                          (value) =>
+                              setState(() => _watermarkScalePercent = value),
                         ),
                         Text(
                           'يُطبّق الحجم على نص العلامة المائية وشعارها في المعاينة والطباعة. النطاق من 40% إلى 180%.',
