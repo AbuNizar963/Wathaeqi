@@ -795,7 +795,6 @@ export default function PlatformDocumentSettingsPage() {
                   className="w-full accent-primary"
                 />
               </label>
-              
             </section>
 
             <div className="h-px bg-border" />
