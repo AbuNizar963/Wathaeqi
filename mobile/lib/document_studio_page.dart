@@ -1209,7 +1209,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       ..remove('number')
       ..remove('subject');
     if (_selectedDocument == null && _selectedTemplateId != null) {
-      final missingRequiredFields = _templateFields
+      final selectedTemplateFields = _templates
+          .where((template) => template.id == _selectedTemplateId)
+          .expand((template) => template.fields);
+      final missingRequiredFields = selectedTemplateFields
           .where(
             (field) =>
                 field.required &&
@@ -1794,18 +1797,18 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                         TextButton(
                           onPressed: canEdit
                               ? () {
-                                  setState(() {
-                                    _showManualDocumentEditor =
-                                        !_showManualDocumentEditor;
-                                    if (_showManualDocumentEditor) {
-                                      _replaceDocumentEditor(
-                                        _applyFieldValues(
-                                          _templateBaseContent,
-                                          _fieldValues,
-                                        ),
-                                      );
-                                    }
-                                  });
+                                  final showEditor = !_showManualDocumentEditor;
+                                  if (showEditor) {
+                                    _replaceDocumentEditor(
+                                      _applyFieldValues(
+                                        _templateBaseContent,
+                                        _fieldValues,
+                                      ),
+                                    );
+                                  }
+                                  setState(
+                                    () => _showManualDocumentEditor = showEditor,
+                                  );
                                 }
                               : null,
                           child: Text(
