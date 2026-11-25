@@ -462,7 +462,11 @@ function validateNodes(nodes: unknown[], parent?: string): boolean {
 function hasSvgRootNamespace(root: XmlNode): boolean {
   const attributes = root[":@"];
 
-  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+  if (
+    !attributes ||
+    typeof attributes !== "object" ||
+    Array.isArray(attributes)
+  ) {
     return false;
   }
 
