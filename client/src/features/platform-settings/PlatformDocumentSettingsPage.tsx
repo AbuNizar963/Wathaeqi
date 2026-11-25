@@ -182,7 +182,10 @@ export default function PlatformDocumentSettingsPage() {
       ? applyDocumentTemplateVariables(previewDocument.content, {
           number: previewDocument.serialCode,
         })
-      : previewDocument?.content ?? { type: "doc", content: [{ type: "paragraph" }] };
+      : (previewDocument?.content ?? {
+          type: "doc",
+          content: [{ type: "paragraph" }],
+        });
   const previewDateValue = previewDocument
     ? new Date(previewDocument.documentDate)
     : null;
@@ -508,7 +511,10 @@ export default function PlatformDocumentSettingsPage() {
                   <label htmlFor="watermark-scale" className="font-semibold">
                     حجم العلامة المائية
                   </label>
-                  <output htmlFor="watermark-scale" className="font-semibold tabular-nums">
+                  <output
+                    htmlFor="watermark-scale"
+                    className="font-semibold tabular-nums"
+                  >
                     {values.watermarkScalePercent}%
                   </output>
                 </div>
@@ -520,7 +526,10 @@ export default function PlatformDocumentSettingsPage() {
                   step={5}
                   value={values.watermarkScalePercent}
                   onChange={event =>
-                    updateValue("watermarkScalePercent", Number(event.target.value))
+                    updateValue(
+                      "watermarkScalePercent",
+                      Number(event.target.value)
+                    )
                   }
                   className="w-full accent-primary"
                 />
@@ -991,7 +1000,10 @@ export default function PlatformDocumentSettingsPage() {
                 جارٍ تحميل الوثائق لعرض معاينة حقيقية...
               </p>
             ) : documentsQuery.isError ? (
-              <p role="alert" className="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">
+              <p
+                role="alert"
+                className="rounded-lg border border-destructive/40 p-3 text-sm text-destructive"
+              >
                 تعذر تحميل وثيقة للمعاينة: {documentsQuery.error.message}
               </p>
             ) : previewDocuments.length > 0 ? (
@@ -1027,7 +1039,10 @@ export default function PlatformDocumentSettingsPage() {
                 logoUrl={logoUrl || null}
                 dividerColor={values.headerDividerColor}
                 headerSettings={values}
-                serial={previewDocument?.serialCode || (previewDocument ? "مسودة" : undefined)}
+                serial={
+                  previewDocument?.serialCode ||
+                  (previewDocument ? "مسودة" : undefined)
+                }
                 date={previewDate}
               />
               <div className="pt-6">
@@ -1045,7 +1060,9 @@ export default function PlatformDocumentSettingsPage() {
                   />
                 ) : null}
                 <DocumentSignatureBlock
-                  organizationName={organizationContext.data?.organizationName ?? "الجهة"}
+                  organizationName={
+                    organizationContext.data?.organizationName ?? "الجهة"
+                  }
                   unitName=""
                   chiefRank=""
                   chiefName=""
@@ -1059,7 +1076,9 @@ export default function PlatformDocumentSettingsPage() {
                     className="grid grid-cols-2 gap-4 font-semibold"
                   >
                     <span className="text-right">{row.right}</span>
-                    <span className="text-left" dir="ltr">{row.left}</span>
+                    <span className="text-left" dir="ltr">
+                      {row.left}
+                    </span>
                   </div>
                 ))}
                 {!values.pageFooterRows.length ? (
@@ -1069,7 +1088,8 @@ export default function PlatformDocumentSettingsPage() {
             </ResponsiveA4Preview>
             {settingsQuery.data?.updatedAt ? (
               <p className="text-xs text-muted-foreground">
-                آخر تحديث محفوظ: {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
+                آخر تحديث محفوظ:{" "}
+                {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
               </p>
             ) : null}
           </Card>
