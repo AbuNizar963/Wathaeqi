@@ -243,37 +243,33 @@ export async function printHtmlDocument(
   html: string
 ): Promise<void> {
   printWindow.opener = null;
-  try {
-    // Keep the existing browsing context and write the final document into it.
-    // Navigating a popup to a Blob URL is unreliable for opaque-origin pages,
-    // and pagehide during that navigation can revoke the page-image Blob URLs.
-    const document = printWindow.document;
-    document.open();
-    document.write(html);
-    document.close();
+  // Keep the existing browsing context and write the final document into it.
+  // Navigating a popup to a Blob URL is unreliable for opaque-origin pages,
+  // and pagehide during that navigation can revoke the page-image Blob URLs.
+  const document = printWindow.document;
+  document.open();
+  document.write(html);
+  document.close();
 
-    await document.fonts?.ready;
-    await Promise.all(
-      Array.from(document.images).map(async image => {
-        if (!image.complete) {
-          await new Promise<void>(resolve => {
-            image.addEventListener("load", () => resolve(), { once: true });
-            image.addEventListener("error", () => resolve(), { once: true });
-          });
-        }
-        if (!image.complete || image.naturalWidth === 0) {
-          throw new Error("تعذر تحميل إحدى صور الوثيقة للطباعة");
-        }
-        if (image.decode) await image.decode();
-      })
-    );
-    await new Promise(resolve => printWindow.setTimeout(resolve, 100));
+  await document.fonts?.ready;
+  await Promise.all(
+    Array.from(document.images).map(async image => {
+      if (!image.complete) {
+        await new Promise<void>(resolve => {
+          image.addEventListener("load", () => resolve(), { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
+        });
+      }
+      if (!image.complete || image.naturalWidth === 0) {
+        throw new Error("تعذر تحميل إحدى صور الوثيقة للطباعة");
+      }
+      if (image.decode) await image.decode();
+    })
+  );
+  await new Promise(resolve => printWindow.setTimeout(resolve, 100));
 
-    printWindow.focus();
-    printWindow.print();
-  } catch (error) {
-    throw error;
-  }
+  printWindow.focus();
+  printWindow.print();
 }
 
 /** Serialize a fully rendered document before navigating to its printable URL. */
