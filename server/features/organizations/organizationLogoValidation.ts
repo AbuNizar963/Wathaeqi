@@ -1,183 +1,205 @@
+import { TextDecoder } from "node:util";
+import { XMLParser, XMLValidator } from "fast-xml-parser";
+
+const MAX_SVG_BYTES = 2.5 * 1024 * 1024;
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+const XLINK_NAMESPACE = "http://www.w3.org/1999/xlink";
+
 const SVG_ELEMENTS = new Set([
-  "svg",
-  "g",
-  "path",
-  "rect",
-  "circle",
-  "ellipse",
-  "line",
-  "polyline",
-  "polygon",
-  "defs",
-  "linearGradient",
-  "radialGradient",
-  "stop",
-  "clipPath",
-  "mask",
-  "title",
-  "desc",
-  "text",
-  "tspan",
+  "svg", "g", "defs", "symbol", "use", "path", "rect", "circle",
+  "ellipse", "line", "polyline", "polygon", "text", "tspan", "textPath",
+  "title", "desc", "metadata", "linearGradient", "radialGradient", "stop",
+  "pattern", "clipPath", "mask", "marker", "filter", "feBlend",
+  "feColorMatrix", "feComponentTransfer", "feFuncR", "feFuncG", "feFuncB",
+  "feFuncA", "feComposite", "feConvolveMatrix", "feDiffuseLighting",
+  "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood",
+  "feGaussianBlur", "feImage", "feMerge", "feMergeNode", "feMorphology",
+  "feOffset", "fePointLight", "feSpecularLighting", "feSpotLight",
+  "feTile", "feTurbulence",
 ]);
 
 const SVG_ATTRIBUTES = new Set([
-  "xmlns",
-  "viewBox",
-  "width",
-  "height",
-  "x",
-  "y",
-  "x1",
-  "y1",
-  "x2",
-  "y2",
-  "cx",
-  "cy",
-  "r",
-  "rx",
-  "ry",
-  "d",
-  "points",
-  "fill",
-  "fill-rule",
-  "fill-opacity",
-  "stroke",
-  "stroke-width",
-  "stroke-linecap",
-  "stroke-linejoin",
-  "stroke-miterlimit",
-  "stroke-dasharray",
-  "stroke-dashoffset",
-  "stroke-opacity",
-  "opacity",
-  "transform",
-  "preserveAspectRatio",
-  "id",
-  "offset",
-  "stop-color",
-  "stop-opacity",
-  "gradientUnits",
-  "gradientTransform",
-  "spreadMethod",
-  "clip-rule",
-  "clip-path",
-  "mask",
-  "font-family",
-  "font-size",
-  "font-style",
-  "font-weight",
-  "text-anchor",
-  "dominant-baseline",
-  "alignment-baseline",
-  "letter-spacing",
-  "dx",
-  "dy",
-  "textLength",
-  "lengthAdjust",
+  "xmlns", "xmlns:xlink", "version", "viewBox", "width", "height",
+  "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry",
+  "d", "points", "pathLength", "fill", "fill-rule", "fill-opacity",
+  "fill-rule", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin",
+  "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset",
+  "stroke-opacity", "opacity", "transform", "transform-origin",
+  "preserveAspectRatio", "id", "class", "role", "focusable",
+  "aria-label", "aria-labelledby", "aria-hidden", "xml:space",
+  "offset", "stop-color", "stop-opacity", "gradientUnits",
+  "gradientTransform", "spreadMethod", "clip-rule", "clip-path", "mask",
+  "maskUnits", "maskContentUnits", "clipPathUnits", "patternUnits",
+  "patternContentUnits", "patternTransform", "markerWidth", "markerHeight",
+  "markerUnits", "marker-start", "marker-mid", "marker-end", "refX", "refY",
+  "orient", "font-family", "font-size", "font-style", "font-weight",
+  "font-variant", "text-anchor", "dominant-baseline", "alignment-baseline",
+  "letter-spacing", "word-spacing", "writing-mode", "direction", "dx", "dy",
+  "textLength", "lengthAdjust", "href", "xlink:href", "filter",
+  "color-interpolation", "color-interpolation-filters", "flood-color",
+  "flood-opacity", "lighting-color", "in", "in2", "result", "mode",
+  "values", "type", "operator", "k1", "k2", "k3", "k4", "stdDeviation",
+  "edgeMode", "kernelMatrix", "kernelUnitLength", "targetX", "targetY",
+  "order", "divisor", "bias", "scale", "xChannelSelector",
+  "yChannelSelector", "baseFrequency", "numOctaves", "seed",
+  "stitchTiles", "surfaceScale", "diffuseConstant", "specularConstant",
+  "specularExponent", "limitingConeAngle", "azimuth", "elevation",
+  "pointsAtX", "pointsAtY", "pointsAtZ", "tableValues", "slope",
+  "intercept", "amplitude", "exponent", "color", "startOffset",
+  "method", "spacing", "side", "lengthAdjust", "font-size-adjust",
+  "font-stretch", "font-kerning", "font-feature-settings",
 ]);
 
-const SAFE_XML_ENTITIES = /&(?:amp|quot|apos|lt|gt);/g;
-const XML_DECLARATION = /^\s*<\?xml[^>]*\?>/i;
+const SAFE_STYLE_PROPERTIES = new Set([
+  "color", "fill", "fill-opacity", "fill-rule", "stroke", "stroke-width",
+  "stroke-linecap", "stroke-linejoin", "stroke-miterlimit",
+  "stroke-dasharray", "stroke-dashoffset", "stroke-opacity", "opacity",
+  "font-family", "font-size", "font-style", "font-weight", "text-anchor",
+  "dominant-baseline", "alignment-baseline", "letter-spacing",
+  "word-spacing", "text-decoration", "visibility", "display",
+  "clip-path", "clip-rule", "mask", "filter",
+]);
 
-/**
- * Accepts a deliberately small, static SVG subset for organization logos.
- * Active content, CSS, external references, and unknown elements/attributes
- * are rejected rather than stored and later rendered.
- */
-// prettier-ignore
-export function isSafeSvgLogo(bytes: Buffer): boolean {
-  const source = bytes.toString("utf8");
-  if (!source.trim() || source.includes("\u0000")) return false;
+const XML_PARSER = new XMLParser({
+  preserveOrder: true,
+  ignoreAttributes: false,
+  attributeNamePrefix: "@_",
+  textNodeName: "#text",
+  commentPropName: "#comment",
+  cdataPropName: "#cdata",
+  processEntities: false,
+  htmlEntities: false,
+  allowBooleanAttributes: false,
+  trimValues: false,
+});
 
-  const withoutPreamble = source
-    .replace(/^\uFEFF/, "")
-    .replace(XML_DECLARATION, "");
+function isSafeLocalReference(value: string): boolean {
+  return /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/i.test(value.trim());
+}
 
-  if (/<!DOCTYPE|<!ENTITY|<\?|<!(?!\[CDATA\[)/i.test(withoutPreamble)) {
+function isSafeStyle(value: string): boolean {
+  if (/[<>\\]|@import|expression\s*\(|javascript:|data:|https?:|\/\//i.test(value)) {
     return false;
   }
 
-  const tokens = [...withoutPreamble.matchAll(/<[^>]*>/g)];
-  if (tokens.length === 0) return false;
-
-  const stack: string[] = [];
-  let rootSeen = false;
-  let cursor = 0;
-
-  for (const tokenMatch of tokens) {
-    const token = tokenMatch[0];
-    const tokenIndex = tokenMatch.index ?? 0;
-    const textContent = withoutPreamble.slice(cursor, tokenIndex);
-    const textParent = stack[stack.length - 1];
-    if (
-      textContent.trim() &&
-      (!textParent ||
-        !["text", "tspan", "title", "desc"].includes(textParent))
-    ) {
+  for (const declaration of value.split(";")) {
+    if (!declaration.trim()) continue;
+    const separator = declaration.indexOf(":");
+    if (separator <= 0) return false;
+    const property = declaration.slice(0, separator).trim().toLowerCase();
+    const propertyValue = declaration.slice(separator + 1).trim();
+    if (!SAFE_STYLE_PROPERTIES.has(property) || !propertyValue) return false;
+    if (/url\s*\(/i.test(propertyValue) && !isSafeLocalReference(propertyValue)) {
       return false;
     }
-    if (textContent.replace(SAFE_XML_ENTITIES, "").includes("&")) return false;
-    cursor = tokenIndex + token.length;
-    const closing = /^<\/([A-Za-z][\w:-]*)\s*>$/.exec(token);
-    if (closing) {
-      if (stack.pop() !== closing[1]) return false;
-      continue;
-    }
-
-    const opening = /^<([A-Za-z][\w:-]*)([\s\S]*?)\s*(\/?)>$/.exec(token);
-    if (!opening) return false;
-
-    const [, element, rawAttributes, selfClosing] = opening;
-    if (!SVG_ELEMENTS.has(element)) return false;
-    if (!rootSeen) {
-      if (element !== "svg") return false;
-      rootSeen = true;
-    } else if (stack.length === 0) {
-      return false;
-    }
-
-    const attributePattern = /([A-Za-z_:][\w:.-]*)\s*=\s*(["'])(.*?)\2/g;
-    let match: RegExpExecArray | null;
-    let consumed = "";
-    while ((match = attributePattern.exec(rawAttributes)) !== null) {
-      const gap = rawAttributes.slice(consumed.length, match.index);
-      if (gap.trim()) return false;
-      const [, name, , value] = match;
-      if (!SVG_ATTRIBUTES.has(name)) return false;
-      if (name === "xmlns" && value !== "http://www.w3.org/2000/svg") {
-        return false;
-      }
-      const withoutLocalReferences = value.replace(
-        /url\(\s*#[A-Za-z_][\w.-]*\s*\)/gi,
-        ""
-      );
-      if (
-        name !== "xmlns" &&
-        /(?:javascript:|data:|https?:|url\s*\(|\\|<|>)/i.test(
-          withoutLocalReferences
-        )
-      ) {
-        return false;
-      }
-      const entitiesRemoved = value.replace(SAFE_XML_ENTITIES, "");
-      if (entitiesRemoved.includes("&")) return false;
-      consumed = rawAttributes.slice(0, attributePattern.lastIndex);
-    }
-    const rest = rawAttributes.slice(consumed.length);
-    if (rest.trim()) return false;
-
-    if (!selfClosing) stack.push(element);
+    if (/\b(var|attr)\s*\(/i.test(propertyValue)) return false;
   }
 
-  const trailingText = withoutPreamble.slice(cursor);
-  const textParent = stack[stack.length - 1];
+  return true;
+}
+
+function isSafeAttribute(name: string, value: string): boolean {
+  if (name.startsWith("on") || !SVG_ATTRIBUTES.has(name)) return false;
+
+  if (name === "xmlns") return value === SVG_NAMESPACE;
+  if (name === "xmlns:xlink") return value === XLINK_NAMESPACE;
+  if (name === "href" || name === "xlink:href") {
+    return /^#[A-Za-z_][\w:.-]*$/.test(value.trim());
+  }
+  if (name === "style") return isSafeStyle(value);
+
   if (
-    trailingText.trim() &&
-    (!textParent || !["text", "tspan", "title", "desc"].includes(textParent))
+    /(?:javascript:|data:|https?:|file:|blob:|ftp:|\/\/|@import|expression\s*\()/i.test(
+      value
+    )
   ) {
     return false;
   }
-  if (trailingText.replace(SAFE_XML_ENTITIES, "").includes("&")) return false;
 
-  return rootSeen && stack.length === 0;
+  if (/url\s*\(/i.test(value) && !isSafeLocalReference(value)) return false;
+  if (/[<>\\]/.test(value)) return false;
+  return true;
+}
+
+type XmlNode = Record<string, unknown>;
+
+function validateNodes(nodes: unknown[], parent?: string): boolean {
+  for (const item of nodes) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+    const node = item as XmlNode;
+
+    if (Object.hasOwn(node, "#comment") || Object.hasOwn(node, "#cdata")) {
+      continue;
+    }
+    if (Object.hasOwn(node, "#text")) {
+      const text = node["#text"];
+      if (typeof text !== "string") return false;
+      if (text.trim() && !["text", "tspan", "textPath", "title", "desc"].includes(parent ?? "")) {
+        return false;
+      }
+      continue;
+    }
+
+    const elementNames = Object.keys(node).filter(key => key !== ":@");
+    if (elementNames.length !== 1) return false;
+    const element = elementNames[0];
+    if (!SVG_ELEMENTS.has(element)) return false;
+
+    const attributes = node[":@"];
+    if (attributes !== undefined) {
+      if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) return false;
+      for (const [rawName, rawValue] of Object.entries(attributes as Record<string, unknown>)) {
+        if (!rawName.startsWith("@_") || typeof rawValue !== "string") return false;
+        const name = rawName.slice(2);
+        if (!isSafeAttribute(name, rawValue)) return false;
+      }
+    }
+
+    const children = node[element];
+    if (!Array.isArray(children) || !validateNodes(children, element)) return false;
+  }
+  return true;
+}
+
+/**
+ * Validates static SVG logos using an XML parser and an explicit SVG allowlist.
+ * It accepts common vector-editor output while rejecting active content,
+ * external resource loading, foreign namespaces, and unsafe CSS.
+ */
+export function isSafeSvgLogo(bytes: Buffer): boolean {
+  if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > MAX_SVG_BYTES) {
+    return false;
+  }
+
+  let source: string;
+  try {
+    source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return false;
+  }
+
+  if (!source.trim() || source.includes("\u0000")) return false;
+  if (/<!DOCTYPE|<!ENTITY|<\?(?!xml(?:\s|\?>))/i.test(source)) return false;
+
+  const withoutDeclaration = source
+    .replace(/^\uFEFF/, "")
+    .replace(/^\s*<\?xml\s+[^?]*\?>/i, "");
+
+  const validation = XMLValidator.validate(withoutDeclaration, {
+    allowBooleanAttributes: false,
+    unpairedTags: [],
+  });
+  if (validation !== true) return false;
+
+  try {
+    const parsed = XML_PARSER.parse(withoutDeclaration) as unknown[];
+    if (!Array.isArray(parsed) || parsed.length !== 1) return false;
+    const root = parsed[0];
+    if (!root || typeof root !== "object" || Array.isArray(root)) return false;
+    const rootNode = root as XmlNode;
+    if (!Object.hasOwn(rootNode, "svg")) return false;
+    return validateNodes(parsed);
+  } catch {
+    return false;
+  }
 }
