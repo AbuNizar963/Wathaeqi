@@ -460,13 +460,18 @@ export type OrganizationLogoSaveStage =
 export async function saveOrganizationLogo(
   organizationId: string,
   bytes: Buffer,
-  contentType: "image/png" | "image/jpeg",
+  contentType: "image/png" | "image/jpeg" | "image/svg+xml",
   onStage?: (stage: OrganizationLogoSaveStage) => void
 ): Promise<string> {
   onStage?.("organization_lookup");
   const row = await getOrganizationRowId(organizationId);
   if (!row) throw new Error("الجهة غير موجودة");
-  const extension = contentType === "image/png" ? "png" : "jpg";
+  const extension =
+    contentType === "image/png"
+      ? "png"
+      : contentType === "image/jpeg"
+        ? "jpg"
+        : "svg";
   const logoKey = `organizations/${organizationId}/logo-${Date.now()}.${extension}`;
   onStage?.("storage_upload");
   await getStorageProvider().upload(logoKey, bytes, {
