@@ -57,10 +57,10 @@ export default function PlatformDocumentPreview({
       ? applyDocumentTemplateVariables(previewDocument.content, {
           number: previewDocument.serialCode,
         })
-      : (previewDocument?.content ?? {
+      : previewDocument?.content ?? {
           type: "doc",
           content: [{ type: "paragraph" }],
-        });
+        };
 
   const dateValue = previewDocument
     ? new Date(previewDocument.documentDate)
