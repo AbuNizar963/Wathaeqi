@@ -96,16 +96,26 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
     return false;
   }
 
-  const tokens = withoutPreamble.match(/<[^>]*>/g);
-  if (!tokens?.length) return false;
-
-  const remainder = withoutPreamble.replace(/<[^>]*>/g, "");
-  if (remainder.trim().length > 0) return false;
+  const tokens = [...withoutPreamble.matchAll(/<[^>]*>/g)];
+  if (tokens.length === 0) return false;
 
   const stack: string[] = [];
   let rootSeen = false;
+  let cursor = 0;
 
-  for (const token of tokens) {
+  for (const tokenMatch of tokens) {
+    const token = tokenMatch[0];
+    const tokenIndex = tokenMatch.index ?? 0;
+    const textContent = withoutPreamble.slice(cursor, tokenIndex);
+    const textParent = stack[stack.length - 1];
+    if (
+      textContent.trim() &&
+      (!textParent || !["text", "tspan", "title", "desc"].includes(textParent))
+    ) {
+      return false;
+    }
+    if (textContent.replace(SAFE_XML_ENTITIES, "").includes("&")) return false;
+    cursor = tokenIndex + token.length;
     const closing = /^<\/([A-Za-z][\w:-]*)\s*>$/.exec(token);
     if (closing) {
       if (stack.pop() !== closing[1]) return false;
@@ -157,6 +167,16 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
 
     if (!selfClosing) stack.push(element);
   }
+
+  const trailingText = withoutPreamble.slice(cursor);
+  const textParent = stack[stack.length - 1];
+  if (
+    trailingText.trim() &&
+    (!textParent || !["text", "tspan", "title", "desc"].includes(textParent))
+  ) {
+    return false;
+  }
+  if (trailingText.replace(SAFE_XML_ENTITIES, "").includes("&")) return false;
 
   return rootSeen && stack.length === 0;
 }
