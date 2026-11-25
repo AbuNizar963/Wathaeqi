@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   Building2,
+  FolderOpen,
   Hash,
   ImagePlus,
   Info,
@@ -323,6 +324,8 @@ export default function DepartmentSettingsPage() {
   const [form, setForm] = useState<SettingsForm | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const galleryLogoInputRef = useRef<HTMLInputElement>(null);
+  const filesLogoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (settingsQuery.data && form === null) {
@@ -600,20 +603,57 @@ export default function DepartmentSettingsPage() {
                       </div>
                     )}
                     <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!canEdit || uploadLogo.isPending}
+                          onClick={() => galleryLogoInputRef.current?.click()}
+                        >
+                          <ImagePlus className="ml-2 h-4 w-4" aria-hidden="true" />
+                          من الاستديو
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={!canEdit || uploadLogo.isPending}
+                          onClick={() => filesLogoInputRef.current?.click()}
+                        >
+                          <FolderOpen className="ml-2 h-4 w-4" aria-hidden="true" />
+                          من ملفاتي
+                        </Button>
+                      </div>
                       <Input
-                        id="department-logo"
+                        ref={galleryLogoInputRef}
+                        id="department-logo-gallery"
                         type="file"
-                        accept="image/png,image/jpeg,image/svg+xml,.svg"
+                        accept="image/png,image/jpeg"
+                        className="sr-only"
+                        aria-label="اختيار شعار PNG أو JPG من الاستديو"
                         disabled={!canEdit || uploadLogo.isPending}
                         onChange={event => {
                           const file = event.target.files?.[0];
-                          event.target.value = "";
+                          event.currentTarget.value = "";
+                          if (file) void handleLogoFile(file);
+                        }}
+                      />
+                      <Input
+                        ref={filesLogoInputRef}
+                        id="department-logo-files"
+                        type="file"
+                        accept=".svg,.png,.jpg,.jpeg"
+                        className="sr-only"
+                        aria-label="اختيار شعار SVG أو PNG أو JPG من ملفاتي"
+                        disabled={!canEdit || uploadLogo.isPending}
+                        onChange={event => {
+                          const file = event.target.files?.[0];
+                          event.currentTarget.value = "";
                           if (file) void handleLogoFile(file);
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        PNG أو JPG بحجم أقصى 2.5 ميغابايت. يُرفع الشعار مباشرة
-                        ويُستخدم في ترويسة المخرجات.
+                        اختر PNG أو JPG من الاستديو، أو SVG أو صورة من ملفاتي. الحد الأقصى 2.5 ميغابايت.
+                        يُرفع الشعار مباشرة ويُستخدم في ترويسة المخرجات.
                       </p>
                       {logoError ? (
                         <p className="text-xs text-destructive">{logoError}</p>
