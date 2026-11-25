@@ -11,6 +11,7 @@ class DocumentPaper extends StatelessWidget {
     required this.showWatermarkText,
     required this.watermarkOpacity,
     this.watermarkText = 'وزارة الداخلية',
+    this.watermarkScalePercent = 100,
     this.logoUrl,
     this.fixedWidth,
   });
@@ -24,6 +25,7 @@ class DocumentPaper extends StatelessWidget {
   final bool showWatermarkText;
   final double watermarkOpacity;
   final String watermarkText;
+  final double watermarkScalePercent;
   final String? logoUrl;
   final double? fixedWidth;
 
@@ -36,6 +38,8 @@ class DocumentPaper extends StatelessWidget {
             (constraints.hasBoundedWidth ? constraints.maxWidth : a4Width);
         final pageHeight = pageWidth * a4Height / a4Width;
         final logo = logoUrl?.trim();
+        final watermarkScale =
+            (watermarkScalePercent / 100).clamp(0.4, 1.8).toDouble();
         return Container(
           key: const ValueKey('document-a4-paper'),
           width: pageWidth,
@@ -91,13 +95,14 @@ class DocumentPaper extends StatelessWidget {
                                         ),
                                         painter: _DocumentWatermarkPainter(
                                           watermarkText,
+                                          watermarkScale,
                                         ),
                                       ),
                                     if (logo != null && logo.isNotEmpty)
                                       Center(
                                         child: FractionallySizedBox(
-                                          widthFactor: 0.9375,
-                                          heightFactor: 0.9375,
+                                          widthFactor: 0.9375 * watermarkScale,
+                                          heightFactor: 0.9375 * watermarkScale,
                                           child: Image.network(
                                             logo,
                                             fit: BoxFit.contain,
@@ -161,9 +166,10 @@ class _DocumentPageBreakPainter extends CustomPainter {
 /// Reference mosaic: 33 horizontal staggered rows and 13 columns, Aref Ruqaa
 /// 11 pt at A4 scale, 6.16 mm horizontal gap and ~3 mm page inset.
 class _DocumentWatermarkPainter extends CustomPainter {
-  const _DocumentWatermarkPainter(this.watermarkText);
+  const _DocumentWatermarkPainter(this.watermarkText, this.scale);
 
   final String watermarkText;
+  final double scale;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -174,7 +180,7 @@ class _DocumentWatermarkPainter extends CustomPainter {
         style: TextStyle(
           color: const Color(0xFF73777D),
           fontFamily: 'Aref Ruqaa',
-          fontSize: 11 * 25.4 / 72 * mm,
+          fontSize: 11 * scale * 25.4 / 72 * mm,
           height: 1,
           fontWeight: FontWeight.w400,
         ),
@@ -182,7 +188,7 @@ class _DocumentWatermarkPainter extends CustomPainter {
       textDirection: TextDirection.rtl,
       textScaler: TextScaler.noScaling,
     )..layout();
-    final gap = 6.16 * mm;
+    final gap = 6.16 * mm * scale;
     final rowWidth =
         DocumentPaper.watermarkColumns * label.width +
         (DocumentPaper.watermarkColumns - 1) * gap;
@@ -204,7 +210,7 @@ class _DocumentWatermarkPainter extends CustomPainter {
       ),
     );
     for (var row = 0; row < DocumentPaper.watermarkRows; row++) {
-      final offset = row.isOdd ? -10.3 * mm : 0.0;
+      final offset = row.isOdd ? -10.3 * mm * scale : 0.0;
       for (var column = 0; column < DocumentPaper.watermarkColumns; column++) {
         label.paint(
           canvas,
@@ -221,5 +227,6 @@ class _DocumentWatermarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DocumentWatermarkPainter oldDelegate) =>
-      oldDelegate.watermarkText != watermarkText;
+      oldDelegate.watermarkText != watermarkText ||
+      oldDelegate.scale != scale;
 }
