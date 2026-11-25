@@ -159,6 +159,7 @@ export default function DocumentStudioPage() {
     Record<string, string>
   >({});
   const [templateValuesApplied, setTemplateValuesApplied] = useState(false);
+  const [manualTemplateEditing, setManualTemplateEditing] = useState(false);
 
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
     null
@@ -277,6 +278,7 @@ export default function DocumentStudioPage() {
     setDocumentContent(selectedDocument.content);
     setDocumentFieldValues(selectedDocument.fieldValues);
     setTemplateValuesApplied(true);
+    setManualTemplateEditing(true);
     setSelectedTemplateId(selectedDocument.templateId);
     setSelectedTemplateRevision(selectedDocument.templateRevision);
   }, [selectedDocument]);
@@ -418,6 +420,7 @@ export default function DocumentStudioPage() {
     setDocumentContent(EMPTY_DOCUMENT_CONTENT);
     setDocumentFieldValues({});
     setTemplateValuesApplied(false);
+    setManualTemplateEditing(false);
     setActiveTab("documents");
   }
 
@@ -434,6 +437,7 @@ export default function DocumentStudioPage() {
     setDocumentContent(template.content);
     setDocumentFieldValues(defaultFieldValues(template.fields));
     setTemplateValuesApplied(false);
+    setManualTemplateEditing(false);
     setActiveTab("documents");
   }
 
@@ -445,6 +449,15 @@ export default function DocumentStudioPage() {
     const validDate = parseDocumentDate(documentDate);
     if (!validDate) {
       toast.error("أدخل تاريخاً صالحاً للوثيقة أولاً");
+      return;
+    }
+    const missingFields = documentTemplateFields.filter(
+      field => field.required && !(documentFieldValues[field.key] ?? "").trim()
+    );
+    if (selectedTemplateId && missingFields.length > 0) {
+      toast.error(
+        `أكمل الحقول المطلوبة: ${missingFields.map(field => field.label).join("، ")}`
+      );
       return;
     }
 
@@ -1590,10 +1603,25 @@ export default function DocumentStudioPage() {
                         الموضوع: {documentSubject}
                       </p>
                     ) : null}
+                    {selectedTemplateId && documentTemplateFields.length > 0 && !previewMode ? (
+                      <div className="document-studio-no-print mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed p-3">
+                        <p className="text-xs text-muted-foreground">
+                          تُنشأ الوثيقة من قيم الحقول تلقائياً. تحرير النص يدوياً اختياري.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setManualTemplateEditing(value => !value)}
+                        >
+                          {manualTemplateEditing ? "إيقاف التحرير اليدوي" : "تحرير النص يدوياً (اختياري)"}
+                        </Button>
+                      </div>
+                    ) : null}
                     <DocumentEditor
                       content={documentPreviewContent}
                       onChange={handleDocumentContentChange}
-                      editable={canEditDocument && !previewMode}
+                      editable={canEditDocument && !previewMode && (!selectedTemplateId || manualTemplateEditing)}
                       containerClassName="rounded-none border-0 shadow-none"
                     />
                     <DocumentSignatureBlock
@@ -1691,10 +1719,29 @@ export default function DocumentStudioPage() {
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
-              اختر طريقة الإنشاء: كتابة وثيقة جديدة أو استيراد ملف موجود.
+              اختر نموذجاً جاهزاً لتعبئة حقوله، أو ابدأ وثيقة فارغة، أو ارفع ملفاً للطباعة.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-auto w-full justify-start gap-3 p-4 text-right"
+              onClick={() => {
+                setCreationDialogOpen(false);
+                setActiveTab("templates");
+                setIsCreatingDocument(false);
+                setPreviewMode(false);
+              }}
+            >
+              <LayoutTemplate className="size-5 shrink-0" />
+              <span className="flex-1 text-right">
+                <span className="block font-semibold">تعبئة نموذج جاهز</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  اختر نموذجاً نشطاً ثم أدخل بيانات حقوله المطلوبة
+                </span>
+              </span>
+            </Button>
             <Button
               type="button"
               variant="outline"
@@ -1706,11 +1753,9 @@ export default function DocumentStudioPage() {
             >
               <PenLine className="size-5 shrink-0" />
               <span className="flex-1 text-right">
-                <span className="block font-semibold">
-                  إنشاء والكتابة في وثيقة
-                </span>
+                <span className="block font-semibold">وثيقة فارغة</span>
                 <span className="mt-1 block text-xs text-muted-foreground">
-                  افتح صفحة الوثيقة الرسمية واكتب النص ونسّقه مباشرة
+                  افتح صفحة A4 واكتب النص يدوياً من البداية
                 </span>
               </span>
             </Button>
