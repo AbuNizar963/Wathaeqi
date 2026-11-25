@@ -414,22 +414,92 @@ describe("authenticated document HTTP routes", () => {
     });
   });
 
-  it("does not route DOCX through the legacy PDF endpoint", async () => {
+  it("converts an authorized stored DOCX to PDF using the original bytes", async () => {
     await withServer(async baseUrl => {
-      mocks.getOfficialDocument.mockResolvedValueOnce(null);
-      const notOwned = await fetch(
-        `${baseUrl}/api/documents/document-other/print-pdf`,
-        { method: "POST" }
-      );
-      expect(notOwned.status).toBe(404);
-
+      const convertedPdf = Buffer.from("%PDF-1.7\nconverted DOCX");
+      mocks.getObjectInfo.mockResolvedValueOnce({
+        size: validDocx.length,
+        contentType: "application/octet-stream",
+      });
+      mocks.download.mockResolvedValueOnce({
+        body: validDocx,
+        contentType: "application/octet-stream",
+      });
+      mocks.renderDocxToPdf.mockResolvedValueOnce(convertedPdf);
       const response = await fetch(
         `${baseUrl}/api/documents/document-1/print-pdf`,
         { method: "POST" }
       );
-      expect(response.status).toBe(415);
-      expect(await response.text()).toContain("معاينة DOCX");
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-type")).toBe("application/pdf");
+      expect(response.headers.get("content-disposition")).toContain(
+        "report.pdf"
+      );
+      expect(Buffer.from(await response.arrayBuffer())).toEqual(convertedPdf);
+      expect(mocks.getOfficialDocument).toHaveBeenLastCalledWith(
+        ownerId,
+        "document-1"
+      );
+      expect(mocks.download).toHaveBeenCalledWith(storageKey);
+      expect(mocks.renderDocxToPdf).toHaveBeenCalledWith(validDocx);
+    });
+  });
+
+  it("requires authentication before DOCX conversion or storage access", async () => {
+    await withServer(async baseUrl => {
+      mocks.getUser.mockResolvedValueOnce(null);
+      const response = await fetch(
+        `${baseUrl}/api/documents/document-1/print-pdf`,
+        { method: "POST" }
+      );
+
+      expect(response.status).toBe(401);
+      expect(mocks.getOfficialDocument).not.toHaveBeenCalled();
       expect(mocks.download).not.toHaveBeenCalled();
+      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
+    });
+  });
+
+  it("denies cross-organization DOCX before reading storage", async () => {
+    await withServer(async baseUrl => {
+      mocks.getOfficialDocument.mockResolvedValueOnce({
+        ...ownedDocument(),
+        organizationId: "org-other",
+      });
+      const response = await fetch(
+        `${baseUrl}/api/documents/document-1/print-pdf`,
+        { method: "POST" }
+      );
+
+      expect(response.status).toBe(404);
+      expect(mocks.download).not.toHaveBeenCalled();
+      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
+    });
+  });
+
+  it("rejects corrupt DOCX bytes and unsafe storage keys before conversion", async () => {
+    await withServer(async baseUrl => {
+      mocks.download.mockResolvedValueOnce({
+        body: Buffer.from("not a DOCX"),
+        contentType: "application/octet-stream",
+      });
+      const corrupt = await fetch(
+        `${baseUrl}/api/documents/document-1/print-pdf`,
+        { method: "POST" }
+      );
+      expect(corrupt.status).toBe(415);
+      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
+
+      mocks.getOfficialDocument.mockResolvedValueOnce({
+        ...ownedDocument(),
+        file: { ...ownedDocument().file, storageKey: "documents/other/file" },
+      });
+      const unsafeKey = await fetch(
+        `${baseUrl}/api/documents/document-1/print-pdf`,
+        { method: "POST" }
+      );
+      expect(unsafeKey.status).toBe(415);
       expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
     });
   });
@@ -473,7 +543,7 @@ describe("authenticated document HTTP routes", () => {
     });
   });
 
-  it("rejects a stored PDF whose storage MIME or signature does not match", async () => {
+  it("accepts generic storage MIME after signature checks and rejects corrupt or mislabeled data", async () => {
     await withServer(async baseUrl => {
       mocks.getOfficialDocument.mockResolvedValue({
         id: "document-pdf",
@@ -494,11 +564,28 @@ describe("authenticated document HTTP routes", () => {
         size: pdfBytes.length,
         contentType: "application/octet-stream",
       });
-      const mismatch = await fetch(
+      mocks.download.mockResolvedValueOnce({
+        body: pdfBytes,
+        contentType: "application/octet-stream",
+      });
+      const genericStorageType = await fetch(
         `${baseUrl}/api/documents/document-pdf/print-pdf`,
         { method: "POST" }
       );
-      expect(mismatch.status).toBe(409);
+      expect(genericStorageType.status).toBe(200);
+      expect(Buffer.from(await genericStorageType.arrayBuffer())).toEqual(
+        pdfBytes
+      );
+
+      mocks.getObjectInfo.mockResolvedValueOnce({
+        size: pdfBytes.length,
+        contentType: "text/plain",
+      });
+      const mismatchedStorageType = await fetch(
+        `${baseUrl}/api/documents/document-pdf/print-pdf`,
+        { method: "POST" }
+      );
+      expect(mismatchedStorageType.status).toBe(409);
 
       mocks.getObjectInfo.mockResolvedValueOnce({
         size: pdfBytes.length,
@@ -517,26 +604,20 @@ describe("authenticated document HTTP routes", () => {
     });
   });
 
-  it("rejects DOCX from the legacy PDF endpoint", async () => {
+  it("returns a safe conversion error without exposing renderer diagnostics", async () => {
     await withServer(async baseUrl => {
-      mocks.download.mockResolvedValueOnce({
-        body: Buffer.from("bad zip"),
-        contentType: "application/octet-stream",
-      });
-      const corrupt = await fetch(
-        `${baseUrl}/api/documents/document-1/print-pdf`,
-        { method: "POST" }
+      mocks.renderDocxToPdf.mockRejectedValueOnce(
+        new Error("sensitive chromium diagnostic")
       );
-      expect(corrupt.status).toBe(415);
-      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
-
       const failed = await fetch(
         `${baseUrl}/api/documents/document-1/print-pdf`,
         { method: "POST" }
       );
-      expect(failed.status).toBe(415);
-      expect(await failed.text()).toContain("معاينة DOCX");
-      expect(mocks.renderDocxToPdf).not.toHaveBeenCalled();
+      expect(failed.status).toBe(502);
+      expect(await failed.text()).not.toContain(
+        "sensitive chromium diagnostic"
+      );
+      expect(mocks.renderDocxToPdf).toHaveBeenCalledWith(validDocx);
     });
   });
 });

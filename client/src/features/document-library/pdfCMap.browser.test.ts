@@ -37,7 +37,7 @@ async function openTestHost(page: Page, port: number) {
     route.fulfill({
       status: 200,
       contentType: "text/html",
-      body: "<html><body></body></html>",
+      body: "<html><body><script>window.printCount=0;window.print=()=>{window.printCount++};window.open=()=>{throw new Error('External print window is forbidden')};</script></body></html>",
     })
   );
   await page.goto(`http://127.0.0.1:${port}/__pdf_test_host`);
@@ -147,12 +147,8 @@ describe.skipIf(
           requestedMaps.push(request.url());
       });
       await openTestHost(page, address.port);
-      const popupPromise = page.waitForEvent("popup");
-      const [popup] = await Promise.all([
-        popupPromise,
-        openPdfPrint(page, pdf, 2),
-      ]);
-      const glyphs = await measureGlyphs(popup);
+      await openPdfPrint(page, pdf, 2);
+      const glyphs = await measureGlyphs(page);
       expect(
         requestedMaps.some(url => url.endsWith("/UniGB-UCS2-H.bcmap"))
       ).toBe(true);
@@ -162,14 +158,11 @@ describe.skipIf(
       // Distinct masks rule out four identical missing-glyph boxes.
       for (const difference of glyphs.differences)
         expect(difference).toBeGreaterThan(100);
-      await popup.close();
+      await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
 
-      const singlePopupPromise = page.waitForEvent("popup");
-      const [singlePopup] = await Promise.all([
-        singlePopupPromise,
-        openPdfPrint(page, pdf, 1),
-      ]);
-      const printed = await singlePopup.pdf({
+      await openPdfPrint(page, pdf, 1);
+      await page.emulateMedia({ media: "print" });
+      const printed = await page.pdf({
         preferCSSPageSize: true,
         printBackground: true,
       });
@@ -184,7 +177,12 @@ describe.skipIf(
       } finally {
         await loadingTask.destroy();
       }
-      await singlePopup.close();
+      expect(
+        await page.evaluate(
+          () => (window as unknown as { printCount: number }).printCount
+        )
+      ).toBe(2);
+      await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
 
       // A fresh browser context avoids reusing PDF.js's CMap or worker cache.
       const blockedPage = await browser.newPage();
@@ -197,12 +195,8 @@ describe.skipIf(
         });
       });
       await openTestHost(blockedPage, address.port);
-      const blockedPopupPromise = blockedPage.waitForEvent("popup");
-      const [blockedPopup] = await Promise.all([
-        blockedPopupPromise,
-        openPdfPrint(blockedPage, pdf, 2),
-      ]);
-      const blockedGlyphs = await measureGlyphs(blockedPopup);
+      await openPdfPrint(blockedPage, pdf, 2);
+      const blockedGlyphs = await measureGlyphs(blockedPage);
       expect(blockedMaps.some(url => url.endsWith("/UniGB-UCS2-H.bcmap"))).toBe(
         true
       );
@@ -210,7 +204,6 @@ describe.skipIf(
       // The same per-glyph rendering assertion above must fail without CMap.
       for (const count of blockedGlyphs.counts)
         expect(count).toBeLessThanOrEqual(50);
-      await blockedPopup.close();
       await blockedPage.close();
     } finally {
       await browser.close();

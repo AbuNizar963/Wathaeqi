@@ -1,52 +1,47 @@
 import { fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
+import { openPrintWindow } from "./printSheets";
 import {
-  openPrintWindow,
-  printCurrentDocument,
-  showPrintPreparingPage,
-} from "./printSheets";
+  createPrintRoot,
+  invokePagePrint,
+  scopePrintCss,
+  waitForPrintAssets,
+} from "./printDom";
+import { fetchDocumentBlob } from "../document-progress/documentTransfer";
+import {
+  measuredProgress,
+  throwIfAborted,
+  type DocumentOperationOptions,
+} from "../document-progress/documentProgress";
 import { canvasToPngObjectUrl, getBoundedPixelRatio } from "./renderQuality";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
-function waitForImages(document: Document): Promise<void> {
-  return Promise.all(
-    Array.from(document.images).map(image =>
-      image.complete
-        ? Promise.resolve()
-        : new Promise<void>(resolve => {
-            image.onload = () => resolve();
-            image.onerror = () => resolve();
-          })
-    )
-  ).then(() => undefined);
-}
-
-export async function openOriginalPrintWindow(options: {
-  url: string;
-  fileName: string;
-  mimeType: string;
-  pagesPerSheet?: PagesPerSheet;
-  layoutMode?: PrintLayoutMode;
-  copiesPerSheet?: PagesPerSheet;
-  orientation?: PrintOrientation;
-  marginMm?: number;
-  showPageNumbers?: boolean;
-  imageTiles?: 1 | 4 | 9 | 16;
-  resolveUrl?: () => Promise<string>;
-}): Promise<void> {
+export async function openOriginalPrintWindow(
+  options: {
+    url: string;
+    fileName: string;
+    mimeType: string;
+    pagesPerSheet?: PagesPerSheet;
+    layoutMode?: PrintLayoutMode;
+    copiesPerSheet?: PagesPerSheet;
+    orientation?: PrintOrientation;
+    marginMm?: number;
+    showPageNumbers?: boolean;
+    imageTiles?: 1 | 4 | 9 | 16;
+    resolveUrl?: () => Promise<string>;
+  } & DocumentOperationOptions
+): Promise<void> {
   const kind = fileKind(options.fileName, options.mimeType);
   if (kind !== "pdf" && kind !== "word" && kind !== "image") {
     throw new Error("صيغة الملف غير مدعومة للطباعة");
   }
 
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    throw new Error(
-      "منع المتصفح نافذة الطباعة؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة"
-    );
-  }
-  printWindow.opener = null;
-  showPrintPreparingPage(printWindow);
+  throwIfAborted(options.signal);
+  options.onProgress?.({
+    phase: "preparation",
+    message: "جارٍ التحقق من رابط الطباعة والصلاحيات…",
+  });
+  let wordSession: ReturnType<typeof createPrintRoot> | undefined;
   const printImageUrls: string[] = [];
   const layoutOptions = {
     pagesPerSheet: options.pagesPerSheet ?? 1,
@@ -59,19 +54,23 @@ export async function openOriginalPrintWindow(options: {
     showPageNumbers: options.showPageNumbers ?? false,
   };
   try {
-    // Open synchronously on the user gesture, then refresh the short-lived URL.
+    // Refresh the short-lived URL without creating a popup or changing auth.
     const url = options.resolveUrl ? await options.resolveUrl() : options.url;
+    throwIfAborted(options.signal);
+    const fileBlob = await fetchDocumentBlob(url, options.fileName, options);
 
     if (kind === "image") {
       try {
-        const response = await fetch(url, { credentials: "omit" });
-        if (!response.ok) throw new Error("تعذر تنزيل الصورة للطباعة");
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
+        const imageUrl = URL.createObjectURL(fileBlob);
         printImageUrls.push(imageUrl);
         const image = new Image();
         image.src = imageUrl;
+        options.onProgress?.({
+          phase: "render",
+          message: "جارٍ فك ترميز الصورة للطباعة…",
+        });
         await image.decode();
+        throwIfAborted(options.signal);
         const tileCount = options.imageTiles ?? 1;
         if (tileCount === 1) {
           await openPrintWindow(
@@ -85,8 +84,10 @@ export async function openOriginalPrintWindow(options: {
               ],
               options: { ...layoutOptions, pagesPerSheet: 1 },
               title: `طباعة ${options.fileName}`,
+              onProgress: options.onProgress,
+              signal: options.signal,
             },
-            printWindow
+            window
           );
           return;
         }
@@ -98,6 +99,8 @@ export async function openOriginalPrintWindow(options: {
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(image, 0, 0);
+        URL.revokeObjectURL(imageUrl);
+        printImageUrls.splice(printImageUrls.indexOf(imageUrl), 1);
         const columns = Math.sqrt(tileCount);
         const rows = columns;
         const sourceTileWidth = canvas.width / columns;
@@ -106,6 +109,7 @@ export async function openOriginalPrintWindow(options: {
 
         for (let row = 0; row < rows; row += 1) {
           for (let column = 0; column < columns; column += 1) {
+            throwIfAborted(options.signal);
             const tileCanvas = window.document.createElement("canvas");
             tileCanvas.width = Math.ceil(sourceTileWidth);
             tileCanvas.height = Math.ceil(sourceTileHeight);
@@ -130,15 +134,27 @@ export async function openOriginalPrintWindow(options: {
               height: tileCanvas.height,
             });
             printImageUrls.push(pages[pages.length - 1]!.src);
+            options.onProgress?.(
+              measuredProgress(
+                "render",
+                "جارٍ تجهيز أجزاء الصورة…",
+                pages.length,
+                tileCount
+              )
+            );
             tileCanvas.width = 0;
             tileCanvas.height = 0;
           }
         }
+        canvas.width = 0;
+        canvas.height = 0;
 
         await openPrintWindow(
           {
             pages,
             title: `طباعة ${options.fileName}`,
+            onProgress: options.onProgress,
+            signal: options.signal,
             options: {
               ...layoutOptions,
               pagesPerSheet: 1,
@@ -148,11 +164,10 @@ export async function openOriginalPrintWindow(options: {
               footerText: "",
             },
           },
-          printWindow
+          window
         );
         return;
       } catch (error) {
-        printWindow.close();
         throw error;
       }
     }
@@ -160,16 +175,15 @@ export async function openOriginalPrintWindow(options: {
     if (kind === "pdf") {
       const pdfjs = await import("pdfjs-dist");
       pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-      const response = await fetch(url, { credentials: "omit" });
-      if (!response.ok) throw new Error("تعذر تنزيل ملف PDF للطباعة");
       const pdf = await pdfjs.getDocument({
-        data: new Uint8Array(await response.arrayBuffer()),
+        data: new Uint8Array(await fileBlob.arrayBuffer()),
         cMapUrl: `${import.meta.env.BASE_URL}pdfjs/cmaps/`,
         cMapPacked: true,
       }).promise;
       const pages = [];
       try {
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+          throwIfAborted(options.signal);
           const page = await pdf.getPage(pageNumber);
           const canvas = window.document.createElement("canvas");
           try {
@@ -196,6 +210,14 @@ export async function openOriginalPrintWindow(options: {
               heightPt: baseViewport.height,
             });
             printImageUrls.push(pages[pages.length - 1]!.src);
+            options.onProgress?.(
+              measuredProgress(
+                "render",
+                "جارٍ رسم جميع صفحات PDF…",
+                pageNumber,
+                pdf.numPages
+              )
+            );
           } finally {
             canvas.width = 0;
             canvas.height = 0;
@@ -206,50 +228,54 @@ export async function openOriginalPrintWindow(options: {
         await (pdf as unknown as { destroy?: () => Promise<void> }).destroy?.();
       }
       await openPrintWindow(
-        { pages, options: layoutOptions, title: `طباعة ${options.fileName}` },
-        printWindow
+        {
+          pages,
+          options: layoutOptions,
+          title: `طباعة ${options.fileName}`,
+          onProgress: options.onProgress,
+          signal: options.signal,
+        },
+        window
       );
       return;
     }
 
-    const response = await fetch(url, { credentials: "omit" });
-    if (!response.ok) {
-      printWindow.close();
-      throw new Error("تعذر تنزيل ملف Word للطباعة");
-    }
-    const buffer = await response.arrayBuffer();
+    const buffer = await fileBlob.arrayBuffer();
+    throwIfAborted(options.signal);
+    options.onProgress?.({
+      phase: "render",
+      message: "جارٍ تجهيز جميع صفحات Word وتنسيقها…",
+    });
     const [{ renderAsync }] = await Promise.all([import("docx-preview")]);
     const orientation = options.orientation ?? "portrait";
     const sheetWidth = orientation === "landscape" ? 297 : 210;
     const sheetHeight = orientation === "landscape" ? 210 : 297;
     const margin = Math.min(20, Math.max(0, options.marginMm ?? 0));
-    printWindow.document.open();
-    printWindow.document.write(
-      '<!doctype html><html lang="ar"><head><meta charset="utf-8"><title>طباعة الوثيقة</title></head><body></body></html>'
-    );
-    printWindow.document.close();
-    printWindow.document.title = `طباعة ${options.fileName}`;
-    const wordStyle = printWindow.document.createElement("style");
+    const wordStyle = document.createElement("style");
     wordStyle.textContent = `
       @page{size:A4 ${orientation};margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
-      .docx-wrapper{background:#fff!important;padding:0!important}.docx{box-shadow:none!important;margin:0!important}
+      .wathaeqi-print-docx-wrapper{background:#fff!important;padding:0!important}.wathaeqi-print-docx{box-shadow:none!important;margin:0!important}
       .sheet{width:${sheetWidth}mm;height:${sheetHeight}mm;padding:${margin}mm;display:flex;flex-direction:column;gap:2mm;direction:ltr;page-break-after:always;break-after:page;overflow:hidden;background:#fff}
       .sheet:last-child{page-break-after:auto;break-after:auto}.grid{display:grid;flex:1 1 auto;min-height:0;gap:3mm;direction:ltr}
       .per-1{grid-template-columns:1fr;grid-template-rows:1fr}.per-2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}
       .per-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}.per-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}.per-8{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}
       .grid.landscape.per-2{grid-template-columns:repeat(2,1fr);grid-template-rows:1fr}.grid.landscape.per-6{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}.grid.landscape.per-8{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr)}
-      .cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff;direction:rtl}.cell>.docx{position:absolute;inset:0 auto auto 0;box-shadow:none!important}
+      .cell{position:relative;min-width:0;min-height:0;overflow:hidden;background:#fff;direction:rtl}.cell>.wathaeqi-print-docx{position:absolute;inset:0 auto auto 0;box-shadow:none!important}
       .print-counter{flex:0 0 auto;text-align:left;font:8pt Arial,sans-serif;color:#64748b;padding-top:1mm}
       @media screen{body{background:#e2e8f0;padding:8mm 0}.sheet{margin:0 auto 8mm;box-shadow:0 2mm 8mm #0f172a2e}}
     `;
-    printWindow.document.head.append(wordStyle);
-    const hostElement = printWindow.document.createElement("div");
+    wordSession = createPrintRoot(
+      `طباعة ${options.fileName}`,
+      wordStyle.textContent,
+      sheetWidth
+    );
+    const hostElement = document.createElement("div");
     hostElement.id = "docx-print-host";
     hostElement.dir = "auto";
-    printWindow.document.body.append(hostElement);
+    wordSession.root.append(hostElement);
     const host = hostElement;
     await renderAsync(buffer, host, undefined, {
-      className: "docx",
+      className: "wathaeqi-print-docx",
       inWrapper: true,
       breakPages: true,
       ignoreLastRenderedPageBreak: false,
@@ -257,9 +283,10 @@ export async function openOriginalPrintWindow(options: {
       renderFooters: true,
       useBase64URL: true,
     });
-    await printWindow.document.fonts?.ready;
-    await waitForImages(printWindow.document);
-    arrangeWordPages(printWindow.document, host, {
+    for (const style of host.querySelectorAll("style"))
+      style.textContent = scopePrintCss(style.textContent ?? "");
+    await waitForPrintAssets(wordSession.root, options);
+    arrangeWordPages(document, host, {
       mode: options.layoutMode ?? "sequential",
       count:
         options.layoutMode === "repeat"
@@ -268,9 +295,9 @@ export async function openOriginalPrintWindow(options: {
       orientation,
       showPageNumbers: options.showPageNumbers ?? false,
     });
-    await printCurrentDocument(printWindow);
+    await invokePagePrint(wordSession.root, options);
   } catch (error) {
-    printWindow.close();
+    wordSession?.cleanup();
     printImageUrls.forEach(imageUrl => URL.revokeObjectURL(imageUrl));
     throw error;
   }
@@ -286,11 +313,16 @@ function arrangeWordPages(
     showPageNumbers: boolean;
   }
 ): void {
-  const wrapper = host.querySelector<HTMLElement>(".docx-wrapper");
-  const pages = Array.from(
-    host.querySelectorAll<HTMLElement>(".docx-wrapper > .docx")
+  const wrapper = host.querySelector<HTMLElement>(
+    ".wathaeqi-print-docx-wrapper"
   );
-  if (pages.length === 0 || !wrapper) return;
+  const pages = Array.from(
+    host.querySelectorAll<HTMLElement>(
+      ".wathaeqi-print-docx-wrapper > .wathaeqi-print-docx"
+    )
+  );
+  if (pages.length === 0 || !wrapper)
+    throw new Error("لا توجد صفحات Word قابلة للطباعة");
   if (options.count > 1) {
     for (const page of pages) {
       const minHeight = Number.parseFloat(
@@ -346,7 +378,7 @@ function arrangeWordPages(
   // The renderer's styles are siblings of the wrapper and must be retained.
   wrapper.replaceWith(fragment);
   for (const page of Array.from(
-    host.querySelectorAll<HTMLElement>(".cell > .docx")
+    host.querySelectorAll<HTMLElement>(".cell > .wathaeqi-print-docx")
   )) {
     const cell = page.parentElement!;
     const pageBounds = page.getBoundingClientRect();

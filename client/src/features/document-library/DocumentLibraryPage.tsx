@@ -44,6 +44,8 @@ import FilePreview from "./FilePreview";
 import PrintDialog from "./PrintDialog";
 import UploadDialog from "./UploadDialog";
 import { signedFileQueryOptions } from "./signedFileQueryOptions";
+import DocumentOperationProgress from "../document-progress/DocumentOperationProgress";
+import { useDocumentProgress } from "../document-progress/useDocumentProgress";
 import {
   documentFileUrl,
   downloadDocumentFile,
@@ -86,9 +88,12 @@ function FileGlyph({
   return <FileText className="size-5" />;
 }
 
-export default function DocumentLibraryPage() {
+export default function DocumentLibraryPage({
+  embedded = false,
+}: { embedded?: boolean } = {}) {
   const [, navigate] = useLocation();
   const { user } = useAuth();
+  const downloadOperation = useDocumentProgress();
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const [search, setSearch] = useState("");
@@ -206,7 +211,7 @@ export default function DocumentLibraryPage() {
             الأرشيف الرقمي
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">
-            مكتبة الوثائق
+            {embedded ? "الملفات" : "مساحة الوثائق"}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             ارفع ملفات Word وPDF، وأرشفها، واطبع الملف الأصلي مع الحفاظ على
@@ -459,7 +464,7 @@ export default function DocumentLibraryPage() {
         type="button"
         aria-label="إنشاء وثيقة جديدة"
         title="إنشاء وثيقة جديدة"
-        onClick={() => navigate("/studio?create=1")}
+        onClick={() => navigate("/documents?create=1")}
         className="group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
       >
         <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
@@ -481,7 +486,7 @@ export default function DocumentLibraryPage() {
               className="h-auto justify-start gap-3 p-4 text-right"
               onClick={() => {
                 setCreationOpen(false);
-                navigate("/studio?create=1");
+                navigate("/documents?create=1");
               }}
             >
               <FileText className="size-5 shrink-0" />
@@ -525,7 +530,10 @@ export default function DocumentLibraryPage() {
       <Dialog
         open={Boolean(selectedId)}
         onOpenChange={open => {
-          if (!open) setSelectedId(null);
+          if (!open) {
+            downloadOperation.cancel();
+            setSelectedId(null);
+          }
         }}
       >
         <DialogContent
@@ -537,6 +545,20 @@ export default function DocumentLibraryPage() {
         >
           {selected && selected.file ? (
             <>
+              {downloadOperation.progress ? (
+                <div className="fixed inset-x-4 bottom-24 z-[100] mx-auto max-w-lg rounded-2xl border bg-card p-3 shadow-xl">
+                  <DocumentOperationProgress
+                    progress={downloadOperation.progress}
+                  />
+                  <Button
+                    className="mt-2"
+                    variant="outline"
+                    onClick={downloadOperation.cancel}
+                  >
+                    إلغاء التنزيل
+                  </Button>
+                </div>
+              ) : null}
               <DialogHeader>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
@@ -609,17 +631,30 @@ export default function DocumentLibraryPage() {
                   <Button
                     variant="outline"
                     className="h-12 gap-2"
+                    disabled={Boolean(downloadOperation.progress)}
                     onClick={() => {
-                      void downloadDocumentFile(
-                        documentFileUrl(selected.id),
-                        selected.file!.fileName
-                      ).catch(downloadError => {
-                        toast.error(
-                          downloadError instanceof Error
-                            ? downloadError.message
-                            : "تعذر تنزيل الوثيقة"
-                        );
-                      });
+                      void downloadOperation
+                        .run(options =>
+                          downloadDocumentFile(
+                            documentFileUrl(selected.id),
+                            selected.file!.fileName,
+                            options
+                          )
+                        )
+                        .catch(downloadError => {
+                          if (
+                            downloadError instanceof DOMException &&
+                            downloadError.name === "AbortError"
+                          ) {
+                            toast.info("أُلغيت عملية التنزيل");
+                            return;
+                          }
+                          toast.error(
+                            downloadError instanceof Error
+                              ? downloadError.message
+                              : "تعذر تنزيل الوثيقة"
+                          );
+                        });
                     }}
                   >
                     <Download className="size-4" />
@@ -651,7 +686,7 @@ export default function DocumentLibraryPage() {
                     className="h-12 gap-2"
                     onClick={() =>
                       navigate(
-                        `/studio?document=${encodeURIComponent(selected.id)}`
+                        `/documents?document=${encodeURIComponent(selected.id)}`
                       )
                     }
                   >

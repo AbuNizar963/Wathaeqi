@@ -135,10 +135,10 @@ assert(
 );
 
 assert(
-  ["مكتبة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
+  ["مساحة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
     dashboardLayout.includes(`label: "${label}"`)
   ),
-  "The sidebar must expose the library and administrative navigation."
+  "The sidebar must expose the unified document workspace and administrative navigation."
 );
 
 assert(
@@ -147,7 +147,7 @@ assert(
 );
 
 assert(
-  ["/dashboard", "/studio", "/users", "/settings"].every(path =>
+  ["/documents", "/dashboard", "/studio", "/users", "/settings"].every(path =>
     appRoutes.includes(`path="${path}"`)
   ),
   "Every restored workspace navigation item must resolve to a registered route."

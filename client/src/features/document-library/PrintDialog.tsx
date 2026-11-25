@@ -14,6 +14,8 @@ import PrintSettingsPanel from "./PrintSettingsPanel";
 import { openOriginalPrintWindow } from "./printOriginal";
 import { fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
+import DocumentOperationProgress from "../document-progress/DocumentOperationProgress";
+import { useDocumentProgress } from "../document-progress/useDocumentProgress";
 
 export default function PrintDialog({
   open,
@@ -45,6 +47,7 @@ export default function PrintDialog({
     useState<PagesPerSheet>(1);
   const kind = fileKind(fileName, mimeType);
   const canPrint = kind !== null;
+  const operation = useDocumentProgress();
   const printButtonLabel =
     kind === "image" ? "طباعة الصورة" : "متابعة إلى الطباعة";
 
@@ -65,25 +68,31 @@ export default function PrintDialog({
     setLoading(true);
     setError(null);
     try {
-      await openOriginalPrintWindow({
-        url,
-        fileName,
-        mimeType,
-        pagesPerSheet,
-        layoutMode:
-          kind === "image"
-            ? imageTiles === 1 && imageCopiesPerSheet > 1
-              ? "repeat"
-              : "sequential"
-            : layoutMode,
-        copiesPerSheet: kind === "image" ? imageCopiesPerSheet : copiesPerSheet,
-        orientation,
-        marginMm,
-        showPageNumbers,
-        imageTiles,
-        resolveUrl: getPrintUrl,
-      });
+      await operation.run(progressOptions =>
+        openOriginalPrintWindow({
+          ...progressOptions,
+          url,
+          fileName,
+          mimeType,
+          pagesPerSheet,
+          layoutMode:
+            kind === "image"
+              ? imageTiles === 1 && imageCopiesPerSheet > 1
+                ? "repeat"
+                : "sequential"
+              : layoutMode,
+          copiesPerSheet:
+            kind === "image" ? imageCopiesPerSheet : copiesPerSheet,
+          orientation,
+          marginMm,
+          showPageNumbers,
+          imageTiles,
+          resolveUrl: getPrintUrl,
+        })
+      );
     } catch (printError) {
+      if (printError instanceof Error && printError.name === "AbortError")
+        return;
       setError(
         printError instanceof Error
           ? printError.message
@@ -95,7 +104,13 @@ export default function PrintDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={next => {
+        if (!next) operation.cancel();
+        onOpenChange(next);
+      }}
+    >
       <DialogContent
         className="max-h-[92vh] max-w-6xl overflow-y-auto"
         dir="rtl"
@@ -351,6 +366,7 @@ export default function PrintDialog({
           </p>
         )}
 
+        <DocumentOperationProgress progress={operation.progress} />
         <DialogFooter className="gap-2 sm:justify-start">
           <Button
             onClick={() => void handlePrint()}
@@ -366,10 +382,12 @@ export default function PrintDialog({
           </Button>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
+            onClick={() => {
+              operation.cancel();
+              onOpenChange(false);
+            }}
           >
-            إغلاق
+            {loading ? "إلغاء التجهيز" : "إغلاق"}
           </Button>
         </DialogFooter>
       </DialogContent>

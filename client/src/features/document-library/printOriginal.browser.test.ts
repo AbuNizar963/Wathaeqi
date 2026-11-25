@@ -32,13 +32,13 @@ function makeDocx(pageCount: number): Buffer {
   return Buffer.from(
     zipSync({
       "[Content_Types].xml": Buffer.from(
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`
       ),
       "_rels/.rels": Buffer.from(
         `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`
       ),
       "word/_rels/document.xml.rels": Buffer.from(
-        `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`
+        `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/fixture.png"/></Relationships>`
       ),
       "word/document.xml": Buffer.from(
         `<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}<w:sectPr><w:footerReference w:type="default" r:id="rId1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="180" w:gutter="0"/></w:sectPr></w:body></w:document>`
@@ -65,7 +65,12 @@ describe.skipIf(
       format: "iife",
       globalName: "printOriginalTest",
       platform: "browser",
-      define: { "import.meta.env.BASE_URL": JSON.stringify("/") },
+      define: {
+        "import.meta.env": JSON.stringify({
+          BASE_URL: "/",
+          VITE_APPWRITE_API_URL: "",
+        }),
+      },
       plugins: [
         {
           name: "pdfjs-browser-test-stub",
@@ -106,11 +111,16 @@ describe.skipIf(
       const page = await browser.newPage();
       await page.goto("data:text/html,<html><body></body></html>");
       await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      await page.evaluate(() => {
+        window.print = () => undefined;
+        window.open = () => {
+          throw new Error("Printing must not create a popup");
+        };
+      });
       const url = `data:${docxMimeType};base64,${makeDocx(9).toString("base64")}`;
       const fileName =
         "fixture</title><script>window.injected = true</script>.docx";
       for (const pagesPerSheet of [1, 2, 4, 6, 8]) {
-        const popupPromise = page.waitForEvent("popup");
         const printPromise = page.evaluate(
           ({ url, mimeType, pagesPerSheet, fileName }) =>
             (
@@ -127,14 +137,17 @@ describe.skipIf(
             }),
           { url, mimeType: docxMimeType, pagesPerSheet, fileName }
         );
-        const popup = await popupPromise;
         await printPromise;
-        expect(await popup.title()).toBe(`طباعة ${fileName}`);
-        expect(await popup.locator("script").count()).toBe(0);
-        await popup.emulateMedia({ media: "print" });
-        const layout = await popup.evaluate(() =>
+        expect(await page.title()).toBe(`طباعة ${fileName}`);
+        expect(await page.locator("#wathaeqi-print-root script").count()).toBe(
+          0
+        );
+        await page.emulateMedia({ media: "print" });
+        const layout = await page.evaluate(() =>
           Array.from(
-            document.querySelectorAll<HTMLElement>("section.docx"),
+            document.querySelectorAll<HTMLElement>(
+              "section.wathaeqi-print-docx"
+            ),
             sourcePage => {
               const source = sourcePage.getBoundingClientRect();
               const cell = sourcePage.closest<HTMLElement>(".cell");
@@ -190,21 +203,35 @@ describe.skipIf(
         }
 
         expect(
-          await popup.locator("section.docx").first().locator("img").count(),
+          await page
+            .locator("section.wathaeqi-print-docx")
+            .first()
+            .locator("img")
+            .count(),
           `embedded images for ${pagesPerSheet}`
         ).toBe(1);
         expect(
-          await popup.locator("section.docx").first().locator("table").count(),
+          await page
+            .locator("section.wathaeqi-print-docx")
+            .first()
+            .locator("table")
+            .count(),
           `tables for ${pagesPerSheet}`
         ).toBe(1);
         expect(
-          await popup.locator("section.docx").first().textContent()
+          await page
+            .locator("section.wathaeqi-print-docx")
+            .first()
+            .textContent()
         ).toContain("LTR FORMAT");
         expect(
-          await popup.locator("section.docx").first().textContent()
+          await page
+            .locator("section.wathaeqi-print-docx")
+            .first()
+            .textContent()
         ).toContain("نص عربي منسق");
 
-        const pdf = await popup.pdf({
+        const pdf = await page.pdf({
           format: "A4",
           preferCSSPageSize: true,
           printBackground: true,
@@ -236,10 +263,12 @@ describe.skipIf(
         } finally {
           await loadingTask.destroy();
         }
-        await popup.close();
+        await page.evaluate(() =>
+          window.dispatchEvent(new Event("afterprint"))
+        );
+        await page.emulateMedia({ media: "screen" });
       }
 
-      const repeatedPopupPromise = page.waitForEvent("popup");
       const repeatedPrintPromise = page.evaluate(
         ({ url, mimeType, fileName }) =>
           (
@@ -257,9 +286,9 @@ describe.skipIf(
           }),
         { url, mimeType: docxMimeType, fileName: "repeat-fixture.docx" }
       );
-      const repeatedPopup = await repeatedPopupPromise;
       await repeatedPrintPromise;
-      const repeatedPdf = await repeatedPopup.pdf({
+      await page.emulateMedia({ media: "print" });
+      const repeatedPdf = await page.pdf({
         format: "A4",
         preferCSSPageSize: true,
         printBackground: true,
@@ -284,7 +313,7 @@ describe.skipIf(
       } finally {
         await repeatedTask.destroy();
       }
-      await repeatedPopup.close();
+      await page.close();
     } finally {
       await browser.close();
     }
@@ -300,7 +329,12 @@ describe.skipIf(
       format: "iife",
       globalName: "printOriginalTest",
       platform: "browser",
-      define: { "import.meta.env.BASE_URL": JSON.stringify("/") },
+      define: {
+        "import.meta.env": JSON.stringify({
+          BASE_URL: "/",
+          VITE_APPWRITE_API_URL: "",
+        }),
+      },
       plugins: [
         {
           name: "pdfjs-browser-test-stub",
@@ -342,6 +376,12 @@ describe.skipIf(
       await page.goto("data:text/html,<html><body></body></html>");
       await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
       await page.evaluate(() => {
+        window.print = () => undefined;
+        window.open = () => {
+          throw new Error("Printing must not create a popup");
+        };
+      });
+      await page.evaluate(() => {
         const revoked: string[] = [];
         const revoke = URL.revokeObjectURL.bind(URL);
         URL.revokeObjectURL = url => {
@@ -351,7 +391,6 @@ describe.skipIf(
         (window as unknown as { revokedBlobUrls: string[] }).revokedBlobUrls =
           revoked;
       });
-      const popupPromise = page.waitForEvent("popup");
       const printPromise = page.evaluate(() =>
         (
           window as unknown as {
@@ -365,13 +404,12 @@ describe.skipIf(
           mimeType: "application/pdf",
         })
       );
-      const popup = await popupPromise;
       await printPromise;
-      await popup.waitForFunction(() => {
+      await page.waitForFunction(() => {
         const image = document.querySelector("img");
         return image?.complete && image.naturalWidth > 0;
       });
-      const image = await popup.locator("img").evaluate(node => ({
+      const image = await page.locator("img").evaluate(node => ({
         src: (node as HTMLImageElement).src,
         width: (node as HTMLImageElement).naturalWidth,
         height: (node as HTMLImageElement).naturalHeight,
@@ -379,7 +417,7 @@ describe.skipIf(
       expect(image.src).toMatch(/^blob:/);
       expect(image.width).toBe(3060);
       expect(image.height).toBe(3960);
-      await popup.close();
+      await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
       await page.waitForFunction(
         () =>
           (window as unknown as { revokedBlobUrls: string[] }).revokedBlobUrls

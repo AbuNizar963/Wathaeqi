@@ -9,10 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { openPrintWindow } from "../document-library/printSheets";
+import DocumentOperationProgress from "../document-progress/DocumentOperationProgress";
+import { useDocumentProgress } from "../document-progress/useDocumentProgress";
 import {
-  openPrintWindow,
-  showPrintPreparingPage,
-} from "../document-library/printSheets";
+  measuredProgress,
+  throwIfAborted,
+  type DocumentOperationOptions,
+} from "../document-progress/documentProgress";
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
 import type {
   PagesPerSheet,
@@ -26,7 +30,17 @@ import {
   getBoundedPixelRatio,
 } from "../document-library/renderQuality";
 
-async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
+async function renderA4Pages(
+  element: HTMLElement,
+  options: DocumentOperationOptions = {}
+): Promise<SourcePage[]> {
+  throwIfAborted(options.signal);
+  options.onProgress?.({
+    phase: "preparation",
+    message: "جارٍ تحميل خطوط الوثيقة…",
+  });
+  await document.fonts?.ready;
+  throwIfAborted(options.signal);
   const width = element.clientWidth;
   const editorOverflow = Array.from(
     element.querySelectorAll<HTMLTextAreaElement>(".document-editor-input")
@@ -66,6 +80,10 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   });
   let canvas: HTMLCanvasElement;
   try {
+    options.onProgress?.({
+      phase: "render",
+      message: "جارٍ رسم محتوى الوثيقة؛ نسبة الرسم غير قابلة للقياس",
+    });
     canvas = await toCanvas(element, {
       pixelRatio: getBoundedPixelRatio(
         width,
@@ -100,6 +118,7 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
   const pages: SourcePage[] = [];
   try {
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+      throwIfAborted(options.signal);
       const sourceTop = pageIndex * pageHeightPixels;
       if (sourceTop >= canvas.height) break;
       const sourceHeight = Math.min(
@@ -132,6 +151,14 @@ async function renderA4Pages(element: HTMLElement): Promise<SourcePage[]> {
           width: pageCanvas.width,
           height: pageCanvas.height,
         });
+        options.onProgress?.(
+          measuredProgress(
+            "render",
+            "جارٍ تجهيز جميع صفحات A4…",
+            pages.length,
+            pageCount
+          )
+        );
       } finally {
         pageCanvas.width = 0;
         pageCanvas.height = 0;
@@ -170,6 +197,7 @@ export default function DocumentStudioPrintDialog({
   const [showPageNumbers, setShowPageNumbers] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const operation = useDocumentProgress();
 
   useEffect(() => {
     if (!open) return;
@@ -183,24 +211,17 @@ export default function DocumentStudioPrintDialog({
   }, [open, title]);
 
   async function handlePrint() {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      setError(
-        "منع المتصفح نافذة الطباعة؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة"
-      );
-      return;
-    }
-    showPrintPreparingPage(printWindow);
-
     setLoading(true);
     setError(null);
     try {
       if (!pageElement || !pageElement.isConnected) {
         throw new Error("تعذر العثور على صفحة الوثيقة الحالية");
       }
-      const pages = await renderA4Pages(pageElement);
-      await openPrintWindow(
-        {
+      await operation.run(async progressOptions => {
+        const pages = await renderA4Pages(pageElement, progressOptions);
+        await openPrintWindow({
+          ...progressOptions,
+          title,
           pages,
           options: {
             pagesPerSheet,
@@ -212,11 +233,11 @@ export default function DocumentStudioPrintDialog({
             footerText: "",
             showPageNumbers,
           },
-        },
-        printWindow
-      );
+        });
+      });
     } catch (printError) {
-      printWindow.close();
+      if (printError instanceof Error && printError.name === "AbortError")
+        return;
       setError(
         printError instanceof Error
           ? printError.message
@@ -231,7 +252,10 @@ export default function DocumentStudioPrintDialog({
     <Dialog
       open={open}
       onOpenChange={nextOpen => {
-        if (!nextOpen) setError(null);
+        if (!nextOpen) {
+          operation.cancel();
+          setError(null);
+        }
         onOpenChange(nextOpen);
       }}
     >
@@ -260,8 +284,12 @@ export default function DocumentStudioPrintDialog({
           showPageNumbers={showPageNumbers}
           onShowPageNumbersChange={setShowPageNumbers}
         />
+        <DocumentOperationProgress progress={operation.progress} />
         {error ? (
-          <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          >
             {error}
           </p>
         ) : null}
@@ -280,10 +308,12 @@ export default function DocumentStudioPrintDialog({
           </Button>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
+            onClick={() => {
+              operation.cancel();
+              onOpenChange(false);
+            }}
           >
-            إغلاق
+            {loading ? "إلغاء التجهيز" : "إغلاق"}
           </Button>
         </DialogFooter>
       </DialogContent>

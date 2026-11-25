@@ -1,6 +1,9 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
-import { fetchWithSession } from "@/lib/trpcFetch";
-import { fileKind } from "../document-library/types";
+import { fetchDocumentBlob } from "../document-progress/documentTransfer";
+import {
+  throwIfAborted,
+  type DocumentOperationOptions,
+} from "../document-progress/documentProgress";
 import {
   DEFAULT_PRINT_PIXEL_RATIO,
   getBoundedPixelRatio,
@@ -10,7 +13,7 @@ export type ShareResult = "shared" | "copied";
 
 export function documentStudioUrl(documentId: string): string {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}/studio?document=${encodeURIComponent(documentId)}`;
+  return `${origin}/documents?document=${encodeURIComponent(documentId)}`;
 }
 
 export function documentFileUrl(documentId: string): string {
@@ -21,30 +24,54 @@ export function documentFileUrl(documentId: string): string {
 
 function triggerBlobDownload(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
-  const link = window.document.createElement("a");
-  link.href = objectUrl;
-  link.download = fileName;
-  link.rel = "noopener";
-  link.click();
-  globalThis.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  let requested = false;
+  try {
+    const link = window.document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    link.rel = "noopener";
+    window.document.body?.append(link);
+    try {
+      link.click();
+      requested = true;
+    } finally {
+      link.remove?.();
+    }
+  } finally {
+    // Resource lifetime only: never a simulated progress timer. Immediate
+    // revocation can race the browser's Blob download navigation.
+    if (requested)
+      globalThis.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    else URL.revokeObjectURL(objectUrl);
+  }
 }
 
 export async function downloadDocumentFile(
   url: string,
-  fileName: string
+  fileName: string,
+  options: DocumentOperationOptions = {}
 ): Promise<void> {
-  const response = await fetchWithSession(url);
-  if (!response.ok) throw new Error("تعذر تنزيل الملف");
-  if (!fileKind(fileName, response.headers.get("content-type") ?? "")) {
-    throw new Error("تعذر تنزيل الملف: نوع الاستجابة غير صالح");
-  }
-  triggerBlobDownload(await response.blob(), fileName);
+  const blob = await fetchDocumentBlob(url, fileName, options);
+  throwIfAborted(options.signal);
+  options.onProgress?.({
+    phase: "ready",
+    message: "اكتمل تجهيز الملف؛ جارٍ تسليمه للمتصفح للحفظ",
+  });
+  triggerBlobDownload(blob, fileName);
 }
 
 export async function downloadA4PageAsPng(
   element: HTMLElement,
-  fileName: string
+  fileName: string,
+  options: DocumentOperationOptions = {}
 ): Promise<void> {
+  throwIfAborted(options.signal);
+  options.onProgress?.({
+    phase: "preparation",
+    message: "جارٍ تحميل خطوط الوثيقة وتجهيز الصورة…",
+  });
+  await document.fonts?.ready;
+  throwIfAborted(options.signal);
   // html2canvas re-implements text layout and breaks Arabic shaping and table
   // geometry; html-to-image serializes the real DOM into an SVG foreignObject,
   // so the export matches the browser rendering exactly.
@@ -68,6 +95,10 @@ export async function downloadA4PageAsPng(
   try {
     const width = Math.max(element.clientWidth, element.scrollWidth);
     const height = Math.max(element.clientHeight, element.scrollHeight);
+    options.onProgress?.({
+      phase: "render",
+      message: "جارٍ رسم صورة الوثيقة؛ نسبة الرسم غير قابلة للقياس",
+    });
     const blob = await toBlob(element, {
       pixelRatio: getBoundedPixelRatio(
         width,
@@ -87,6 +118,11 @@ export async function downloadA4PageAsPng(
       },
     });
     if (!blob) throw new Error("تعذر تجهيز صورة PNG للتنزيل");
+    throwIfAborted(options.signal);
+    options.onProgress?.({
+      phase: "ready",
+      message: "اكتمل رسم الصورة؛ جارٍ تسليمها للمتصفح للحفظ",
+    });
     triggerBlobDownload(blob, fileName);
   } finally {
     hidden.forEach((node, index) => {

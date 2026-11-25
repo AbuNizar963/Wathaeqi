@@ -32,14 +32,14 @@
 
 :root {
   color-scheme: light;
-  --background: #f5f7f6;
-  --foreground: #172b3d;
-  --card: #fffefa;
-  --card-foreground: #172b3d;
-  --popover: #fffefa;
-  --popover-foreground: #172b3d;
-  --primary: #14263f;
-  --primary-foreground: #fffefa;
+  --background: #f4f7f8;
+  --foreground: #172b36;
+  --card: #ffffff;
+  --card-foreground: #172b36;
+  --popover: #ffffff;
+  --popover-foreground: #172b36;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
   --secondary: #e3f3ef;
   --secondary-foreground: #0d625d;
   --muted: #edf1f0;
@@ -48,10 +48,10 @@
   --accent-foreground: #0d625d;
   --destructive: #c2414d;
   --destructive-tint: #fff0ef;
-  --border: #d8e2df;
-  --input: #d8e2df;
-  --ring: #169487;
-  --brand-accent: #169487;
+  --border: #dbe5e8;
+  --input: #dbe5e8;
+  --ring: #0f766e;
+  --brand-accent: #0f766e;
   --brand-gold: #c9964d;
   --success: #147c69;
   --success-foreground: #ffffff;
@@ -65,8 +65,8 @@
   --brand-wash: rgb(22 148 135 / 0.09);
   --ambient-wash: rgb(201 150 77 / 0.09);
   --shadow-color: rgb(20 38 63 / 0.08);
-  --radius: 0.85rem;
-  --sidebar-background: #14263f;
+  --radius: 1rem;
+  --sidebar-background: #102e3c;
   --sidebar-foreground: #eef7f5;
   --sidebar-primary: #41c6b2;
   --sidebar-primary-foreground: #102d3c;
@@ -111,7 +111,7 @@
   --brand-wash: rgb(65 198 178 / 0.065);
   --ambient-wash: rgb(223 181 107 / 0.055);
   --shadow-color: rgb(0 0 0 / 0.28);
-  --sidebar-background: #14263f;
+  --sidebar-background: #102e3c;
   --sidebar-foreground: #eef7f5;
   --sidebar-primary: #41c6b2;
   --sidebar-primary-foreground: #102d3c;
@@ -1122,5 +1122,52 @@
     min-height: 55dvh !important;
     font-size: 16px !important;
     line-height: 2 !important;
+  }
+}
+
+/* Unified workspace surfaces; document-paper styles remain deliberately separate. */
+@layer components {
+  .document-studio-header {
+    padding: 1.4rem;
+    border-inline-start: 4px solid var(--brand-accent);
+    background: linear-gradient(120deg, var(--card) 60%, var(--brand-wash));
+  }
+  .document-studio-header > div:first-child {
+    flex: 1 1 100%;
+  }
+  .document-studio-tabs {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+  .document-studio-tabs > button {
+    min-height: 44px;
+    padding-inline: 1rem;
+    box-shadow: none;
+  }
+  .document-studio-shell > div > aside [data-slot="card"],
+  .document-studio-shell > div > main > [data-slot="card"] {
+    border-color: var(--border);
+    box-shadow: 0 4px 18px var(--shadow-color);
+  }
+  .document-toolbar input {
+    background: var(--background);
+    min-height: 42px;
+  }
+  .document-card {
+    border-radius: 1.15rem;
+  }
+  .auth-card {
+    border-top: 4px solid var(--brand-accent);
+  }
+  @media (max-width: 639px) {
+    .document-studio-header {
+      padding: 1rem;
+    }
+    .document-studio-tabs {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 }

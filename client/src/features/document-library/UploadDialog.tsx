@@ -12,7 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { appwriteApiUrl } from "@/lib/appwriteApi";
-import { fetchWithSession } from "@/lib/trpcFetch";
+import { uploadDocumentWithProgress } from "../document-progress/documentUploadProgress";
+import { useDocumentProgress } from "../document-progress/useDocumentProgress";
+import DocumentOperationProgress from "../document-progress/DocumentOperationProgress";
 import { countLocalFilePages } from "./renderPages";
 import { DOCUMENT_CATEGORIES, fileKind, formatBytes } from "./types";
 
@@ -50,11 +52,13 @@ export default function UploadDialog({
     new Date().toISOString().slice(0, 10)
   );
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState("");
   const [uploading, setUploading] = useState(false);
+  const operation = useDocumentProgress();
+  const selectionVersion = useRef(0);
 
   useEffect(() => {
     if (!open) {
+      selectionVersion.current += 1;
       setFile(null);
       setPageCount(0);
       setTitle("");
@@ -62,14 +66,13 @@ export default function UploadDialog({
       setSubject("");
       setDocumentDate(new Date().toISOString().slice(0, 10));
       setError(null);
-      setProgress("");
       setUploading(false);
       setAnalyzing(false);
     }
   }, [open]);
 
   const selectFile = async (selected: File | null) => {
-    if (!selected) return;
+    if (!selected || uploading) return;
     setError(null);
     if (selected.size > 25 * 1024 * 1024) {
       setError("الحد الأقصى لحجم الملف 25 ميغابايت");
@@ -79,17 +82,21 @@ export default function UploadDialog({
       setError("الصيغ المدعومة: Word (docx)، PDF، وصور PNG/JPG/WEBP");
       return;
     }
+    const version = ++selectionVersion.current;
     setFile(selected);
+    setPageCount(0);
     setTitle(current => current || selected.name.replace(/\.[^.]+$/, ""));
     setAnalyzing(true);
     try {
       const count = await countLocalFilePages(selected);
-      setPageCount(count);
+      if (version === selectionVersion.current) setPageCount(count);
     } catch {
-      setPageCount(0);
-      setError("تم اختيار الملف، لكن تعذر تحليل عدد صفحاته. يمكنك المتابعة.");
+      if (version === selectionVersion.current) {
+        setPageCount(0);
+        setError("تم اختيار الملف، لكن تعذر تحليل عدد صفحاته. يمكنك المتابعة.");
+      }
     } finally {
-      setAnalyzing(false);
+      if (version === selectionVersion.current) setAnalyzing(false);
     }
   };
 
@@ -98,12 +105,11 @@ export default function UploadDialog({
     setUploading(true);
     setError(null);
     try {
-      setProgress("جارٍ رفع الملف إلى التخزين الآمن…");
-      const response = await fetchWithSession(
-        appwriteApiUrl("/api/documents/upload"),
-        {
-          method: "POST",
-          headers: {
+      const uploaded = await operation.run(options =>
+        uploadDocumentWithProgress(
+          appwriteApiUrl("/api/documents/upload"),
+          file,
+          {
             "Content-Type": "application/octet-stream",
             "x-file-name": encodeURIComponent(file.name),
             "x-document-metadata": encodeMetadataHeader({
@@ -116,30 +122,30 @@ export default function UploadDialog({
               pageCount,
             }),
           },
-          body: file,
-        }
+          options
+        )
       );
-      const uploaded = (await response.json().catch(() => null)) as {
-        id?: string;
-        error?: string;
-      } | null;
-      if (!response.ok || !uploaded?.id) {
-        throw new Error(uploaded?.error || "تعذر رفع الملف");
-      }
       onUploaded(uploaded.id);
       onOpenChange(false);
     } catch (uploadError) {
+      if (uploadError instanceof Error && uploadError.name === "AbortError")
+        return;
       setError(
         uploadError instanceof Error ? uploadError.message : "تعذر رفع الوثيقة"
       );
     } finally {
       setUploading(false);
-      setProgress("");
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={next => {
+        if (!next) operation.cancel();
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="max-w-2xl" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-right">رفع وثيقة</DialogTitle>
@@ -152,6 +158,7 @@ export default function UploadDialog({
         <div className="space-y-4">
           <button
             type="button"
+            disabled={uploading}
             onClick={() => inputRef.current?.click()}
             onDragOver={event => {
               event.preventDefault();
@@ -262,13 +269,22 @@ export default function UploadDialog({
             </div>
           </div>
 
-          {progress ? (
-            <p className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              <Loader2 className="size-3.5 animate-spin" /> {progress}
-            </p>
-          ) : null}
+          <DocumentOperationProgress
+            progress={
+              operation.progress ??
+              (analyzing
+                ? {
+                    phase: "preparation",
+                    message: "جارٍ تحليل صفحات الملف؛ النسبة غير قابلة للقياس",
+                  }
+                : null)
+            }
+          />
           {error ? (
-            <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+            >
               {error}
             </p>
           ) : null}
@@ -287,7 +303,13 @@ export default function UploadDialog({
             )}
             رفع الوثيقة
           </Button>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              operation.cancel();
+              onOpenChange(false);
+            }}
+          >
             إلغاء
           </Button>
         </DialogFooter>

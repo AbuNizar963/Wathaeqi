@@ -35,7 +35,7 @@ function overflowingDocx(): Buffer {
 describe.skipIf(
   !chromiumPath && !(process.platform === "linux" && process.arch === "x64")
 )("original print failure handling in Chromium", () => {
-  it("closes the owned popup on network failure, invalid Word, or unsafe Word pagination and refreshes URLs after opening", async () => {
+  it("cleans the local print root and does not invoke print on network or pagination failure and refreshes signed URLs before rendering", async () => {
     const bundle = await build({
       entryPoints: [
         resolve("client/src/features/document-library/printOriginal.ts"),
@@ -45,6 +45,12 @@ describe.skipIf(
       format: "iife",
       globalName: "printOriginalTest",
       platform: "browser",
+      define: {
+        "import.meta.env": JSON.stringify({
+          BASE_URL: "/",
+          VITE_APPWRITE_API_URL: "",
+        }),
+      },
       plugins: [
         {
           name: "unused-pdfjs-stub",
@@ -82,13 +88,15 @@ describe.skipIf(
               };
             }
           ).printOriginalTest;
-          const realOpen = window.open.bind(window);
-          let popup: Window | null = null;
-          window.open = (...args) => {
-            popup = realOpen(...args);
-            if (popup) popup.print = () => undefined;
-            return popup;
+          let printCalls = 0;
+          window.print = () => {
+            printCalls += 1;
           };
+          window.open = () => {
+            throw new Error("Popup must never open");
+          };
+          const rootClosed = () =>
+            !document.getElementById("wathaeqi-print-root");
           const actualFetch = window.fetch;
           const failures = [];
           for (const [fileName, mimeType] of [
@@ -110,9 +118,8 @@ describe.skipIf(
               failures.push({
                 fileName,
                 rejected: true,
-                closed: Boolean(popup?.closed),
+                closed: rootClosed(),
               });
-              if (popup && !popup.closed) popup.close();
             }
           }
           window.fetch = actualFetch;
@@ -127,12 +134,11 @@ describe.skipIf(
           } catch (error) {
             overflow = {
               rejected: true,
-              closed: Boolean(popup?.closed),
+              closed: rootClosed(),
               message: String(error),
             };
           }
-          if (popup && !popup.closed) popup.close();
-          let openedBeforeRefresh = false;
+          let noRootBeforeRefresh = false;
           let refreshCalled = false;
           try {
             await api.openOriginalPrintWindow({
@@ -141,19 +147,19 @@ describe.skipIf(
               mimeType: docxMimeType,
               resolveUrl: async () => {
                 refreshCalled = true;
-                openedBeforeRefresh = Boolean(popup && !popup.closed);
+                noRootBeforeRefresh = rootClosed();
                 throw new Error("synthetic refresh failure");
               },
             });
           } catch {}
-          const refreshClosed = Boolean(popup?.closed);
-          if (popup && !popup.closed) popup.close();
+          const refreshClosed = rootClosed();
           return {
             failures,
             overflow,
             refreshCalled,
-            openedBeforeRefresh,
+            noRootBeforeRefresh,
             refreshClosed,
+            printCalls,
           };
         },
         { overflowUrl, docxMimeType }
@@ -167,8 +173,9 @@ describe.skipIf(
       expect(results.overflow.closed).toBe(true);
       expect(results.overflow.message).toContain("PDF");
       expect(results.refreshCalled).toBe(true);
-      expect(results.openedBeforeRefresh).toBe(true);
+      expect(results.noRootBeforeRefresh).toBe(true);
       expect(results.refreshClosed).toBe(true);
+      expect(results.printCalls).toBe(0);
     } finally {
       await browser.close();
     }

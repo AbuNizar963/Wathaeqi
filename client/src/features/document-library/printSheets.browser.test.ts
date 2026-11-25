@@ -236,7 +236,7 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       await browser.close();
     }
   }, 90_000);
-  it("writes a complete print document into the owned popup before invoking print", async () => {
+  it("prints an isolated root in the same page without popup or replacing application DOM", async () => {
     const bundle = await build({
       entryPoints: [
         resolve("client/src/features/document-library/printSheets.ts"),
@@ -266,10 +266,14 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       const page = await context.newPage();
       await page.goto("data:text/html,<html><body></body></html>");
       await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
-      const popupPromise = page.waitForEvent("popup");
       const printPromise = page.evaluate(async () => {
-        const popup = window.open("", "_blank");
-        if (!popup) throw new Error("Popup was blocked");
+        window.open = () => {
+          throw new Error("Popup is forbidden");
+        };
+        const app = document.createElement("main");
+        app.id = "application-fixture";
+        app.textContent = "Keep existing app";
+        document.body.append(app);
         const api = (
           window as unknown as {
             printSheetsTest: {
@@ -281,17 +285,20 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
           }
         ).printSheetsTest;
         await api.printHtmlDocument(
-          popup,
+          window,
           "<!doctype html><html><head><title>Print fixture</title></head><body><h1>Ready to print</h1></body></html>"
         );
       });
-      const popup = await popupPromise;
       await printPromise;
-      expect(popup.url()).toBe("about:blank");
-      expect(await popup.title()).toBe("Print fixture");
-      expect(await popup.locator("h1").textContent()).toBe("Ready to print");
+      expect(page.url()).toContain("data:text/html");
+      expect(await page.locator("#application-fixture").textContent()).toBe(
+        "Keep existing app"
+      );
+      expect(await page.locator("#wathaeqi-print-root").count()).toBe(1);
+      expect(await page.title()).toBe("Print fixture");
+      expect(await page.locator("h1").textContent()).toBe("Ready to print");
       expect(
-        await popup.evaluate(
+        await page.evaluate(
           () =>
             (window as unknown as { printWasCalled?: boolean })
               .printWasCalled === true
@@ -303,3 +310,84 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
     }
   });
 });
+
+it.skipIf(!chromiumPath)(
+  "honors PDF repeat layouts and orientation without dropping any source pages",
+  async () => {
+    const bundle = await build({
+      entryPoints: [
+        resolve("client/src/features/document-library/printSheets.ts"),
+      ],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "printSheetsTest",
+      platform: "browser",
+    });
+    const browser = await chromium.launch({
+      executablePath: chromiumPath,
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setContent("<title>Application</title><main>App</main>");
+      await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      const result = await page.evaluate(async () => {
+        window.print = () => undefined;
+        window.open = () => {
+          throw new Error("No popup allowed");
+        };
+        const api = (
+          window as unknown as {
+            printSheetsTest: {
+              openPrintWindow: (content: unknown) => Promise<void>;
+            };
+          }
+        ).printSheetsTest;
+        const pages = [1, 2, 3].map(index => ({
+          src: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="612" height="792"><text x="10" y="50">PAGE${index}</text></svg>`)}`,
+          width: 612,
+          height: 792,
+          widthPt: 612,
+          heightPt: 792,
+        }));
+        await api.openPrintWindow({
+          pages,
+          options: {
+            layoutMode: "repeat",
+            pagesPerSheet: 1,
+            copiesPerSheet: 2,
+            orientation: "landscape",
+            marginMm: 0,
+            headerText: "",
+            footerText: "",
+            showPageNumbers: false,
+          },
+        });
+        const root = document.getElementById("wathaeqi-print-root")!;
+        const sheets = Array.from(root.querySelectorAll(".sheet"));
+        return {
+          sources: sheets.map(sheet =>
+            Array.from(sheet.querySelectorAll("img"), image => image.src)
+          ),
+          landscape: root
+            .querySelector(".grid")
+            ?.classList.contains("landscape"),
+          grids: root.querySelectorAll(".per-2").length,
+        };
+      });
+      expect(result.sources).toHaveLength(3);
+      expect(
+        result.sources.every(
+          sheet => sheet.length === 2 && sheet[0] === sheet[1]
+        )
+      ).toBe(true);
+      expect(new Set(result.sources.map(sheet => sheet[0])).size).toBe(3);
+      expect(result.landscape).toBe(true);
+      expect(result.grids).toBe(3);
+    } finally {
+      await browser.close();
+    }
+  }
+);

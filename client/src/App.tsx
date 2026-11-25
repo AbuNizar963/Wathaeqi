@@ -1,18 +1,16 @@
 import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch } from "wouter";
+import { Redirect, Route, Switch, useSearch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashboardLayout from "./components/DashboardLayout";
 import OwnerUserManagement from "./features/users/OwnerUserManagement";
 import PlatformDocumentSettingsPage from "./features/platform-settings/PlatformDocumentSettingsPage";
 import WorkspacePage from "./features/workspace/WorkspacePage";
+import { legacyWorkspaceTarget } from "./features/document-studio/workspaceRoutes";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
-const DocumentLibraryPage = lazy(
-  () => import("./features/document-library/DocumentLibraryPage")
-);
 const DocumentStudioPage = lazy(
   () => import("./features/document-studio/DocumentStudioPage")
 );
@@ -26,6 +24,13 @@ function DashboardPage({ children }: { children: React.ReactNode }) {
       <DashboardLayout>{children}</DashboardLayout>
       <OwnerUserManagement />
     </>
+  );
+}
+
+function LegacyWorkspaceRoute() {
+  const search = useSearch();
+  return (
+    <Redirect to={legacyWorkspaceTarget(search ? `?${search}` : "")} replace />
   );
 }
 
@@ -53,16 +58,13 @@ function Router() {
             <PlatformDocumentSettingsPage />
           </DashboardPage>
         </Route>
-        <Route path="/studio">
+        <Route path="/documents">
           <DashboardPage>
             <DocumentStudioPage />
           </DashboardPage>
         </Route>
-        <Route path="/dashboard">
-          <DashboardPage>
-            <DocumentLibraryPage />
-          </DashboardPage>
-        </Route>
+        <Route path="/studio" component={LegacyWorkspaceRoute} />
+        <Route path="/dashboard" component={LegacyWorkspaceRoute} />
         <Route path="/users">
           <DashboardPage>
             <WorkspacePage section="users" />
@@ -74,11 +76,7 @@ function Router() {
           </DashboardPage>
         </Route>
         <Route path="/terms" component={Terms} />
-        <Route path="/">
-          <DashboardPage>
-            <DocumentLibraryPage />
-          </DashboardPage>
-        </Route>
+        <Route path="/" component={LegacyWorkspaceRoute} />
         <Route path="/404">
           <DashboardPage>
             <NotFound />

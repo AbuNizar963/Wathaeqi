@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
+  FileText,
   FileSpreadsheet,
   History,
   LayoutDashboard,
@@ -36,9 +37,9 @@ import HeaderActions from "./HeaderActions";
 const menuItems = [
   {
     key: "library",
-    icon: LayoutDashboard,
-    label: "مكتبة الوثائق",
-    path: "/",
+    icon: FileText,
+    label: "مساحة الوثائق",
+    path: "/documents",
   },
   {
     key: "workspace-users",
@@ -151,10 +152,10 @@ export default function DashboardLayout({
             <BrandMark size="lg" showLabel />
             <span className="auth-eyebrow">مساحة عمل موثوقة</span>
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              تسجيل الدخول إلى النظام
+              وثائقك. منظّمة وواضحة.
             </h1>
             <p className="text-sm text-muted-foreground text-center">
-              أدخل اسم المستخدم وكلمة المرور الخاصة بالحساب المعتمد.
+              سجّل الدخول للوصول إلى وثائقك وقوالبك وملفاتك المحفوظة بأمان.
             </p>
           </div>
 
@@ -575,7 +576,7 @@ function DashboardLayoutContent({
         {!isMobile ? (
           <div
             dir="rtl"
-            className="app-header flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-background/90 px-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur supports-[backdrop-filter]:backdrop-blur"
+            className="app-header flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-card/90 px-4 shadow-sm backdrop-blur supports-[backdrop-filter]:backdrop-blur"
           >
             <div className="flex items-center gap-3">
               <SidebarTrigger

@@ -42,6 +42,12 @@ describe.skipIf(
       format: "iife",
       globalName: "printOriginalTest",
       platform: "browser",
+      define: {
+        "import.meta.env": JSON.stringify({
+          BASE_URL: "/",
+          VITE_APPWRITE_API_URL: "",
+        }),
+      },
       plugins: [
         {
           name: "unused-pdfjs-stub",
@@ -68,9 +74,14 @@ describe.skipIf(
       const page = await browser.newPage();
       await page.goto("data:text/html,<html><body></body></html>");
       await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      await page.evaluate(() => {
+        window.print = () => undefined;
+        window.open = () => {
+          throw new Error("Printing must not create a popup");
+        };
+      });
       const url = `data:${docxMimeType};base64,${landscapeDocx().toString("base64")}`;
       for (const pagesPerSheet of [1, 2, 4]) {
-        const popupPromise = page.waitForEvent("popup");
         const printPromise = page.evaluate(
           ({ url, mimeType, pagesPerSheet }) =>
             (
@@ -88,8 +99,9 @@ describe.skipIf(
             }),
           { url, mimeType: docxMimeType, pagesPerSheet }
         );
-        const [popup] = await Promise.all([popupPromise, printPromise]);
-        const printed = await popup.pdf({
+        await printPromise;
+        await page.emulateMedia({ media: "print" });
+        const printed = await page.pdf({
           preferCSSPageSize: true,
           printBackground: true,
         });
@@ -112,7 +124,10 @@ describe.skipIf(
         } finally {
           await loadingTask.destroy();
         }
-        await popup.close();
+        await page.evaluate(() =>
+          window.dispatchEvent(new Event("afterprint"))
+        );
+        await page.emulateMedia({ media: "screen" });
       }
     } finally {
       await browser.close();

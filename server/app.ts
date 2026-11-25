@@ -26,6 +26,10 @@ import {
   isSafeDocumentStorageKey,
   MAX_DOCUMENT_UPLOAD_BYTES,
 } from "./features/document-studio/documentUploadValidation";
+import {
+  DocxConversionError,
+  renderDocxToPdf,
+} from "./features/document-studio/docxPdfRenderer";
 
 function safeUploadName(value: string): string {
   const base = value.split(/[\\/]/).pop() ?? "document";
@@ -684,9 +688,12 @@ export function createApp(
         ? getAllowedDocumentMimeType(file.fileName)
         : null;
       const isPdf = expectedMimeType === "application/pdf";
+      const isDocx =
+        expectedMimeType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
       if (
         !file ||
-        !isPdf ||
+        (!isPdf && !isDocx) ||
         file.mimeType !== expectedMimeType ||
         !isSafeDocumentStorageKey(
           file.storageKey,
@@ -695,8 +702,7 @@ export function createApp(
         )
       ) {
         res.status(415).json({
-          error:
-            "مسار PDF الأصلي متاح لملفات PDF فقط؛ اطبع ملف Word من معاينة DOCX",
+          error: "صيغة الملف غير مدعومة للطباعة",
         });
         return;
       }
@@ -710,7 +716,8 @@ export function createApp(
           info.size < 1 ||
           info.size > MAX_DOCUMENT_UPLOAD_BYTES ||
           info.size !== file.sizeBytes ||
-          info.contentType !== file.mimeType
+          (info.contentType !== file.mimeType &&
+            info.contentType !== "application/octet-stream")
         ) {
           res.status(409).json({ error: "بيانات الملف المخزن غير متطابقة" });
           return;
@@ -721,6 +728,7 @@ export function createApp(
         return;
       }
       if (
+        !Buffer.isBuffer(stored.body) ||
         stored.body.length !== file.sizeBytes ||
         !(await isValidDocumentFile(stored.body, file.fileName))
       ) {
@@ -728,14 +736,40 @@ export function createApp(
         return;
       }
 
+      let printablePdf = stored.body;
+      if (isDocx) {
+        try {
+          printablePdf = await renderDocxToPdf(stored.body);
+        } catch (error) {
+          const code = error instanceof DocxConversionError ? error.code : "";
+          const statusCode =
+            code === "conversion_timeout"
+              ? 504
+              : code === "input_too_large"
+                ? 413
+                : code === "invalid_docx" || code === "invalid_input"
+                  ? 415
+                  : 502;
+          res.status(statusCode).json({
+            error:
+              statusCode === 504
+                ? "انتهت مهلة تحويل ملف Word للطباعة"
+                : "تعذر تحويل ملف Word إلى PDF للطباعة",
+          });
+          return;
+        }
+      }
+
       res.status(200);
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `inline; filename="${safeUploadName(file.fileName)}"`
+        `inline; filename="${safeUploadName(
+          isDocx ? file.fileName.replace(/\.docx$/i, ".pdf") : file.fileName
+        )}"`
       );
-      res.setHeader("Content-Length", String(stored.body.length));
-      res.end(stored.body);
+      res.setHeader("Content-Length", String(printablePdf.length));
+      res.end(printablePdf);
     }
   );
 

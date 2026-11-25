@@ -1,3 +1,5 @@
+import { createPrintRoot, invokePagePrint } from "./printDom";
+import type { DocumentOperationOptions } from "../document-progress/documentProgress";
 import type {
   PagesPerSheet,
   PrintLayoutMode,
@@ -27,7 +29,7 @@ export function buildPrintSheets(
   return pages.map(page => Array.from({ length: count }, () => page));
 }
 
-export interface PrintWindowContent {
+export interface PrintWindowContent extends DocumentOperationOptions {
   pages: SourcePage[];
   options: PrintOptions;
   title?: string;
@@ -206,99 +208,54 @@ export function buildPrintHtml(
 </html>`;
 }
 
-/**
- * Show useful feedback immediately while the document is being prepared.
- * The temporary window is navigated to a real print document before printing.
- */
-export function showPrintPreparingPage(printWindow: Window): void {
-  const document = printWindow.document;
-  document.open();
-  document.write(`<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>تجهيز الطباعة</title>
-<style>
-  html, body { min-height: 100%; margin: 0; }
-  body {
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    box-sizing: border-box;
-    background: #f8fafc;
-    color: #0f172a;
-    font: 16px/1.7 "Cairo", "Segoe UI", Tahoma, sans-serif;
-    text-align: center;
-  }
-  main { max-width: 28rem; padding: 28px; border-radius: 16px; background: white; box-shadow: 0 8px 32px #0f172a18; }
-  h1 { margin: 0 0 8px; font-size: 1.25rem; }
-  p { margin: 0; color: #475569; }
-</style>
-</head>
-<body><main><h1>جارٍ تجهيز الوثيقة للطباعة</h1><p>يرجى الانتظار، ستفتح واجهة الطباعة تلقائياً عند اكتمال التجهيز.</p></main></body>
-</html>`);
-  document.close();
-}
-
-async function waitForPrintAssets(document: Document): Promise<void> {
-  await document.fonts?.ready;
-  await Promise.all(
-    Array.from(document.images).map(async image => {
-      if (!image.complete) {
-        await new Promise<void>(resolve => {
-          image.addEventListener("load", () => resolve(), { once: true });
-          image.addEventListener("error", () => resolve(), { once: true });
-        });
-      }
-      if (image.complete && image.naturalWidth > 0 && image.decode) {
-        await image.decode().catch(() => undefined);
-      }
-    })
-  );
-}
-
-async function invokePrint(printWindow: Window): Promise<void> {
-  await waitForPrintAssets(printWindow.document);
-  await new Promise(resolve => printWindow.setTimeout(resolve, 100));
-  printWindow.focus();
-  printWindow.print();
-}
-
-/** Write a complete HTML document into the owned popup, then invoke native print. */
+/** Print generated markup in an isolated root within the current page. */
 export async function printHtmlDocument(
-  printWindow: Window,
-  html: string
+  targetWindow: Window,
+  html: string,
+  options: DocumentOperationOptions = {},
+  release?: () => void
 ): Promise<void> {
-  printWindow.opener = null;
-  // Write into the existing browsing context. This also works for popups opened
-  // from opaque-origin pages, where navigating to a Blob URL is not permitted.
-  const document = printWindow.document;
-  document.open();
-  document.write(html);
-  document.close();
-  await invokePrint(printWindow);
+  if (targetWindow !== window)
+    throw new Error("الطباعة متاحة داخل الصفحة الحالية فقط");
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const css = Array.from(
+    parsed.querySelectorAll("style"),
+    style => style.textContent ?? ""
+  ).join("\n");
+  const landscape = /size:\s*A4 landscape/.test(css);
+  const session = createPrintRoot(
+    parsed.title || "طباعة الوثيقة",
+    css,
+    landscape ? 297 : 210
+  );
+  if (release) session.addCleanup(release);
+  try {
+    session.root.append(
+      ...Array.from(parsed.body.childNodes, node =>
+        document.importNode(node, true)
+      )
+    );
+    await invokePagePrint(session.root, options);
+  } catch (error) {
+    session.cleanup();
+    throw error;
+  }
 }
 
-/** Print the already-rendered document without replacing its loaded resources. */
-export async function printCurrentDocument(printWindow: Window): Promise<void> {
-  printWindow.opener = null;
-  await invokePrint(printWindow);
-}
-
-/** One rasterized PDF page per sheet, preserving its original physical size. */
+/** Compatibility name: this never opens a new browsing context. */
 export async function openPrintWindow(
   content: PrintWindowContent,
-  targetWindow?: Window
+  targetWindow: Window = window
 ): Promise<void> {
-  const printWindow = targetWindow ?? window.open("", "_blank");
-  if (!printWindow) {
-    throw new Error(
-      "منع المتصفح نافذة الطباعة؛ اسمح بالنوافذ المنبثقة ثم أعد المحاولة"
-    );
-  }
-
   const { pages, options } = content;
+  if (!pages.length) throw new Error("لا توجد صفحات قابلة للطباعة");
+  const singleOriginal =
+    (options.layoutMode ?? "sequential") === "sequential" &&
+    options.pagesPerSheet === 1 &&
+    options.marginMm === 0 &&
+    !options.headerText &&
+    !options.footerText &&
+    !options.showPageNumbers;
   const hasPdfPageSizes = pages.every(
     page =>
       "widthPt" in page &&
@@ -306,28 +263,30 @@ export async function openPrintWindow(
       Number.isFinite(page.widthPt) &&
       Number.isFinite(page.heightPt)
   );
-  const html = hasPdfPageSizes
-    ? buildSinglePdfPagesHtml(
-        pages as Array<SourcePage & { widthPt: number; heightPt: number }>
-      )
-    : buildPrintHtml(pages, options);
+  const html =
+    hasPdfPageSizes && singleOriginal
+      ? buildSinglePdfPagesHtml(
+          pages as Array<SourcePage & { widthPt: number; heightPt: number }>,
+          options.orientation
+        )
+      : buildPrintHtml(pages, options);
   const titledHtml = html.replace(
     "<title>طباعة الوثيقة</title>",
     `<title>${escapeHtml(content.title ?? "طباعة الوثيقة")}</title>`
   );
-
-  const blobUrls = pages
-    .map(page => page.src)
-    .filter(src => src.startsWith("blob:"));
+  const urls = new Set(
+    pages.map(page => page.src).filter(src => src.startsWith("blob:"))
+  );
   let released = false;
-  const releasePageUrls = () => {
+  const release = () => {
     if (released) return;
     released = true;
-    blobUrls.forEach(src => URL.revokeObjectURL(src));
+    urls.forEach(url => URL.revokeObjectURL(url));
   };
-  printWindow.addEventListener("afterprint", releasePageUrls, { once: true });
-  await printHtmlDocument(printWindow, titledHtml);
-  // Register after writing the print document so replacing about:blank cannot
-  // revoke image URLs before the browser has loaded them.
-  printWindow.addEventListener("pagehide", releasePageUrls, { once: true });
+  try {
+    await printHtmlDocument(targetWindow, titledHtml, content, release);
+  } catch (error) {
+    release();
+    throw error;
+  }
 }

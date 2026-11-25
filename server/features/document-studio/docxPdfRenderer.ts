@@ -241,7 +241,11 @@ export function validateDocxBytes(input: Uint8Array): void {
   }
 }
 
-type RendererBundles = { jsZip: string; docxPreview: string };
+type RendererBundles = {
+  jsZip: string;
+  docxPreview: string;
+  cairoFontCss?: string;
+};
 type ConversionDependencies = {
   launchBrowser?: () => Promise<Browser>;
   loadRendererBundles?: () => Promise<RendererBundles>;
@@ -250,6 +254,28 @@ type ConversionDependencies = {
 
 function stripSourceMapReference(source: string): string {
   return source.replace(/\n?\/\/[#@] sourceMappingURL=.*(?:\r?\n)?$/, "");
+}
+
+async function loadOptionalCairoFontCss(): Promise<string | undefined> {
+  const rules: string[] = [];
+  for (const weight of [400, 500, 600, 700]) {
+    try {
+      const font = await readFile(
+        resolve(process.cwd(), "client/public/fonts", `cairo-${weight}.ttf`)
+      );
+      if (font.byteLength === 0 || font.byteLength > 4 * 1024 * 1024) continue;
+      rules.push(
+        `@font-face{font-family:"Cairo";font-style:normal;font-weight:${weight};font-display:block;src:url(data:font/ttf;base64,${font.toString("base64")}) format("truetype")}`
+      );
+    } catch {
+      // Appwrite function packaging may not include the web public assets.
+    }
+  }
+  if (rules.length === 0) return undefined;
+  rules.push(
+    'html,body,#docx-render-host,.docx-wrapper{font-family:"Cairo",sans-serif}'
+  );
+  return rules.join("\n");
 }
 
 async function loadInstalledRendererBundles(): Promise<RendererBundles> {
@@ -261,13 +287,15 @@ async function loadInstalledRendererBundles(): Promise<RendererBundles> {
     dirname(dirname(jsZipEntryPath)),
     "dist/jszip.min.js"
   );
-  const [jsZip, docxPreview] = await Promise.all([
+  const [jsZip, docxPreview, cairoFontCss] = await Promise.all([
     readFile(jsZipBundlePath, "utf8"),
     readFile(docxPreviewPath, "utf8"),
+    loadOptionalCairoFontCss(),
   ]);
   return {
     jsZip: stripSourceMapReference(jsZip),
     docxPreview: stripSourceMapReference(docxPreview),
+    ...(cairoFontCss ? { cairoFontCss } : {}),
   };
 }
 
@@ -277,7 +305,9 @@ async function launchInstalledChromium(): Promise<Browser> {
       import("playwright-core"),
       import("@sparticuz/chromium"),
     ]);
-  const executablePath = await sparticuzChromium.executablePath();
+  const executablePath =
+    process.env.CHROMIUM_PATH?.trim() ||
+    (await sparticuzChromium.executablePath());
   return playwrightChromium.launch({
     args: [
       ...sparticuzChromium.args,
@@ -309,7 +339,14 @@ const LOAD_RENDERER_IN_PAGE = async (pageArguments: {
   jsZip: string;
   docxPreview: string;
   nonce: string;
+  cairoFontCss?: string;
 }): Promise<void> => {
+  if (pageArguments.cairoFontCss) {
+    const fontStyle = document.createElement("style");
+    fontStyle.nonce = pageArguments.nonce;
+    fontStyle.textContent = pageArguments.cairoFontCss;
+    (document.head ?? document.documentElement).appendChild(fontStyle);
+  }
   const jsZipScript = document.createElement("script");
   jsZipScript.nonce = pageArguments.nonce;
   jsZipScript.textContent = pageArguments.jsZip;

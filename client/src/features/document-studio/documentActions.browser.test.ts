@@ -22,6 +22,9 @@ describe.skipIf(
       format: "iife",
       globalName: "documentActionsTest",
       platform: "browser",
+      define: {
+        "import.meta.env": JSON.stringify({ VITE_APPWRITE_API_URL: "" }),
+      },
     });
     const browser = await chromium.launch({
       executablePath:
@@ -96,6 +99,9 @@ describe.skipIf(
       format: "iife",
       globalName: "documentActionsTest",
       platform: "browser",
+      define: {
+        "import.meta.env": JSON.stringify({ VITE_APPWRITE_API_URL: "" }),
+      },
     });
     const browser = await chromium.launch({
       executablePath:
@@ -269,6 +275,9 @@ describe.skipIf(
       format: "iife",
       globalName: "documentActionsTest",
       platform: "browser",
+      define: {
+        "import.meta.env": JSON.stringify({ VITE_APPWRITE_API_URL: "" }),
+      },
     });
     const browser = await chromium.launch({
       executablePath:
