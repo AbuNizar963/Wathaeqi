@@ -160,6 +160,7 @@ export default function PlatformDocumentSettingsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
+      {/* prettier-ignore */}
       <header className="document-page-header document-admin-header">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -209,6 +210,7 @@ export default function PlatformDocumentSettingsPage() {
           </Button>
         </Card>
       ) : (
+        {/* prettier-ignore */}
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
           {/* prettier-ignore */}
           <Card className="space-y-6 p-5">
