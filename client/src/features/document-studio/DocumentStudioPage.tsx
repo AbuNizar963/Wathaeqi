@@ -689,7 +689,12 @@ export default function DocumentStudioPage() {
       ? applyDocumentTemplateVariables(documentContent, {
           number: selectedDocument.serialCode,
         })
-      : documentContent;
+      : selectedTemplateId && !templateValuesApplied
+        ? applyDocumentTemplateVariables(
+            applyFieldValues(documentContent, documentFieldValues),
+            getDocumentSystemVariables()
+          )
+        : documentContent;
   const logoUrl = settings?.logoUrl ?? null;
   const dividerColor =
     platformDocumentSettings.data?.headerDividerColor ?? "#334155";
