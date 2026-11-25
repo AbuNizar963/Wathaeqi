@@ -659,6 +659,7 @@ void main() {
     expect(api.calls['platformDocumentSettings.update'], {
       'showMinistryWatermarkText': true,
       'watermarkOpacityPercent': 16,
+      'watermarkScalePercent': 100,
       'headerDividerColor': '#b49a55',
       'headerDividerStyle': 'double',
       'headerDividerWidthPt': 2.25,
@@ -670,6 +671,8 @@ void main() {
       'frameColor': '#b49a55',
       'frameWidthPt': 1.0,
       'showVerificationQr': true,
+      'pageHeaderRows': [],
+      'pageFooterRows': [],
     });
     expect(find.text('تم حفظ إعدادات وثائق النظام'), findsOneWidget);
   });

@@ -20,6 +20,7 @@ class DocumentStudioPdf {
     required bool showWatermarkText,
     required String watermarkText,
     required double watermarkOpacity,
+    double watermarkScalePercent = 100,
   }) async {
     final regular = pw.Font.ttf(
       await rootBundle.load('assets/fonts/cairo-400.ttf'),
@@ -58,6 +59,9 @@ class DocumentStudioPdf {
         ? watermarkOpacity.clamp(0.0, 0.6)
         : 0.12;
     final watermarkColor = PdfColor(0.42, 0.44, 0.47, safeOpacity);
+    final watermarkScale = watermarkScalePercent.isFinite
+        ? (watermarkScalePercent / 100).clamp(0.4, 1.8).toDouble()
+        : 1.0;
     final borderColor = PdfColor.fromInt(dividerColor);
     double pageMargin(String key, double fallback) {
       final value = letterhead[key];
@@ -182,15 +186,18 @@ class DocumentStudioPdf {
                                   children: [
                                     for (var column = 0; column < 13; column++)
                                       pw.Padding(
-                                        padding: const pw.EdgeInsets.only(
-                                          right: 6.16 * PdfPageFormat.mm,
+                                        padding: pw.EdgeInsets.only(
+                                          right:
+                                              6.16 *
+                                              watermarkScale *
+                                              PdfPageFormat.mm,
                                         ),
                                         child: pw.Text(
                                           watermarkText,
                                           textDirection: pw.TextDirection.rtl,
                                           style: pw.TextStyle(
                                             font: watermarkFont,
-                                            fontSize: 11,
+                                            fontSize: 11 * watermarkScale,
                                             color: watermarkColor,
                                           ),
                                         ),
@@ -209,8 +216,9 @@ class DocumentStudioPdf {
                       opacity: safeOpacity,
                       child: pw.Image(
                         logoImage,
-                        width: PdfPageFormat.a4.width * 0.9375,
-                        height: PdfPageFormat.a4.height * 0.9375,
+                        width: PdfPageFormat.a4.width * 0.9375 * watermarkScale,
+                        height:
+                            PdfPageFormat.a4.height * 0.9375 * watermarkScale,
                         fit: pw.BoxFit.contain,
                       ),
                     ),

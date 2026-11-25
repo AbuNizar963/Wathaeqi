@@ -71,6 +71,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     'showMinistryWatermarkText': true,
     'watermarkText': 'وزارة الداخلية',
     'watermarkOpacityPercent': 12,
+    'watermarkScalePercent': 100,
     'headerDividerColor': '#b49a55',
     'headerDividerStyle': 'double',
     'headerDividerWidthPt': 2.25,
@@ -286,6 +287,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         'showMinistryWatermarkText': true,
         'watermarkText': 'وزارة الداخلية',
         'watermarkOpacityPercent': 12,
+        'watermarkScalePercent': 100,
         'headerDividerColor': '#b49a55',
         'headerDividerStyle': 'double',
         'headerDividerWidthPt': 2.25,
@@ -648,6 +650,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         showWatermarkText:
             _platformDocumentSettings['showMinistryWatermarkText'] != false,
         watermarkOpacity: opacity,
+        watermarkScalePercent:
+            (_platformDocumentSettings['watermarkScalePercent'] as num? ?? 100)
+                .toDouble(),
       );
     }
     if (!isSafeDocumentOutputId(document.id)) {
@@ -2394,6 +2399,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     var showWatermark = values['showMinistryWatermarkText'] != false;
     var showLogo = values['headerShowLogo'] != false;
     var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
+    var watermarkScale = (values['watermarkScalePercent'] as num? ?? 100)
+        .toDouble();
     var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
     var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
     var horizontalPadding = (values['headerHorizontalPaddingMm'] as num? ?? 0)
@@ -2455,6 +2462,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       suffix: '%',
                       onChanged: (value) =>
                           setDialogState(() => opacity = value),
+                    ),
+                    _documentSettingSlider(
+                      label: 'حجم العلامة المائية',
+                      value: watermarkScale,
+                      min: 40,
+                      max: 180,
+                      suffix: '%',
+                      onChanged: (value) =>
+                          setDialogState(() => watermarkScale = value),
                     ),
                     const Divider(height: 28),
                     const Text(
@@ -2673,6 +2689,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       ? 'وزارة الداخلية'
                       : watermarkController.text.trim(),
                   'watermarkOpacityPercent': opacity.round(),
+                  'watermarkScalePercent': watermarkScale.round(),
                   'headerTitle': titleController.text.trim(),
                   'headerSubtitle': subtitleController.text.trim(),
                   'headerChiefRank': rankController.text.trim(),
@@ -2774,6 +2791,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             ? rawOpacity.toDouble()
             : double.tryParse('$rawOpacity') ?? 12) /
         100;
+    final rawWatermarkScale =
+        _platformDocumentSettings['watermarkScalePercent'];
+    final watermarkScalePercent =
+        (rawWatermarkScale is num
+                ? rawWatermarkScale.toDouble()
+                : double.tryParse('$rawWatermarkScale') ?? 100)
+            .clamp(40.0, 180.0)
+            .toDouble();
     const pixelsPerMillimeter = 794 / 210;
     final headerTitle = _headerSetting(
       'headerTitle',
@@ -2822,6 +2847,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   _platformDocumentSettings['showMinistryWatermarkText'] !=
                   false,
               watermarkOpacity: opacity,
+              watermarkScalePercent: watermarkScalePercent,
               watermarkText:
                   _platformDocumentSettings['watermarkText']?.toString() ??
                   'وزارة الداخلية',

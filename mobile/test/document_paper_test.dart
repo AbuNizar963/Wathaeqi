@@ -19,6 +19,7 @@ void main() {
                 showWatermarkText: true,
                 watermarkOpacity: 0.12,
                 watermarkText: 'عبارة أمنية مخصصة',
+                watermarkScalePercent: 150,
                 child: SizedBox(height: 700),
               ),
             ),
@@ -47,6 +48,12 @@ void main() {
     expect(
       tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkText,
       'عبارة أمنية مخصصة',
+    );
+    expect(
+      tester
+          .widget<DocumentPaper>(find.byType(DocumentPaper))
+          .watermarkScalePercent,
+      150,
     );
   });
 }

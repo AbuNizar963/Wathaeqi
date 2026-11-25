@@ -88,6 +88,7 @@ class _DocumentStudioTestApi extends PoliceApi {
         'watermarkText': 'عبارة أمنية تجريبية',
         'showMinistryWatermarkText': true,
         'watermarkOpacityPercent': 14,
+        'watermarkScalePercent': 145,
         'headerTitle': 'عنوان تجريبي للرأس',
         'headerSubtitle': 'وحدة تجريبية',
       },
@@ -278,6 +279,12 @@ void main() {
     expect(
       tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkText,
       'عبارة أمنية تجريبية',
+    );
+    expect(
+      tester
+          .widget<DocumentPaper>(find.byType(DocumentPaper))
+          .watermarkScalePercent,
+      145,
     );
     expect(find.text('عنوان تجريبي للرأس'), findsOneWidget);
     expect(find.byKey(const ValueKey('document-a4-pdf-preview')), findsNothing);
