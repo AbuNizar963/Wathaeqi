@@ -1,6 +1,10 @@
 import { fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
-import { openPrintWindow } from "./printSheets";
+import {
+  openPrintWindow,
+  printCurrentDocument,
+  showPrintPreparingPage,
+} from "./printSheets";
 import { canvasToPngObjectUrl, getBoundedPixelRatio } from "./renderQuality";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
@@ -42,6 +46,7 @@ export async function openOriginalPrintWindow(options: {
     );
   }
   printWindow.opener = null;
+  showPrintPreparingPage(printWindow);
   const printImageUrls: string[] = [];
   const layoutOptions = {
     pagesPerSheet: options.pagesPerSheet ?? 1,
@@ -263,9 +268,7 @@ export async function openOriginalPrintWindow(options: {
       orientation,
       showPageNumbers: options.showPageNumbers ?? false,
     });
-    await new Promise(resolve => printWindow.setTimeout(resolve, 250));
-    printWindow.focus();
-    printWindow.print();
+    await printCurrentDocument(printWindow);
   } catch (error) {
     printWindow.close();
     printImageUrls.forEach(imageUrl => URL.revokeObjectURL(imageUrl));

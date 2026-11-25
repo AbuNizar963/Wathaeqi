@@ -18,7 +18,7 @@ pnpm dev
 - نقطة الصحة: `GET /api/health` ولا تكشف الأسرار.
 - البناء: `pnpm build`.
 - الفرع الإنتاجي: `main` بعد مراجعة Pull Request.
-- راجع سجل Vercel وGitHub Actions قبل اعتماد الإصدار.
+- راجع سجل نشر Appwrite Site وFunction وسجلات GitHub Actions قبل اعتماد الإصدار.
 - للتراجع: أعد النشر من آخر commit ناجح، ولا تحذف migrations المطبقة.
 
 ## إشعارات المتصفح وPWA

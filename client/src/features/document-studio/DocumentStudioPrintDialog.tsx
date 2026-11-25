@@ -9,7 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { openPrintWindow } from "../document-library/printSheets";
+import {
+  openPrintWindow,
+  showPrintPreparingPage,
+} from "../document-library/printSheets";
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
 import type {
   PagesPerSheet,
@@ -187,6 +190,7 @@ export default function DocumentStudioPrintDialog({
       );
       return;
     }
+    showPrintPreparingPage(printWindow);
 
     setLoading(true);
     setError(null);

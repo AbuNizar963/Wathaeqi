@@ -236,4 +236,70 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       await browser.close();
     }
   }, 90_000);
+  it("writes a complete print document into the owned popup before invoking print", async () => {
+    const bundle = await build({
+      entryPoints: [
+        resolve("client/src/features/document-library/printSheets.ts"),
+      ],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "printSheetsTest",
+      platform: "browser",
+    });
+    const browser = await chromium.launch({
+      executablePath: chromiumPath,
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+    try {
+      const context = await browser.newContext();
+      await context.addInitScript(() => {
+        Object.defineProperty(window, "print", {
+          configurable: true,
+          value: () => {
+            (window as unknown as { printWasCalled: boolean }).printWasCalled =
+              true;
+          },
+        });
+      });
+      const page = await context.newPage();
+      await page.goto("data:text/html,<html><body></body></html>");
+      await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      const popupPromise = page.waitForEvent("popup");
+      const printPromise = page.evaluate(async () => {
+        const popup = window.open("", "_blank");
+        if (!popup) throw new Error("Popup was blocked");
+        const api = (
+          window as unknown as {
+            printSheetsTest: {
+              printHtmlDocument: (
+                target: Window,
+                html: string
+              ) => Promise<void>;
+            };
+          }
+        ).printSheetsTest;
+        await api.printHtmlDocument(
+          popup,
+          "<!doctype html><html><head><title>Print fixture</title></head><body><h1>Ready to print</h1></body></html>"
+        );
+      });
+      const popup = await popupPromise;
+      await printPromise;
+      expect(popup.url()).toBe("about:blank");
+      expect(await popup.title()).toBe("Print fixture");
+      expect(await popup.locator("h1").textContent()).toBe("Ready to print");
+      expect(
+        await popup.evaluate(
+          () =>
+            (window as unknown as { printWasCalled?: boolean })
+              .printWasCalled === true
+        )
+      ).toBe(true);
+      await context.close();
+    } finally {
+      await browser.close();
+    }
+  });
 });
