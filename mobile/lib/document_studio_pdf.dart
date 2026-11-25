@@ -186,8 +186,11 @@ class DocumentStudioPdf {
                                   children: [
                                     for (var column = 0; column < 13; column++)
                                       pw.Padding(
-                                        padding: const pw.EdgeInsets.only(
-                                          right: 6.16 * watermarkScale * PdfPageFormat.mm,
+                                        padding: pw.EdgeInsets.only(
+                                          right:
+                                              6.16 *
+                                              watermarkScale *
+                                              PdfPageFormat.mm,
                                         ),
                                         child: pw.Text(
                                           watermarkText,
@@ -214,7 +217,8 @@ class DocumentStudioPdf {
                       child: pw.Image(
                         logoImage,
                         width: PdfPageFormat.a4.width * 0.9375 * watermarkScale,
-                        height: PdfPageFormat.a4.height * 0.9375 * watermarkScale,
+                        height:
+                            PdfPageFormat.a4.height * 0.9375 * watermarkScale,
                         fit: pw.BoxFit.contain,
                       ),
                     ),
