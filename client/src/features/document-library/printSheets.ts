@@ -280,14 +280,12 @@ export async function openPrintWindow(
         printWindow.print();
       } catch {
         const help = doc.querySelector<HTMLElement>(".print-help");
-        if (help) {
-          help.textContent = "تعذر فتح نافذة الطباعة. افتح قائمة المتصفح واختر طباعة.";
-        }
+        if (help) help.textContent = "تعذر فتح الطباعة. استخدم قائمة المتصفح لاختيار طباعة.";
       }
     });
     const help = doc.createElement("p");
     help.className = "print-help";
-    help.textContent = "تم تجهيز الوثيقة. اضغط الزر لعرض خيارات الطباعة أو حفظ PDF.";
+    help.textContent = "الوثيقة جاهزة. اضغط الزر للطباعة أو حفظ PDF.";
     doc.body.append(action, help);
   }
   sheets.forEach((sheetPages, sheetIndex) => {
