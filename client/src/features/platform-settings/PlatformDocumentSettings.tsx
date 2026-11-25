@@ -6,6 +6,8 @@ import { trpc } from "@/lib/trpc";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -165,6 +167,29 @@ export default function PlatformDocumentSettings() {
                 aria-label="نسبة شفافية العلامة الأمنية"
                 className="mt-3 w-full accent-[#10233f]"
               />
+            </label>
+
+            <label className="block rounded-xl border p-4">
+              <span className="flex items-center justify-between gap-3 text-sm font-bold">
+                <span>حجم العلامة المائية</span>
+                <output className="tabular-nums">{values.watermarkScalePercent}%</output>
+              </span>
+              <input
+                type="range"
+                min={MIN_WATERMARK_SCALE_PERCENT}
+                max={MAX_WATERMARK_SCALE_PERCENT}
+                step={5}
+                value={values.watermarkScalePercent}
+                onChange={event =>
+                  updateValue("watermarkScalePercent", Number(event.target.value))
+                }
+                aria-label="حجم العلامة المائية"
+                className="mt-3 w-full accent-[#10233f]"
+              />
+              <span className="mt-1 flex justify-between text-xs text-muted-foreground">
+                <span>أصغر</span>
+                <span>أكبر</span>
+              </span>
             </label>
 
             <div className="rounded-xl border p-4">
