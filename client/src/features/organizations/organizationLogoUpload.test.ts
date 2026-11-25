@@ -55,6 +55,66 @@ describe("prepared organization logo size", () => {
     }
   );
 
+  it("automatically downsizes valid images larger than 40 megapixels", async () => {
+    const canvas = {
+      width: 0,
+      height: 0,
+      getContext: () => ({ drawImage() {} }),
+      toBlob: vi.fn((callback: (blob: Blob) => void) =>
+        callback(new Blob(["small-png"], { type: "image/png" }))
+      ),
+    };
+    vi.stubGlobal("document", { createElement: () => canvas });
+    vi.stubGlobal(
+      "Image",
+      class {
+        naturalWidth = 13_000;
+        naturalHeight = 4_000;
+        async decode() {}
+      }
+    );
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:large-image");
+    const revoke = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+
+    const result = await prepareOrganizationLogoUpload(
+      new File(["fixture"], "large-logo.png", { type: "image/png" })
+    );
+
+    expect(canvas.width).toBe(1600);
+    expect(canvas.height).toBe(492);
+    expect(result.contentType).toBe("image/png");
+    expect(result.blob.type).toBe("image/png");
+    expect(revoke).toHaveBeenCalledWith("blob:large-image");
+  });
+
+  it("rejects dimensions beyond the safe processing ceiling with a clear message", async () => {
+    const createElement = vi.fn();
+    vi.stubGlobal("document", { createElement });
+    vi.stubGlobal(
+      "Image",
+      class {
+        naturalWidth = 16_001;
+        naturalHeight = 1_000;
+        async decode() {}
+      }
+    );
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:unsafe-image");
+    const revoke = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+
+    await expect(
+      prepareOrganizationLogoUpload(
+        new File(["fixture"], "oversized-logo.png", { type: "image/png" })
+      )
+    ).rejects.toThrow("60 ميغابكسل");
+
+    expect(createElement).not.toHaveBeenCalled();
+    expect(revoke).toHaveBeenCalledWith("blob:unsafe-image");
+  });
+
   it("rejects an empty input without attempting an upload", async () => {
     await expect(
       prepareOrganizationLogoUpload(
