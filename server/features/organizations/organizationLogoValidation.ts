@@ -323,7 +323,7 @@ function isSafeStylesheet(css: string): boolean {
     });
 
     stylesheet.walkRules(rule => {
-      if (!rule.selector || !/^[\\w\\s.#,*+>~:-]+$/.test(rule.selector)) {
+      if (!rule.selector || !/^[\w\s.#,*+>~:-]+$/.test(rule.selector)) {
         throw new Error("Unsupported SVG CSS selector");
       }
     });
