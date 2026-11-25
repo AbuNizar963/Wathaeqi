@@ -2484,7 +2484,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     const Padding(
                       padding: EdgeInsets.only(top: 6, bottom: 8),
                       child: Text(
-                        'في أسفل الوثيقة من الجهة اليسرى يظهر الشعار أولاً، وتحته رتبة رئيس الوحدة واسم الوحدة في سطرين متتاليين.',
+                        'يظهر الشعار في منتصف الترويسة أعلى الصفحة، وتظهر رتبة رئيس الوحدة واسم الوحدة في سطرين متتاليين أسفل الوثيقة من الجهة اليسرى.',
                         style: TextStyle(
                           color: Colors.black54,
                           fontSize: 12,
@@ -2846,6 +2846,24 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (showLogo &&
+                      (_letterhead['logoUrl']?.toString().isNotEmpty ?? false))
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top: _headerMillimeters('headerTopPaddingMm', 0) *
+                            pixelsPerMillimeter,
+                      ),
+                      child: Center(
+                        child: Image.network(
+                          _letterhead['logoUrl'].toString(),
+                          width: logoSize,
+                          height: logoSize,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              SizedBox(width: logoSize, height: logoSize),
+                        ),
+                      ),
+                    ),
                   Container(
                     padding: EdgeInsets.fromLTRB(
                       _headerMillimeters('headerHorizontalPaddingMm', 0) *
@@ -2939,20 +2957,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (showLogo &&
-                                  (_letterhead['logoUrl']
-                                          ?.toString()
-                                          .isNotEmpty ??
-                                      false))
-                                Image.network(
-                                  _letterhead['logoUrl'].toString(),
-                                  width: logoSize,
-                                  height: logoSize,
-                                  fit: BoxFit.contain,
-                                  alignment: Alignment.centerLeft,
-                                  errorBuilder: (_, _, _) =>
-                                      SizedBox(width: logoSize, height: logoSize),
-                                ),
                               if (headerTitle.isNotEmpty)
                                 Text(
                                   headerTitle,
