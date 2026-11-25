@@ -412,6 +412,7 @@ function isSafeEmbeddedRaster(dataUri: string): boolean {
   }
 }
 
+// prettier-ignore
 function decodeXmlEntities(value: string): string | null {
   const entityPattern = /&(#x[0-9a-f]{1,6}|#\d{1,7}|amp|lt|gt|quot|apos);/gi;
   let result = "";
