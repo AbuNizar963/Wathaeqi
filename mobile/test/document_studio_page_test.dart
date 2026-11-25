@@ -281,7 +281,9 @@ void main() {
       'عبارة أمنية تجريبية',
     );
     expect(
-      tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkScalePercent,
+      tester
+          .widget<DocumentPaper>(find.byType(DocumentPaper))
+          .watermarkScalePercent,
       145,
     );
     expect(find.text('عنوان تجريبي للرأس'), findsOneWidget);
