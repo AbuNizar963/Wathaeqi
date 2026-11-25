@@ -34,7 +34,7 @@ export interface PrintWindowContent {
 
 const ANDROID_PRINT_ERROR =
   "تعذر فتح الطباعة. استخدم قائمة المتصفح لاختيار طباعة.";
-const ANDROID_PRINT_HELP = "الوثيقة جاهزة. اضغط الزر للطباعة أو حفظ PDF."
+const ANDROID_PRINT_HELP = "الوثيقة جاهزة. اضغط الزر للطباعة أو حفظ PDF.";
 
 /** Android browsers are more reliable when printing follows an explicit tap. */
 export function requiresManualPrint(userAgent: string): boolean {
