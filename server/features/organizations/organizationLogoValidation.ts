@@ -90,10 +90,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
 
   const withoutPreamble = source
     .replace(/^\uFEFF/, "")
-    .replace(
     .replace(XML_DECLARATION, "")
-      ""
-    )
     .replace(/<!--[\s\S]*?-->/g, "");
 
   if (/<!DOCTYPE|<!ENTITY|<\?|<!(?!\[CDATA\[)/i.test(withoutPreamble)) {
