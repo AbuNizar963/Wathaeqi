@@ -696,6 +696,8 @@ export default function DocumentStudioPage() {
           )
         : documentContent;
   const logoUrl = settings?.logoUrl ?? null;
+  const documentWatermarkText =
+    platformDocumentSettings.data?.watermarkText?.replace(/^وثائقي$/, "") ?? "";
   const dividerColor =
     platformDocumentSettings.data?.headerDividerColor ?? "#334155";
   const isSavingDocument =
@@ -1589,11 +1591,7 @@ export default function DocumentStudioPage() {
                 >
                   <DocumentWatermark
                     logoUrl={logoUrl}
-                    watermarkText={
-                      platformDocumentSettings.data?.watermarkText === "وثائقي"
-                        ? ""
-                        : platformDocumentSettings.data?.watermarkText ?? ""
-                    }
+                    watermarkText={documentWatermarkText}
                     opacityPercent={
                       platformDocumentSettings.data?.watermarkOpacityPercent ??
                       12
