@@ -6,31 +6,116 @@ const MAX_SVG_NODES = 20_000;
 const MAX_SVG_DEPTH = 128;
 
 const SAFE_ELEMENTS = new Set([
-  "svg", "g", "defs", "symbol", "use", "switch", "view",
-  "path", "rect", "circle", "ellipse", "line", "polyline", "polygon",
-  "text", "tspan", "textPath", "title", "desc", "metadata",
-  "linearGradient", "radialGradient", "stop",
-  "pattern", "marker", "clipPath", "mask",
-  "filter", "feBlend", "feColorMatrix", "feComponentTransfer",
-  "feComposite", "feConvolveMatrix", "feDiffuseLighting",
-  "feDisplacementMap", "feDistantLight", "feDropShadow", "feFlood",
-  "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur",
-  "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset",
-  "fePointLight", "feSpecularLighting", "feSpotLight", "feTile",
-  "feTurbulence", "meshgradient", "meshrow", "meshpatch", "solidcolor", "hatch", "hatchpath", "altGlyph", "glyph", "font", "font-face", "font-face-src", "font-face-uri", "font-face-format", "hkern", "vkern", "style", "namedview", "guide", "perspective", "RDF", "Description", "Work", "Agent", "Bag", "Seq", "li", "creator", "date", "format", "type", "identifier", "rights", "language", "subject", "coverage", "relation", "publisher", "contributor", "source", "license", "attributionURL", "attributionName",
+  "svg",
+  "g",
+  "defs",
+  "symbol",
+  "use",
+  "switch",
+  "view",
+  "path",
+  "rect",
+  "circle",
+  "ellipse",
+  "line",
+  "polyline",
+  "polygon",
+  "text",
+  "tspan",
+  "textPath",
+  "title",
+  "desc",
+  "metadata",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "pattern",
+  "marker",
+  "clipPath",
+  "mask",
+  "filter",
+  "feBlend",
+  "feColorMatrix",
+  "feComponentTransfer",
+  "feComposite",
+  "feConvolveMatrix",
+  "feDiffuseLighting",
+  "feDisplacementMap",
+  "feDistantLight",
+  "feDropShadow",
+  "feFlood",
+  "feFuncA",
+  "feFuncB",
+  "feFuncG",
+  "feFuncR",
+  "feGaussianBlur",
+  "feImage",
+  "feMerge",
+  "feMergeNode",
+  "feMorphology",
+  "feOffset",
+  "fePointLight",
+  "feSpecularLighting",
+  "feSpotLight",
+  "feTile",
+  "feTurbulence",
+  "meshgradient",
+  "meshrow",
+  "meshpatch",
+  "solidcolor",
+  "hatch",
+  "hatchpath",
+  "altGlyph",
+  "glyph",
+  "font",
+  "font-face",
+  "font-face-src",
+  "font-face-uri",
+  "font-face-format",
+  "hkern",
+  "vkern",
+  "style",
+  "namedview",
+  "guide",
+  "perspective",
+  "RDF",
+  "Description",
+  "Work",
+  "Agent",
+  "Bag",
+  "Seq",
+  "li",
+  "creator",
+  "date",
+  "format",
+  "type",
+  "identifier",
+  "rights",
+  "language",
+  "subject",
+  "coverage",
+  "relation",
+  "publisher",
+  "contributor",
+  "source",
+  "license",
+  "attributionURL",
+  "attributionName",
 ]);
 
-const UNSAFE_CSS = /(?:@import|@namespace|@font-face|@keyframes|expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding|behavior\s*:)/i;
-const EXTERNAL_SCHEME = /(?:javascript|vbscript|https?|file|ftp|blob|data)\s*:/i;
-const URL_FUNCTION = /url\(\s*(?:(["'])\s*(.*?)\s*\1|([^)]*?))\s*\)/gi;
+const UNSAFE_CSS =
+  /(?:@import|@namespace|@font-face|@keyframes|expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding|behavior\s*:)/i;
+const EXTERNAL_SCHEME =
+  /(?:javascript|vbscript|https?|file|ftp|blob|data)\s*:/i;
+const URL_FUNCTION =
+  /url\(\s*(?:(["'])\s*(.*?)\s*\1|([^)]*?))\s*\)/gi;
 
 type XmlNode = Record<string, unknown>;
 
 /**
- * Validates a static SVG logo using a real XML parser and a broad SVG 1.1/2
- * presentation allowlist. Active content and network/file references are
- * rejected; local fragment references (gradients, masks, filters, symbols)
- * remain supported.
+ * Validates static SVG logos with a real XML parser and a broad SVG 1.1/2
+ * presentation allowlist. Active content and external references are rejected;
+ * local fragment references remain supported for gradients, masks and filters.
  */
 export function isSafeSvgLogo(bytes: Buffer): boolean {
   try {
@@ -47,7 +132,9 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       return false;
     }
 
-    const withoutBom = source.replace(/^\uFEFF/, "").replace(/^\s*<\?xml\s+[^?]*\?>/i, "");
+    const withoutBom = source
+      .replace(/^\uFEFF/, "")
+      .replace(/^\s*<\?xml\s+[^?]*\?>/i, "");
     const validation = XMLValidator.validate(withoutBom, {
       allowBooleanAttributes: false,
       unpairedTags: [],
@@ -75,7 +162,11 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
     let nodeCount = 0;
     let rootCount = 0;
 
-    const visit = (items: unknown[], depth: number, isRoot = false): boolean => {
+    const visit = (
+      items: unknown[],
+      depth: number,
+      isRoot = false
+    ): boolean => {
       if (depth > MAX_SVG_DEPTH) return false;
 
       for (const item of items) {
@@ -88,7 +179,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
 
         if ("#text" in record || "#cdata" in record) {
           const value = String(record["#text"] ?? record["#cdata"] ?? "");
-          if (value.trim() && !isTextAllowed(depth, currentTextElements)) {
+          if (value.trim() && !isTextAllowed(currentTextElements)) {
             return false;
           }
           if (
@@ -147,11 +238,17 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
   }
 }
 
-function isTextAllowed(_depth: number, ancestors: string[]): boolean {
+function isTextAllowed(ancestors: string[]): boolean {
   const parent = ancestors[ancestors.length - 1];
-  return parent === "text" || parent === "tspan" || parent === "textPath" ||
-    parent === "title" || parent === "desc" || parent === "style" ||
-    parent === "metadata";
+  return (
+    parent === "text" ||
+    parent === "tspan" ||
+    parent === "textPath" ||
+    parent === "title" ||
+    parent === "desc" ||
+    parent === "style" ||
+    parent === "metadata"
+  );
 }
 
 function validateAttributes(attributes: Record<string, unknown>): boolean {
@@ -170,7 +267,12 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
       continue;
     }
     if (name.startsWith("xmlns:")) {
-      if (/^(?:javascript|vbscript|data):/i.test(value) || value.includes("\\")) return false;
+      if (
+        /^(?:javascript|vbscript|data):/i.test(value) ||
+        value.includes("\\")
+      ) {
+        return false;
+      }
       continue;
     }
     if (name === "xml:space") {
@@ -184,11 +286,10 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
       continue;
     }
 
-    if (value.includes("\\")) return false;
-    if (EXTERNAL_SCHEME.test(value)) return false;
+    if (value.includes("\\") || EXTERNAL_SCHEME.test(value)) return false;
 
     if (name.includes(":")) {
-      // Editor and metadata namespaces are inert; event-like names are denied above.
+      // Editor and metadata namespaces are inert; event-like names are denied.
       continue;
     }
 
