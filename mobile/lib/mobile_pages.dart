@@ -8,6 +8,7 @@ import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
 import 'features/organizations/organization_logo_upload.dart';
+import 'features/organizations/organization_logo_preview.dart';
 import 'app_theme.dart';
 import './features/reports/audit_log_presentation.dart';
 import './features/notifications/toast.dart';
@@ -1504,6 +1505,9 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
         final savedOrganizationId = _text(saved['organizationId']);
         final previousLogo = _text(_settings['logoUrl']);
         final uploadedLogoBytes = _pendingLogoPreviewBytes;
+        final uploadedLogoIsSafe =
+            uploadedLogoBytes != null &&
+            isSupportedOrganizationLogoPayload('', uploadedLogoBytes);
         if (uploadedLogoBytes != null ||
             widget.api.organizationLogoCacheIdentity(previousLogo) !=
                 widget.api.organizationLogoCacheIdentity(savedLogo)) {
@@ -1511,10 +1515,10 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
         }
 
         Uint8List? savedLogoBytes;
-        if (uploadedLogoBytes != null &&
+        if (uploadedLogoIsSafe &&
             savedLogo.isNotEmpty &&
             savedOrganizationId.isNotEmpty) {
-          // The settings mutation has succeeded. Persist the exact uploaded
+          // The settings mutation has succeeded. Persist exact supported
           // bytes under the server-confirmed organization/path identity so
           // reopening settings does not depend on an immediate network fetch.
           await widget.api.cacheOrganizationLogo(
@@ -1537,7 +1541,9 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
             _savedLogoPreviewBytes = savedLogoBytes;
             // Keep the local image visible if the remote preview cannot yet
             // be fetched; a fresh signed URL is loaded when settings reopen.
-            if (savedLogoBytes != null || savedLogo.isEmpty) {
+            if (savedLogoBytes != null ||
+                savedLogo.isEmpty ||
+                (uploadedLogoBytes != null && !uploadedLogoIsSafe)) {
               _pendingLogoPreviewBytes = null;
             }
           }
@@ -1557,26 +1563,13 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
 
   Future<void> _uploadLogo() async {
     final selection = await FilePicker.pickFiles(
-      type: FileType.image,
+      type: FileType.custom,
+      allowedExtensions: const ['svg', 'png', 'jpg', 'jpeg'],
       withData: true,
     );
     if (selection == null || selection.files.isEmpty || !mounted) return;
 
     final file = selection.files.single;
-    final extension = _text(file.extension).toLowerCase();
-    final contentType = extension == 'jpg' || extension == 'jpeg'
-        ? 'image/jpeg'
-        : extension == 'png'
-        ? 'image/png'
-        : null;
-    if (contentType == null) {
-      setState(() => _error = 'صيغة الشعار يجب أن تكون PNG أو JPG.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setState(() => _error = 'حجم الشعار يجب ألا يتجاوز 5 ميغابايت');
-      return;
-    }
     final bytes = file.bytes;
     if (bytes == null || bytes.isEmpty) {
       setState(() => _error = 'تعذر قراءة ملف الشعار.');
@@ -1594,13 +1587,15 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
           'تعذر تحديد الجهة الحالية؛ أعد تحميل الإعدادات ثم حاول مجددًا.',
         );
       }
-      final compressedBytes = await prepareOrganizationLogoBytes(bytes);
-      final pngFileName = file.name.replaceFirst(RegExp(r'\.[^.]+$'), '.png');
+      final prepared = await prepareOrganizationLogo(
+        source: bytes,
+        fileName: file.name,
+      );
       final result = await widget.api.uploadOrganizationLogo(
         organizationId: organizationId,
-        fileName: pngFileName == file.name ? '$pngFileName.png' : pngFileName,
-        contentType: 'image/png',
-        bytes: compressedBytes,
+        fileName: prepared.fileName,
+        contentType: prepared.contentType,
+        bytes: prepared.bytes,
       );
       if (!mounted) return;
       final uploaded = Map<String, dynamic>.from(result as Map);
@@ -1611,7 +1606,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
         // The upload endpoint returns an internal storage URL, not a public
         // image URL. Preview the selected bytes until settings are saved and
         // the server returns the authorized signed URL.
-        _pendingLogoPreviewBytes = compressedBytes;
+        _pendingLogoPreviewBytes = prepared.bytes;
       });
       Toast.success(context, 'تم رفع الشعار، اضغط حفظ لاعتماده');
     } catch (exception) {
@@ -1717,30 +1712,18 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: context.appBorder),
                               ),
-                              child: _pendingLogoPreviewBytes != null
+                              child:
+                                  _pendingLogoPreviewBytes != null ||
+                                      _savedLogoPreviewBytes != null
                                   ? ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
-                                      child: Image.memory(
-                                        _pendingLogoPreviewBytes!,
-                                        width: 64,
-                                        height: 64,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (_, _, _) => Icon(
-                                          Icons.broken_image_outlined,
-                                          color: context.appMutedText,
-                                          size: 30,
-                                        ),
-                                      ),
-                                    )
-                                  : _savedLogoPreviewBytes != null
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.memory(
-                                        _savedLogoPreviewBytes!,
-                                        width: 64,
-                                        height: 64,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (_, _, _) => Icon(
+                                      child: OrganizationLogoPreview(
+                                        bytes:
+                                            _pendingLogoPreviewBytes ??
+                                            _savedLogoPreviewBytes!,
+                                        width: 58,
+                                        height: 58,
+                                        fallback: Icon(
                                           Icons.broken_image_outlined,
                                           color: context.appMutedText,
                                           size: 30,
@@ -1763,7 +1746,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                                 label: Text(
                                   _uploadingLogo
                                       ? 'جارٍ رفع الشعار...'
-                                      : 'رفع شعار PNG أو JPG',
+                                      : 'رفع شعار SVG أو PNG أو JPG',
                                 ),
                               ),
                             ),

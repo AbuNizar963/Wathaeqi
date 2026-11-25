@@ -11,6 +11,9 @@ import 'package:police_telegrams/api.dart';
 final _secureStorageForTest = <String, String>{};
 var _failSecureStorageReadAll = false;
 
+Uint8List _validPngLogoBytes() =>
+    Uint8List.fromList(const [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
 Future<T> _withOfflineCacheContext<T>(
   String operation,
   Future<T> Function() action,
@@ -1117,6 +1120,60 @@ void main() {
     expect(logoApiRequestCount, 1);
   });
 
+  test('organization logo accepts safe SVG bytes from the signed export URL', () async {
+    final cacheDirectory = await Directory.systemTemp.createTemp(
+      'police-telegrams-svg-logo-test-',
+    );
+    addTearDown(() => cacheDirectory.delete(recursive: true));
+    const organizationId = '550e8400-e29b-41d4-a716-446655440000';
+    final svgBytes = Uint8List.fromList(
+      utf8.encode(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">'
+        '<path d="M0 0h10v10H0z" fill="#123456"/></svg>',
+      ),
+    );
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/organizations.logoForExport')) {
+        return http.Response(
+          jsonEncode({
+            'result': {
+              'data': {
+                'json': {
+                  'organizationId': organizationId,
+                  'logoUrl':
+                      '/api/storage/department/logos/$organizationId/logo.svg?signature=short',
+                },
+              },
+            },
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+      expect(
+        request.url.path,
+        '/api/storage/department/logos/$organizationId/logo.svg',
+      );
+      return http.Response.bytes(
+        svgBytes,
+        200,
+        headers: {'content-type': 'image/svg+xml'},
+      );
+    });
+    addTearDown(client.close);
+    final api = PoliceApi(
+      baseUrl: 'https://police.example.test',
+      httpClient: client,
+      imageCacheDirectory: cacheDirectory,
+    );
+
+    final result = await api.fetchOrganizationLogo(
+      organizationId: organizationId,
+      source: '',
+    );
+    expect(result, orderedEquals(svgBytes));
+  });
+
   test('organization logo ignores legacy Base64 responses', () async {
     final cacheDirectory = await Directory.systemTemp.createTemp(
       'police-telegrams-legacy-logo-test-',
@@ -1384,6 +1441,53 @@ void main() {
     );
   });
 
+  test(
+    'malicious SVG upload bytes are left to authoritative server rejection',
+    () async {
+      const organizationId = '550e8400-e29b-41d4-a716-446655440000';
+      const sessionToken = 'sid=authenticated-session';
+      final maliciousSvg = Uint8List.fromList(
+        utf8.encode(
+          '<svg xmlns="http://www.w3.org/2000/svg">'
+          '<script>alert(1)</script></svg>',
+        ),
+      );
+      _secureStorageForTest['session_token'] = sessionToken;
+      final client = MockClient((request) async {
+        expect(request.headers['authorization'], 'Bearer $sessionToken');
+        expect(request.headers['content-type'], 'image/svg+xml');
+        expect(request.headers['x-file-name'], 'untrusted.svg');
+        expect(request.bodyBytes, maliciousSvg);
+        return http.Response.bytes(
+          utf8.encode(jsonEncode({'error': 'نوع الشعار غير آمن'})),
+          415,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+      addTearDown(client.close);
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+
+      await expectLater(
+        api.uploadOrganizationLogo(
+          organizationId: organizationId,
+          fileName: 'untrusted.svg',
+          contentType: 'image/svg+xml',
+          bytes: maliciousSvg,
+        ),
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.statusCode,
+            'statusCode',
+            415,
+          ),
+        ),
+      );
+    },
+  );
+
   test('organization logo upload requires a saved session token', () async {
     var requestStarted = false;
     final client = MockClient((request) async {
@@ -1401,7 +1505,7 @@ void main() {
         organizationId: '550e8400-e29b-41d4-a716-446655440000',
         fileName: 'badge.png',
         contentType: 'image/png',
-        bytes: Uint8List.fromList([1, 2, 3]),
+        bytes: _validPngLogoBytes(),
       ),
       throwsA(
         isA<ApiException>()
@@ -1437,7 +1541,7 @@ void main() {
         organizationId: '550e8400-e29b-41d4-a716-446655440000',
         fileName: 'badge.png',
         contentType: 'image/png',
-        bytes: Uint8List.fromList([1, 2, 3]),
+        bytes: _validPngLogoBytes(),
       ),
       throwsA(
         isA<ApiException>()
@@ -1475,7 +1579,7 @@ void main() {
           organizationId: '550e8400-e29b-41d4-a716-446655440000',
           fileName: 'badge.png',
           contentType: 'image/png',
-          bytes: Uint8List.fromList([1, 2, 3]),
+          bytes: _validPngLogoBytes(),
         ),
         throwsA(
           isA<ApiException>()
@@ -1486,6 +1590,47 @@ void main() {
                 'انتهت الجلسة؛ سجّل الدخول مجددًا',
               ),
         ),
+      );
+    },
+  );
+
+  test(
+    'organization logo upload accepts a saved object without a preview URL',
+    () async {
+      _secureStorageForTest['session_token'] = 'sid=authenticated-session';
+      final client = MockClient((request) async {
+        expect(request.method, 'PUT');
+        expect(
+          request.headers['authorization'],
+          'Bearer sid=authenticated-session',
+        );
+        return http.Response(
+          jsonEncode({
+            'key':
+                'organizations/550e8400-e29b-41d4-a716-446655440000/logo.png',
+            'url': null,
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      addTearDown(client.close);
+      final api = PoliceApi(
+        baseUrl: 'https://police.example.test',
+        httpClient: client,
+      );
+
+      expect(
+        await api.uploadOrganizationLogo(
+          organizationId: '550e8400-e29b-41d4-a716-446655440000',
+          fileName: 'badge.png',
+          contentType: 'image/png',
+          bytes: _validPngLogoBytes(),
+        ),
+        {
+          'key': 'organizations/550e8400-e29b-41d4-a716-446655440000/logo.png',
+          'url': null,
+        },
       );
     },
   );

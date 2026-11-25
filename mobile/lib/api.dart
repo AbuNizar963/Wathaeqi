@@ -12,6 +12,7 @@ import 'offline_vault.dart';
 import 'document_file_support.dart';
 import 'document_output_security.dart';
 import 'document_transfer.dart';
+import 'features/organizations/organization_logo_upload.dart';
 
 /// Keep client-side waits below the Appwrite Function request timeout.
 const telegramDocumentRenderTimeout = Duration(seconds: 50);
@@ -1691,7 +1692,7 @@ class PoliceApi {
     try {
       final result = await call(
         'organizations.logoForExport',
-        input: {'organizationId': organizationId},
+        input: {'organizationId': organizationId, 'includeDataUrl': false},
         allowOfflineCache: false,
       );
       if (result is! Map ||
@@ -1766,6 +1767,8 @@ class PoliceApi {
       case 'image/jpeg':
       case 'image/jpg':
         return isJpeg;
+      case 'image/svg+xml':
+        return isSafeOrganizationLogoSvg(bytes);
       case 'image/gif':
         return isGif;
       case 'image/webp':
@@ -1773,7 +1776,11 @@ class PoliceApi {
       case '':
       case 'application/octet-stream':
       case 'binary/octet-stream':
-        return isPng || isJpeg || isGif || isWebp;
+        return isPng ||
+            isJpeg ||
+            isGif ||
+            isWebp ||
+            isSafeOrganizationLogoSvg(bytes);
       default:
         return false;
     }
@@ -1806,16 +1813,32 @@ class PoliceApi {
     required String contentType,
     required Uint8List bytes,
   }) async {
-    if (contentType != 'image/png' && contentType != 'image/jpeg') {
-      throw const ApiException(415, 'صيغة الشعار يجب أن تكون PNG أو JPG');
-    }
-    if (bytes.isEmpty || bytes.length > 2621440) {
+    if (bytes.isEmpty || bytes.length > maxOrganizationLogoOutputBytes) {
       throw const ApiException(
         413,
-        'حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت',
+        'حجم الشعار بعد التجهيز يجب ألا يتجاوز 5 ميغابايت',
       );
     }
-
+    final extensionMatches = switch (contentType) {
+      'image/png' => fileName.toLowerCase().endsWith('.png'),
+      'image/jpeg' =>
+        fileName.toLowerCase().endsWith('.jpg') ||
+            fileName.toLowerCase().endsWith('.jpeg'),
+      'image/svg+xml' => fileName.toLowerCase().endsWith('.svg'),
+      _ => false,
+    };
+    final payloadMatchesType = switch (contentType) {
+      'image/svg+xml' => isOrganizationLogoSvgPayload(bytes),
+      'image/png' ||
+      'image/jpeg' => isSupportedOrganizationLogoPayload(contentType, bytes),
+      _ => false,
+    };
+    if (!extensionMatches || !payloadMatchesType) {
+      throw const ApiException(
+        415,
+        'صيغة الشعار أو بيانات الملف غير متطابقة؛ استخدم SVG أو PNG أو JPG صالحًا',
+      );
+    }
     final sessionToken = await _readSessionToken();
     if (sessionToken == null) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
@@ -1850,7 +1873,7 @@ class PoliceApi {
     final decoded = jsonDecode(response.body);
     if (decoded is! Map ||
         decoded['key'] is! String ||
-        decoded['url'] is! String) {
+        (decoded['url'] is! String && decoded['url'] != null)) {
       throw const ApiException(502, 'استجابة الخادم لرفع الشعار غير صالحة');
     }
     await clearOrganizationLogoCache();

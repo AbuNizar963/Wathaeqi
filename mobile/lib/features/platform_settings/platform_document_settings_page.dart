@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -5,6 +7,7 @@ import '../../api.dart';
 import '../admin/admin_page_intro.dart';
 import '../../app_theme.dart';
 import '../organizations/organization_logo_upload.dart';
+import '../organizations/organization_logo_preview.dart';
 import '../notifications/toast.dart';
 
 String _settingsErrorMessage(Object error) =>
@@ -80,6 +83,7 @@ class _PlatformDocumentSettingsPageState
   List<Map<String, dynamic>> _organizations = [];
   String? _selectedOrganizationId;
   String _organizationLogoUrl = '';
+  Uint8List? _organizationLogoPreviewBytes;
   bool _loadingOrganizationSettings = true;
   bool _uploadingOrganizationLogo = false;
   final TextEditingController _colorController = TextEditingController(
@@ -328,17 +332,27 @@ class _PlatformDocumentSettingsPageState
     try {
       final result = await widget.api.call(
         'organizations.logo',
-        input: {'id': organizationId},
+        input: {'id': organizationId, 'includeDataUrl': false},
         allowOfflineCache: false,
       );
       if (result is! Map) {
         throw Exception('تعذر قراءة شعار الجهة.');
       }
+      final logoUrl = result['logoUrl']?.toString() ?? '';
       if (!mounted) return;
       setState(() {
-        _organizationLogoUrl = result['logoUrl']?.toString() ?? '';
+        _organizationLogoUrl = logoUrl;
+        _organizationLogoPreviewBytes = null;
         _loadingOrganizationSettings = false;
       });
+      if (logoUrl.isNotEmpty) {
+        final bytes = await widget.api.fetchOrganizationLogo(
+          organizationId: organizationId,
+          source: logoUrl,
+        );
+        if (!mounted || _selectedOrganizationId != organizationId) return;
+        setState(() => _organizationLogoPreviewBytes = bytes);
+      }
     } catch (exception) {
       if (mounted) {
         setState(() {
@@ -362,7 +376,8 @@ class _PlatformDocumentSettingsPageState
     if (organizationId == null || _uploadingOrganizationLogo) return;
     try {
       final selection = await FilePicker.pickFiles(
-        type: FileType.image,
+        type: FileType.custom,
+        allowedExtensions: const ['svg', 'png', 'jpg', 'jpeg'],
         withData: true,
         allowMultiple: false,
       );
@@ -373,20 +388,28 @@ class _PlatformDocumentSettingsPageState
         throw Exception('تعذر قراءة الصورة المختارة من الجهاز.');
       }
       setState(() => _uploadingOrganizationLogo = true);
-      final prepared = await prepareOrganizationLogoBytes(sourceBytes);
+      final prepared = await prepareOrganizationLogo(
+        source: sourceBytes,
+        fileName: file.name,
+      );
       final uploaded = await widget.api.uploadOrganizationLogo(
         organizationId: organizationId,
-        fileName: file.name,
-        contentType: 'image/png',
-        bytes: prepared,
+        fileName: prepared.fileName,
+        contentType: prepared.contentType,
+        bytes: prepared.bytes,
       );
       if (!mounted) return;
       final logoUrl = uploaded['url']?.toString() ?? '';
-      if (logoUrl.isEmpty) {
-        throw Exception('تم رفع الشعار لكن رابط المعاينة غير متاح.');
-      }
-      setState(() => _organizationLogoUrl = logoUrl);
-      Toast.success(context, 'تم حفظ شعار الجهة وربطه بترويسة الوثائق');
+      setState(() {
+        _organizationLogoUrl = logoUrl;
+        _organizationLogoPreviewBytes = prepared.bytes;
+      });
+      Toast.success(
+        context,
+        logoUrl.isEmpty
+            ? 'تم حفظ الشعار؛ المعاينة عن بُعد غير متاحة مؤقتاً.'
+            : 'تم حفظ شعار الجهة وربطه بترويسة الوثائق',
+      );
     } catch (exception) {
       if (mounted) {
         setState(() => _organizationError = _settingsErrorMessage(exception));
@@ -553,15 +576,18 @@ class _PlatformDocumentSettingsPageState
                       border: Border.all(color: colors.outlineVariant),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: _organizationLogoUrl.isEmpty
+                    child: _organizationLogoPreviewBytes == null
                         ? Icon(
-                            Icons.image_outlined,
+                            _organizationLogoUrl.isEmpty
+                                ? Icons.image_outlined
+                                : Icons.broken_image_outlined,
                             color: colors.onSurfaceVariant,
                           )
-                        : Image.network(
-                            _organizationLogoUrl,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, _, _) => Icon(
+                        : OrganizationLogoPreview(
+                            bytes: _organizationLogoPreviewBytes!,
+                            width: 76,
+                            height: 76,
+                            fallback: Icon(
                               Icons.broken_image_outlined,
                               color: colors.onSurfaceVariant,
                             ),
@@ -595,7 +621,7 @@ class _PlatformDocumentSettingsPageState
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'PNG أو JPG، حتى 5 ميغابايت. يتم حفظ الصورة في مساحة ملفات الجهة.',
+                          'SVG أو PNG أو JPG/JPEG، حتى 25 ميغابايت للمصدر و5 ميغابايت للناتج. يتم حفظ الملف في مساحة ملفات الجهة.',
                           style: TextStyle(
                             color: colors.onSurfaceVariant,
                             fontSize: 12,
