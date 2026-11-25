@@ -71,6 +71,9 @@ const XML_PARSER = new XMLParser({
   htmlEntities: false,
   allowBooleanAttributes: false,
   trimValues: false,
+  parseTagValue: false,
+  parseAttributeValue: false,
+  maxNestedTags: 100,
 });
 
 function isSafeLocalReference(value: string): boolean {
@@ -128,7 +131,9 @@ function validateNodes(nodes: unknown[], parent?: string): boolean {
     if (!item || typeof item !== "object" || Array.isArray(item)) return false;
     const node = item as XmlNode;
 
-    if (Object.hasOwn(node, "#comment") || Object.hasOwn(node, "#cdata")) {
+    if (Object.hasOwn(node, "#comment")) continue;
+    if (Object.hasOwn(node, "#cdata")) {
+      if (!["text", "tspan", "textPath", "title", "desc", "metadata"].includes(parent ?? "")) return false;
       continue;
     }
     if (Object.hasOwn(node, "#text")) {
@@ -196,7 +201,12 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
     if (!Array.isArray(parsed)) return false;
     const elements = parsed.filter(item => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return false;
-      return !Object.hasOwn(item, "#comment");
+      if (Object.hasOwn(item, "#comment")) return false;
+      if (Object.hasOwn(item, "#text")) {
+        const text = (item as XmlNode)["#text"];
+        return typeof text !== "string" || text.trim().length > 0;
+      }
+      return true;
     });
     if (elements.length !== 1) return false;
     const root = elements[0];
