@@ -2,6 +2,7 @@ import type {
   PagesPerSheet,
   PrintLayoutMode,
   PrintOptions,
+  PrintOrientation,
   SourcePage,
 } from "./types";
 
