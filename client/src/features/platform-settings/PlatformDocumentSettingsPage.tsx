@@ -679,7 +679,8 @@ export default function PlatformDocumentSettingsPage() {
                 بيانات المسؤول أسفل الوثيقة
               </h2>
               <p className="text-xs text-muted-foreground">
-                يظهر الشعار في منتصف أعلى الترويسة، وتظهر رتبة رئيس الوحدة واسم الوحدة في سطرين أسفل متن الوثيقة.
+                يظهر الشعار في منتصف أعلى الترويسة، وتظهر رتبة رئيس الوحدة
+                واسم الوحدة في سطرين أسفل متن الوثيقة.
               </p>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">رتبة رئيس الوحدة</span>
