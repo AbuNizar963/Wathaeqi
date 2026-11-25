@@ -47,10 +47,13 @@ function safeImageSource(source: string): string {
   return "";
 }
 
-/** One rasterized PDF page per sheet, preserving its original physical size. */
+/** Fit one rasterized PDF page on each standard A4 print sheet. */
 export function buildSinglePdfPagesHtml(
-  pages: Array<SourcePage & { widthPt: number; heightPt: number }>
+  pages: Array<SourcePage & { widthPt: number; heightPt: number }>,
+  orientation: PrintOrientation = "portrait"
 ): string {
+  const pageWidth = orientation === "landscape" ? 842 : 595;
+  const pageHeight = orientation === "landscape" ? 595 : 842;
   const rules = pages
     .map((page, index) => {
       if (
@@ -61,8 +64,8 @@ export function buildSinglePdfPagesHtml(
       ) {
         throw new Error("أبعاد صفحة PDF غير صالحة للطباعة");
       }
-      return `@page pdfpage${index} { size: ${page.widthPt}pt ${page.heightPt}pt; margin: 0; }
-        .page${index} { page: pdfpage${index}; width: ${page.widthPt}pt; height: ${page.heightPt}pt; }`;
+      return `@page pdfpage${index} { size: A4 ${orientation}; margin: 0; }
+        .page${index} { page: pdfpage${index}; width: ${pageWidth}pt; height: ${pageHeight}pt; }`;
     })
     .join("\n");
   const content = pages
@@ -77,7 +80,7 @@ export function buildSinglePdfPagesHtml(
     html, body { margin: 0; padding: 0; background: white; }
     .page { break-after: page; page-break-after: always; overflow: hidden; }
     .page:last-child { break-after: auto; page-break-after: auto; }
-    .page img { width: 100%; height: 100%; display: block; }
+    .page img { width: 100%; height: 100%; object-fit: contain; display: block; }
     </style></head><body>${content}</body></html>`;
 }
 
@@ -237,20 +240,7 @@ export function showPrintPreparingPage(printWindow: Window): void {
   document.close();
 }
 
-/** Write a complete HTML document into the owned popup, then invoke native print. */
-export async function printHtmlDocument(
-  printWindow: Window,
-  html: string
-): Promise<void> {
-  printWindow.opener = null;
-  // Keep the existing browsing context and write the final document into it.
-  // Navigating a popup to a Blob URL is unreliable for opaque-origin pages,
-  // and pagehide during that navigation can revoke the page-image Blob URLs.
-  const document = printWindow.document;
-  document.open();
-  document.write(html);
-  document.close();
-
+async function waitForPrintAssets(document: Document): Promise<void> {
   await document.fonts?.ready;
   await Promise.all(
     Array.from(document.images).map(async image => {
@@ -266,16 +256,34 @@ export async function printHtmlDocument(
       if (image.decode) await image.decode();
     })
   );
-  await new Promise(resolve => printWindow.setTimeout(resolve, 100));
+}
 
+async function invokePrint(printWindow: Window): Promise<void> {
+  await waitForPrintAssets(printWindow.document);
+  await new Promise(resolve => printWindow.setTimeout(resolve, 100));
   printWindow.focus();
   printWindow.print();
 }
 
-/** Serialize a fully rendered document before navigating to its printable URL. */
+/** Write a complete HTML document into the owned popup, then invoke native print. */
+export async function printHtmlDocument(
+  printWindow: Window,
+  html: string
+): Promise<void> {
+  printWindow.opener = null;
+  // Write into the existing browsing context. This also works for popups opened
+  // from opaque-origin pages, where navigating to a Blob URL is not permitted.
+  const document = printWindow.document;
+  document.open();
+  document.write(html);
+  document.close();
+  await invokePrint(printWindow);
+}
+
+/** Print the already-rendered document without replacing its loaded resources. */
 export async function printCurrentDocument(printWindow: Window): Promise<void> {
-  const html = `<!doctype html>${printWindow.document.documentElement.outerHTML}`;
-  await printHtmlDocument(printWindow, html);
+  printWindow.opener = null;
+  await invokePrint(printWindow);
 }
 
 /** One rasterized PDF page per sheet, preserving its original physical size. */
@@ -318,7 +326,8 @@ export async function openPrintWindow(
     blobUrls.forEach(src => URL.revokeObjectURL(src));
   };
   printWindow.addEventListener("afterprint", releasePageUrls, { once: true });
-  printWindow.addEventListener("pagehide", releasePageUrls, { once: true });
-
   await printHtmlDocument(printWindow, titledHtml);
+  // Register after writing the print document so replacing about:blank cannot
+  // revoke image URLs before the browser has loaded them.
+  printWindow.addEventListener("pagehide", releasePageUrls, { once: true });
 }
