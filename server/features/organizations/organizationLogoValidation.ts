@@ -89,7 +89,10 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
 
   const withoutPreamble = source
     .replace(/^\uFEFF/, "")
-    .replace(/^\s*<\?xml\s+version=(["'])1\.[01]\1(?:\s+encoding=(["'])UTF-8\2)?\s*\?>/i, "")
+    .replace(
+      /^\s*<\?xml\s+version=(["'])1\.[01]\1(?:\s+encoding=(["'])UTF-8\2)?\s*\?>/i,
+      ""
+    )
     .replace(/<!--[\s\S]*?-->/g, "");
 
   if (/<!DOCTYPE|<!ENTITY|<\?|<!(?!\[CDATA\[)/i.test(withoutPreamble)) {
@@ -110,7 +113,8 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
     const textParent = stack[stack.length - 1];
     if (
       textContent.trim() &&
-      (!textParent || !["text", "tspan", "title", "desc"].includes(textParent))
+      (!textParent ||
+        !["text", "tspan", "title", "desc"].includes(textParent))
     ) {
       return false;
     }
