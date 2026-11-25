@@ -327,6 +327,9 @@ export default function DepartmentSettingsPage() {
   const galleryLogoInputRef = useRef<HTMLInputElement>(null);
   const filesLogoInputRef = useRef<HTMLInputElement>(null);
 
+  const openGalleryLogoPicker = () => galleryLogoInputRef.current?.click();
+  const openFilesLogoPicker = () => filesLogoInputRef.current?.click();
+
   useEffect(() => {
     if (settingsQuery.data && form === null) {
       setForm(toForm(settingsQuery.data));
@@ -608,7 +611,7 @@ export default function DepartmentSettingsPage() {
                           type="button"
                           variant="outline"
                           disabled={!canEdit || uploadLogo.isPending}
-                          onClick={() => galleryLogoInputRef.current?.click()}
+                          onClick={openGalleryLogoPicker}
                         >
                           <ImagePlus
                             className="ml-2 h-4 w-4"
@@ -620,7 +623,7 @@ export default function DepartmentSettingsPage() {
                           type="button"
                           variant="outline"
                           disabled={!canEdit || uploadLogo.isPending}
-                          onClick={() => filesLogoInputRef.current?.click()}
+                          onClick={openFilesLogoPicker}
                         >
                           <FolderOpen
                             className="ml-2 h-4 w-4"
