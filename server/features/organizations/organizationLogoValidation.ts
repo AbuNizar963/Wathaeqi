@@ -215,7 +215,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
           (!attributes ||
             typeof attributes !== "object" ||
             Array.isArray(attributes) ||
-            !validateAttributes(attributes as Record<string, unknown>))
+            !validateAttributes(\n              attributes as Record<string, unknown>,\n              elementName\n            ))
         ) {
           return false;
         }
@@ -252,7 +252,7 @@ function isTextAllowed(ancestors: string[]): boolean {
   );
 }
 
-function validateAttributes(attributes: Record<string, unknown>): boolean {
+function validateAttributes(\n  attributes: Record<string, unknown>,\n  elementName: string\n): boolean {
   for (const [name, rawValue] of Object.entries(attributes)) {
     if (typeof rawValue !== "string") return false;
 
@@ -283,7 +283,16 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
     if (name.startsWith("xml:")) return false;
 
     if (name === "href" || name.endsWith(":href")) {
-      if (value && !/^#[A-Za-z_][\w:.-]*$/.test(value)) return false;
+      if (value.startsWith("data:")) {
+        if (
+          (elementName !== "image" && elementName !== "feImage") ||
+          !isSafeEmbeddedRaster(value)
+        ) {
+          return false;
+        }
+      } else if (value && !/^#[A-Za-z_][\w:.-]*$/.test(value)) {
+        return false;
+      }
       continue;
     }
 
@@ -330,4 +339,48 @@ function hasOnlyLocalUrlFunctions(value: string): boolean {
 
   const safeUrlCount = value.match(SAFE_LOCAL_URL_FUNCTION)?.length ?? 0;
   return urlCount === safeUrlCount;
+}
+
+function isSafeEmbeddedRaster(dataUri: string): boolean {
+  const match =
+    /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=\s]+)$/i.exec(dataUri);
+  if (!match) return false;
+
+  const encoded = match[2].replace(/\s/g, "");
+  if (
+    encoded.length === 0 ||
+    encoded.length > 2_800_000 ||
+    encoded.length % 4 !== 0
+  ) {
+    return false;
+  }
+
+  const bytes = Buffer.from(encoded, "base64");
+  if (bytes.length === 0 || bytes.length > 2_000_000) return false;
+  if (bytes.toString("base64") !== encoded) return false;
+
+  switch (match[1].toLowerCase()) {
+    case "png":
+      return (
+        bytes.length >= 8 &&
+        bytes.subarray(0, 8).equals(
+          Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+        )
+      );
+    case "jpeg":
+      return (
+        bytes.length >= 3 &&
+        bytes[0] === 0xff &&
+        bytes[1] === 0xd8 &&
+        bytes[2] === 0xff
+      );
+    case "webp":
+      return (
+        bytes.length >= 12 &&
+        bytes.toString("ascii", 0, 4) === "RIFF" &&
+        bytes.toString("ascii", 8, 12) === "WEBP"
+      );
+    default:
+      return false;
+  }
 }
