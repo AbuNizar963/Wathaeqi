@@ -67,6 +67,10 @@ export default function PlatformDocumentSettings() {
     key: K,
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
+  const effectiveHeaderLogoSize = Math.min(
+    220,
+    Math.round(values.headerLogoSize * 1.1)
+  );
 
   if (!open || !isPlatformOwner) return null;
 
@@ -207,9 +211,7 @@ export default function PlatformDocumentSettings() {
             <div className="rounded-xl border p-4">
               <h3 className="font-bold">بيانات أسفل الوثيقة</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                تظهر هذه البيانات أسفل متن الوثيقة في سطرين بمحاذاة اليسار؛
-                السطر الأول لرتبة واسم رئيس الوحدة، والثاني لصفة المسؤول واسم
-                الوحدة. يظهر الشعار أعلى الوثيقة وفوق النص.
+                التوقيع أسفل الوثيقة في الوسط، والشعار بمنتصف رأس الصفحة.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
@@ -289,7 +291,7 @@ export default function PlatformDocumentSettings() {
               <label className="mt-4 block space-y-1 text-sm">
                 <span className="flex justify-between">
                   حجم شعار الوثيقة (تكبير / تصغير)
-                  <output>{values.headerLogoSize}px</output>
+                  <output>{effectiveHeaderLogoSize}px</output>
                 </span>
                 <input
                   type="range"

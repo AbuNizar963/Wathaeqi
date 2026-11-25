@@ -13,7 +13,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   headerChiefRank: "رئيس قسم شرطة",
   headerChiefName: "الشهباء",
   headerShowLogo: true,
-  headerLogoSize: 200,
+  headerLogoSize: 220,
   headerTopPaddingMm: 0,
   headerHorizontalPaddingMm: 0,
   headerBottomPaddingMm: 6,

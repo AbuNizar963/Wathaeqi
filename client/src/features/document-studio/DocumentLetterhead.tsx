@@ -21,7 +21,8 @@ export default function DocumentLetterhead({
   date,
 }: DocumentLetterheadProps) {
   const showLogo = headerSettings?.headerShowLogo !== false;
-  const logoSize = headerSettings?.headerLogoSize ?? 200;
+  const configuredLogoSize = headerSettings?.headerLogoSize ?? 220;
+  const logoSize = Math.min(220, Math.round(configuredLogoSize * 1.1));
 
   return (
     <header
@@ -69,8 +70,12 @@ export default function DocumentLetterhead({
             <img
               src={logoUrl}
               alt="الشعار الرسمي"
-              className="block object-contain"
-              style={{ width: logoSize, height: logoSize }}
+              className="mx-auto block object-contain"
+              style={{
+                width: logoSize,
+                height: logoSize,
+                marginInline: "auto",
+              }}
             />
           ) : null}
         </div>
