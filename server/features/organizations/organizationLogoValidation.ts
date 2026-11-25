@@ -84,6 +84,7 @@ const XML_DECLARATION = /^\s*<\?xml[^>]*\?>/i;
  * Active content, CSS, external references, and unknown elements/attributes
  * are rejected rather than stored and later rendered.
  */
+// prettier-ignore
 export function isSafeSvgLogo(bytes: Buffer): boolean {
   const source = bytes.toString("utf8");
   if (!source.trim() || source.includes("\u0000")) return false;
