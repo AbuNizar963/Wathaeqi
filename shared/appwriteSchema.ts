@@ -16,6 +16,9 @@ export type SchemaColumn = {
   required: boolean;
   /** Varchar length; ignored for other types. */
   size?: number;
+  /** Integer bounds; ignored for other column types. */
+  min?: number;
+  max?: number;
   /** Default value applied to new rows. */
   default?: string | number | boolean | null;
   description?: string;
