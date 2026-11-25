@@ -50,6 +50,10 @@ export default function PlatformDocumentSettingsPage() {
     [previewDocuments, previewDocumentId]
   );
   const organizationId = organizationContext.data?.organizationId;
+  const previewLetterheadSettings = ownerTrpc.documentStudio.getLetterheadSettings.useQuery(
+    { organizationId },
+    { enabled: Boolean(organizationId) }
+  );
   const [organizationName, setOrganizationName] = useState("");
   const organizationLogoQuery = trpc.organizations.logo.useQuery(
     { id: organizationId ?? "unavailable" },
@@ -198,6 +202,12 @@ export default function PlatformDocumentSettingsPage() {
           numberingSystem: "latn",
         }).format(previewDateValue)
       : undefined;
+  const previewLogoUrl =
+    previewLetterheadSettings.data?.logoUrl ?? (logoUrl || null);
+  const previewOrganizationName =
+    previewLetterheadSettings.data?.departmentName ??
+    organizationContext.data?.organizationName ??
+    "وثائقي";
 
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
@@ -1029,14 +1039,14 @@ export default function PlatformDocumentSettingsPage() {
             )}
             <ResponsiveA4Preview settings={values}>
               <DocumentWatermark
-                logoUrl={logoUrl || null}
+                logoUrl={previewLogoUrl}
                 watermarkText={values.watermarkText}
                 opacityPercent={values.watermarkOpacityPercent}
                 scalePercent={values.watermarkScalePercent}
                 showMinistryText={values.showMinistryWatermarkText}
               />
               <DocumentLetterhead
-                logoUrl={logoUrl || null}
+                logoUrl={previewLogoUrl}
                 dividerColor={values.headerDividerColor}
                 headerSettings={values}
                 serial={
@@ -1060,12 +1070,14 @@ export default function PlatformDocumentSettingsPage() {
                   />
                 ) : null}
                 <DocumentSignatureBlock
-                  organizationName={
-                    organizationContext.data?.organizationName ?? "الجهة"
+                  organizationName={previewOrganizationName}
+                  unitName={previewLetterheadSettings.data?.unitName ?? ""}
+                  chiefRank={
+                    previewLetterheadSettings.data?.unitChiefRank ?? ""
                   }
-                  unitName=""
-                  chiefRank=""
-                  chiefName=""
+                  chiefName={
+                    previewLetterheadSettings.data?.unitChiefName ?? ""
+                  }
                   settings={values}
                 />
               </div>
