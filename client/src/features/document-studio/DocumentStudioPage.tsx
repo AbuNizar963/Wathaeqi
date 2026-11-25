@@ -1592,7 +1592,7 @@ export default function DocumentStudioPage() {
                     watermarkText={
                       platformDocumentSettings.data?.watermarkText === "وثائقي"
                         ? ""
-                        : (platformDocumentSettings.data?.watermarkText ?? "")
+                        : platformDocumentSettings.data?.watermarkText ?? ""
                     }
                     opacityPercent={
                       platformDocumentSettings.data?.watermarkOpacityPercent ??
