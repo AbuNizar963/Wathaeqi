@@ -89,6 +89,32 @@ describe("prepared organization logo size", () => {
     expect(revoke).toHaveBeenCalledWith("blob:large-image");
   });
 
+  it("rejects dimensions beyond the safe processing ceiling with a clear message", async () => {
+    const createElement = vi.fn();
+    vi.stubGlobal("document", { createElement });
+    vi.stubGlobal(
+      "Image",
+      class {
+        naturalWidth = 16_001;
+        naturalHeight = 1_000;
+        async decode() {}
+      }
+    );
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:unsafe-image");
+    const revoke = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+
+    await expect(
+      prepareOrganizationLogoUpload(
+        new File(["fixture"], "oversized-logo.png", { type: "image/png" })
+      )
+    ).rejects.toThrow("60 ميغابكسل");
+
+    expect(createElement).not.toHaveBeenCalled();
+    expect(revoke).toHaveBeenCalledWith("blob:unsafe-image");
+  });
+
   it("rejects an empty input without attempting an upload", async () => {
     await expect(
       prepareOrganizationLogoUpload(
