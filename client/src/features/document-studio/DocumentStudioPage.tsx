@@ -1688,7 +1688,6 @@ export default function DocumentStudioPage() {
                         </div>
                       )
                     )}
-
                   </footer>
                 </ResponsiveA4Preview>
               )}
