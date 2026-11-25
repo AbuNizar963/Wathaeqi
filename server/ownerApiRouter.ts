@@ -50,6 +50,8 @@ import {
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   MIN_HEADER_LOGO_SIZE,
 } from "../shared/features/platform-settings/platformDocumentSettings";
 
@@ -256,6 +258,11 @@ const ownerPlatformDocumentSettingsRouter = router({
           .int()
           .min(0)
           .max(MAX_WATERMARK_OPACITY_PERCENT),
+        watermarkScalePercent: z
+          .number()
+          .int()
+          .min(MIN_WATERMARK_SCALE_PERCENT)
+          .max(MAX_WATERMARK_SCALE_PERCENT),
         headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
         headerDividerStyle: z.enum([
           "solid",
