@@ -190,7 +190,8 @@ class DocumentStudioPdf {
                                         ),
                                         child: pw.Text(
                                           watermarkText,
-                                                                  style: pw.TextStyle(
+                                          textDirection: pw.TextDirection.rtl,
+                                          style: pw.TextStyle(
                                             font: watermarkFont,
                                             fontSize: 11 * watermarkScale,
                                             color: watermarkColor,
@@ -258,7 +259,6 @@ class DocumentStudioPdf {
                       ),
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  textDirection: pw.TextDirection.rtl,
                   children: [
                     pw.Expanded(
                       child: pw.Column(
