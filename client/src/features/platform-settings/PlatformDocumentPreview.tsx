@@ -16,7 +16,7 @@ type PlatformDocumentPreviewProps = {
   logoUrl: string;
   organizationId?: string;
   organizationName?: string;
-  updatedAt?: string;
+  updatedAt?: string | Date | null;
 };
 
 export default function PlatformDocumentPreview({
