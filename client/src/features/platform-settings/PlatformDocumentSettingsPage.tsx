@@ -749,7 +749,7 @@ export default function PlatformDocumentSettingsPage() {
                 </span>
                 <input
                   type="range"
-                  min={160}
+                  min={32}
                   max={220}
                   step={4}
                   value={values.headerLogoSize}
