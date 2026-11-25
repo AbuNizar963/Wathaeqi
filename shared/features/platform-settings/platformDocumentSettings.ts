@@ -1,5 +1,7 @@
 export type DocumentTextRow = { right: string; left: string };
 
+export const REFERENCE_DOCUMENT_LOGO_SIZE = 120;
+
 export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   showMinistryWatermarkText: true,
   watermarkText: "وزارة الداخلية",
@@ -13,7 +15,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   headerChiefRank: "رئيس قسم شرطة",
   headerChiefName: "الشهباء",
   headerShowLogo: true,
-  headerLogoSize: 220,
+  headerLogoSize: REFERENCE_DOCUMENT_LOGO_SIZE,
   headerTopPaddingMm: 0,
   headerHorizontalPaddingMm: 0,
   headerBottomPaddingMm: 6,
@@ -70,8 +72,8 @@ export type PlatformDocumentSettings = {
 export const MAX_WATERMARK_OPACITY_PERCENT = 60;
 export const MIN_WATERMARK_SCALE_PERCENT = 40;
 export const MAX_WATERMARK_SCALE_PERCENT = 180;
-export const MAX_HEADER_LOGO_SIZE = 220;
-export const MIN_HEADER_LOGO_SIZE = 32;
+export const MAX_HEADER_LOGO_SIZE = REFERENCE_DOCUMENT_LOGO_SIZE;
+export const MIN_HEADER_LOGO_SIZE = REFERENCE_DOCUMENT_LOGO_SIZE;
 export const MAX_HEADER_PADDING_MM = 30;
 export const MAX_PAGE_MARGIN_MM = 35;
 export const MIN_DIVIDER_WIDTH_PT = 0.5;

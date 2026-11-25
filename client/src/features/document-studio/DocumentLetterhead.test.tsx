@@ -30,21 +30,20 @@ function render(settings: PlatformDocumentSettings): string {
 }
 
 describe("DocumentLetterhead", () => {
-  it("renders a centred logo row without signatory text in the header", () => {
+  it("renders one three-column heading row without signatory text", () => {
     const markup = render(tricolorSettings);
     expect(markup).toContain('class="document-letterhead"');
-    expect(markup).toContain('class="document-letterhead__row"');
-    expect(markup).toContain("document-letterhead__logo-cell");
-    expect(markup).toContain("text-align:center");
+    expect(markup).toContain('data-testid="document-letterhead-row"');
+    expect(markup).toContain('data-testid="document-letterhead-logo-cell"');
     expect(markup).not.toContain("العنوان الرئيسي");
     expect(markup).not.toContain("رئيس الوحدة");
     expect(markup).not.toContain("إدارة الشرطة");
   });
 
-  it("renders configured custom header rows once above the logo and divider", () => {
+  it("places configured right text, logo and left text in the same row", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead
-        logoUrl={null}
+        logoUrl="data:image/png;base64,AAAA"
         dividerColor="#14532d"
         headerSettings={{
           ...tricolorSettings,
@@ -58,24 +57,33 @@ describe("DocumentLetterhead", () => {
         }}
       />
     );
-    const rowsIndex = markup.indexOf(
-      'data-testid="document-custom-header-rows"'
+    const rowIndex = markup.indexOf('data-testid="document-letterhead-row"');
+    const rightIndex = markup.indexOf(
+      'data-testid="document-custom-header-rows-right"'
     );
-    const logoIndex = markup.indexOf('class="document-letterhead__row"');
-    expect(rowsIndex).toBeGreaterThan(-1);
-    expect(rowsIndex).toBeLessThan(logoIndex);
+    const logoIndex = markup.indexOf(
+      'data-testid="document-letterhead-logo-cell"'
+    );
+    const leftIndex = markup.indexOf(
+      'data-testid="document-custom-header-rows-left"'
+    );
+    expect(rowIndex).toBeGreaterThan(-1);
+    expect(rowIndex).toBeLessThan(rightIndex);
+    expect(rightIndex).toBeLessThan(logoIndex);
+    expect(logoIndex).toBeLessThan(leftIndex);
     expect(markup.match(/الجمهورية العربية السورية/g)).toHaveLength(1);
     expect(markup.match(/وزارة الداخلية/g)).toHaveLength(1);
     expect(markup).toContain("Syrian Arab Republic");
     expect(markup).toContain("Ministry of Interior");
   });
 
-  it("does not render an empty custom header rows container", () => {
+  it("does not render custom row labels for an empty header", () => {
     const markup = render(tricolorSettings);
-    expect(markup).not.toContain('data-testid="document-custom-header-rows"');
+    expect(markup).not.toContain("document-custom-header-rows-right");
+    expect(markup).not.toContain("document-custom-header-rows-left");
   });
 
-  it("places serial and date metadata below the tricolor divider, aligned right", () => {
+  it("places serial and date metadata below the tricolor divider", () => {
     const markup = render(tricolorSettings);
     const dividerIndex = markup.indexOf("document-tricolor-stars-divider");
     const metadataIndex = markup.indexOf(
@@ -99,31 +107,21 @@ describe("DocumentLetterhead", () => {
     expect(markup).not.toContain("document-tricolor-stars-divider");
   });
 
-  it("uses the enlarged default logo size", () => {
-    const markup = renderToStaticMarkup(
-      <DocumentLetterhead
-        logoUrl="data:image/png;base64,AAAA"
-        dividerColor="#000000"
-        headerSettings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
-      />
-    );
-    expect(markup).toContain("width:220px");
-    expect(markup).toContain("height:220px");
-    expect(markup).toContain("margin-inline:auto");
-  });
-
-  it("honours the logo size setting", () => {
+  it("renders the logo at the reference size even for a legacy small setting", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead
         logoUrl="data:image/png;base64,AAAA"
         dividerColor="#000000"
         headerSettings={{
-          ...tricolorSettings,
-          headerLogoSize: 96,
+          ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+          headerLogoSize: 32,
         }}
       />
     );
-    expect(markup).toContain("width:106px");
+    expect(markup).toContain('width="120"');
+    expect(markup).toContain('height="120"');
+    expect(markup).toContain("width:120px");
+    expect(markup).toContain("height:120px");
     expect(markup).toContain('alt="الشعار الرسمي"');
   });
 });

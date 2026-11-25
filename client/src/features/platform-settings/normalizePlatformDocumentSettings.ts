@@ -1,5 +1,7 @@
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  MAX_HEADER_LOGO_SIZE,
+  MIN_HEADER_LOGO_SIZE,
   type DocumentTextRow,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
@@ -17,6 +19,16 @@ function safeNumber(value: unknown, fallback: number): number {
 
 function safeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function isUnitRoleLine(value: string): boolean {
+  return /^(?:رئيس|مدير|قائد)(?:\s|$)/u.test(value.trim());
+}
+
+function isRankLine(value: string): boolean {
+  return /^(?:المقدم|مقدّم|مقدم|العقيد|عقيد|العميد|عميد|الرائد|رائد|النقيب|نقيب|الملازم|ملازم|اللواء|لواء|مساعد)(?:\s|$)/u.test(
+    value.trim()
+  );
 }
 
 function safeRows(
@@ -58,11 +70,21 @@ export function normalizePlatformDocumentSettings(
     defaults.headerChiefName,
     255
   );
+  const rawChiefRank = safeText(source.headerChiefRank, "", 120);
+  const rawChiefName = safeText(source.headerChiefName, "", 255);
   const isPreviousTwoLineDefault =
     storedTitle === "المقدم غسان صالح كنو" &&
     storedSubtitle === "رئيس قسم الشهباء" &&
-    !safeText(source.headerChiefRank, "", 120) &&
-    !safeText(source.headerChiefName, "", 255);
+    (!rawChiefRank || rawChiefRank === defaults.headerChiefRank) &&
+    (!rawChiefName || rawChiefName === defaults.headerChiefName);
+  const storedSignerLine = [storedTitle, storedSubtitle]
+    .filter(Boolean)
+    .join(" ");
+  const storedRoleLine = [storedChiefRank, storedChiefName]
+    .filter(Boolean)
+    .join(" ");
+  const isReversedSignaturePair =
+    isUnitRoleLine(storedSignerLine) && isRankLine(storedRoleLine);
 
   return {
     ...defaults,
@@ -99,20 +121,31 @@ export function normalizePlatformDocumentSettings(
     ),
     headerTitle: isPreviousTwoLineDefault
       ? defaults.headerTitle
-      : storedTitle || defaults.headerTitle,
+      : isReversedSignaturePair
+        ? storedChiefRank
+        : storedTitle || defaults.headerTitle,
     headerSubtitle: isPreviousTwoLineDefault
       ? defaults.headerSubtitle
-      : storedSubtitle || defaults.headerSubtitle,
+      : isReversedSignaturePair
+        ? storedChiefName
+        : storedSubtitle || defaults.headerSubtitle,
     headerChiefRank: isPreviousTwoLineDefault
       ? defaults.headerChiefRank
-      : storedChiefRank,
+      : isReversedSignaturePair
+        ? storedTitle
+        : storedChiefRank,
     headerChiefName: isPreviousTwoLineDefault
       ? defaults.headerChiefName
-      : storedChiefName,
+      : isReversedSignaturePair
+        ? storedSubtitle
+        : storedChiefName,
     headerShowLogo: safeBoolean(source.headerShowLogo, defaults.headerShowLogo),
     headerLogoSize: Math.max(
-      32,
-      Math.min(220, safeNumber(source.headerLogoSize, defaults.headerLogoSize))
+      MIN_HEADER_LOGO_SIZE,
+      Math.min(
+        MAX_HEADER_LOGO_SIZE,
+        Math.round(safeNumber(source.headerLogoSize, defaults.headerLogoSize))
+      )
     ),
     headerTopPaddingMm: safeNumber(
       source.headerTopPaddingMm,

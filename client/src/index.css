@@ -778,20 +778,49 @@
 }
 
 .document-letterhead__row {
-  display: table;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
-  table-layout: fixed;
+  min-height: 120px;
+  direction: rtl;
 }
 .document-letterhead__cell {
-  display: table-cell;
-  vertical-align: top;
   min-width: 0;
 }
 .document-letterhead__logo-cell {
+  display: flex;
+  width: 120px;
+  height: 120px;
+  align-items: center;
+  justify-content: center;
   padding: 0;
 }
+.document-letterhead__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 10pt;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.document-letterhead__side--right {
+  text-align: right;
+}
+.document-letterhead__side--left {
+  text-align: left;
+}
+.document-letterhead__side-line {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .document-letterhead__logo-cell img {
-  margin: 0 auto;
+  display: block;
+  width: 120px;
+  height: 120px;
+  margin: 0;
+  object-fit: contain;
 }
 .document-tricolor-stars-divider {
   /* Keep the tricolor divider on its own row; serial/date metadata follows it. */

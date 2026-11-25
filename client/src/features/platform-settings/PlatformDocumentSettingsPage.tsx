@@ -731,7 +731,7 @@ export default function PlatformDocumentSettingsPage() {
               </div>
               <label className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  إظهار شعار الجهة فوق بيانات المسؤول
+                  إظهار شعار الجهة في وسط رأس الوثيقة
                 </span>
                 <input
                   type="checkbox"
@@ -742,23 +742,15 @@ export default function PlatformDocumentSettingsPage() {
                   className="h-5 w-5 accent-primary"
                 />
               </label>
-              <label className="block space-y-1">
-                <span className="flex justify-between text-sm font-medium">
-                  <span>حجم شعار الوثيقة (تكبير / تصغير)</span>
-                  <output>{values.headerLogoSize}px</output>
-                </span>
-                <input
-                  type="range"
-                  min={32}
-                  max={220}
-                  step={4}
-                  value={values.headerLogoSize}
-                  onChange={event =>
-                    updateValue("headerLogoSize", Number(event.target.value))
-                  }
-                  className="w-full accent-primary"
-                />
-              </label>
+              <div className="rounded-lg border bg-muted/30 px-3 py-2">
+                <div className="flex justify-between gap-3 text-sm font-medium">
+                  <span>حجم شعار الوثيقة</span>
+                  <output dir="ltr">120px</output>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  حجم ثابت مطابق للمرجع الرسمي.
+                </p>
+              </div>
               <label className="block space-y-1">
                 <span className="flex justify-between text-sm font-medium">
                   <span>الهامش العلوي للرأس</span>

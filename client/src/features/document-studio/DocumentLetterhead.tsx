@@ -1,4 +1,5 @@
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
+import { normalizePlatformDocumentSettings } from "../platform-settings/normalizePlatformDocumentSettings";
 
 export type DocumentLetterheadProps = {
   logoUrl: string | null;
@@ -8,10 +9,12 @@ export type DocumentLetterheadProps = {
   date?: string;
 };
 
+const REFERENCE_LOGO_SIZE = 120;
+
 /**
  * A4 document header shared by preview, printing and PNG export.
- * Signatory and organization text is intentionally rendered after the
- * document body by DocumentSignatureBlock, not in this header.
+ * Side heading rows and the logo share one three-column line, matching the
+ * telegram reference. Signatory text remains below the document body.
  */
 export default function DocumentLetterhead({
   logoUrl,
@@ -20,67 +23,84 @@ export default function DocumentLetterhead({
   serial,
   date,
 }: DocumentLetterheadProps) {
-  const showLogo = headerSettings?.headerShowLogo !== false;
-  const configuredLogoSize = headerSettings?.headerLogoSize ?? 220;
-  const logoSize = Math.min(220, Math.round(configuredLogoSize * 1.1));
+  const settings = normalizePlatformDocumentSettings(headerSettings);
+  const headerRows = settings.pageHeaderRows.filter(
+    row => row.right.trim() || row.left.trim()
+  );
+  const showLogo = settings.headerShowLogo !== false;
 
   return (
     <header
       className="document-letterhead"
       style={{
         borderBottom:
-          headerSettings?.headerDividerStyle === "tricolor-stars"
+          settings.headerDividerStyle === "tricolor-stars"
             ? "none"
-            : `${headerSettings?.headerDividerWidthPt ?? 2.25}pt ${headerSettings?.headerDividerStyle === "double" ? "double" : (headerSettings?.headerDividerStyle ?? "solid")} ${dividerColor}`,
-        paddingTop: `${headerSettings?.headerTopPaddingMm ?? 0}mm`,
-        paddingInline: `${headerSettings?.headerHorizontalPaddingMm ?? 0}mm`,
-        paddingBottom: `${headerSettings?.headerBottomPaddingMm ?? 6}mm`,
+            : `${settings.headerDividerWidthPt}pt ${settings.headerDividerStyle === "double" ? "double" : settings.headerDividerStyle} ${dividerColor}`,
+        paddingTop: `${settings.headerTopPaddingMm}mm`,
+        paddingInline: `${settings.headerHorizontalPaddingMm}mm`,
+        paddingBottom: `${settings.headerBottomPaddingMm}mm`,
       }}
       dir="rtl"
     >
-      {headerSettings?.pageHeaderRows?.some(
-        row => row.right.trim() || row.left.trim()
-      ) ? (
+      <div
+        className="document-letterhead__row"
+        data-testid="document-letterhead-row"
+      >
         <div
-          className="mb-2 space-y-1 text-[10pt] font-semibold leading-[1.4]"
+          className="document-letterhead__cell document-letterhead__side document-letterhead__side--right"
+          data-testid={
+            headerRows.length ? "document-custom-header-rows-right" : undefined
+          }
           dir="rtl"
-          data-testid="document-custom-header-rows"
         >
-          {headerSettings.pageHeaderRows.map((row, index) =>
-            row.right.trim() || row.left.trim() ? (
-              <div
-                key={`custom-header-${index}`}
-                className="grid grid-cols-2 gap-4"
-              >
-                <span className="text-right">{row.right}</span>
-                <span className="text-left" dir="ltr">
-                  {row.left}
-                </span>
-              </div>
-            ) : null
-          )}
+          {headerRows.map((row, index) => (
+            <p
+              key={`right-header-${index}`}
+              className="document-letterhead__side-line"
+              aria-hidden={!row.right.trim() || undefined}
+            >
+              {row.right.trim() || "\u00a0"}
+            </p>
+          ))}
         </div>
-      ) : null}
-      <div className="document-letterhead__row">
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
-          style={{ width: "100%", textAlign: "center" }}
+          data-testid="document-letterhead-logo-cell"
         >
           {showLogo && logoUrl ? (
             <img
               src={logoUrl}
               alt="الشعار الرسمي"
-              className="mx-auto block object-contain"
+              className="block object-contain"
+              width={REFERENCE_LOGO_SIZE}
+              height={REFERENCE_LOGO_SIZE}
               style={{
-                width: logoSize,
-                height: logoSize,
-                marginInline: "auto",
+                width: REFERENCE_LOGO_SIZE,
+                height: REFERENCE_LOGO_SIZE,
               }}
             />
           ) : null}
         </div>
+        <div
+          className="document-letterhead__cell document-letterhead__side document-letterhead__side--left"
+          data-testid={
+            headerRows.length ? "document-custom-header-rows-left" : undefined
+          }
+          dir="ltr"
+        >
+          {headerRows.map((row, index) => (
+            <p
+              key={`left-header-${index}`}
+              className="document-letterhead__side-line"
+              aria-hidden={!row.left.trim() || undefined}
+            >
+              {row.left.trim() || "\u00a0"}
+            </p>
+          ))}
+        </div>
       </div>
-      {headerSettings?.headerDividerStyle === "tricolor-stars" ? (
+      {settings.headerDividerStyle === "tricolor-stars" ? (
         <div
           className="document-tricolor-stars-divider"
           aria-label="فاصل أسود وأخضر مع ثلاث نجوم حمراء"

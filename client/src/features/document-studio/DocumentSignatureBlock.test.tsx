@@ -6,65 +6,72 @@ import {
 } from "@shared/features/platform-settings/platformDocumentSettings";
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 
+function render(settings: PlatformDocumentSettings): string {
+  return renderToStaticMarkup(
+    <DocumentSignatureBlock
+      organizationName="قسم شرطة الشهباء"
+      unitName="وحدة افتراضية"
+      chiefRank="رتبة افتراضية"
+      chiefName="مسؤول افتراضي"
+      settings={settings}
+    />
+  );
+}
+
 describe("DocumentSignatureBlock", () => {
-  it("renders the four configured values as two stacked, centred lines", () => {
-    const settings: PlatformDocumentSettings = {
+  it("renders the signer name above the organizational role", () => {
+    const markup = render({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       headerTitle: "المقدم",
       headerSubtitle: "غسان صالح كنو",
       headerChiefRank: "رئيس قسم شرطة",
       headerChiefName: "الشهباء",
-    };
-    const markup = renderToStaticMarkup(
-      <DocumentSignatureBlock
-        organizationName="قسم شرطة الشهباء"
-        unitName="وحدة افتراضية"
-        chiefRank="رتبة افتراضية"
-        chiefName="مسؤول افتراضي"
-        settings={settings}
-      />
-    );
+    });
+    const signerIndex = markup.indexOf("المقدم غسان صالح كنو");
+    const roleIndex = markup.indexOf("رئيس قسم شرطة الشهباء");
 
-    expect(markup).toContain("المقدم غسان صالح كنو");
-    expect(markup).toContain("رئيس قسم شرطة الشهباء");
-    expect(markup).toContain('class="mt-8 space-y-1 text-center');
-    expect(markup.match(/<p /g)).toHaveLength(2);
+    expect(signerIndex).toBeGreaterThan(-1);
+    expect(roleIndex).toBeGreaterThan(signerIndex);
     expect(markup).toContain('data-testid="document-signature-block"');
+    expect(markup).toContain("width:min(48%, 320px)");
+    expect(markup).toContain("margin-right:auto");
+    expect(markup.match(/<p /g)).toHaveLength(2);
   });
 
   it("uses the approved two-line defaults", () => {
-    const markup = renderToStaticMarkup(
-      <DocumentSignatureBlock
-        organizationName="قسم شرطة الشهباء"
-        unitName=""
-        chiefRank=""
-        chiefName=""
-        settings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
-      />
-    );
+    const markup = render(DEFAULT_PLATFORM_DOCUMENT_SETTINGS);
+    const signerIndex = markup.indexOf("المقدم غسان صالح كنو");
+    const roleIndex = markup.indexOf("رئيس قسم شرطة الشهباء");
 
-    expect(markup).toContain("المقدم غسان صالح كنو");
-    expect(markup).toContain("رئيس قسم شرطة الشهباء");
+    expect(signerIndex).toBeGreaterThan(-1);
+    expect(roleIndex).toBeGreaterThan(signerIndex);
     expect(markup.match(/<p /g)).toHaveLength(2);
   });
 
-  it("keeps each configured value editable without adding extra display lines", () => {
-    const settings = {
+  it("corrects saved role and signer fields that are reversed", () => {
+    const markup = render({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerTitle: "رئيس قسم شرطة",
+      headerSubtitle: "الشهباء",
+      headerChiefRank: "المقدم",
+      headerChiefName: "غسان صالح كنو",
+    });
+    const signerIndex = markup.indexOf("المقدم غسان صالح كنو");
+    const roleIndex = markup.indexOf("رئيس قسم شرطة الشهباء");
+
+    expect(signerIndex).toBeGreaterThan(-1);
+    expect(roleIndex).toBeGreaterThan(signerIndex);
+    expect(markup.match(/<p /g)).toHaveLength(2);
+  });
+
+  it("keeps custom signer and role values as two centered lines", () => {
+    const markup = render({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       headerTitle: "عميد",
       headerSubtitle: "اسم المسؤول",
       headerChiefRank: "رئيس",
       headerChiefName: "الوحدة",
-    };
-    const markup = renderToStaticMarkup(
-      <DocumentSignatureBlock
-        organizationName=""
-        unitName=""
-        chiefRank=""
-        chiefName=""
-        settings={settings}
-      />
-    );
+    });
 
     expect(markup).toContain("عميد اسم المسؤول");
     expect(markup).toContain("رئيس الوحدة");

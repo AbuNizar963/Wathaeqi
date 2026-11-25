@@ -118,6 +118,21 @@ describe("platform document settings UI normalization", () => {
     expect(normalized.headerChiefName).toBe("الشهباء");
   });
 
+  it("migrates reversed signer and role fields into the reference order", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerTitle: "رئيس قسم شرطة",
+      headerSubtitle: "الشهباء",
+      headerChiefRank: "المقدم",
+      headerChiefName: "غسان صالح كنو",
+    });
+
+    expect(normalized.headerTitle).toBe("المقدم");
+    expect(normalized.headerSubtitle).toBe("غسان صالح كنو");
+    expect(normalized.headerChiefRank).toBe("رئيس قسم شرطة");
+    expect(normalized.headerChiefName).toBe("الشهباء");
+  });
+
   it("keeps the logo in the enlarged supported range", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
@@ -139,13 +154,29 @@ describe("platform document settings UI normalization", () => {
     expect(normalized.headerChiefName).toBe("الشهباء");
   });
 
-  it("keeps legacy logo sizes valid while enforcing the new maximum", () => {
+  it("migrates old signer lines when the server supplied default added fields", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerTitle: "المقدم غسان صالح كنو",
+      headerSubtitle: "رئيس قسم الشهباء",
+    });
+
+    expect(normalized.headerTitle).toBe("المقدم");
+    expect(normalized.headerSubtitle).toBe("غسان صالح كنو");
+    expect(normalized.headerChiefRank).toBe("رئيس قسم شرطة");
+    expect(normalized.headerChiefName).toBe("الشهباء");
+  });
+
+  it("normalizes every legacy logo size to the reference size", () => {
     expect(
-      normalizePlatformDocumentSettings({ headerLogoSize: 120 }).headerLogoSize
+      normalizePlatformDocumentSettings({ headerLogoSize: 32 }).headerLogoSize
+    ).toBe(120);
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 220 }).headerLogoSize
     ).toBe(120);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 999 }).headerLogoSize
-    ).toBe(220);
+    ).toBe(120);
   });
 
   it("returns complete defaults for missing settings", () => {

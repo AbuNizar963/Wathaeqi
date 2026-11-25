@@ -67,10 +67,6 @@ export default function PlatformDocumentSettings() {
     key: K,
     value: SettingsForm[K]
   ) => setValues(current => ({ ...current, [key]: value }));
-  const effectiveHeaderLogoSize = Math.min(
-    220,
-    Math.round(values.headerLogoSize * 1.1)
-  );
 
   if (!open || !isPlatformOwner) return null;
 
@@ -268,43 +264,24 @@ export default function PlatformDocumentSettings() {
                       updateValue("headerShowLogo", event.target.checked)
                     }
                   />
-                  إظهار شعار الجهة فوق بيانات المسؤول
+                  إظهار شعار الجهة في وسط رأس الوثيقة
                 </label>
-                <label className="space-y-1 text-sm">
-                  المحاذاة
-                  <select
-                    value={values.headerAlignment}
-                    onChange={event =>
-                      updateValue(
-                        "headerAlignment",
-                        event.target.value as SettingsForm["headerAlignment"]
-                      )
-                    }
-                    className="w-full rounded-lg border bg-background px-3 py-2"
-                  >
-                    <option value="spread">توزيع متوازن</option>
-                    <option value="center">توسيط</option>
-                    <option value="right">إلى اليمين</option>
-                  </select>
-                </label>
+                <div className="space-y-1 text-sm">
+                  <span className="font-medium">تنسيق رأس الوثيقة</span>
+                  <p className="text-xs text-muted-foreground">
+                    عمودان للنص، وشعار 120px في المنتصف وفق المرجع الرسمي.
+                  </p>
+                </div>
               </div>
-              <label className="mt-4 block space-y-1 text-sm">
-                <span className="flex justify-between">
-                  حجم شعار الوثيقة (تكبير / تصغير)
-                  <output>{effectiveHeaderLogoSize}px</output>
+              <div className="mt-4 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                <span className="flex justify-between gap-3 font-medium">
+                  حجم شعار الوثيقة
+                  <output dir="ltr">120px</output>
                 </span>
-                <input
-                  type="range"
-                  min={32}
-                  max={220}
-                  step={4}
-                  value={values.headerLogoSize}
-                  onChange={event =>
-                    updateValue("headerLogoSize", Number(event.target.value))
-                  }
-                  className="w-full accent-[#10233f]"
-                />
-              </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  حجم ثابت مطابق للمرجع الرسمي.
+                </p>
+              </div>
               {(
                 [
                   ["headerTopPaddingMm", "الهامش العلوي"],
