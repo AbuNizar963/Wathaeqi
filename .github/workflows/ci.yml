@@ -48,13 +48,6 @@ jobs:
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
-      - name: Diagnostic Prettier output
-        run: |
-          pnpm exec prettier client/src/features/document-studio/DocumentSignatureBlock.tsx > /tmp/DocumentSignatureBlock.formatted.tsx
-          diff -u client/src/features/document-studio/DocumentSignatureBlock.tsx /tmp/DocumentSignatureBlock.formatted.tsx || true
-          pnpm exec prettier client/src/features/platform-settings/normalizePlatformDocumentSettings.ts > /tmp/normalizePlatformDocumentSettings.formatted.ts
-          diff -u client/src/features/platform-settings/normalizePlatformDocumentSettings.ts /tmp/normalizePlatformDocumentSettings.formatted.ts || true
-
       # Validate fixed-organization access, user scope, and document-only workflows.
       - name: Check formatting
         run: pnpm lint
