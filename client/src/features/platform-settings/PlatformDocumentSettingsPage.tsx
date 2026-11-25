@@ -158,6 +158,7 @@ export default function PlatformDocumentSettingsPage() {
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
 
+  // prettier-ignore
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
       <header className="document-page-header document-admin-header">
@@ -187,6 +188,29 @@ export default function PlatformDocumentSettingsPage() {
         </Button>
       </header>
 
+      <nav
+        aria-label="أقسام إعدادات الوثائق"
+        className="flex flex-wrap gap-2"
+      >
+        {[
+          { id: "organization-identity-settings", label: "هوية الجهة" },
+          { id: "watermark-settings", label: "العلامة المائية" },
+          { id: "page-layout-settings", label: "الصفحة والإطار" },
+          { id: "header-divider-settings", label: "فاصل الترويسة" },
+          { id: "header-content-settings", label: "محتوى الترويسة" },
+          { id: "page-rows-settings", label: "سطور الصفحة" },
+          { id: "verification-settings", label: "رمز التحقق" },
+        ].map(({ id, label }) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
       {settingsQuery.isLoading ? (
         <Card className="p-6 text-center text-sm text-muted-foreground">
           جارٍ تحميل إعدادات الوثائق...
@@ -208,10 +232,8 @@ export default function PlatformDocumentSettingsPage() {
           </Button>
         </Card>
       ) : (
-        {/* prettier-ignore */}
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
-          {/* prettier-ignore */}
-          <Card className="space-y-6 p-5">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+              <Card className="space-y-6 p-5">
             <section
               id="organization-identity-settings"
               aria-labelledby="organization-identity-title"
