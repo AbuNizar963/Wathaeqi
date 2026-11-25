@@ -1629,9 +1629,20 @@ export default function DocumentStudioPage() {
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() =>
-                            setManualTemplateEditing(value => !value)
-                          }
+                          onClick={() => {
+                            if (!manualTemplateEditing) {
+                              setDocumentContent(current =>
+                                applyDocumentTemplateVariables(
+                                  applyFieldValues(current, documentFieldValues),
+                                  getDocumentSystemVariables()
+                                )
+                              );
+                              setTemplateValuesApplied(true);
+                              setManualTemplateEditing(true);
+                            } else {
+                              setManualTemplateEditing(false);
+                            }
+                          }}
                         >
                           {manualTemplateEditing
                             ? "إيقاف التحرير اليدوي"
