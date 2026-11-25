@@ -255,35 +255,16 @@ export default function PlatformDocumentSettings() {
                   />
                 </label>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={values.headerShowLogo}
-                    onChange={event =>
-                      updateValue("headerShowLogo", event.target.checked)
-                    }
-                  />
-                  إظهار شعار الجهة
-                </label>
-                <label className="space-y-1 text-sm">
-                  المحاذاة
-                  <select
-                    value={values.headerAlignment}
-                    onChange={event =>
-                      updateValue(
-                        "headerAlignment",
-                        event.target.value as SettingsForm["headerAlignment"]
-                      )
-                    }
-                    className="w-full rounded-lg border bg-background px-3 py-2"
-                  >
-                    <option value="spread">توزيع متوازن</option>
-                    <option value="center">توسيط</option>
-                    <option value="right">إلى اليمين</option>
-                  </select>
-                </label>
-              </div>
+              <label className="mt-4 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={values.headerShowLogo}
+                  onChange={event =>
+                    updateValue("headerShowLogo", event.target.checked)
+                  }
+                />
+                إظهار شعار الجهة فوق بيانات المسؤول
+              </label>
               <label className="mt-4 block space-y-1 text-sm">
                 <span className="flex justify-between">
                   حجم شعار الوثيقة (تكبير / تصغير)
