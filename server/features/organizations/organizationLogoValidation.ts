@@ -77,6 +77,7 @@ const SVG_ATTRIBUTES = new Set([
 ]);
 
 const SAFE_XML_ENTITIES = /&(?:amp|quot|apos|lt|gt);/g;
+const XML_DECLARATION = /^\\s*<\\?xml[^>]*\\?>/i;
 
 /**
  * Accepts a deliberately small, static SVG subset for organization logos.
@@ -90,7 +91,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
   const withoutPreamble = source
     .replace(/^\uFEFF/, "")
     .replace(
-      /^\s*<\?xml\s+version=(["'])1\.[01]\1(?:\s+encoding=(["'])UTF-8\2)?\s*\?>/i,
+    .replace(XML_DECLARATION, "")
       ""
     )
     .replace(/<!--[\s\S]*?-->/g, "");
