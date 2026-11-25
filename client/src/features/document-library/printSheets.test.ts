@@ -27,12 +27,10 @@ const baseOptions: PrintOptions = {
 
 describe("document print sheet layout", () => {
   it("requires a deliberate print tap on Android browsers", () => {
-    const androidAgent =
-      "Mozilla/5.0 (Linux; Android 14) Chrome/120.0 Mobile";
+    const androidAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/120.0 Mobile";
     const desktopAgent =
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0";
-    const iosAgent =
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)";
+    const iosAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)";
 
     expect(requiresManualPrint(androidAgent)).toBe(true);
     expect(requiresManualPrint(desktopAgent)).toBe(false);

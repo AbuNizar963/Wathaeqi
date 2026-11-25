@@ -48,13 +48,6 @@ jobs:
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
 
-      # Temporary diagnostic: print the exact Prettier output for the two files
-      # failing CI. This step will be removed after applying the formatter output.
-      - name: Show exact print-sheet formatting
-        run: |
-          pnpm exec prettier --write client/src/features/document-library/printSheets.ts client/src/features/document-library/printSheets.test.ts
-          git --no-pager diff -- client/src/features/document-library/printSheets.ts client/src/features/document-library/printSheets.test.ts
-
       # Validate fixed-organization access, user scope, and document-only workflows.
       - name: Check formatting
         run: pnpm lint
