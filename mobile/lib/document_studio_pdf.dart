@@ -91,13 +91,12 @@ class DocumentStudioPdf {
     final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
-    final chiefRank = _clean(letterhead['unitChiefRank']);
-    final chiefName = _clean(letterhead['unitChiefName']);
     final headerShowLogo = letterhead['headerShowLogo'] != false;
     final rawHeaderLogoSize = letterhead['headerLogoSize'];
     final headerLogoSize =
-        (rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 120.0)
-            .clamp(32.0, 128.0)
+        ((rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 160.0) *
+                1.35)
+            .clamp(120.0, 220.0)
             .toDouble();
     final headerLogoSizePoints = headerLogoSize * 0.75;
     final headerTopPadding = _headerPadding(
@@ -115,8 +114,6 @@ class DocumentStudioPdf {
       'headerBottomPaddingMm',
       6,
     );
-    final headerAlignment = _clean(letterhead['headerAlignment']) ?? 'spread';
-
     pdf.addPage(
       pw.MultiPage(
         maxPages: 500,
@@ -229,17 +226,21 @@ class DocumentStudioPdf {
         ),
         header: (context) {
           if (context.pageNumber > 1) return pw.SizedBox(height: 8);
-          final titleAlignment = headerAlignment == 'center'
-              ? pw.TextAlign.center
-              : pw.TextAlign.right;
-          final metadataAlignment = headerAlignment == 'center'
-              ? pw.TextAlign.center
-              : headerAlignment == 'right'
-              ? pw.TextAlign.right
-              : pw.TextAlign.left;
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
+              if (headerShowLogo && logoImage != null)
+                pw.Padding(
+                  padding: pw.EdgeInsets.only(top: headerTopPadding),
+                  child: pw.Center(
+                    child: pw.Image(
+                      logoImage,
+                      width: headerLogoSizePoints,
+                      height: headerLogoSizePoints,
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                ),
               pw.Container(
                 padding: pw.EdgeInsets.fromLTRB(
                   headerHorizontalPadding,
@@ -265,71 +266,19 @@ class DocumentStudioPdf {
                         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                         children: [
                           pw.Text(
-                            department,
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: titleAlignment,
-                            maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 15),
-                          ),
-                          if (unit != null)
-                            pw.Text(
-                              unit,
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: titleAlignment,
-                              maxLines: 1,
-                              style: pw.TextStyle(font: bold, fontSize: 15),
-                            ),
-                        ],
-                      ),
-                    ),
-                    pw.SizedBox(
-                      width: headerLogoSizePoints,
-                      child: headerShowLogo && logoImage != null
-                          ? pw.Image(
-                              logoImage,
-                              width: headerLogoSizePoints,
-                              height: headerLogoSizePoints,
-                              fit: pw.BoxFit.contain,
-                            )
-                          : pw.SizedBox(
-                              width: headerLogoSizePoints,
-                              height: headerLogoSizePoints,
-                            ),
-                    ),
-                    pw.Expanded(
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-                        children: [
-                          pw.Text(
                             'الرقم: ${serialCode.isEmpty ? 'يخصص عند الإصدار' : serialCode}',
                             textDirection: pw.TextDirection.rtl,
-                            textAlign: metadataAlignment,
+                            textAlign: pw.TextAlign.right,
                             maxLines: 1,
                             style: pw.TextStyle(font: bold, fontSize: 15),
                           ),
                           pw.Text(
                             'التاريخ: $dateText',
                             textDirection: pw.TextDirection.rtl,
-                            textAlign: metadataAlignment,
+                            textAlign: pw.TextAlign.right,
                             maxLines: 1,
                             style: pw.TextStyle(font: bold, fontSize: 15),
                           ),
-                          if (chiefRank != null)
-                            pw.Text(
-                              chiefRank,
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: metadataAlignment,
-                              maxLines: 1,
-                              style: const pw.TextStyle(fontSize: 12),
-                            ),
-                          if (chiefName != null)
-                            pw.Text(
-                              chiefName,
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: metadataAlignment,
-                              maxLines: 1,
-                              style: pw.TextStyle(font: bold, fontSize: 12),
-                            ),
                         ],
                       ),
                     ),
@@ -365,13 +314,34 @@ class DocumentStudioPdf {
           );
         },
         footer: (context) => pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
-            pw.Text(
-              'وثائقي',
-              textDirection: pw.TextDirection.rtl,
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-            ),
+            if (context.pageNumber == 1)
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  mainAxisSize: pw.MainAxisSize.min,
+                  children: [
+                    pw.Text(
+                      department,
+                      textDirection: pw.TextDirection.rtl,
+                      textAlign: pw.TextAlign.left,
+                      maxLines: 1,
+                      style: pw.TextStyle(font: bold, fontSize: 13),
+                    ),
+                    if (unit != null)
+                      pw.Text(
+                        unit.startsWith('رئيس') ? unit : 'رئيس $unit',
+                        textDirection: pw.TextDirection.rtl,
+                        textAlign: pw.TextAlign.left,
+                        maxLines: 1,
+                        style: pw.TextStyle(font: bold, fontSize: 12),
+                      ),
+                  ],
+                ),
+              )
+            else
+              pw.Expanded(child: pw.SizedBox()),
             pw.Text(
               '${context.pageNumber} / ${context.pagesCount}',
               style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),

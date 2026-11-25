@@ -596,14 +596,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           100;
       final configuredLetterhead = {
         ..._letterhead,
-        'departmentName': _headerSetting(
-          'headerTitle',
-          _letterhead['departmentName']?.toString() ?? 'وثائقي',
-        ),
-        'unitName': _headerSetting(
-          'headerSubtitle',
-          _letterhead['unitName']?.toString() ?? '',
-        ),
+        'departmentName': _headerSetting('headerTitle', 'المقدم غسان صالح كنو'),
+        'unitName': _headerSetting('headerSubtitle', 'رئيس قسم شرطة الشهباء'),
         'unitChiefRank': _headerSetting(
           'headerChiefRank',
           _letterhead['unitChiefRank']?.toString() ?? '',
@@ -2385,10 +2379,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       text: values['watermarkText']?.toString() ?? 'وزارة الداخلية',
     );
     final titleController = TextEditingController(
-      text: values['headerTitle']?.toString() ?? '',
+      text: values['headerTitle']?.toString().trim().isNotEmpty == true
+          ? values['headerTitle'].toString()
+          : 'المقدم غسان صالح كنو',
     );
     final subtitleController = TextEditingController(
-      text: values['headerSubtitle']?.toString() ?? '',
+      text: values['headerSubtitle']?.toString().trim().isNotEmpty == true
+          ? values['headerSubtitle'].toString()
+          : 'رئيس قسم شرطة الشهباء',
     );
     final rankController = TextEditingController(
       text: values['headerChiefRank']?.toString() ?? '',
@@ -2474,31 +2472,32 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     ),
                     const Divider(height: 28),
                     const Text(
-                      'رأس الصفحة',
+                      'محتوى ترويسة الوثيقة',
                       style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, bottom: 8),
+                      child: Text(
+                        'يظهر الشعار في منتصف الترويسة أعلى الصفحة، وتظهر رتبة رئيس الوحدة واسم الوحدة في سطرين متتاليين أسفل الوثيقة من الجهة اليسرى.',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                          height: 1.5,
+                        ),
+                      ),
                     ),
                     TextField(
                       controller: titleController,
                       decoration: const InputDecoration(
-                        labelText: 'العنوان الرئيسي',
+                        labelText: 'رتبة رئيس الوحدة',
+                        hintText: 'المقدم غسان صالح كنو',
                       ),
                     ),
                     TextField(
                       controller: subtitleController,
                       decoration: const InputDecoration(
-                        labelText: 'العنوان الفرعي / الوحدة',
-                      ),
-                    ),
-                    TextField(
-                      controller: rankController,
-                      decoration: const InputDecoration(
-                        labelText: 'رتبة / صفة المسؤول',
-                      ),
-                    ),
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'اسم المسؤول',
+                        labelText: 'اسم الوحدة / صفة المسؤول',
+                        hintText: 'رئيس قسم شرطة الشهباء',
                       ),
                     ),
                     SwitchListTile(
@@ -2511,8 +2510,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     _documentSettingSlider(
                       label: 'حجم الشعار',
                       value: logoSize,
-                      min: 32,
-                      max: 128,
+                      min: 90,
+                      max: 160,
                       suffix: ' px',
                       onChanged: (value) =>
                           setDialogState(() => logoSize = value),
@@ -2800,34 +2799,17 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             .clamp(40.0, 180.0)
             .toDouble();
     const pixelsPerMillimeter = 794 / 210;
-    final headerTitle = _headerSetting(
-      'headerTitle',
-      _letterhead['departmentName']?.toString() ?? 'وثائقي',
-    );
+    final headerTitle = _headerSetting('headerTitle', 'المقدم غسان صالح كنو');
     final headerSubtitle = _headerSetting(
       'headerSubtitle',
-      _letterhead['unitName']?.toString() ?? '',
-    );
-    final chiefRank = _headerSetting(
-      'headerChiefRank',
-      _letterhead['unitChiefRank']?.toString() ?? '',
-    );
-    final chiefName = _headerSetting(
-      'headerChiefName',
-      _letterhead['unitChiefName']?.toString() ?? '',
+      'رئيس قسم شرطة الشهباء',
     );
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
-    final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
-        .clamp(32.0, 128.0)
-        .toDouble();
-    final headerAlignment =
-        _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
-    final blockAlignment = switch (headerAlignment) {
-      'center' => TextAlign.center,
-      'right' => TextAlign.right,
-      _ => null,
-    };
+    final logoSize =
+        ((logoSizeValue is num ? logoSizeValue.toDouble() : 160.0) * 1.35)
+            .clamp(120.0, 220.0)
+            .toDouble();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2855,6 +2837,25 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (showLogo &&
+                      (_letterhead['logoUrl']?.toString().isNotEmpty ?? false))
+                    Padding(
+                      padding: EdgeInsets.only(
+                        top:
+                            _headerMillimeters('headerTopPaddingMm', 0) *
+                            pixelsPerMillimeter,
+                      ),
+                      child: Center(
+                        child: Image.network(
+                          _letterhead['logoUrl'].toString(),
+                          width: logoSize,
+                          height: logoSize,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              SizedBox(width: logoSize, height: logoSize),
+                        ),
+                      ),
+                    ),
                   Container(
                     padding: EdgeInsets.fromLTRB(
                       _headerMillimeters('headerHorizontalPaddingMm', 0) *
@@ -2882,72 +2883,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Transform.scale(
-                                scaleX: 0.86,
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  headerTitle,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: blockAlignment ?? TextAlign.right,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 20,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                              if (headerSubtitle.isNotEmpty)
-                                Transform.scale(
-                                  scaleX: 0.86,
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    headerSubtitle,
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    textAlign:
-                                        blockAlignment ?? TextAlign.right,
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          width: logoSize,
-                          child:
-                              showLogo &&
-                                  (_letterhead['logoUrl']
-                                          ?.toString()
-                                          .isNotEmpty ??
-                                      false)
-                              ? Image.network(
-                                  _letterhead['logoUrl'].toString(),
-                                  width: logoSize,
-                                  height: logoSize,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, _, _) => SizedBox(
-                                    width: logoSize,
-                                    height: logoSize,
-                                  ),
-                                )
-                              : SizedBox(width: logoSize, height: logoSize),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
                               Text(
                                 'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
                                 maxLines: 1,
                                 softWrap: false,
-                                textAlign: blockAlignment ?? TextAlign.left,
+                                textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
@@ -2959,7 +2899,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                 'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
                                 maxLines: 1,
                                 softWrap: false,
-                                textAlign: blockAlignment ?? TextAlign.left,
+                                textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
@@ -2967,31 +2907,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                   height: 1.5,
                                 ),
                               ),
-                              if (chiefRank.isNotEmpty)
-                                Text(
-                                  chiefRank,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: blockAlignment ?? TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 16,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              if (chiefName.isNotEmpty)
-                                Text(
-                                  chiefName,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: blockAlignment ?? TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                    height: 1.5,
-                                  ),
-                                ),
                             ],
                           ),
                         ),
@@ -3023,12 +2938,58 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       config: const QuillEditorConfig(padding: EdgeInsets.zero),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
-                    child: Text(
-                      'وثائقي',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54, fontSize: 11),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (headerTitle.isNotEmpty)
+                                Text(
+                                  headerTitle,
+                                  textAlign: TextAlign.left,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              if (headerSubtitle.isNotEmpty)
+                                Text(
+                                  headerSubtitle.startsWith('رئيس')
+                                      ? headerSubtitle
+                                      : 'رئيس $headerSubtitle',
+                                  textAlign: TextAlign.left,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    height: 1.4,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'وثائقي',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
