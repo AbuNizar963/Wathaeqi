@@ -28,18 +28,19 @@ export async function prepareOrganizationLogoUpload(
     const image = new Image();
     image.decoding = "async";
     image.src = objectUrl;
-    await image.decode();
+    try {
+      await image.decode();
+    } catch {
+      throw new Error(
+        "تعذر فتح صورة الشعار. تأكد من سلامة الملف وأنه بصيغة PNG أو JPG صالحة."
+      );
+    }
     if (image.naturalWidth <= 0 || image.naturalHeight <= 0) {
       throw new Error("ملف الشعار ليس صورة صالحة");
     }
-    if (
-      image.naturalWidth > 12_000 ||
-      image.naturalHeight > 12_000 ||
-      image.naturalWidth * image.naturalHeight > 40_000_000
-    ) {
-      throw new Error("أبعاد صورة الشعار كبيرة جدًا؛ استخدم صورة أصغر");
-    }
 
+    // Do not reject a valid image only because its source dimensions are large.
+    // Draw it proportionally into a bounded canvas before encoding and upload.
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("تعذر تجهيز صورة الشعار للرفع");
