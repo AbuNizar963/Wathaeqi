@@ -74,10 +74,17 @@ describe("isSafeSvgLogo", () => {
   });
 
   it("rejects excessive nesting and element counts", () => {
-    const deeplyNested = \`<svg xmlns="http://www.w3.org/2000/svg">\${"<g>".repeat(130)}\${"</g>".repeat(130)}</svg>\`;
+    const deeplyNested =
+      '<svg xmlns="http://www.w3.org/2000/svg">' +
+      "<g>".repeat(130) +
+      "</g>".repeat(130) +
+      "</svg>";
     expect(isSafeSvgLogo(svg(deeplyNested))).toBe(false);
 
-    const tooManyNodes = \`<svg xmlns="http://www.w3.org/2000/svg">\${"<path/>".repeat(20_001)}</svg>\`;
+    const tooManyNodes =
+      '<svg xmlns="http://www.w3.org/2000/svg">' +
+      "<path/>".repeat(20_001) +
+      "</svg>";
     expect(isSafeSvgLogo(svg(tooManyNodes))).toBe(false);
   });
 });
