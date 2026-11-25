@@ -49,6 +49,7 @@ describe("isSafeSvgLogo", () => {
     '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><path d="M0 0"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.com/a.png"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><use href="javascript:alert(1)"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><use href="&#x6a;avascript:alert(1)"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill:url(https://example.com/a.svg)" d="M0 0"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><style>@import url(https://example.com/a.css);</style><path d="M0 0"/></svg>',
     '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"/>',
