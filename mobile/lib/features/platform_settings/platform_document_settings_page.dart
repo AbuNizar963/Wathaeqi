@@ -64,6 +64,7 @@ class _PlatformDocumentSettingsPageState
   List<Map<String, String>> _pageHeaderRows = [];
   List<Map<String, String>> _pageFooterRows = [];
   double _watermarkOpacityPercent = 12;
+  double _watermarkScalePercent = 100;
   String _headerDividerColor = _defaultColor;
   String _headerDividerStyle = 'double';
   String _frameStyle = 'single';
@@ -111,7 +112,9 @@ class _PlatformDocumentSettingsPageState
   bool _hasValidSettingsContract(Map result) {
     final opacity = result['watermarkOpacityPercent'];
     final color = result['headerDividerColor'];
-    return result['showMinistryWatermarkText'] is bool &&
+    final scale = result['watermarkScalePercent'];
+    return (scale == null || (scale is int && scale >= 40 && scale <= 180)) &&
+        result['showMinistryWatermarkText'] is bool &&
         result['showVerificationQr'] is bool &&
         opacity is int &&
         opacity >= 0 &&
@@ -204,6 +207,11 @@ class _PlatformDocumentSettingsPageState
         _pageHeaderRows = _readTextRows(result['pageHeaderRows']);
         _pageFooterRows = _readTextRows(result['pageFooterRows']);
         _watermarkOpacityPercent = opacity.toDouble();
+        _watermarkScalePercent =
+            ((result['watermarkScalePercent'] as num?) ?? 100)
+                .toDouble()
+                .clamp(40.0, 180.0)
+                .toDouble();
         _headerDividerColor = color.toLowerCase();
         _headerDividerStyle =
             result['headerDividerStyle']?.toString() ?? 'double';
@@ -376,6 +384,7 @@ class _PlatformDocumentSettingsPageState
         input: {
           'showMinistryWatermarkText': _showMinistryWatermarkText,
           'watermarkOpacityPercent': _watermarkOpacityPercent.round(),
+          'watermarkScalePercent': _watermarkScalePercent.round(),
           'headerDividerColor': color.toLowerCase(),
           'headerDividerStyle': _headerDividerStyle,
           'headerDividerWidthPt': _headerDividerWidthPt,
@@ -401,6 +410,11 @@ class _PlatformDocumentSettingsPageState
         _showVerificationQr = result['showVerificationQr'] as bool;
         _watermarkOpacityPercent = (result['watermarkOpacityPercent'] as int)
             .toDouble();
+        _watermarkScalePercent =
+            ((result['watermarkScalePercent'] as num?) ?? 100)
+                .toDouble()
+                .clamp(40.0, 180.0)
+                .toDouble();
         _headerDividerColor = (result['headerDividerColor'] as String)
             .toLowerCase();
         _colorController.text = _headerDividerColor;
@@ -703,8 +717,18 @@ class _PlatformDocumentSettingsPageState
                                   () => _watermarkOpacityPercent = value,
                                 ),
                         ),
+                        _settingsSlider(
+                          'حجم العلامة المائية',
+                          _watermarkScalePercent,
+                          40,
+                          180,
+                          '%',
+                          (value) => setState(
+                            () => _watermarkScalePercent = value,
+                          ),
+                        ),
                         Text(
-                          'تُطبّق النسبة على عبارة الوزارة وشعار الجهة. الحد الأعلى 60% للحفاظ على وضوح النص.',
+                          'يُطبّق الحجم على نص العلامة المائية وشعارها في المعاينة والطباعة. النطاق من 40% إلى 180%.',
                           style: TextStyle(
                             color: Theme.of(context)
                                 .colorScheme
