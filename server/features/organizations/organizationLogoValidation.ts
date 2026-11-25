@@ -121,6 +121,95 @@ const SAFE_LOCAL_URL_FUNCTION =
  * local fragment references remain supported for gradients, masks and filters.
  */
 // prettier-ignore
+function stripXmlDeclaration(source: string): string | null {
+  if (!source.startsWith("<?xml")) return source;
+
+  const end = source.indexOf("?>", 5);
+  if (end < 0 || end > 256) return null;
+
+  const declaration = source.slice(5, end);
+  let index = 0;
+
+  const skipWhitespace = (): void => {
+    while (index < declaration.length && isXmlWhitespace(declaration[index])) {
+      index += 1;
+    }
+  };
+
+  const readName = (): string => {
+    const start = index;
+    while (
+      index < declaration.length &&
+      isXmlNameCharacter(declaration[index])
+    ) {
+      index += 1;
+    }
+    return declaration.slice(start, index);
+  };
+
+  const readValue = (): string | null => {
+    const quote = declaration[index];
+    if (quote !== '"' && quote !== "'") return null;
+    index += 1;
+
+    const start = index;
+    while (index < declaration.length && declaration[index] !== quote) {
+      if (declaration[index] === "<") return null;
+      index += 1;
+    }
+    if (index >= declaration.length) return null;
+
+    const value = declaration.slice(start, index);
+    index += 1;
+    return value;
+  };
+
+  skipWhitespace();
+  if (readName() !== "version") return null;
+  skipWhitespace();
+  if (declaration[index] !== "=") return null;
+  index += 1;
+  skipWhitespace();
+
+  const version = readValue();
+  if (version !== "1.0" && version !== "1.1") return null;
+
+  skipWhitespace();
+  let attributeName = readName();
+
+  if (attributeName === "encoding") {
+    skipWhitespace();
+    if (declaration[index] !== "=") return null;
+    index += 1;
+    skipWhitespace();
+
+    const encoding = readValue();
+    if (!encoding || !/^[A-Za-z][A-Za-z0-9._-]*$/.test(encoding)) {
+      return null;
+    }
+
+    skipWhitespace();
+    attributeName = readName();
+  }
+
+  if (attributeName === "standalone") {
+    skipWhitespace();
+    if (declaration[index] !== "=") return null;
+    index += 1;
+    skipWhitespace();
+
+    const standalone = readValue();
+    if (standalone !== "yes" && standalone !== "no") return null;
+
+    skipWhitespace();
+    attributeName = readName();
+  }
+
+  if (attributeName !== "" || index !== declaration.length) return null;
+  return source.slice(end + 2);
+}
+
+// prettier-ignore
 export function isSafeSvgLogo(bytes: Buffer): boolean {
   try {
     if (bytes.length === 0) return false;
@@ -136,11 +225,9 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
     }
 
     source = source.replace(/^\uFEFF/, "");
-    const declaration = /^\s*<\?xml\s+version\s*=\s*(['"])1\.[01]\1(?:\s+encoding\s*=\s*(['"])[A-Za-z][A-Za-z0-9._-]*\2)?(?:\s+standalone\s*=\s*(['"])(?:yes|no)\3)?\s*\?>/i.exec(source);
-    if (declaration) {
-      source = source.slice(declaration[0].length);
-    }
-    if (/<\?/.test(source)) return false;
+    const withoutDeclaration = stripXmlDeclaration(source);
+    if (withoutDeclaration === null) return false;
+    source = withoutDeclaration;
 
     const stack: string[] = [];
     let index = 0;
@@ -228,7 +315,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       nodeCount += 1;
       if (nodeCount > MAX_SVG_NODES) return false;
 
-      const attributes: Record<string, unknown> = {};
+      const attributes = new Map<string, string>();
       let attributeCount = 0;
       let selfClosing = false;
 
@@ -256,9 +343,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
         }
         const attributeName = source.slice(attributeStart, index);
         if (!isValidXmlName(attributeName)) return false;
-        if (Object.prototype.hasOwnProperty.call(attributes, attributeName)) {
-          return false;
-        }
+        if (attributes.has(attributeName)) return false;
 
         while (index < source.length && isXmlWhitespace(source[index])) {
           index += 1;
@@ -280,7 +365,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
         }
         if (index >= source.length) return false;
 
-        attributes[attributeName] = source.slice(valueStart, index);
+        attributes.set(attributeName, source.slice(valueStart, index));
         index += 1;
 
         attributeCount += 1;
@@ -348,9 +433,7 @@ function validateAttributes(
   attributes: Record<string, unknown>,
   elementName: string
 ): boolean {
-  for (const [name, rawValue] of Object.entries(attributes)) {
-    if (typeof rawValue !== "string") return false;
-
+  for (const [name, rawValue] of attributes) {
     const decodedValue = decodeXmlEntities(rawValue);
     if (decodedValue === null) return false;
 
