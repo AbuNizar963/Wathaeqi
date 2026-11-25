@@ -274,12 +274,12 @@ const XML_PARSER = new XMLParser({
 });
 
 function isSafeLocalReference(value: string): boolean {
-  return /^url\\(\\s*#[A-Za-z_][\\w:.-]*\\s*\\)$/i.test(value.trim());
+  return /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/i.test(value.trim());
 }
 
 function isSafeStyle(value: string): boolean {
   if (
-    /[<>\\\\]|@import|expression\\s*\\(|javascript:|data:|https?:|\\/\\//i.test(
+    /[<>\\]|@import|expression\s*\(|javascript:|data:|https?:|\/\//i.test(
       value
     )
   ) {
@@ -297,12 +297,12 @@ function isSafeStyle(value: string): boolean {
 
     if (!SAFE_STYLE_PROPERTIES.has(property) || !propertyValue) return false;
     if (
-      /url\\s*\\(/i.test(propertyValue) &&
+      /url\s*\(/i.test(propertyValue) &&
       !isSafeLocalReference(propertyValue)
     ) {
       return false;
     }
-    if (/\\b(var|attr)\\s*\\(/i.test(propertyValue)) return false;
+    if (/\b(var|attr)\s*\(/i.test(propertyValue)) return false;
   }
 
   return true;
@@ -315,24 +315,24 @@ function isSafeAttribute(name: string, value: string): boolean {
   if (name === "xmlns:xlink") return value === XLINK_NAMESPACE;
 
   if (name === "href" || name === "xlink:href") {
-    return /^#[A-Za-z_][\\w:.-]*$/.test(value.trim());
+    return /^#[A-Za-z_][\w:.-]*$/.test(value.trim());
   }
 
   if (name === "style") return isSafeStyle(value);
 
   if (
-    /(?:javascript:|data:|https?:|file:|blob:|ftp:|\\/\\/|@import|expression\\s*\\()/i.test(
+    /(?:javascript:|data:|https?:|file:|blob:|ftp:|\/\/|@import|expression\s*\()/i.test(
       value
     )
   ) {
     return false;
   }
 
-  if (/url\\s*\\(/i.test(value) && !isSafeLocalReference(value)) {
+  if (/url\s*\(/i.test(value) && !isSafeLocalReference(value)) {
     return false;
   }
 
-  if (/[<>\\\\]/.test(value)) return false;
+  if (/[<>\\]/.test(value)) return false;
   return true;
 }
 
@@ -427,14 +427,14 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
     return false;
   }
 
-  if (!source.trim() || source.includes("\\u0000")) return false;
-  if (/<!DOCTYPE|<!ENTITY|<\\?(?!xml(?:\\s|\\?>))/i.test(source)) {
+  if (!source.trim() || source.includes("\u0000")) return false;
+  if (/<!DOCTYPE|<!ENTITY|<\?(?!xml(?:\s|\?>))/i.test(source)) {
     return false;
   }
 
   const withoutDeclaration = source
-    .replace(/^\\uFEFF/, "")
-    .replace(/^\\s*<\\?xml\\s+[^?]*\\?>/i, "");
+    .replace(/^\uFEFF/, "")
+    .replace(/^\s*<\?xml\s+[^?]*\?>/i, "");
 
   try {
     const validation = XMLValidator.validate(withoutDeclaration, {
