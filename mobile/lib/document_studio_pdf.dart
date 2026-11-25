@@ -91,8 +91,6 @@ class DocumentStudioPdf {
     final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
-    final chiefRank = _clean(letterhead['unitChiefRank']);
-    final chiefName = _clean(letterhead['unitChiefName']);
     final headerShowLogo = letterhead['headerShowLogo'] != false;
     final rawHeaderLogoSize = letterhead['headerLogoSize'];
     final headerLogoSize =
@@ -265,20 +263,19 @@ class DocumentStudioPdf {
                         crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                         children: [
                           pw.Text(
-                            department,
+                            'الرقم: ${serialCode.isEmpty ? 'يخصص عند الإصدار' : serialCode}',
                             textDirection: pw.TextDirection.rtl,
-                            textAlign: titleAlignment,
+                            textAlign: pw.TextAlign.right,
                             maxLines: 1,
                             style: pw.TextStyle(font: bold, fontSize: 15),
                           ),
-                          if (unit != null)
-                            pw.Text(
-                              unit,
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: titleAlignment,
-                              maxLines: 1,
-                              style: pw.TextStyle(font: bold, fontSize: 15),
-                            ),
+                          pw.Text(
+                            'التاريخ: $dateText',
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: pw.TextAlign.right,
+                            maxLines: 1,
+                            style: pw.TextStyle(font: bold, fontSize: 15),
+                          ),
                         ],
                       ),
                     ),
@@ -309,21 +306,7 @@ class DocumentStudioPdf {
                               maxLines: 1,
                               style: pw.TextStyle(font: bold, fontSize: 12),
                             ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            'الرقم: ${serialCode.isEmpty ? 'يخصص عند الإصدار' : serialCode}',
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: pw.TextAlign.left,
-                            maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 13),
-                          ),
-                          pw.Text(
-                            'التاريخ: $dateText',
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: pw.TextAlign.left,
-                            maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 13),
-                          ),
+
                         ],
                       ),
                     ),
