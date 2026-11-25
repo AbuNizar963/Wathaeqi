@@ -18,6 +18,7 @@ import {
   type DocumentOperationOptions,
 } from "../document-progress/documentProgress";
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
+import { countA4Pages, measureA4Page } from "./a4PrintLayout";
 import type {
   PagesPerSheet,
   PrintLayoutMode,
@@ -41,7 +42,6 @@ async function renderA4Pages(
   });
   await document.fonts?.ready;
   throwIfAborted(options.signal);
-  const width = element.clientWidth;
   const editorOverflow = Array.from(
     element.querySelectorAll<HTMLTextAreaElement>(".document-editor-input")
   ).reduce(
@@ -49,9 +49,19 @@ async function renderA4Pages(
       total + Math.max(0, editor.scrollHeight - editor.clientHeight),
     0
   );
-  const height = Math.max(
-    element.scrollHeight,
-    element.clientHeight + editorOverflow
+  const computedStyle = window.getComputedStyle(element);
+  const borderWidths = {
+    horizontal:
+      (Number.parseFloat(computedStyle.borderLeftWidth) || 0) +
+      (Number.parseFloat(computedStyle.borderRightWidth) || 0),
+    vertical:
+      (Number.parseFloat(computedStyle.borderTopWidth) || 0) +
+      (Number.parseFloat(computedStyle.borderBottomWidth) || 0),
+  };
+  const { width, height } = measureA4Page(
+    element,
+    borderWidths,
+    editorOverflow
   );
   if (width <= 0 || height <= 0) {
     throw new Error("تعذر تحديد أبعاد صفحة الوثيقة للطباعة");
@@ -111,10 +121,7 @@ async function renderA4Pages(
   const scale = canvas.width / width;
   const pageHeight = (width * 297) / 210;
   const pageHeightPixels = Math.max(1, Math.round(pageHeight * scale));
-  const pageCount = Math.max(
-    1,
-    Math.ceil(Math.max(0, height - 1) / pageHeight)
-  );
+  const pageCount = countA4Pages(height, width);
   const pages: SourcePage[] = [];
   try {
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
