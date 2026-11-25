@@ -262,7 +262,8 @@ const ownerPlatformDocumentSettingsRouter = router({
           .number()
           .int()
           .min(MIN_WATERMARK_SCALE_PERCENT)
-          .max(MAX_WATERMARK_SCALE_PERCENT),
+          .max(MAX_WATERMARK_SCALE_PERCENT)
+          .default(100),
         headerDividerColor: z.string().regex(HEX_COLOR_PATTERN),
         headerDividerStyle: z.enum([
           "solid",
