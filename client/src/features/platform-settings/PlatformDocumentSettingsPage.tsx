@@ -224,11 +224,20 @@ export default function PlatformDocumentSettingsPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
           <Card className="space-y-6 p-5">
-            <section id="organization-identity-settings" aria-labelledby="organization-identity-title" className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+            <section
+              id="organization-identity-settings"
+              aria-labelledby="organization-identity-title"
+              className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+            >
               <div className="flex items-center gap-2">
                 <ImagePlus className="h-5 w-5 text-primary" />
                 <div>
-                  <h2 id="organization-identity-title" className="font-semibold">هوية الجهة وشعارها</h2>
+                  <h2
+                    id="organization-identity-title"
+                    className="font-semibold"
+                  >
+                    هوية الجهة وشعارها
+                  </h2>
                   <p className="text-xs text-muted-foreground">
                     تُطبّق التغييرات تلقائياً على جهة عملك الحالية والوثائق
                     الرسمية.
@@ -388,8 +397,7 @@ export default function PlatformDocumentSettingsPage() {
                   />
                 </label>
               </div>
-  
-  
+
               <section className="space-y-2">
                 <label
                   htmlFor="document-watermark-text"
@@ -412,9 +420,7 @@ export default function PlatformDocumentSettingsPage() {
                   يظهر النص وفق نمط A4 المتكرر، ويمكن تغييره من إعدادات الوثائق.
                 </p>
               </section>
-  
-  
-  
+
               <div className="h-px bg-border" />
               <section className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
@@ -457,9 +463,15 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section id="page-layout-settings" aria-labelledby="page-layout-title" className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+            <section
+              id="page-layout-settings"
+              aria-labelledby="page-layout-title"
+              className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+            >
               <div>
-                <h2 id="page-layout-title" className="font-semibold">حجم الصفحة والهوامش والإطار</h2>
+                <h2 id="page-layout-title" className="font-semibold">
+                  حجم الصفحة والهوامش والإطار
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اضبط المساحات الآمنة حول المحتوى واختر إطارًا رسميًا واضحًا
                   للطباعة والمعاينة.
@@ -542,9 +554,15 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
             </section>
-            <section id="header-divider-settings" aria-labelledby="header-divider-title" className="space-y-4 rounded-xl border p-4">
+            <section
+              id="header-divider-settings"
+              aria-labelledby="header-divider-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
               <div>
-                <h2 id="header-divider-title" className="font-semibold">فاصل ترويسة الوثيقة</h2>
+                <h2 id="header-divider-title" className="font-semibold">
+                  فاصل ترويسة الوثيقة
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر نمطًا رسميًا ولونًا وسماكة متوازنة للفاصل.
                 </p>
@@ -610,8 +628,14 @@ export default function PlatformDocumentSettingsPage() {
               </p>
             ) : null}
 
-            <section id="header-content-settings" aria-labelledby="header-content-title" className="space-y-4 rounded-xl border p-4">
-              <h2 id="header-content-title" className="font-semibold">محتوى ترويسة الوثيقة</h2>
+            <section
+              id="header-content-settings"
+              aria-labelledby="header-content-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
+              <h2 id="header-content-title" className="font-semibold">
+                محتوى ترويسة الوثيقة
+              </h2>
               <p className="text-xs text-muted-foreground">
                 بيانات الجهة والمسؤول التي تظهر في أعلى الوثيقة.
               </p>
@@ -774,9 +798,15 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section id="page-rows-settings" aria-labelledby="page-rows-title" className="space-y-4 rounded-xl border p-4">
+            <section
+              id="page-rows-settings"
+              aria-labelledby="page-rows-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
               <div>
-                <h2 id="page-rows-title" className="font-semibold">سطور أعلى الصفحة وأسفلها</h2>
+                <h2 id="page-rows-title" className="font-semibold">
+                  سطور أعلى الصفحة وأسفلها
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر عدد السطور واكتب نصاً يميناً وآخر يساراً في السطر نفسه،
                   مثل: الجمهورية العربية السورية / Syrian Arab.
@@ -842,10 +872,19 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section id="verification-settings" aria-labelledby="verification-title" className="space-y-3 rounded-xl border p-4">
+            <section
+              id="verification-settings"
+              aria-labelledby="verification-title"
+              className="space-y-3 rounded-xl border p-4"
+            >
               <label className="flex items-center justify-between gap-3">
                 <span>
-                  <span id="verification-title" className="block font-semibold">رمز التحقق</span>
+                  <span
+                    id="verification-title"
+                    className="block font-semibold"
+                  >
+                    رمز التحقق
+                  </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     حفظ تفضيل إظهار رمز التحقق في مخرجات الوثائق المدعومة
                   </span>
