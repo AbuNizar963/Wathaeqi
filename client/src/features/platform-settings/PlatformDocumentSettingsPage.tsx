@@ -158,6 +158,7 @@ export default function PlatformDocumentSettingsPage() {
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
 
+  // prettier-ignore
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
       <header className="document-page-header document-admin-header">
