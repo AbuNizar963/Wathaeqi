@@ -4,6 +4,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   showMinistryWatermarkText: true,
   watermarkText: "وزارة الداخلية",
   watermarkOpacityPercent: 12,
+  watermarkScalePercent: 100,
   headerDividerColor: "#b49a55",
   headerDividerStyle: "double" as const,
   headerDividerWidthPt: 2.25,
@@ -39,6 +40,7 @@ export type PlatformDocumentSettings = {
   watermarkText: string;
   /** Opacity percentage for the watermark text and organization-logo layers. */
   watermarkOpacityPercent: number;
+  watermarkScalePercent: number;
   headerDividerColor: string;
   headerDividerStyle: DocumentDividerStyle;
   headerDividerWidthPt: number;
@@ -66,6 +68,8 @@ export type PlatformDocumentSettings = {
 };
 
 export const MAX_WATERMARK_OPACITY_PERCENT = 60;
+export const MIN_WATERMARK_SCALE_PERCENT = 40;
+export const MAX_WATERMARK_SCALE_PERCENT = 180;
 export const MAX_HEADER_LOGO_SIZE = 128;
 export const MIN_HEADER_LOGO_SIZE = 32;
 export const MAX_HEADER_PADDING_MM = 30;

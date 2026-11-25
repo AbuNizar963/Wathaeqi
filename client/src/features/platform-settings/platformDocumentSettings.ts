@@ -1,6 +1,8 @@
 import {
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
@@ -28,6 +30,9 @@ export async function loadDocumentSettingsForExport(
       !Number.isInteger(settings.watermarkOpacityPercent) ||
       settings.watermarkOpacityPercent < 0 ||
       settings.watermarkOpacityPercent > MAX_WATERMARK_OPACITY_PERCENT ||
+      !Number.isInteger(settings.watermarkScalePercent) ||
+      settings.watermarkScalePercent < MIN_WATERMARK_SCALE_PERCENT ||
+      settings.watermarkScalePercent > MAX_WATERMARK_SCALE_PERCENT ||
       typeof settings.headerDividerColor !== "string" ||
       !HEX_COLOR_PATTERN.test(settings.headerDividerColor) ||
       !["solid", "double", "dashed", "dotted", "tricolor-stars"].includes(

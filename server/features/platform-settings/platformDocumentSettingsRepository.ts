@@ -3,6 +3,8 @@ import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
@@ -63,6 +65,12 @@ function mapPlatformDocumentSettings(
       storedOpacity <= MAX_WATERMARK_OPACITY_PERCENT
         ? storedOpacity
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkOpacityPercent,
+    watermarkScalePercent:
+      Number.isInteger(Number(row.watermarkScalePercent)) &&
+      Number(row.watermarkScalePercent) >= MIN_WATERMARK_SCALE_PERCENT &&
+      Number(row.watermarkScalePercent) <= MAX_WATERMARK_SCALE_PERCENT
+        ? Number(row.watermarkScalePercent)
+        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkScalePercent,
     headerDividerColor:
       typeof storedColor === "string" && HEX_COLOR_PATTERN.test(storedColor)
         ? storedColor

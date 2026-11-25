@@ -4,13 +4,17 @@ export const DOCUMENT_WATERMARK_COLUMNS = 13;
 export const DOCUMENT_WATERMARK_DEFAULT_OPACITY = 0.12;
 
 /** The same physical A4 geometry and staggered Ruqaa pattern as the reference. */
-export function buildDocumentWatermarkCss(opacity: number): string {
+export function buildDocumentWatermarkCss(opacity: number, scale = 1): string {
   const safeOpacity = Number.isFinite(opacity)
     ? Math.min(0.6, Math.max(0, opacity))
     : DOCUMENT_WATERMARK_DEFAULT_OPACITY;
+  const safeScale = Number.isFinite(scale)
+    ? Math.min(1.8, Math.max(0.4, scale))
+    : 1;
   return [
     ".document-watermark-layer {",
     `  --document-watermark-opacity: ${safeOpacity};`,
+    `  --document-watermark-scale: ${safeScale};`,
     "}",
   ].join("\n");
 }

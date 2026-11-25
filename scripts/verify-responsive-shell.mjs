@@ -21,6 +21,8 @@ const [
   appRoutes,
   settingsPage,
   documentStudio,
+  documentWatermarkComponent,
+  platformDocumentPreview,
   workspacePage,
   workspaceRouter,
 ] = await Promise.all(
@@ -32,6 +34,8 @@ const [
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
+    "client/src/features/document-studio/DocumentWatermark.tsx",
+    "client/src/features/platform-settings/PlatformDocumentPreview.tsx",
     "client/src/features/workspace/WorkspacePage.tsx",
     "server/features/workspace/workspaceRouter.ts",
   ].map(readProjectFile)
@@ -111,9 +115,23 @@ assert(
 assert(
   documentStudio.includes("معاينة الوثيقة") &&
     documentStudio.includes("watermarkText") &&
-    documentStudio.includes("buildDocumentWatermarkCss") &&
+    documentStudio.includes(
+      'import DocumentWatermark from "./DocumentWatermark"'
+    ) &&
+    documentWatermarkComponent.includes("buildDocumentWatermarkCss") &&
+    documentStudio.includes("watermarkScalePercent") &&
     documentStudio.includes("editable={!previewMode}"),
   "The document workspace must expose a read-only preview and apply watermark settings."
+);
+
+assert(
+  platformDocumentPreview.includes("ResponsiveA4Preview") &&
+    platformDocumentPreview.includes("DocumentEditor") &&
+    platformDocumentPreview.includes("editable={false}") &&
+    platformDocumentPreview.includes(
+      "scalePercent={settings.watermarkScalePercent}"
+    ),
+  "Document settings must preview a saved document with the actual read-only print components."
 );
 
 assert(

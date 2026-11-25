@@ -963,7 +963,7 @@
   left: 50%;
   width: 93.75%;
   height: 93.75%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--document-watermark-scale, 1));
   object-fit: contain;
   opacity: var(--document-watermark-opacity, 0.12);
   -webkit-print-color-adjust: exact;
@@ -1003,6 +1003,9 @@
   font-family: "Aref Ruqaa", serif;
   font-size: 11pt;
   font-weight: 400;
+  display: inline-block;
+  transform: scale(var(--document-watermark-scale, 1));
+  transform-origin: center;
   line-height: 1;
   white-space: nowrap;
 }

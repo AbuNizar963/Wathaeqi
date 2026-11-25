@@ -3,9 +3,12 @@ import { SlidersHorizontal, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { ownerTrpc } from "@/lib/ownerTrpc";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -24,6 +27,7 @@ export default function PlatformDocumentSettings() {
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
   const utils = trpc.useUtils();
+  const ownerUtils = ownerTrpc.useUtils();
   const settings = trpc.platformDocumentSettings.get.useQuery(undefined, {
     enabled: open && isPlatformOwner,
     retry: false,
@@ -33,7 +37,10 @@ export default function PlatformDocumentSettings() {
   const update = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
       setValues(toFormSettings(saved));
-      await utils.platformDocumentSettings.get.invalidate();
+      await Promise.all([
+        utils.platformDocumentSettings.get.invalidate(),
+        ownerUtils.platformDocumentSettings.get.invalidate(),
+      ]);
       toast.success("تم حفظ إعدادات وثائق النظام");
       setOpen(false);
     },
@@ -167,6 +174,34 @@ export default function PlatformDocumentSettings() {
               />
             </label>
 
+            <label className="block rounded-xl border p-4">
+              <span className="flex items-center justify-between gap-3 text-sm font-bold">
+                <span>حجم العلامة المائية</span>
+                <output className="tabular-nums">
+                  {values.watermarkScalePercent}%
+                </output>
+              </span>
+              <input
+                type="range"
+                min={MIN_WATERMARK_SCALE_PERCENT}
+                max={MAX_WATERMARK_SCALE_PERCENT}
+                step={5}
+                value={values.watermarkScalePercent}
+                onChange={event =>
+                  updateValue(
+                    "watermarkScalePercent",
+                    Number(event.target.value)
+                  )
+                }
+                aria-label="حجم العلامة المائية"
+                className="mt-3 w-full accent-[#10233f]"
+              />
+              <span className="mt-1 flex justify-between text-xs text-muted-foreground">
+                <span>أصغر</span>
+                <span>أكبر</span>
+              </span>
+            </label>
+
             <div className="rounded-xl border p-4">
               <h3 className="font-bold">بيانات أسفل الوثيقة</h3>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -249,7 +284,8 @@ export default function PlatformDocumentSettings() {
               </div>
               <label className="mt-4 block space-y-1 text-sm">
                 <span className="flex justify-between">
-                  حجم الشعار <output>{values.headerLogoSize}px</output>
+                  حجم شعار الوثيقة (تكبير / تصغير)
+                  <output>{values.headerLogoSize}px</output>
                 </span>
                 <input
                   type="range"

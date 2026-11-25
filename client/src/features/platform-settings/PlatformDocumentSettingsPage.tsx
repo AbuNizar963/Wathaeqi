@@ -4,15 +4,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { ownerTrpc } from "@/lib/ownerTrpc";
 import {
   prepareOrganizationLogoUpload,
   uploadOrganizationLogoDirect,
 } from "@/features/organizations/organizationLogoUpload";
 import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
+import PlatformDocumentPreview from "./PlatformDocumentPreview";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   MAX_PAGE_MARGIN_MM,
   MIN_DIVIDER_WIDTH_PT,
   MAX_DIVIDER_WIDTH_PT,
@@ -25,6 +29,7 @@ type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
 
 export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
+  const ownerUtils = ownerTrpc.useUtils();
   const settingsQuery = trpc.platformDocumentSettings.get.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
   const organizationId = organizationContext.data?.organizationId;
@@ -63,7 +68,10 @@ export default function PlatformDocumentSettingsPage() {
   const saveMutation = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
       setValues(normalizePlatformDocumentSettings(saved));
-      await utils.platformDocumentSettings.get.invalidate();
+      await Promise.all([
+        utils.platformDocumentSettings.get.invalidate(),
+        ownerUtils.platformDocumentSettings.get.invalidate(),
+      ]);
       toast.success("تم حفظ إعدادات الوثائق");
     },
     onError: error => toast.error(error.message),
@@ -150,6 +158,7 @@ export default function PlatformDocumentSettingsPage() {
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
 
+  // prettier-ignore
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
       <header className="document-page-header document-admin-header">
@@ -170,13 +179,37 @@ export default function PlatformDocumentSettingsPage() {
             settingsQuery.isLoading ||
             !settingsQuery.data ||
             saveMutation.isPending ||
-            !colorIsValid
+            !colorIsValid ||
+            !values.watermarkText.trim()
           }
         >
           <Save className="ml-2 h-4 w-4" />
           {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
         </Button>
       </header>
+
+      <nav
+        aria-label="أقسام إعدادات الوثائق"
+        className="flex flex-wrap gap-2"
+      >
+        {[
+          { id: "organization-identity-settings", label: "هوية الجهة" },
+          { id: "watermark-settings", label: "العلامة المائية" },
+          { id: "page-layout-settings", label: "الصفحة والإطار" },
+          { id: "header-divider-settings", label: "فاصل الترويسة" },
+          { id: "header-content-settings", label: "محتوى الترويسة" },
+          { id: "page-rows-settings", label: "سطور الصفحة" },
+          { id: "verification-settings", label: "رمز التحقق" },
+        ].map(({ id, label }) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
 
       {settingsQuery.isLoading ? (
         <Card className="p-6 text-center text-sm text-muted-foreground">
@@ -199,13 +232,22 @@ export default function PlatformDocumentSettingsPage() {
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
-          <Card className="space-y-6 p-5">
-            <section className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+              <Card className="space-y-6 p-5">
+            <section
+              id="organization-identity-settings"
+              aria-labelledby="organization-identity-title"
+              className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+            >
               <div className="flex items-center gap-2">
                 <ImagePlus className="h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-semibold">هوية الجهة وشعارها</h2>
+                  <h2
+                    id="organization-identity-title"
+                    className="font-semibold"
+                  >
+                    هوية الجهة وشعارها
+                  </h2>
                   <p className="text-xs text-muted-foreground">
                     تُطبّق التغييرات تلقائياً على جهة عملك الحالية والوثائق
                     الرسمية.
@@ -329,60 +371,149 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-2">
-              <label className="flex items-center justify-between gap-3">
-                <span>
-                  <span className="block font-semibold">
-                    العلامة الأمنية النصية
+            <section
+              id="watermark-settings"
+              aria-labelledby="watermark-settings-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
+              <div>
+                <h2 id="watermark-settings-title" className="font-semibold">
+                  العلامة المائية والأمان
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  تحكم في ظهور العلامة الأمنية ونصها ودرجة شفافيتها.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-center justify-between gap-3">
+                  <span>
+                    <span className="block font-semibold">
+                      العلامة الأمنية النصية
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      إظهار اسم الجهة الرسمي بشكل متكرر خلف محتوى الوثيقة
+                    </span>
                   </span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    إظهار اسم الجهة الرسمي بشكل متكرر خلف محتوى الوثيقة
-                  </span>
-                </span>
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 accent-primary"
+                    checked={values.showMinistryWatermarkText}
+                    onChange={event =>
+                      updateValue(
+                        "showMinistryWatermarkText",
+                        event.target.checked
+                      )
+                    }
+                  />
+                </label>
+              </div>
+
+              <section className="space-y-2">
+                <label
+                  htmlFor="document-watermark-text"
+                  className="font-semibold"
+                >
+                  نص العلامة الأمنية
+                </label>
                 <input
-                  type="checkbox"
-                  className="h-5 w-5 accent-primary"
-                  checked={values.showMinistryWatermarkText}
+                  id="document-watermark-text"
+                  type="text"
+                  maxLength={255}
+                  value={values.watermarkText}
+                  onChange={event =>
+                    updateValue("watermarkText", event.target.value)
+                  }
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  placeholder="اكتب العبارة التي ستتكرر خلف صفحات الوثيقة"
+                />
+                <p className="text-xs text-muted-foreground">
+                  يظهر النص وفق نمط A4 المتكرر، ويمكن تغييره من إعدادات الوثائق.
+                </p>
+              </section>
+
+              <div className="h-px bg-border" />
+              <section className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="watermark-opacity" className="font-semibold">
+                    شفافية العلامة المائية
+                  </label>
+                  <output
+                    htmlFor="watermark-opacity"
+                    className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
+                  >
+                    {values.watermarkOpacityPercent}%
+                  </output>
+                </div>
+                <input
+                  id="watermark-opacity"
+                  type="range"
+                  min={0}
+                  max={MAX_WATERMARK_OPACITY_PERCENT}
+                  step={1}
+                  value={values.watermarkOpacityPercent}
                   onChange={event =>
                     updateValue(
-                      "showMinistryWatermarkText",
-                      event.target.checked
+                      "watermarkOpacityPercent",
+                      Number(event.target.value)
                     )
                   }
+                  className="w-full accent-primary"
                 />
-              </label>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>شفاف تماماً</span>
+                  <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
+                </div>
+              </section>
+              <section className="space-y-3 rounded-lg bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="watermark-scale" className="font-semibold">
+                    حجم العلامة المائية
+                  </label>
+                  <output
+                    htmlFor="watermark-scale"
+                    className="font-semibold tabular-nums"
+                  >
+                    {values.watermarkScalePercent}%
+                  </output>
+                </div>
+                <input
+                  id="watermark-scale"
+                  type="range"
+                  min={MIN_WATERMARK_SCALE_PERCENT}
+                  max={MAX_WATERMARK_SCALE_PERCENT}
+                  step={5}
+                  value={values.watermarkScalePercent}
+                  onChange={event =>
+                    updateValue(
+                      "watermarkScalePercent",
+                      Number(event.target.value)
+                    )
+                  }
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>أصغر</span>
+                  <span>أكبر</span>
+                </div>
+              </section>
+              {!values.watermarkText.trim() ? (
+                <p className="text-xs text-destructive">
+                  لا يمكن ترك نص العلامة الأمنية فارغاً.
+                </p>
+              ) : null}
             </section>
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-2">
-              <label
-                htmlFor="document-watermark-text"
-                className="font-semibold"
-              >
-                نص العلامة الأمنية
-              </label>
-              <input
-                id="document-watermark-text"
-                type="text"
-                maxLength={255}
-                value={values.watermarkText}
-                onChange={event =>
-                  updateValue("watermarkText", event.target.value)
-                }
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                placeholder="اكتب العبارة التي ستتكرر خلف صفحات الوثيقة"
-              />
-              <p className="text-xs text-muted-foreground">
-                يظهر النص وفق نمط A4 المتكرر، ويمكن تغييره من إعدادات الوثائق.
-              </p>
-            </section>
-
-            <div className="h-px bg-border" />
-
-            <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+            <section
+              id="page-layout-settings"
+              aria-labelledby="page-layout-title"
+              className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
+            >
               <div>
-                <h2 className="font-semibold">صفحة الوثيقة والإطار</h2>
+                <h2 id="page-layout-title" className="font-semibold">
+                  حجم الصفحة والهوامش والإطار
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اضبط المساحات الآمنة حول المحتوى واختر إطارًا رسميًا واضحًا
                   للطباعة والمعاينة.
@@ -465,9 +596,15 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
             </section>
-            <section className="space-y-4 rounded-xl border p-4">
+            <section
+              id="header-divider-settings"
+              aria-labelledby="header-divider-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
               <div>
-                <h2 className="font-semibold">الفاصل بين الرأس والمحتوى</h2>
+                <h2 id="header-divider-title" className="font-semibold">
+                  فاصل ترويسة الوثيقة
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر نمطًا رسميًا ولونًا وسماكة متوازنة للفاصل.
                 </p>
@@ -527,10 +664,22 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
             </section>
-            <section className="space-y-4">
-              <h2 className="font-semibold">بيانات أسفل الوثيقة</h2>
+            {!colorIsValid ? (
+              <p className="text-xs text-destructive">
+                أدخل ألواناً صالحة بصيغة HEX.
+              </p>
+            ) : null}
+
+            <section
+              id="header-content-settings"
+              aria-labelledby="header-content-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
+              <h2 id="header-content-title" className="font-semibold">
+                محتوى ترويسة الوثيقة
+              </h2>
               <p className="text-xs text-muted-foreground">
-                تظهر هذه البيانات بعد آخر سطر من الوثيقة.
+                بيانات الجهة والمسؤول التي تظهر في أعلى الوثيقة.
               </p>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">العنوان الرئيسي</span>
@@ -593,7 +742,7 @@ export default function PlatformDocumentSettingsPage() {
               </label>
               <label className="block space-y-1">
                 <span className="flex justify-between text-sm font-medium">
-                  <span>حجم الشعار</span>
+                  <span>حجم شعار الوثيقة (تكبير / تصغير)</span>
                   <output>{values.headerLogoSize}px</output>
                 </span>
                 <input
@@ -670,7 +819,7 @@ export default function PlatformDocumentSettingsPage() {
               </label>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">
-                  محاذاة بيانات أسفل الوثيقة
+                  محاذاة بيانات الترويسة
                 </span>
                 <select
                   value={values.headerAlignment}
@@ -691,9 +840,15 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-4">
+            <section
+              id="page-rows-settings"
+              aria-labelledby="page-rows-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
               <div>
-                <h2 className="font-semibold">سطور رأس الصفحة وتذييل الصفحة</h2>
+                <h2 id="page-rows-title" className="font-semibold">
+                  سطور أعلى الصفحة وأسفلها
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر عدد السطور واكتب نصاً يميناً وآخر يساراً في السطر نفسه،
                   مثل: الجمهورية العربية السورية / Syrian Arab.
@@ -759,81 +914,19 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <div className="h-px bg-border" />
-
-            <div className="h-px bg-border" />
-
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <label htmlFor="watermark-opacity" className="font-semibold">
-                  شفافية العلامة المائية
-                </label>
-                <output
-                  htmlFor="watermark-opacity"
-                  className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
-                >
-                  {values.watermarkOpacityPercent}%
-                </output>
-              </div>
-              <input
-                id="watermark-opacity"
-                type="range"
-                min={0}
-                max={MAX_WATERMARK_OPACITY_PERCENT}
-                step={1}
-                value={values.watermarkOpacityPercent}
-                onChange={event =>
-                  updateValue(
-                    "watermarkOpacityPercent",
-                    Number(event.target.value)
-                  )
-                }
-                className="w-full accent-primary"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>شفاف تماماً</span>
-                <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
-              </div>
-            </section>
-
-            <div className="h-px bg-border" />
-
-            <section className="space-y-2">
-              <label htmlFor="document-divider-color" className="font-semibold">
-                لون خط ترويسة الوثيقة
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="document-divider-color"
-                  type="color"
-                  value={values.headerDividerColor}
-                  onChange={event =>
-                    updateValue("headerDividerColor", event.target.value)
-                  }
-                  className="h-11 w-16 cursor-pointer rounded-lg border bg-background p-1"
-                />
-                <span className="font-mono text-sm" dir="ltr">
-                  {values.headerDividerColor}
-                </span>
-              </div>
-              {!colorIsValid ? (
-                <p className="text-xs text-destructive">
-                  أدخل لوناً صالحاً بصيغة HEX.
-                </p>
-              ) : null}
-              {!values.watermarkText.trim() ? (
-                <p className="text-xs text-destructive">
-                  لا يمكن ترك نص العلامة الأمنية فارغاً.
-                </p>
-              ) : null}
-            </section>
-
-            <div className="h-px bg-border" />
-
-            <section className="space-y-2">
+            <section
+              id="verification-settings"
+              aria-labelledby="verification-title"
+              className="space-y-3 rounded-xl border p-4"
+            >
               <label className="flex items-center justify-between gap-3">
                 <span>
-                  <span className="block font-semibold">رمز التحقق</span>
+                  <span
+                    id="verification-title"
+                    className="block font-semibold"
+                  >
+                    رمز التحقق
+                  </span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     حفظ تفضيل إظهار رمز التحقق في مخرجات الوثائق المدعومة
                   </span>
@@ -850,109 +943,13 @@ export default function PlatformDocumentSettingsPage() {
             </section>
           </Card>
 
-          <Card className="space-y-3 p-5">
-            <h2 className="font-semibold">معاينة التنسيق</h2>
-            <p className="text-xs text-muted-foreground">
-              معاينة مباشرة للون الترويسة ودرجة ظهور العلامة المائية.
-            </p>
-            <div
-              className="relative min-h-[360px] overflow-hidden rounded-xl border bg-white text-slate-900 shadow-sm"
-              style={{ padding: "10mm" }}
-            >
-              <div
-                className="relative z-10 grid items-start gap-[2px] border-b-[3px] pb-3"
-                style={{
-                  borderColor: values.headerDividerColor,
-                  paddingTop: `${values.headerTopPaddingMm}mm`,
-                  paddingInline: `${values.headerHorizontalPaddingMm}mm`,
-                  paddingBottom: `${values.headerBottomPaddingMm}mm`,
-                  gridTemplateColumns: `minmax(0,1fr) ${Math.max(24, values.headerLogoSize * 0.55)}px minmax(0,1fr)`,
-                }}
-                dir="rtl"
-              >
-                <div className="min-w-0 text-right">
-                  <p className="truncate text-sm font-bold">
-                    {values.headerTitle || "وثائقي"}
-                  </p>
-                  <p className="truncate text-xs font-bold">
-                    {values.headerSubtitle || "الوثائق الرسمية"}
-                  </p>
-                </div>
-                <div className="flex items-center justify-center">
-                  {values.headerShowLogo ? (
-                    logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt="شعار الجهة"
-                        style={{
-                          width: values.headerLogoSize,
-                          height: values.headerLogoSize,
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed text-[9px] text-slate-500">
-                        أضف الشعار
-                      </div>
-                    )
-                  ) : null}
-                </div>
-                <div className="min-w-0 text-left text-xs font-bold">
-                  <p>الرقم: —</p>
-                  <p>التاريخ: —</p>
-                  {values.headerChiefRank ? (
-                    <p>{values.headerChiefRank}</p>
-                  ) : null}
-                  {values.headerChiefName ? (
-                    <p>{values.headerChiefName}</p>
-                  ) : null}
-                </div>
-              </div>
-              {values.showMinistryWatermarkText ? (
-                <div
-                  className="pointer-events-none absolute inset-[2.4mm_3.2mm_3mm] flex flex-col items-center justify-between overflow-hidden"
-                  style={{ opacity: values.watermarkOpacityPercent / 100 }}
-                  aria-hidden="true"
-                >
-                  {Array.from({ length: 33 }, (_, row) => (
-                    <div
-                      key={row}
-                      className={`flex w-max flex-none whitespace-nowrap ${row % 2 ? "-translate-x-[10.3mm]" : ""}`}
-                      style={{ gap: "6.16mm" }}
-                    >
-                      {Array.from({ length: 13 }, (_, column) => (
-                        <span
-                          key={column}
-                          className="text-[5pt] font-normal leading-none text-slate-500"
-                          style={{ fontFamily: '"Aref Ruqaa", serif' }}
-                        >
-                          {values.watermarkText || "وزارة الداخلية"}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              <div className="relative z-10 space-y-4 pt-8 text-sm leading-8">
-                <p className="text-left">الرقم: —</p>
-                <p className="font-semibold">الموضوع: نموذج معاينة الوثيقة</p>
-                <p>
-                  يظهر محتوى الوثيقة هنا، وتبقى العلامة الأمنية خلف النص دون
-                  التأثير على وضوح القراءة.
-                </p>
-              </div>
-            </div>
-            {settingsQuery.data?.updatedAt ? (
-              <p className="text-xs text-muted-foreground">
-                آخر تحديث:{" "}
-                {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                لم تُحفظ إعدادات مخصصة بعد؛ تُستخدم القيم الافتراضية.
-              </p>
-            )}
-          </Card>
+          <PlatformDocumentPreview
+            settings={values}
+            logoUrl={logoUrl}
+            organizationId={organizationId}
+            organizationName={organizationContext.data?.organizationName}
+            updatedAt={settingsQuery.data?.updatedAt}
+          />
         </div>
       )}
     </div>

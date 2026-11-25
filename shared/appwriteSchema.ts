@@ -16,6 +16,9 @@ export type SchemaColumn = {
   required: boolean;
   /** Varchar length; ignored for other types. */
   size?: number;
+  /** Integer bounds; ignored for other column types. */
+  min?: number;
+  max?: number;
   /** Default value applied to new rows. */
   default?: string | number | boolean | null;
   description?: string;
@@ -682,6 +685,14 @@ export const appwriteSchema: SchemaTable[] = [
         type: "integer",
         required: false,
         default: 12,
+      },
+      {
+        key: "watermarkScalePercent",
+        type: "integer",
+        required: false,
+        min: 40,
+        max: 180,
+        default: 100,
       },
       {
         key: "headerDividerColor",
