@@ -1,3 +1,10 @@
+import {
+  MAX_STORED_ORGANIZATION_LOGO_DIMENSION,
+  MAX_STORED_ORGANIZATION_LOGO_PIXELS,
+  ORGANIZATION_LOGO_METADATA_SCAN_BYTES,
+} from "@shared/organizationLogoLimits";
+import { readOrganizationLogoImageMetadata } from "@shared/organizationLogoImageMetadata";
+
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XLINK_NAMESPACE = "http://www.w3.org/1999/xlink";
 const MAX_SVG_NODES = 20_000;
@@ -656,4 +663,62 @@ function decodeXmlEntities(value: string): string | null {
   const trailingText = value.slice(cursor);
   if (trailingText.includes("&")) return null;
   return result + trailingText;
+}
+
+export function getOrganizationLogoValidationError(
+  contentType: string,
+  bytes: Buffer
+): string | null {
+  if (contentType === "image/svg+xml") {
+    return isSafeSvgLogo(bytes)
+      ? null
+      : "ملف SVG غير صالح أو يحتوي على عناصر غير مسموح بها";
+  }
+  if (contentType !== "image/png" && contentType !== "image/jpeg") {
+    return "صيغة الشعار يجب أن تكون SVG أو PNG أو JPG";
+  }
+  const metadata = readOrganizationLogoImageMetadata(
+    bytes.subarray(0, ORGANIZATION_LOGO_METADATA_SCAN_BYTES)
+  );
+  if (!metadata || metadata.contentType !== contentType) {
+    return "محتوى الصورة لا يطابق صيغتها أو أن الملف تالف";
+  }
+  if (
+    (contentType === "image/png" && !hasCompletePngChunks(bytes)) ||
+    (contentType === "image/jpeg" &&
+      (bytes.length < 4 ||
+        bytes[bytes.length - 2] !== 0xff ||
+        bytes[bytes.length - 1] !== 0xd9))
+  ) {
+    return "محتوى الصورة لا يطابق صيغتها أو أن الملف تالف";
+  }
+  if (
+    metadata.width > MAX_STORED_ORGANIZATION_LOGO_DIMENSION ||
+    metadata.height > MAX_STORED_ORGANIZATION_LOGO_DIMENSION ||
+    metadata.width * metadata.height > MAX_STORED_ORGANIZATION_LOGO_PIXELS
+  ) {
+    return "أبعاد الصورة تتجاوز حد التخزين الآمن (8192 بكسل أو 40 ميغابكسل)";
+  }
+  return null;
+}
+
+function hasCompletePngChunks(bytes: Buffer): boolean {
+  if (bytes.length < 57) return false;
+  let offset = 8;
+  let chunkIndex = 0;
+  let foundImageData = false;
+  while (offset + 12 <= bytes.length) {
+    const length = bytes.readUInt32BE(offset);
+    const chunkEnd = offset + 12 + length;
+    if (chunkEnd > bytes.length) return false;
+    const type = bytes.toString("ascii", offset + 4, offset + 8);
+    if (chunkIndex === 0 && (type !== "IHDR" || length !== 13)) return false;
+    if (type === "IDAT") foundImageData = foundImageData || length > 0;
+    if (type === "IEND") {
+      return length === 0 && foundImageData && chunkEnd === bytes.length;
+    }
+    offset = chunkEnd;
+    chunkIndex += 1;
+  }
+  return false;
 }

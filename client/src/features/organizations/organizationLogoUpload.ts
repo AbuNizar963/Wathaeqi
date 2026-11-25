@@ -1,47 +1,98 @@
 import { appwriteApiUrl } from "@/lib/appwriteApi";
 import { fetchWithSession } from "@/lib/trpcFetch";
-import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
+import {
+  INITIAL_ORGANIZATION_LOGO_DIMENSION,
+  MAX_ORGANIZATION_LOGO_BYTES,
+  MAX_ORGANIZATION_LOGO_SOURCE_BYTES,
+  MAX_ORGANIZATION_LOGO_SOURCE_DIMENSION,
+  MAX_ORGANIZATION_LOGO_SOURCE_PIXELS,
+  MINIMUM_ORGANIZATION_LOGO_DIMENSION,
+  ORGANIZATION_LOGO_METADATA_SCAN_BYTES,
+} from "@shared/organizationLogoLimits";
+import { readOrganizationLogoImageMetadata } from "@shared/organizationLogoImageMetadata";
 
-const MAX_SOURCE_LOGO_BYTES = 5 * 1024 * 1024;
-const MAX_SOURCE_LOGO_DIMENSION = 16_000;
-const MAX_SOURCE_LOGO_PIXELS = 60_000_000;
-const INITIAL_MAX_DIMENSION = 1600;
-const MINIMUM_DIMENSION = 256;
+export type OrganizationLogoContentType =
+  "image/png" | "image/jpeg" | "image/svg+xml";
+const MAX_SAFE_FALLBACK_PIXELS = 24_000_000;
+const MAX_SAFE_FALLBACK_DIMENSION = 8192;
+type ResizedImageBitmap = ImageBitmap & { close?: () => void };
 
-type OrganizationLogoContentType = "image/png" | "image/jpeg" | "image/svg+xml";
-
-/**
- * Downsample organization logos before binary transport. The image stays in its
- * original format and within the server's strict upload size limit. SVG files
- * are passed through unchanged and validated by the server before storage.
- */
-export async function prepareOrganizationLogoUpload(
-  file: File
-): Promise<{ blob: Blob; contentType: OrganizationLogoContentType }> {
-  if (file.size === 0) throw new Error("ملف الشعار فارغ");
-  if (file.size > MAX_SOURCE_LOGO_BYTES) {
-    throw new Error("حجم ملف الشعار الأصلي يجب ألا يتجاوز 5 ميغابايت");
+async function readRasterMetadata(file: File) {
+  const prefix = new Uint8Array(
+    await file.slice(0, ORGANIZATION_LOGO_METADATA_SCAN_BYTES).arrayBuffer()
+  );
+  const metadata = readOrganizationLogoImageMetadata(prefix);
+  if (!metadata || metadata.contentType !== file.type) {
+    throw new Error("محتوى الصورة لا يطابق نوع الملف؛ اختر PNG أو JPG صالحاً.");
   }
-  const isSvg =
-    file.type === "image/svg+xml" ||
-    (/\.svg$/i.test(file.name) &&
-      (file.type === "" || file.type === "application/octet-stream"));
-  if (isSvg) {
-    if (file.size > MAX_ORGANIZATION_LOGO_BYTES) {
-      throw new Error("حجم ملف SVG يجب ألا يتجاوز 2.5 ميغابايت");
-    }
-    return { blob: file, contentType: "image/svg+xml" };
+  if (
+    metadata.width > MAX_ORGANIZATION_LOGO_SOURCE_DIMENSION ||
+    metadata.height > MAX_ORGANIZATION_LOGO_SOURCE_DIMENSION ||
+    metadata.width * metadata.height > MAX_ORGANIZATION_LOGO_SOURCE_PIXELS
+  ) {
+    throw new Error(
+      "أبعاد الصورة تتجاوز الحد الآمن (40,000 بكسل للضلع أو 120 ميغابكسل). اختر صورة بأبعاد أقل."
+    );
   }
+  return metadata;
+}
 
-  if (file.type !== "image/png" && file.type !== "image/jpeg") {
+function validateSvgFile(file: File): void {
+  const hasSvgExtension = /\.svg$/i.test(file.name);
+  if (
+    (file.type &&
+      file.type !== "image/svg+xml" &&
+      file.type !== "application/octet-stream") ||
+    (!hasSvgExtension && file.type !== "image/svg+xml")
+  ) {
     throw new Error("صيغة الشعار يجب أن تكون SVG أو PNG أو JPG");
   }
+  if (file.size > MAX_ORGANIZATION_LOGO_BYTES) {
+    throw new Error("حجم ملف SVG يجب ألا يتجاوز 5 ميغابايت");
+  }
+}
 
-  const objectUrl = URL.createObjectURL(file);
+function targetSize(width: number, height: number, maxDimension: number) {
+  const scale = Math.min(1, maxDimension / Math.max(width, height));
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+async function decodeResizedImage(
+  file: File,
+  targetWidth: number,
+  targetHeight: number,
+  sourceWidth: number,
+  sourceHeight: number
+): Promise<{ source: CanvasImageSource; close?: () => void }> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = (await createImageBitmap(file, {
+        resizeWidth: targetWidth,
+        resizeHeight: targetHeight,
+        resizeQuality: "high",
+      })) as ResizedImageBitmap;
+      return { source: bitmap, close: () => bitmap.close?.() };
+    } catch {
+      // Full-resolution fallback below is deliberately restricted to small inputs.
+    }
+  }
+  if (
+    sourceWidth * sourceHeight > MAX_SAFE_FALLBACK_PIXELS ||
+    Math.max(sourceWidth, sourceHeight) > MAX_SAFE_FALLBACK_DIMENSION
+  ) {
+    throw new Error(
+      "المتصفح لا يدعم تصغير الصورة عالية الدقة بأمان؛ حدّث المتصفح أو اختر صورة أصغر."
+    );
+  }
+
+  const url = URL.createObjectURL(file);
   try {
     const image = new Image();
     image.decoding = "async";
-    image.src = objectUrl;
+    image.src = url;
     try {
       await image.decode();
     } catch {
@@ -49,36 +100,71 @@ export async function prepareOrganizationLogoUpload(
         "تعذر فتح صورة الشعار. تأكد من سلامة الملف وأنه بصيغة PNG أو JPG صالحة."
       );
     }
-    if (image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-      throw new Error("ملف الشعار ليس صورة صالحة");
-    }
-
     if (
-      image.naturalWidth > MAX_SOURCE_LOGO_DIMENSION ||
-      image.naturalHeight > MAX_SOURCE_LOGO_DIMENSION ||
-      image.naturalWidth * image.naturalHeight > MAX_SOURCE_LOGO_PIXELS
+      image.naturalWidth !== sourceWidth ||
+      image.naturalHeight !== sourceHeight
     ) {
-      throw new Error(
-        "أبعاد الصورة تتجاوز الحد الآمن للمعالجة (16,000 بكسل للضلع أو 60 ميغابكسل). اختر صورة بأبعاد أقل."
-      );
+      throw new Error("أبعاد الصورة لا تطابق بيانات الملف الفعلية.");
     }
+    return { source: image };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
-    // Large but safe source images are proportionally downsampled before upload.
+/** Prepare SVG for server-side static validation or resize a raster logo. */
+export async function prepareOrganizationLogoUpload(
+  file: File
+): Promise<{ blob: Blob; contentType: OrganizationLogoContentType }> {
+  if (file.size === 0) throw new Error("ملف الشعار فارغ");
+  if (file.size > MAX_ORGANIZATION_LOGO_SOURCE_BYTES) {
+    throw new Error("حجم ملف الشعار الأصلي يجب ألا يتجاوز 25 ميغابايت");
+  }
+  const isSvg =
+    file.type === "image/svg+xml" ||
+    (/\.svg$/i.test(file.name) &&
+      (file.type === "" || file.type === "application/octet-stream"));
+  if (isSvg) {
+    validateSvgFile(file);
+    return { blob: file, contentType: "image/svg+xml" };
+  }
+  if (file.type !== "image/png" && file.type !== "image/jpeg") {
+    throw new Error("صيغة الشعار يجب أن تكون SVG أو PNG أو JPG");
+  }
+
+  // Signature and dimensions are inspected before any image decoder sees bytes.
+  const metadata = await readRasterMetadata(file);
+  const startingSize = targetSize(
+    metadata.width,
+    metadata.height,
+    INITIAL_ORGANIZATION_LOGO_DIMENSION
+  );
+  const decoded = await decodeResizedImage(
+    file,
+    startingSize.width,
+    startingSize.height,
+    metadata.width,
+    metadata.height
+  );
+  try {
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("تعذر تجهيز صورة الشعار للرفع");
-
-    let maxDimension = INITIAL_MAX_DIMENSION;
-    let quality = 0.9;
+    let maxDimension = Math.min(
+      INITIAL_ORGANIZATION_LOGO_DIMENSION,
+      Math.max(metadata.width, metadata.height)
+    );
+    let quality = 0.92;
     while (true) {
-      const scale = Math.min(
-        1,
-        maxDimension / Math.max(image.naturalWidth, image.naturalHeight)
+      const dimensions = targetSize(
+        metadata.width,
+        metadata.height,
+        maxDimension
       );
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
       const blob = await new Promise<Blob | null>(resolve =>
         canvas.toBlob(resolve, file.type, quality)
       );
@@ -86,25 +172,19 @@ export async function prepareOrganizationLogoUpload(
         throw new Error("تعذر ضغط شعار الجهة إلى الصيغة المطلوبة");
       }
       if (blob.size <= MAX_ORGANIZATION_LOGO_BYTES) {
-        return {
-          blob,
-          contentType: file.type,
-        };
+        return { blob, contentType: file.type };
       }
-      if (maxDimension <= MINIMUM_DIMENSION) {
+      if (maxDimension <= MINIMUM_ORGANIZATION_LOGO_DIMENSION) {
         throw new Error("تعذر ضغط الشعار إلى الحد المسموح؛ اختر صورة أصغر");
       }
-
       maxDimension = Math.max(
-        MINIMUM_DIMENSION,
+        MINIMUM_ORGANIZATION_LOGO_DIMENSION,
         Math.floor(maxDimension * 0.75)
       );
-      if (file.type === "image/jpeg") {
-        quality = Math.max(0.72, quality - 0.06);
-      }
+      if (file.type === "image/jpeg") quality = Math.max(0.7, quality - 0.06);
     }
   } finally {
-    URL.revokeObjectURL(objectUrl);
+    decoded.close?.();
   }
 }
 
@@ -113,7 +193,6 @@ export type UploadedOrganizationLogo = {
   url: string | null;
   requestId?: string;
 };
-
 type OrganizationLogoUploadResponse = {
   key?: unknown;
   url?: unknown;
@@ -150,7 +229,6 @@ export async function uploadOrganizationLogoDirect(input: {
     }
     throw error;
   }
-
   const result = (await response
     .json()
     .catch(() => null)) as OrganizationLogoUploadResponse | null;

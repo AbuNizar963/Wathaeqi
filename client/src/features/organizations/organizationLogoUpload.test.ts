@@ -6,165 +6,182 @@ import {
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 import { clearSessionToken } from "@/lib/sessionToken";
 
-describe("prepared organization logo size", () => {
+function pngHeader(width: number, height: number): Uint8Array {
+  const bytes = new Uint8Array(24);
+  bytes.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  bytes.set([0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52], 8);
+  new DataView(bytes.buffer).setUint32(16, width, false);
+  new DataView(bytes.buffer).setUint32(20, height, false);
+  return bytes;
+}
+
+function jpegHeader(width: number, height: number): Uint8Array {
+  return new Uint8Array([
+    0xff,
+    0xd8,
+    0xff,
+    0xc0,
+    0,
+    8,
+    8,
+    (height >>> 8) & 0xff,
+    height & 0xff,
+    (width >>> 8) & 0xff,
+    width & 0xff,
+    0,
+  ]);
+}
+
+function stubRasterPreparation(
+  contentType: "image/png" | "image/jpeg",
+  blobs: Blob[]
+) {
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: () => ({ clearRect() {}, drawImage: vi.fn() }),
+    toBlob: vi.fn((callback: (blob: Blob) => void) => callback(blobs.shift()!)),
+  };
+  vi.stubGlobal("document", { createElement: () => canvas });
+  vi.stubGlobal(
+    "createImageBitmap",
+    vi.fn(async (_file: File, options: ImageBitmapOptions) => ({
+      width: options.resizeWidth,
+      height: options.resizeHeight,
+      close: vi.fn(),
+    }))
+  );
+  return canvas;
+}
+
+describe("prepared organization logo size and image safety", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
-  it.each(["image/png", "image/jpeg"])(
-    "resizes %s above the server limit and accepts the exact boundary",
-    async contentType => {
-      const blobAtSize = (size: number) =>
-        new Blob([new Uint8Array(size)], { type: contentType });
-      const toBlob = vi
-        .fn()
-        .mockImplementationOnce((callback: (blob: Blob) => void) =>
-          callback(blobAtSize(MAX_ORGANIZATION_LOGO_BYTES + 1))
-        )
-        .mockImplementationOnce((callback: (blob: Blob) => void) =>
-          callback(blobAtSize(MAX_ORGANIZATION_LOGO_BYTES))
-        );
-      const canvas = {
-        width: 0,
-        height: 0,
-        getContext: () => ({ drawImage() {} }),
-        toBlob,
-      };
-      vi.stubGlobal("document", { createElement: () => canvas });
-      vi.stubGlobal(
-        "Image",
-        class {
-          naturalWidth = 1600;
-          naturalHeight = 1600;
-          async decode() {}
-        }
-      );
-      vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fixture");
-      const revoke = vi
-        .spyOn(URL, "revokeObjectURL")
-        .mockImplementation(() => {});
-
+  it.each([
+    ["image/png", pngHeader] as const,
+    ["image/jpeg", jpegHeader] as const,
+  ])(
+    "resizes %s and returns an output within the 5 MiB cap",
+    async (type, header) => {
+      const canvas = stubRasterPreparation(type, [
+        new Blob(["small"], { type }),
+      ]);
       const result = await prepareOrganizationLogoUpload(
-        new File(["fixture"], "logo", { type: contentType })
+        new File([header(3000, 1500)], "logo", { type })
       );
-      expect(result.blob.size).toBe(MAX_ORGANIZATION_LOGO_BYTES);
-      expect(result.contentType).toBe(contentType);
-      expect(toBlob).toHaveBeenCalledTimes(2);
-      expect(revoke).toHaveBeenCalledWith("blob:fixture");
+      expect(result.blob.size).toBeLessThanOrEqual(MAX_ORGANIZATION_LOGO_BYTES);
+      expect(result.contentType).toBe(type);
+      expect(canvas.width).toBe(2400);
+      expect(canvas.height).toBe(1200);
+      expect(createImageBitmap).toHaveBeenCalledWith(
+        expect.any(File),
+        expect.objectContaining({ resizeWidth: 2400, resizeHeight: 1200 })
+      );
     }
   );
 
-  it("passes SVG files through unchanged", async () => {
-    const source = [
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">',
-      '<path d="M0 0 L10 10"/>',
-      "</svg>",
-    ].join("");
+  it("inspects high-resolution metadata before resized decode and preserves aspect ratio", async () => {
+    const canvas = stubRasterPreparation("image/png", [
+      new Blob(["small"], { type: "image/png" }),
+    ]);
+    const result = await prepareOrganizationLogoUpload(
+      new File([pngHeader(40_000, 3000)], "large.png", { type: "image/png" })
+    );
+    expect(createImageBitmap).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.objectContaining({ resizeWidth: 2400, resizeHeight: 180 })
+    );
+    expect(canvas.width / canvas.height).toBeCloseTo(40_000 / 3000, 2);
+    expect(result.blob.type).toBe("image/png");
+  });
+
+  it("rejects source files above 25 MiB before reading or decoding", async () => {
+    const bitmapDecoder = vi.fn();
+    vi.stubGlobal("createImageBitmap", bitmapDecoder);
+    const file = new File(
+      [new Uint8Array(25 * 1024 * 1024 + 1)],
+      "oversized.png",
+      { type: "image/png" }
+    );
+    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow(
+      "25 ميغابايت"
+    );
+    expect(bitmapDecoder).not.toHaveBeenCalled();
+  });
+
+  it("rejects MIME/signature mismatches and damaged headers before decoder use", async () => {
+    const bitmapDecoder = vi.fn();
+    vi.stubGlobal("createImageBitmap", bitmapDecoder);
+    const file = new File([pngHeader(10, 10)], "not-a-jpeg.jpg", {
+      type: "image/jpeg",
+    });
+    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow(
+      "لا يطابق"
+    );
+    const damaged = new File(
+      [new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0, 2])],
+      "bad.jpg",
+      { type: "image/jpeg" }
+    );
+    await expect(prepareOrganizationLogoUpload(damaged)).rejects.toThrow(
+      "لا يطابق"
+    );
+    expect(bitmapDecoder).not.toHaveBeenCalled();
+  });
+
+  it("refuses image dimensions beyond 40,000px/120MP before decoding", async () => {
+    const createBitmap = vi.fn();
+    vi.stubGlobal("createImageBitmap", createBitmap);
+    const file = new File([pngHeader(40_001, 2000)], "too-wide.png", {
+      type: "image/png",
+    });
+    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow("40,000");
+    expect(createBitmap).not.toHaveBeenCalled();
+  });
+
+  it("does not fall back to full-resolution decode for huge images when bitmap resize fails", async () => {
+    vi.stubGlobal(
+      "createImageBitmap",
+      vi.fn().mockRejectedValue(new Error("unsupported"))
+    );
+    const imageConstructor = vi.fn();
+    vi.stubGlobal("Image", imageConstructor);
+    const file = new File([pngHeader(13_000, 4000)], "large.png", {
+      type: "image/png",
+    });
+    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow("بأمان");
+    expect(imageConstructor).not.toHaveBeenCalled();
+  });
+
+  it("reduces output dimensions to the 1024px minimum before rejecting oversized output", async () => {
+    const canvas = stubRasterPreparation("image/jpeg", [
+      new Blob([new Uint8Array(MAX_ORGANIZATION_LOGO_BYTES + 1)], {
+        type: "image/jpeg",
+      }),
+      new Blob(["small"], { type: "image/jpeg" }),
+    ]);
+    await prepareOrganizationLogoUpload(
+      new File([jpegHeader(2400, 1200)], "large.jpg", { type: "image/jpeg" })
+    );
+    expect(canvas.toBlob).toHaveBeenCalledTimes(2);
+    expect(canvas.width).toBe(1800);
+    expect(canvas.height).toBe(900);
+  });
+
+  it("passes SVG files through for strict server-side static validation", async () => {
+    const source =
+      '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>';
     const file = new File([source], "organization-logo.svg", {
       type: "image/svg+xml",
     });
-
     const result = await prepareOrganizationLogoUpload(file);
-
     expect(result.blob).toBe(file);
     expect(result.contentType).toBe("image/svg+xml");
-  });
-
-  it("recognizes Android SVG files with a generic MIME type", async () => {
-    const file = new File(
-      ['<svg xmlns="http://www.w3.org/2000/svg"/>'],
-      "organization-logo.svg",
-      { type: "application/octet-stream" }
-    );
-
-    const result = await prepareOrganizationLogoUpload(file);
-
-    expect(result.blob).toBe(file);
-    expect(result.contentType).toBe("image/svg+xml");
-  });
-
-  it("rejects SVG files larger than the server upload limit", async () => {
-    const file = new File(
-      [new Uint8Array(MAX_ORGANIZATION_LOGO_BYTES + 1)],
-      "organization-logo.svg",
-      { type: "image/svg+xml" }
-    );
-
-    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow(
-      "2.5 ميغابايت"
-    );
-  });
-
-  it("automatically downsizes valid images larger than 40 megapixels", async () => {
-    const canvas = {
-      width: 0,
-      height: 0,
-      getContext: () => ({ drawImage() {} }),
-      toBlob: vi.fn((callback: (blob: Blob) => void) =>
-        callback(new Blob(["small-png"], { type: "image/png" }))
-      ),
-    };
-    vi.stubGlobal("document", { createElement: () => canvas });
-    vi.stubGlobal(
-      "Image",
-      class {
-        naturalWidth = 13_000;
-        naturalHeight = 4_000;
-        async decode() {}
-      }
-    );
-    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:large-image");
-    const revoke = vi
-      .spyOn(URL, "revokeObjectURL")
-      .mockImplementation(() => {});
-
-    const result = await prepareOrganizationLogoUpload(
-      new File(["fixture"], "large-logo.png", { type: "image/png" })
-    );
-
-    expect(canvas.width).toBe(1600);
-    expect(canvas.height).toBe(492);
-    expect(result.contentType).toBe("image/png");
-    expect(result.blob.type).toBe("image/png");
-    expect(revoke).toHaveBeenCalledWith("blob:large-image");
-  });
-
-  it("rejects dimensions beyond the safe processing ceiling with a clear message", async () => {
-    const createElement = vi.fn();
-    vi.stubGlobal("document", { createElement });
-    vi.stubGlobal(
-      "Image",
-      class {
-        naturalWidth = 16_001;
-        naturalHeight = 1_000;
-        async decode() {}
-      }
-    );
-    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:unsafe-image");
-    const revoke = vi
-      .spyOn(URL, "revokeObjectURL")
-      .mockImplementation(() => {});
-
-    await expect(
-      prepareOrganizationLogoUpload(
-        new File(["fixture"], "oversized-logo.png", { type: "image/png" })
-      )
-    ).rejects.toThrow("60 ميغابكسل");
-
-    expect(createElement).not.toHaveBeenCalled();
-    expect(revoke).toHaveBeenCalledWith("blob:unsafe-image");
-  });
-
-  it("rejects an empty input without attempting an upload", async () => {
-    await expect(
-      prepareOrganizationLogoUpload(
-        new File([], "logo.png", { type: "image/png" })
-      )
-    ).rejects.toThrow("ملف الشعار فارغ");
   });
 });
-
 describe("direct organization logo upload", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

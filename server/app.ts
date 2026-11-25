@@ -2,7 +2,7 @@ import express, { type Express, type RequestHandler } from "express";
 import { randomUUID } from "node:crypto";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
-import { isSafeSvgLogo } from "./features/organizations/organizationLogoValidation";
+import { getOrganizationLogoValidationError } from "./features/organizations/organizationLogoValidation";
 import { ownerApiRouter } from "./ownerApiRouter";
 import { createContext } from "./_core/context";
 import { serveStatic } from "./_core/static";
@@ -107,25 +107,79 @@ function isDefinitiveDocumentCreateRejection(error: unknown): boolean {
   );
 }
 
-function isSameOriginRequest(req: express.Request): boolean {
+function getConfiguredWebOrigins(): Set<string> {
+  return new Set(
+    (process.env.APPWRITE_WEB_ORIGINS ?? "")
+      .split(",")
+      .map(value => value.trim())
+      .filter(Boolean)
+      .flatMap(value => {
+        try {
+          const url = new URL(value);
+          if (
+            !["http:", "https:"].includes(url.protocol) ||
+            url.username ||
+            url.password ||
+            url.pathname !== "/" ||
+            url.search ||
+            url.hash
+          ) {
+            return [];
+          }
+          return [url.origin];
+        } catch {
+          return [];
+        }
+      })
+  );
+}
+
+function isAllowedRequestOrigin(
+  candidate: string,
+  requestOrigin: string,
+  configuredOrigins: ReadonlySet<string>,
+  isOriginHeader = false
+): boolean {
+  try {
+    const parsed = new URL(candidate);
+    if (
+      isOriginHeader &&
+      (parsed.pathname !== "/" ||
+        parsed.search ||
+        parsed.hash ||
+        parsed.username ||
+        parsed.password)
+    ) {
+      return false;
+    }
+    const candidateOrigin = parsed.origin;
+    return (
+      candidateOrigin === requestOrigin ||
+      configuredOrigins.has(candidateOrigin)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isSameOriginOrConfiguredRequest(req: express.Request): boolean {
+  let requestOrigin: string;
+  try {
+    requestOrigin = new URL(`${req.protocol}://${req.get("host")}`).origin;
+  } catch {
+    return false;
+  }
+  const allowedOrigins = getConfiguredWebOrigins();
   const origin = req.get("origin");
   if (origin) {
-    try {
-      return new URL(origin).origin === `${req.protocol}://${req.get("host")}`;
-    } catch {
-      return false;
-    }
+    return isAllowedRequestOrigin(origin, requestOrigin, allowedOrigins, true);
   }
-
   const referer = req.get("referer");
   if (referer) {
-    try {
-      return new URL(referer).origin === `${req.protocol}://${req.get("host")}`;
-    } catch {
-      return false;
-    }
+    return isAllowedRequestOrigin(referer, requestOrigin, allowedOrigins);
   }
-
+  // Non-browser clients may omit both headers; sensitive operations still
+  // require the existing authenticated session and organization authorization.
   return true;
 }
 
@@ -178,7 +232,7 @@ export function createApp(
     if (
       ["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
       req.path.startsWith("/api/") &&
-      !isSameOriginRequest(req)
+      !isSameOriginOrConfiguredRequest(req)
     ) {
       res.status(403).json({ error: "الطلب غير صالح لمصدر خارجي" });
       return;
@@ -226,7 +280,7 @@ export function createApp(
       message: "محاولات رفع كثيرة؛ أعد المحاولة بعد قليل",
     }),
     requireActiveAppwriteUser,
-    express.raw({ type: () => true, limit: "3mb" }),
+    express.raw({ type: () => true, limit: MAX_ORGANIZATION_LOGO_BYTES }),
     async (req, res) => {
       res.setHeader("Cache-Control", "private, no-store");
       const rawOrganizationId: unknown = req.headers["x-organization-id"];
@@ -265,27 +319,17 @@ export function createApp(
       }
       if (body.byteLength > MAX_ORGANIZATION_LOGO_BYTES) {
         res.status(413).json({
-          error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت",
+          error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 5 ميغابايت",
         });
         return;
       }
 
-      const isPng =
-        body.byteLength >= 8 &&
-        body.toString("hex", 0, 8) === "89504e470d0a1a0a";
-      const isJpeg =
-        body.byteLength >= 3 && body.toString("hex", 0, 3) === "ffd8ff";
-      if (
-        (contentType === "image/png" && !isPng) ||
-        (contentType === "image/jpeg" && !isJpeg)
-      ) {
-        res.status(415).json({ error: "محتوى الصورة لا يطابق صيغتها" });
-        return;
-      }
-      if (contentType === "image/svg+xml" && !isSafeSvgLogo(body)) {
-        res.status(415).json({
-          error: "ملف SVG غير صالح أو يحتوي على عناصر غير مسموح بها",
-        });
+      const validationError = getOrganizationLogoValidationError(
+        contentType,
+        body
+      );
+      if (validationError) {
+        res.status(415).json({ error: validationError });
         return;
       }
 

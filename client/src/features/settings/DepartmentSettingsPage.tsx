@@ -25,6 +25,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
+import {
+  prepareOrganizationLogoUpload,
+  uploadOrganizationLogoDirect,
+} from "@/features/organizations/organizationLogoUpload";
 
 const SETTINGS_TIMEZONES = [
   "Asia/Damascus",
@@ -56,7 +60,6 @@ const SETTINGS_TIMEZONES = [
   "Asia/Shanghai",
 ] as const;
 
-const MAX_LOGO_BYTES = 2_500_000;
 const MAX_SERIAL_VALUE = 999_999_999;
 
 type Timezone = (typeof SETTINGS_TIMEZONES)[number];
@@ -258,18 +261,6 @@ function validateSettings(form: SettingsForm): FormErrors {
   return errors;
 }
 
-async function readFileAsDataUrl(file: File): Promise<string> {
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") resolve(reader.result);
-      else reject(new Error("تعذر قراءة ملف الشعار"));
-    };
-    reader.onerror = () => reject(new Error("تعذر قراءة ملف الشعار"));
-    reader.readAsDataURL(file);
-  });
-}
-
 function Field({
   label,
   htmlFor,
@@ -324,6 +315,7 @@ export default function DepartmentSettingsPage() {
   const [form, setForm] = useState<SettingsForm | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const galleryLogoInputRef = useRef<HTMLInputElement>(null);
   const filesLogoInputRef = useRef<HTMLInputElement>(null);
 
@@ -344,18 +336,6 @@ export default function DepartmentSettingsPage() {
       toast.success("تم حفظ إعدادات القسم");
     },
     onError: error => toast.error(error.message),
-  });
-
-  const uploadLogo = trpc.organizations.uploadLogo.useMutation({
-    onSuccess: async () => {
-      await utils.departmentSettings.get.invalidate();
-      toast.success("تم رفع شعار القسم");
-    },
-    onError: error => {
-      setLogoPreview(null);
-      setLogoError(error.message);
-      toast.error(error.message);
-    },
   });
 
   const settings = settingsQuery.data;
@@ -388,36 +368,26 @@ export default function DepartmentSettingsPage() {
 
   const handleLogoFile = async (file: File) => {
     if (!settings) return;
-    if (
-      file.type !== "image/png" &&
-      file.type !== "image/jpeg" &&
-      file.type !== "image/svg+xml"
-    ) {
-      setLogoError("صيغة الشعار يجب أن تكون PNG أو JPG أو SVG.");
-      return;
-    }
-    if (file.size > MAX_LOGO_BYTES) {
-      setLogoError("حجم الشعار يجب ألا يتجاوز 2.5 ميغابايت.");
-      return;
-    }
+    setIsUploadingLogo(true);
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
-      if (!base64) {
-        setLogoError("تعذر قراءة ملف الشعار.");
-        return;
-      }
-      setLogoError(null);
-      setLogoPreview(dataUrl);
-      uploadLogo.mutate({
-        id: settings.organizationId,
-        contentType: file.type as "image/png" | "image/jpeg" | "image/svg+xml",
-        base64,
+      const prepared = await prepareOrganizationLogoUpload(file);
+      const uploadedLogo = await uploadOrganizationLogoDirect({
+        organizationId: settings.organizationId,
+        fileName: file.name,
+        blob: prepared.blob,
+        contentType: prepared.contentType,
       });
+      setLogoError(null);
+      setLogoPreview(uploadedLogo.url);
+      await utils.departmentSettings.get.invalidate();
+      toast.success("تم رفع شعار القسم بنجاح");
     } catch (error) {
-      setLogoError(
-        error instanceof Error ? error.message : "تعذر قراءة ملف الشعار"
-      );
+      const message =
+        error instanceof Error ? error.message : "تعذر رفع الشعار";
+      setLogoError(message);
+      toast.error(message);
+    } finally {
+      setIsUploadingLogo(false);
     }
   };
 
@@ -610,7 +580,7 @@ export default function DepartmentSettingsPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          disabled={!canEdit || uploadLogo.isPending}
+                          disabled={!canEdit || isUploadingLogo}
                           onClick={openGalleryLogoPicker}
                         >
                           <ImagePlus
@@ -622,7 +592,7 @@ export default function DepartmentSettingsPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          disabled={!canEdit || uploadLogo.isPending}
+                          disabled={!canEdit || isUploadingLogo}
                           onClick={openFilesLogoPicker}
                         >
                           <FolderOpen
@@ -636,10 +606,10 @@ export default function DepartmentSettingsPage() {
                         ref={galleryLogoInputRef}
                         id="department-logo-gallery"
                         type="file"
-                        accept="image/png,image/jpeg"
+                        accept="image/svg+xml,image/png,image/jpeg,.svg,.png,.jpg,.jpeg"
                         className="sr-only"
                         aria-label="اختيار شعار PNG أو JPG من الاستديو"
-                        disabled={!canEdit || uploadLogo.isPending}
+                        disabled={!canEdit || isUploadingLogo}
                         onChange={event => {
                           const file = event.target.files?.[0];
                           event.currentTarget.value = "";
@@ -650,10 +620,10 @@ export default function DepartmentSettingsPage() {
                         ref={filesLogoInputRef}
                         id="department-logo-files"
                         type="file"
-                        accept=".svg,.png,.jpg,.jpeg"
+                        accept="image/svg+xml,image/png,image/jpeg,.svg,.png,.jpg,.jpeg"
                         className="sr-only"
                         aria-label="اختيار شعار SVG أو PNG أو JPG من ملفاتي"
-                        disabled={!canEdit || uploadLogo.isPending}
+                        disabled={!canEdit || isUploadingLogo}
                         onChange={event => {
                           const file = event.target.files?.[0];
                           event.currentTarget.value = "";
@@ -662,8 +632,8 @@ export default function DepartmentSettingsPage() {
                       />
                       <p className="text-xs text-muted-foreground">
                         اختر PNG أو JPG من الاستديو، أو SVG أو صورة من ملفاتي.
-                        الحد الأقصى 2.5 ميغابايت. يُرفع الشعار مباشرة ويُستخدم
-                        في ترويسة المخرجات.
+                        الحد الأقصى للمصدر 25 ميغابايت والملف المجهز 5 ميغابايت.
+                        يُرفع الشعار مباشرة ويُستخدم في ترويسة المخرجات.
                       </p>
                       {logoError ? (
                         <p className="text-xs text-destructive">{logoError}</p>

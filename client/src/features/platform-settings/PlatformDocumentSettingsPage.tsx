@@ -35,7 +35,7 @@ export default function PlatformDocumentSettingsPage() {
   const organizationId = organizationContext.data?.organizationId;
   const [organizationName, setOrganizationName] = useState("");
   const organizationLogoQuery = trpc.organizations.logo.useQuery(
-    { id: organizationId ?? "unavailable" },
+    { id: organizationId ?? "unavailable", includeDataUrl: false },
     {
       enabled: Boolean(organizationId),
       refetchInterval: false,
@@ -67,8 +67,8 @@ export default function PlatformDocumentSettingsPage() {
   }, [organizationContext.data?.organizationName]);
 
   useEffect(() => {
-    setLogoUrl(organizationLogoQuery.data?.dataUrl ?? "");
-  }, [organizationLogoQuery.data?.dataUrl]);
+    setLogoUrl(organizationLogoQuery.data?.logoUrl ?? "");
+  }, [organizationLogoQuery.data?.logoUrl]);
 
   const saveMutation = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
@@ -142,8 +142,8 @@ export default function PlatformDocumentSettingsPage() {
       void organizationLogoQuery
         .refetch()
         .then(refreshedLogo => {
-          if (refreshedLogo.data?.dataUrl) {
-            setLogoUrl(refreshedLogo.data.dataUrl);
+          if (refreshedLogo.data?.logoUrl) {
+            setLogoUrl(refreshedLogo.data.logoUrl);
           }
         })
         .catch(() => undefined);

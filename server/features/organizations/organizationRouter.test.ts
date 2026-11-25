@@ -4,6 +4,8 @@ const mocks = vi.hoisted(() => ({
   resolveOrganizationScope: vi.fn(),
   renameOrganization: vi.fn(),
   getOrganization: vi.fn(),
+  getOrganizationLogoDataUrl: vi.fn(),
+  getOrganizationLogoUrl: vi.fn(),
   ensureDepartmentSettings: vi.fn(),
   updateDepartmentSettings: vi.fn(),
   writeAuditLog: vi.fn(),
@@ -19,6 +21,8 @@ vi.mock("./organizationService", async importOriginal => {
     ...actual,
     renameOrganization: mocks.renameOrganization,
     getOrganization: mocks.getOrganization,
+    getOrganizationLogoDataUrl: mocks.getOrganizationLogoDataUrl,
+    getOrganizationLogoUrl: mocks.getOrganizationLogoUrl,
   };
 });
 
@@ -60,6 +64,12 @@ beforeEach(() => {
     id: "org-current",
     name: "قسم شرطة الشهباء",
   });
+  mocks.getOrganizationLogoDataUrl.mockResolvedValue(
+    "data:image/svg+xml;base64,PHN2Zy8+"
+  );
+  mocks.getOrganizationLogoUrl.mockResolvedValue(
+    "https://storage.example.test/signed-logo"
+  );
   mocks.ensureDepartmentSettings.mockResolvedValue({
     departmentName: "قسم شرطة الشهباء",
     unitName: "وحدة العمليات",
@@ -182,6 +192,44 @@ describe("organizations.settings", () => {
       caller().settings.get({ organizationId: "org-other" })
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mocks.ensureDepartmentSettings).not.toHaveBeenCalled();
+  });
+});
+
+describe("organizations.logoForExport", () => {
+  it("returns a signed logoUrl while preserving dataUrl compatibility for existing clients", async () => {
+    await expect(
+      caller().logoForExport({ organizationId: "org-current" })
+    ).resolves.toEqual({
+      organizationId: "org-current",
+      dataUrl: "data:image/svg+xml;base64,PHN2Zy8+",
+      logoUrl: "https://storage.example.test/signed-logo",
+    });
+    expect(mocks.getOrganizationLogoDataUrl).toHaveBeenCalledWith(
+      "org-current"
+    );
+    expect(mocks.getOrganizationLogoUrl).toHaveBeenCalledWith("org-current");
+  });
+
+  it("omits the data URL when a client requests the binary URL only", async () => {
+    await expect(
+      caller().logoForExport({
+        organizationId: "org-current",
+        includeDataUrl: false,
+      })
+    ).resolves.toEqual({
+      organizationId: "org-current",
+      dataUrl: null,
+      logoUrl: "https://storage.example.test/signed-logo",
+    });
+    expect(mocks.getOrganizationLogoDataUrl).not.toHaveBeenCalled();
+    expect(mocks.getOrganizationLogoUrl).toHaveBeenCalledWith("org-current");
+  });
+
+  it("does not issue a signed URL for an organization outside the active scope", async () => {
+    await expect(
+      caller().logoForExport({ organizationId: "org-other" })
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mocks.getOrganizationLogoUrl).not.toHaveBeenCalled();
   });
 });
 

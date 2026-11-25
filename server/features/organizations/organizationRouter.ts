@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
-import { isSafeSvgLogo } from "./organizationLogoValidation";
+import { getOrganizationLogoValidationError } from "./organizationLogoValidation";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
 import { resolveOrganizationScope } from "./organizationAccess";
@@ -166,7 +166,10 @@ export const organizationRouter = router({
       z.object({
         id: z.string().min(1).max(36),
         contentType: z.enum(["image/png", "image/jpeg", "image/svg+xml"]),
-        base64: z.string().min(1),
+        base64: z
+          .string()
+          .min(1)
+          .max(Math.ceil((MAX_ORGANIZATION_LOGO_BYTES * 4) / 3) + 4),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -178,16 +181,26 @@ export const organizationRouter = router({
         });
       }
       const bytes = Buffer.from(input.base64, "base64");
+      if (bytes.toString("base64") !== input.base64) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ترميز ملف الشعار غير صالح.",
+        });
+      }
       if (bytes.length === 0 || bytes.length > MAX_ORGANIZATION_LOGO_BYTES) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "حجم الشعار يجب أن يكون بين 1 بايت و2.5 ميغابايت.",
+          message: "حجم الشعار يجب أن يكون بين 1 بايت و5 ميغابايت.",
         });
       }
-      if (input.contentType === "image/svg+xml" && !isSafeSvgLogo(bytes)) {
+      const validationError = getOrganizationLogoValidationError(
+        input.contentType,
+        bytes
+      );
+      if (validationError) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "ملف SVG غير صالح أو يحتوي على عناصر غير مسموح بها.",
+          message: validationError,
         });
       }
       const logoKey = await saveOrganizationLogo(
@@ -204,6 +217,7 @@ export const organizationRouter = router({
         .object({
           id: z.string().min(1).max(36).optional(),
           organizationId: z.string().min(1).max(36).optional(),
+          includeDataUrl: z.boolean().optional().default(true),
         })
         .refine(value => Boolean(value.id ?? value.organizationId), {
           message: "معرّف الجهة مطلوب",
@@ -215,23 +229,34 @@ export const organizationRouter = router({
       if (!(scope.organizationIds ?? []).includes(organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
-      const [dataUrl, logoUrl] = await Promise.all([
-        getOrganizationLogoDataUrl(organizationId),
+      const [logoUrl, dataUrl] = await Promise.all([
         getOrganizationLogoUrl(organizationId),
+        input.includeDataUrl
+          ? getOrganizationLogoDataUrl(organizationId)
+          : Promise.resolve(null),
       ]);
       return { organizationId, dataUrl, logoUrl };
     }),
 
   logoForExport: authenticatedProcedure
-    .input(z.object({ organizationId: z.string().min(1).max(36) }))
+    .input(
+      z.object({
+        organizationId: z.string().min(1).max(36),
+        includeDataUrl: z.boolean().optional().default(true),
+      })
+    )
     .query(async ({ ctx, input }) => {
       const scope = await resolveOrganizationScope(ctx.user);
       if (!(scope.organizationIds ?? []).includes(input.organizationId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "الجهة غير موجودة" });
       }
-      return {
-        dataUrl: await getOrganizationLogoDataUrl(input.organizationId),
-      };
+      const [logoUrl, dataUrl] = await Promise.all([
+        getOrganizationLogoUrl(input.organizationId),
+        input.includeDataUrl
+          ? getOrganizationLogoDataUrl(input.organizationId)
+          : Promise.resolve(null),
+      ]);
+      return { organizationId: input.organizationId, dataUrl, logoUrl };
     }),
 
   all: authenticatedProcedure.query(async ({ ctx }) => {
