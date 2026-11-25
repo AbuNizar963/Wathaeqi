@@ -1,5 +1,6 @@
 import { TextDecoder } from "node:util";
 import { XMLParser, XMLValidator } from "fast-xml-parser";
+import postcss from "postcss";
 
 const MAX_SVG_BYTES = 2.5 * 1024 * 1024;
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
@@ -11,6 +12,7 @@ const TEXT_ELEMENTS = new Set([
   "title",
   "desc",
   "metadata",
+  "style",
 ]);
 
 const SVG_ELEMENTS = new Set([
@@ -32,6 +34,7 @@ const SVG_ELEMENTS = new Set([
   "title",
   "desc",
   "metadata",
+  "style",
   "linearGradient",
   "radialGradient",
   "stop",
@@ -308,6 +311,60 @@ function isSafeStyle(value: string): boolean {
   return true;
 }
 
+// prettier-ignore
+function isSafeStylesheet(css: string): boolean {
+  if (!css.trim()) return true;
+
+  try {
+    const stylesheet = postcss.parse(css, { from: undefined });
+
+    stylesheet.walkAtRules(() => {
+      throw new Error("SVG stylesheets may not contain at-rules");
+    });
+
+    stylesheet.walkRules(rule => {
+      if (!rule.selector || !/^[\\w\\s.#,*+>~:-]+$/.test(rule.selector)) {
+        throw new Error("Unsupported SVG CSS selector");
+      }
+    });
+
+    stylesheet.walkDecls(declaration => {
+      if (!isSafeStyle(`${declaration.prop}:${declaration.value}`)) {
+        throw new Error("Unsafe SVG CSS declaration");
+      }
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isSafeStylesheetNodes(nodes: unknown[]): boolean {
+  let css = "";
+
+  for (const item of nodes) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      return false;
+    }
+
+    const node = item as XmlNode;
+
+    if (Object.hasOwn(node, "#comment")) continue;
+
+    if (Object.hasOwn(node, "#text")) {
+      const text = node["#text"];
+      if (typeof text !== "string") return false;
+      css += text;
+      continue;
+    }
+
+    return false;
+  }
+
+  return isSafeStylesheet(css);
+}
+
 function isSafeAttribute(name: string, value: string): boolean {
   if (name.startsWith("on") || !SVG_ATTRIBUTES.has(name)) return false;
 
@@ -387,9 +444,14 @@ function validateNodes(nodes: unknown[], parent?: string): boolean {
     }
 
     const children = node[element];
-    if (!Array.isArray(children) || !validateNodes(children, element)) {
-      return false;
+    if (!Array.isArray(children)) return false;
+
+    if (element === "style") {
+      if (!isSafeStylesheetNodes(children)) return false;
+      continue;
     }
+
+    if (!validateNodes(children, element)) return false;
   }
 
   return true;
