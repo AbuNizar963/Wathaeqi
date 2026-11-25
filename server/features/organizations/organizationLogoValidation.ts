@@ -97,6 +97,12 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
           if (value.trim() && !isTextAllowed(depth, currentTextElements)) {
             return false;
           }
+          if (
+            currentTextElements[currentTextElements.length - 1] === "style" &&
+            !isSafeCss(value)
+          ) {
+            return false;
+          }
           continue;
         }
 
