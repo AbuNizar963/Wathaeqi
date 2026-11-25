@@ -261,6 +261,7 @@ const SAFE_STYLE_PROPERTIES = new Set([
   "isolation",
 ]);
 
+// prettier-ignore
 const XML_PARSER = new XMLParser({
   preserveOrder: true,
   ignoreAttributes: false,
@@ -277,10 +278,12 @@ const XML_PARSER = new XMLParser({
   maxNestedTags: 100,
 });
 
+// prettier-ignore
 function isSafeLocalReference(value: string): boolean {
   return /^url\(\s*#[A-Za-z_][\w:.-]*\s*\)$/i.test(value.trim());
 }
 
+// prettier-ignore
 function isSafeStyle(value: string): boolean {
   if (
     /[<>\\]|@import|expression\s*\(|javascript:|data:|https?:|\/\//i.test(
@@ -312,6 +315,7 @@ function isSafeStyle(value: string): boolean {
   return true;
 }
 
+// prettier-ignore
 function isSafeAttribute(name: string, value: string): boolean {
   if (name.startsWith("on") || !SVG_ATTRIBUTES.has(name)) return false;
 
@@ -340,8 +344,10 @@ function isSafeAttribute(name: string, value: string): boolean {
   return true;
 }
 
+// prettier-ignore
 type XmlNode = Record<string, unknown>;
 
+// prettier-ignore
 function validateNodes(nodes: unknown[], parent?: string): boolean {
   for (const item of nodes) {
     if (!item || typeof item !== "object" || Array.isArray(item)) return false;
@@ -399,6 +405,7 @@ function validateNodes(nodes: unknown[], parent?: string): boolean {
   return true;
 }
 
+// prettier-ignore
 function hasSvgRootNamespace(root: XmlNode): boolean {
   const attributes = root[":@"];
 
@@ -414,6 +421,7 @@ function hasSvgRootNamespace(root: XmlNode): boolean {
  * Common vector-editor output is supported without permitting active content,
  * external resource loading, foreign namespaces, or unsafe CSS.
  */
+// prettier-ignore
 export function isSafeSvgLogo(bytes: Buffer): boolean {
   if (
     !Buffer.isBuffer(bytes) ||
