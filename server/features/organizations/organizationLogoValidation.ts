@@ -193,11 +193,15 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
 
   try {
     const parsed = XML_PARSER.parse(withoutDeclaration) as unknown[];
-    if (!Array.isArray(parsed) || parsed.length !== 1) return false;
-    const root = parsed[0];
+    if (!Array.isArray(parsed)) return false;
+    const elements = parsed.filter(item => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+      return !Object.hasOwn(item, "#comment");
+    });
+    if (elements.length !== 1) return false;
+    const root = elements[0];
     if (!root || typeof root !== "object" || Array.isArray(root)) return false;
-    const rootNode = root as XmlNode;
-    if (!Object.hasOwn(rootNode, "svg")) return false;
+    if (!Object.hasOwn(root as XmlNode, "svg")) return false;
     return validateNodes(parsed);
   } catch {
     return false;
