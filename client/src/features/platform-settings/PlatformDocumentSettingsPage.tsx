@@ -679,33 +679,56 @@ export default function PlatformDocumentSettingsPage() {
                 بيانات المسؤول أسفل الوثيقة
               </h2>
               <p className="text-xs text-muted-foreground">
-                يظهر الشعار في منتصف أعلى الترويسة، وتظهر رتبة رئيس الوحدة
-                واسم الوحدة في سطرين أسفل متن الوثيقة.
+                هذه البيانات تظهر أسفل متن الوثيقة بمحاذاة اليسار في سطرين؛
+                السطر الأول لرتبة واسم رئيس الوحدة، والثاني لصفة المسؤول واسم
+                الوحدة. يظهر الشعار أعلى الوثيقة وفوق النص.
               </p>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">رتبة رئيس الوحدة</span>
-                <input
-                  value={values.headerTitle}
-                  maxLength={255}
-                  onChange={event =>
-                    updateValue("headerTitle", event.target.value)
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">
-                  اسم الوحدة / صفة المسؤول
-                </span>
-                <input
-                  value={values.headerSubtitle}
-                  maxLength={255}
-                  onChange={event =>
-                    updateValue("headerSubtitle", event.target.value)
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                />
-              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">رتبة رئيس الوحدة</span>
+                  <input
+                    value={values.headerTitle}
+                    maxLength={120}
+                    onChange={event =>
+                      updateValue("headerTitle", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">اسم رئيس الوحدة</span>
+                  <input
+                    value={values.headerSubtitle}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerSubtitle", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">صفة المسؤول</span>
+                  <input
+                    value={values.headerChiefRank}
+                    maxLength={120}
+                    onChange={event =>
+                      updateValue("headerChiefRank", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium">اسم الوحدة</span>
+                  <input
+                    value={values.headerChiefName}
+                    maxLength={255}
+                    onChange={event =>
+                      updateValue("headerChiefName", event.target.value)
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+              </div>
               <label className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
                   إظهار شعار الجهة في الرأس
@@ -726,8 +749,8 @@ export default function PlatformDocumentSettingsPage() {
                 </span>
                 <input
                   type="range"
-                  min={32}
-                  max={160}
+                  min={90}
+                  max={220}
                   step={4}
                   value={values.headerLogoSize}
                   onChange={event =>
