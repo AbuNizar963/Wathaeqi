@@ -6,14 +6,14 @@ function svg(source: string): Buffer {
 }
 
 describe("isSafeSvgLogo", () => {
-  it("accepts a basic vector logo with paths and gradients", () => {
+  it("accepts a basic vector logo with paths and local gradients", () => {
     expect(
       isSafeSvgLogo(
         svg(
           '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g"><stop offset="0" stop-color="#123456"/></linearGradient></defs><path d="M10 10 L90 90" fill="url(#g)"/></svg>'
         )
       )
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("accepts static SVG shapes without external references", () => {
