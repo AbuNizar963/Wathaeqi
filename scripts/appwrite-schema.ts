@@ -151,6 +151,8 @@ async function createColumn(
     case "integer":
       await tables.createIntegerColumn({
         ...base,
+        min: column.min,
+        max: column.max,
         xdefault:
           typeof column.default === "number" ? column.default : undefined,
       });
@@ -251,6 +253,12 @@ async function applyTable(
             type: column.type,
             required: column.required,
             ...(column.type === "varchar" ? { size: column.size ?? 255 } : {}),
+            ...(column.type === "integer" && column.min !== undefined
+              ? { min: column.min }
+              : {}),
+            ...(column.type === "integer" && column.max !== undefined
+              ? { max: column.max }
+              : {}),
             ...(column.default !== undefined
               ? { default: column.default }
               : {}),
