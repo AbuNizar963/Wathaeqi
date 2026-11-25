@@ -20,6 +20,10 @@ describe("isSafeSvgLogo", () => {
       '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" version="1.1"><metadata>Artwork metadata</metadata><g class="logo" style="fill:#123456;stroke:none"><path id="mark" d="M0 0h100v100z"/></g></svg>',
     ],
     [
+      "Inkscape and RDF editor metadata",
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><sodipodi:namedview inkscape:zoom="1"/><metadata><rdf:RDF><rdf:Description><dc:title>Logo</dc:title></rdf:Description></rdf:RDF></metadata><path d="M0 0h10v10z"/></svg>',
+    ],
+    [
       "local gradients, masks, clip paths, patterns and filters",
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient><clipPath id="c"><circle cx="50" cy="50" r="40"/></clipPath><filter id="f"><feGaussianBlur stdDeviation="2"/></filter><pattern id="p" width="4" height="4"><path d="M0 0h2v2H0z"/></pattern></defs><g clip-path="url(#c)" filter="url(#f)"><path d="M0 0h100v100z" fill="url(#g)"/></g></svg>',
     ],
@@ -56,24 +60,24 @@ describe("isSafeSvgLogo", () => {
     expect(isSafeSvgLogo(svg(source))).toBe(false);
   });
 
-  it("rejects SVG documents with multiple roots or non-whitespace outside the root", () => {
+  it("rejects SVG documents with multiple roots or outside text", () => {
     expect(
       isSafeSvgLogo(
-        svg('<svg xmlns="http://www.w3.org/2000/svg"/><svg xmlns="http://www.w3.org/2000/svg"/>')
+        svg(
+          '<svg xmlns="http://www.w3.org/2000/svg"/><svg xmlns="http://www.w3.org/2000/svg"/>'
+        )
       )
     ).toBe(false);
     expect(
-      isSafeSvgLogo(
-        svg('unexpected<svg xmlns="http://www.w3.org/2000/svg"/>')
-      )
+      isSafeSvgLogo(svg('unexpected<svg xmlns="http://www.w3.org/2000/svg"/>'))
     ).toBe(false);
   });
 
-  it("rejects excessive nesting and excessive element counts", () => {
-    const deeplyNested = `<svg xmlns="http://www.w3.org/2000/svg">${"<g>".repeat(130)}${"</g>".repeat(130)}</svg>`;
+  it("rejects excessive nesting and element counts", () => {
+    const deeplyNested = \`<svg xmlns="http://www.w3.org/2000/svg">\${"<g>".repeat(130)}\${"</g>".repeat(130)}</svg>\`;
     expect(isSafeSvgLogo(svg(deeplyNested))).toBe(false);
 
-    const tooManyNodes = `<svg xmlns="http://www.w3.org/2000/svg">${"<path/>".repeat(20_001)}</svg>`;
+    const tooManyNodes = \`<svg xmlns="http://www.w3.org/2000/svg">\${"<path/>".repeat(20_001)}</svg>\`;
     expect(isSafeSvgLogo(svg(tooManyNodes))).toBe(false);
   });
 });
