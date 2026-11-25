@@ -1,4 +1,7 @@
-import type { OfficialDocument } from "../../../../shared/documentStudio";
+import type {
+  DocumentTemplateField,
+  OfficialDocument,
+} from "../../../../shared/documentStudio";
 
 type DocumentForm = Pick<
   OfficialDocument,
