@@ -22,10 +22,10 @@ export async function prepareOrganizationLogoUpload(
   if (file.size > MAX_SOURCE_LOGO_BYTES) {
     throw new Error("حجم ملف الشعار الأصلي يجب ألا يتجاوز 5 ميغابايت");
   }
-  const isSvg =
-    file.type === "image/svg+xml" ||
-    (/\.svg$/i.test(file.name) &&
-      (file.type === "" || file.type === "application/octet-stream"));
+  // Android document providers may report SVG files as application/xml,
+  // text/xml, or application/octet-stream. The server validates the actual
+  // SVG bytes, so the extension is only a routing hint, never a trust signal.
+  const isSvg = file.type === "image/svg+xml" || /\.svg$/i.test(file.name);
   if (isSvg) {
     if (file.size > MAX_ORGANIZATION_LOGO_BYTES) {
       throw new Error("حجم ملف SVG يجب ألا يتجاوز 2.5 ميغابايت");
