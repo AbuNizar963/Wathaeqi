@@ -15,6 +15,7 @@ const SAFE_ELEMENTS = new Set([
   "switch",
   "view",
   "path",
+  "image",
   "rect",
   "circle",
   "ellipse",
