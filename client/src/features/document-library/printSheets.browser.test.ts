@@ -236,7 +236,7 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       await browser.close();
     }
   }, 90_000);
-  it("replaces the blank popup with a loaded print document before invoking print", async () => {
+  it("writes a complete print document into the owned popup before invoking print", async () => {
     const bundle = await build({
       entryPoints: [
         resolve("client/src/features/document-library/printSheets.ts"),
@@ -287,7 +287,7 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       });
       const popup = await popupPromise;
       await printPromise;
-      expect(popup.url()).toMatch(/^blob:/);
+      expect(popup.url()).toBe("about:blank");
       expect(await popup.title()).toBe("Print fixture");
       expect(await popup.locator("h1").textContent()).toBe("Ready to print");
       expect(
