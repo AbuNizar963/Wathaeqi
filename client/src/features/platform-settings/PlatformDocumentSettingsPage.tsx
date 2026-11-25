@@ -178,7 +178,10 @@ export default function PlatformDocumentSettingsPage() {
         </Button>
       </header>
 
-      <nav aria-label="أقسام إعدادات الوثائق" className="flex flex-wrap gap-2 rounded-xl border bg-card p-3">
+      <nav
+        aria-label="أقسام إعدادات الوثائق"
+        className="flex flex-wrap gap-2 rounded-xl border bg-card p-3"
+      >
         {[
           ["organization-identity-settings", "هوية الجهة"],
           ["watermark-settings", "العلامة المائية"],
@@ -188,7 +191,11 @@ export default function PlatformDocumentSettingsPage() {
           ["page-rows-settings", "سطور الصفحة"],
           ["verification-settings", "رمز التحقق"],
         ].map(([id, label]) => (
-          <a key={id} href={"#" + id} className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <a
+            key={id}
+            href={"#" + id}
+            className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             {label}
           </a>
         ))}
@@ -345,13 +352,20 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section id="watermark-settings" aria-labelledby="watermark-settings-title" className="space-y-4 rounded-xl border p-4">
+            <section
+              id="watermark-settings"
+              aria-labelledby="watermark-settings-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
               <div>
-                <h2 id="watermark-settings-title" className="font-semibold">العلامة المائية والأمان</h2>
-                <p className="mt-1 text-xs text-muted-foreground">اجمع إعدادات ظهور العلامة الأمنية ونصها وشفافيتها في مكان واحد.</p>
+                <h2 id="watermark-settings-title" className="font-semibold">
+                  العلامة المائية والأمان
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  تحكم في ظهور العلامة الأمنية ونصها ودرجة شفافيتها.
+                </p>
               </div>
               <div className="space-y-2">
-
                 <label className="flex items-center justify-between gap-3">
                   <span>
                     <span className="block font-semibold">
@@ -374,9 +388,9 @@ export default function PlatformDocumentSettingsPage() {
                   />
                 </label>
               </div>
-              <div className="h-px bg-border" />
-              <div className="space-y-2">
-
+  
+  
+              <section className="space-y-2">
                 <label
                   htmlFor="document-watermark-text"
                   className="font-semibold"
@@ -397,42 +411,47 @@ export default function PlatformDocumentSettingsPage() {
                 <p className="text-xs text-muted-foreground">
                   يظهر النص وفق نمط A4 المتكرر، ويمكن تغييره من إعدادات الوثائق.
                 </p>
-              </div>
+              </section>
+  
+  
+  
               <div className="h-px bg-border" />
-                <section className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <label htmlFor="watermark-opacity" className="font-semibold">
-                      شفافية العلامة المائية
-                    </label>
-                    <output
-                      htmlFor="watermark-opacity"
-                      className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
-                    >
-                      {values.watermarkOpacityPercent}%
-                    </output>
-                  </div>
-                  <input
-                    id="watermark-opacity"
-                    type="range"
-                    min={0}
-                    max={MAX_WATERMARK_OPACITY_PERCENT}
-                    step={1}
-                    value={values.watermarkOpacityPercent}
-                    onChange={event =>
-                      updateValue(
-                        "watermarkOpacityPercent",
-                        Number(event.target.value)
-                      )
-                    }
-                    className="w-full accent-primary"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>شفاف تماماً</span>
-                    <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
-                  </div>
-                </section>
+              <section className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="watermark-opacity" className="font-semibold">
+                    شفافية العلامة المائية
+                  </label>
+                  <output
+                    htmlFor="watermark-opacity"
+                    className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
+                  >
+                    {values.watermarkOpacityPercent}%
+                  </output>
+                </div>
+                <input
+                  id="watermark-opacity"
+                  type="range"
+                  min={0}
+                  max={MAX_WATERMARK_OPACITY_PERCENT}
+                  step={1}
+                  value={values.watermarkOpacityPercent}
+                  onChange={event =>
+                    updateValue(
+                      "watermarkOpacityPercent",
+                      Number(event.target.value)
+                    )
+                  }
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>شفاف تماماً</span>
+                  <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
+                </div>
+              </section>
               {!values.watermarkText.trim() ? (
-                <p className="text-xs text-destructive">لا يمكن ترك نص العلامة الأمنية فارغاً.</p>
+                <p className="text-xs text-destructive">
+                  لا يمكن ترك نص العلامة الأمنية فارغاً.
+                </p>
               ) : null}
             </section>
 
@@ -586,7 +605,9 @@ export default function PlatformDocumentSettingsPage() {
               </label>
             </section>
             {!colorIsValid ? (
-              <p className="text-xs text-destructive">أدخل ألواناً صالحة بصيغة HEX.</p>
+              <p className="text-xs text-destructive">
+                أدخل ألواناً صالحة بصيغة HEX.
+              </p>
             ) : null}
 
             <section id="header-content-settings" aria-labelledby="header-content-title" className="space-y-4 rounded-xl border p-4">
@@ -818,14 +839,6 @@ export default function PlatformDocumentSettingsPage() {
                 </div>
               ))}
             </section>
-
-            <div className="h-px bg-border" />
-
-            <div className="h-px bg-border" />
-
-            <div className="h-px bg-border" />
-
-            <div className="h-px bg-border" />
 
             <div className="h-px bg-border" />
 
