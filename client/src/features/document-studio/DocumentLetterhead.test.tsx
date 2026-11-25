@@ -35,6 +35,7 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain('class="document-letterhead"');
     expect(markup).toContain('class="document-letterhead__row"');
     expect(markup).toContain("document-letterhead__logo-cell");
+    expect(markup).toContain("text-align:center");
     expect(markup).not.toContain("العنوان الرئيسي");
     expect(markup).not.toContain("رئيس الوحدة");
     expect(markup).not.toContain("إدارة الشرطة");

@@ -7,17 +7,17 @@ import {
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 
 describe("DocumentSignatureBlock", () => {
-  it("renders the four configured lines in order as a right-aligned footer", () => {
+  it("renders the two configured responsible-person lines centered below the body", () => {
     const settings: PlatformDocumentSettings = {
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-      headerTitle: "العنوان الرئيسي",
-      headerSubtitle: "العنوان الفرعي / اسم الوحدة",
-      headerChiefRank: "رتبة / صفة المسؤول",
-      headerChiefName: "اسم المسؤول",
+      headerTitle: "المقدم غسان صالح كنو",
+      headerSubtitle: "رئيس قسم الشهباء",
+      headerChiefRank: "قيمة قديمة لا تعرض",
+      headerChiefName: "قيمة قديمة لا تعرض",
     };
     const markup = renderToStaticMarkup(
       <DocumentSignatureBlock
-        organizationName="جهة افتراضية"
+        organizationName="قسم شرطة الشهباء"
         unitName="وحدة افتراضية"
         chiefRank="رتبة افتراضية"
         chiefName="مسؤول افتراضي"
@@ -25,49 +25,45 @@ describe("DocumentSignatureBlock", () => {
       />
     );
 
-    const labels = [
-      "العنوان الرئيسي",
-      "العنوان الفرعي / اسم الوحدة",
-      "رتبة / صفة المسؤول",
-      "اسم المسؤول",
-    ];
-    let previousIndex = -1;
-    for (const label of labels) {
-      const currentIndex = markup.indexOf(label);
-      expect(currentIndex).toBeGreaterThan(previousIndex);
-      previousIndex = currentIndex;
-    }
+    const first = markup.indexOf("المقدم غسان صالح كنو");
+    const second = markup.indexOf("رئيس قسم الشهباء");
+    expect(first).toBeGreaterThan(-1);
+    expect(second).toBeGreaterThan(first);
+    expect(markup).not.toContain("قيمة قديمة لا تعرض");
     expect(markup).toContain('data-testid="document-signature-block"');
     expect(markup).toContain('dir="rtl"');
-    expect(markup).toContain('style="text-align:right"');
+    expect(markup).toContain('class="mt-8 space-y-1 text-center');
   });
 
-  it("uses the saved organization values when optional overrides are empty", () => {
+  it("uses the approved defaults when the two editable fields are empty", () => {
     const markup = renderToStaticMarkup(
       <DocumentSignatureBlock
-        organizationName="اسم الجهة"
-        unitName="اسم الوحدة"
-        chiefRank="الرتبة"
-        chiefName="اسم المسؤول"
-        settings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
-      />
-    );
-    expect(markup).toContain("اسم الجهة");
-    expect(markup).toContain("اسم الوحدة");
-    expect(markup).toContain("الرتبة");
-    expect(markup).toContain("اسم المسؤول");
-  });
-
-  it("does not render an empty signature block", () => {
-    const markup = renderToStaticMarkup(
-      <DocumentSignatureBlock
-        organizationName=""
+        organizationName="قسم شرطة الشهباء"
         unitName=""
         chiefRank=""
         chiefName=""
         settings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
       />
     );
-    expect(markup).toBe("");
+    expect(markup).toContain("المقدم غسان صالح كنو");
+    expect(markup).toContain("رئيس قسم الشهباء");
+  });
+
+  it("adds the رئيس prefix to a configured unit description only once", () => {
+    const settings = {
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerSubtitle: "قسم الشهباء",
+    };
+    const markup = renderToStaticMarkup(
+      <DocumentSignatureBlock
+        organizationName=""
+        unitName=""
+        chiefRank=""
+        chiefName=""
+        settings={settings}
+      />
+    );
+    expect(markup).toContain("رئيس قسم الشهباء");
+    expect(markup).not.toContain("رئيس رئيس");
   });
 });

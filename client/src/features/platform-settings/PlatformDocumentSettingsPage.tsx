@@ -197,7 +197,7 @@ export default function PlatformDocumentSettingsPage() {
           { id: "watermark-settings", label: "العلامة المائية" },
           { id: "page-layout-settings", label: "الصفحة والإطار" },
           { id: "header-divider-settings", label: "فاصل الترويسة" },
-          { id: "header-content-settings", label: "محتوى الترويسة" },
+          { id: "header-content-settings", label: "بيانات المسؤول" },
           { id: "page-rows-settings", label: "سطور الصفحة" },
           { id: "verification-settings", label: "رمز التحقق" },
         ].map(({ id, label }) => (
@@ -676,13 +676,14 @@ export default function PlatformDocumentSettingsPage() {
               className="space-y-4 rounded-xl border p-4"
             >
               <h2 id="header-content-title" className="font-semibold">
-                محتوى ترويسة الوثيقة
+                بيانات المسؤول أسفل الوثيقة
               </h2>
               <p className="text-xs text-muted-foreground">
-                بيانات الجهة والمسؤول التي تظهر في أعلى الوثيقة.
+                يظهر الشعار في منتصف أعلى الترويسة، وتظهر رتبة رئيس الوحدة
+                واسم الوحدة في سطرين أسفل متن الوثيقة.
               </p>
               <label className="block space-y-1">
-                <span className="text-sm font-medium">العنوان الرئيسي</span>
+                <span className="text-sm font-medium">رتبة رئيس الوحدة</span>
                 <input
                   value={values.headerTitle}
                   maxLength={255}
@@ -694,35 +695,13 @@ export default function PlatformDocumentSettingsPage() {
               </label>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">
-                  العنوان الفرعي / اسم الوحدة
+                  اسم الوحدة / صفة المسؤول
                 </span>
                 <input
                   value={values.headerSubtitle}
                   maxLength={255}
                   onChange={event =>
                     updateValue("headerSubtitle", event.target.value)
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">رتبة / صفة المسؤول</span>
-                <input
-                  value={values.headerChiefRank}
-                  maxLength={120}
-                  onChange={event =>
-                    updateValue("headerChiefRank", event.target.value)
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">اسم المسؤول</span>
-                <input
-                  value={values.headerChiefName}
-                  maxLength={255}
-                  onChange={event =>
-                    updateValue("headerChiefName", event.target.value)
                   }
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 />
@@ -748,7 +727,7 @@ export default function PlatformDocumentSettingsPage() {
                 <input
                   type="range"
                   min={32}
-                  max={128}
+                  max={160}
                   step={4}
                   value={values.headerLogoSize}
                   onChange={event =>
@@ -816,25 +795,6 @@ export default function PlatformDocumentSettingsPage() {
                   }
                   className="w-full accent-primary"
                 />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">
-                  محاذاة بيانات الترويسة
-                </span>
-                <select
-                  value={values.headerAlignment}
-                  onChange={event =>
-                    updateValue(
-                      "headerAlignment",
-                      event.target.value as SettingsForm["headerAlignment"]
-                    )
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="spread">توزيع متوازن</option>
-                  <option value="center">توسيط</option>
-                  <option value="right">محاذاة إلى اليمين</option>
-                </select>
               </label>
             </section>
 

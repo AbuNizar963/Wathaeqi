@@ -76,12 +76,12 @@ export function normalizePlatformDocumentSettings(
       source.headerDividerWidthPt,
       defaults.headerDividerWidthPt
     ),
-    headerTitle: safeText(source.headerTitle, defaults.headerTitle, 255),
-    headerSubtitle: safeText(
-      source.headerSubtitle,
+    headerTitle:
+      safeText(source.headerTitle, defaults.headerTitle, 255) ||
+      defaults.headerTitle,
+    headerSubtitle:
+      safeText(source.headerSubtitle, defaults.headerSubtitle, 255) ||
       defaults.headerSubtitle,
-      255
-    ),
     headerChiefRank: safeText(
       source.headerChiefRank,
       defaults.headerChiefRank,
