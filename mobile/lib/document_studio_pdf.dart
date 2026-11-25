@@ -96,8 +96,8 @@ class DocumentStudioPdf {
     final headerShowLogo = letterhead['headerShowLogo'] != false;
     final rawHeaderLogoSize = letterhead['headerLogoSize'];
     final headerLogoSize =
-        (rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 120.0)
-            .clamp(32.0, 128.0)
+        ((rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 160.0) * 1.35)
+            .clamp(120.0, 220.0)
             .toDouble();
     final headerLogoSizePoints = headerLogoSize * 0.75;
     final headerTopPadding = _headerPadding(
@@ -282,54 +282,48 @@ class DocumentStudioPdf {
                         ],
                       ),
                     ),
-                    pw.SizedBox(
-                      width: headerLogoSizePoints,
-                      child: headerShowLogo && logoImage != null
-                          ? pw.Image(
+                    pw.SizedBox(width: 12),
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          if (headerShowLogo && logoImage != null)
+                            pw.Image(
                               logoImage,
                               width: headerLogoSizePoints,
                               height: headerLogoSizePoints,
                               fit: pw.BoxFit.contain,
-                            )
-                          : pw.SizedBox(
-                              width: headerLogoSizePoints,
-                              height: headerLogoSizePoints,
                             ),
-                    ),
-                    pw.Expanded(
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-                        children: [
+                          pw.Text(
+                            department,
+                            textDirection: pw.TextDirection.rtl,
+                            textAlign: pw.TextAlign.left,
+                            maxLines: 1,
+                            style: pw.TextStyle(font: bold, fontSize: 13),
+                          ),
+                          if (unit != null)
+                            pw.Text(
+                              unit.startsWith('رئيس') ? unit : 'رئيس $unit',
+                              textDirection: pw.TextDirection.rtl,
+                              textAlign: pw.TextAlign.left,
+                              maxLines: 1,
+                              style: pw.TextStyle(font: bold, fontSize: 12),
+                            ),
+                          pw.SizedBox(height: 4),
                           pw.Text(
                             'الرقم: ${serialCode.isEmpty ? 'يخصص عند الإصدار' : serialCode}',
                             textDirection: pw.TextDirection.rtl,
-                            textAlign: metadataAlignment,
+                            textAlign: pw.TextAlign.left,
                             maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 15),
+                            style: pw.TextStyle(font: bold, fontSize: 13),
                           ),
                           pw.Text(
                             'التاريخ: $dateText',
                             textDirection: pw.TextDirection.rtl,
-                            textAlign: metadataAlignment,
+                            textAlign: pw.TextAlign.left,
                             maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 15),
+                            style: pw.TextStyle(font: bold, fontSize: 13),
                           ),
-                          if (chiefRank != null)
-                            pw.Text(
-                              chiefRank,
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: metadataAlignment,
-                              maxLines: 1,
-                              style: const pw.TextStyle(fontSize: 12),
-                            ),
-                          if (chiefName != null)
-                            pw.Text(
-                              chiefName,
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: metadataAlignment,
-                              maxLines: 1,
-                              style: pw.TextStyle(font: bold, fontSize: 12),
-                            ),
                         ],
                       ),
                     ),
