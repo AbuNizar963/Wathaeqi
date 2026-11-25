@@ -35,7 +35,7 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain('class="document-letterhead"');
     expect(markup).toContain('class="document-letterhead__row"');
     expect(markup).toContain("document-letterhead__logo-cell");
-    expect(markup).toContain("text-align:center");
+    expect(markup).toContain("justify-content:center");
     expect(markup).not.toContain("العنوان الرئيسي");
     expect(markup).not.toContain("رئيس الوحدة");
     expect(markup).not.toContain("إدارة الشرطة");
@@ -97,6 +97,18 @@ describe("DocumentLetterhead", () => {
     const markup = render(solidSettings);
     expect(markup).toContain("border-bottom:2.25pt solid #14532d");
     expect(markup).not.toContain("document-tricolor-stars-divider");
+  });
+
+  it("uses the enlarged default logo size", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentLetterhead
+        logoUrl="data:image/png;base64,AAAA"
+        dividerColor="#000000"
+        headerSettings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
+      />
+    );
+    expect(markup).toContain("width:200px");
+    expect(markup).toContain("height:200px");
   });
 
   it("honours the logo size setting", () => {
