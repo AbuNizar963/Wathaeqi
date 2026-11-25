@@ -38,8 +38,9 @@ class DocumentPaper extends StatelessWidget {
             (constraints.hasBoundedWidth ? constraints.maxWidth : a4Width);
         final pageHeight = pageWidth * a4Height / a4Width;
         final logo = logoUrl?.trim();
-        final watermarkScale =
-            (watermarkScalePercent / 100).clamp(0.4, 1.8).toDouble();
+        final watermarkScale = (watermarkScalePercent / 100)
+            .clamp(0.4, 1.8)
+            .toDouble();
         return Container(
           key: const ValueKey('document-a4-paper'),
           width: pageWidth,
@@ -227,6 +228,5 @@ class _DocumentWatermarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DocumentWatermarkPainter oldDelegate) =>
-      oldDelegate.watermarkText != watermarkText ||
-      oldDelegate.scale != scale;
+      oldDelegate.watermarkText != watermarkText || oldDelegate.scale != scale;
 }
