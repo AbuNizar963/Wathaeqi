@@ -17,13 +17,7 @@ const SAFE_ELEMENTS = new Set([
   "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur",
   "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset",
   "fePointLight", "feSpecularLighting", "feSpotLight", "feTile",
-  "feTurbulence", "style", "namedview", "guide", "perspective", "RDF", "Description", "Work", "Agent", "Bag", "Seq", "li", "creator", "date", "format", "type", "identifier", "rights", "language", "subject", "coverage", "relation", "publisher", "contributor", "source", "license", "attributionURL", "attributionName",
-]);
-
-const SAFE_NAMESPACE_ATTRIBUTES = new Set([
-  "xmlns",
-  "xmlns:xlink",
-  "xml:space",
+  "feTurbulence", "meshgradient", "meshrow", "meshpatch", "solidcolor", "hatch", "hatchpath", "altGlyph", "glyph", "font", "font-face", "font-face-src", "font-face-uri", "font-face-format", "hkern", "vkern", "style", "namedview", "guide", "perspective", "RDF", "Description", "Work", "Agent", "Bag", "Seq", "li", "creator", "date", "format", "type", "identifier", "rights", "language", "subject", "coverage", "relation", "publisher", "contributor", "source", "license", "attributionURL", "attributionName",
 ]);
 
 const UNSAFE_CSS = /(?:@import|@namespace|@font-face|@keyframes|expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding|behavior\s*:)/i;
@@ -176,7 +170,7 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
       continue;
     }
     if (name.startsWith("xmlns:")) {
-      if (EXTERNAL_SCHEME.test(value) || value.includes("\\")) return false;
+      if (/^(?:javascript|vbscript|data):/i.test(value) || value.includes("\\")) return false;
       continue;
     }
     if (name === "xml:space") {
