@@ -48,8 +48,16 @@ export function normalizePlatformDocumentSettings(
     defaults.headerSubtitle,
     255
   );
-  const storedChiefRank = safeText(source.headerChiefRank, "", 120);
-  const storedChiefName = safeText(source.headerChiefName, "", 255);
+  const storedChiefRank = safeText(
+    source.headerChiefRank,
+    defaults.headerChiefRank,
+    120
+  );
+  const storedChiefName = safeText(
+    source.headerChiefName,
+    defaults.headerChiefName,
+    255
+  );
   const isPreviousTwoLineDefault =
     storedTitle === "المقدم غسان صالح كنو" &&
     storedSubtitle === "رئيس قسم الشهباء" &&
