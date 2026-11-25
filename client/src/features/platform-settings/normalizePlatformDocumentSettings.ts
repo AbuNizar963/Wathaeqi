@@ -76,7 +76,9 @@ export function normalizePlatformDocumentSettings(
       source.headerDividerWidthPt,
       defaults.headerDividerWidthPt
     ),
-    headerTitle: safeText(source.headerTitle, defaults.headerTitle, 255) || defaults.headerTitle,
+    headerTitle:
+      safeText(source.headerTitle, defaults.headerTitle, 255) ||
+      defaults.headerTitle,
     headerSubtitle: safeText(
       source.headerSubtitle,
       defaults.headerSubtitle,
