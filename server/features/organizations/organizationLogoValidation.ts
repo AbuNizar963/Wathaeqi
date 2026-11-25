@@ -53,7 +53,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       return false;
     }
 
-    const withoutBom = source.replace(/^\uFEFF/, "");
+    const withoutBom = source.replace(/^\uFEFF/, "").replace(/^\s*<\?xml\s+[^?]*\?>/i, "");
     const validation = XMLValidator.validate(withoutBom, {
       allowBooleanAttributes: false,
       unpairedTags: [],
