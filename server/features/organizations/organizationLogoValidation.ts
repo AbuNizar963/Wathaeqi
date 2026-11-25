@@ -134,7 +134,6 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       return false;
     }
 
-    let rest = rawAttributes;
     const attributePattern = /([A-Za-z_:][\w:.-]*)\s*=\s*(["'])(.*?)\2/g;
     let match: RegExpExecArray | null;
     let consumed = "";
@@ -162,7 +161,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       if (entitiesRemoved.includes("&")) return false;
       consumed = rawAttributes.slice(0, attributePattern.lastIndex);
     }
-    rest = rawAttributes.slice(consumed.length);
+    const rest = rawAttributes.slice(consumed.length);
     if (rest.trim()) return false;
 
     if (!selfClosing) stack.push(element);
