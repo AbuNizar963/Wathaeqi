@@ -550,9 +550,7 @@ export default function PlatformDocumentSettingsPage() {
             <section
               id="page-layout-settings"
               aria-labelledby="page-layout-title"
-              className={
-                "space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
-              }
+              className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
             >
               <div>
                 <h2 id="page-layout-title" className="font-semibold">
@@ -992,7 +990,8 @@ export default function PlatformDocumentSettingsPage() {
               <h2 className="font-semibold">معاينة الوثيقة الفعلية</h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 تعرض هذه المعاينة آخر وثيقة محفوظة بالمحتوى والترويسة والتذييل
-                نفسيهما المستخدمين في الطباعة. تغييرات الإعدادات تظهر مباشرة هنا.
+                نفسيهما المستخدمين في الطباعة. تغييرات الإعدادات تظهر مباشرة
+                هنا.
               </p>
             </div>
             {documentsQuery.isLoading ? (
@@ -1023,7 +1022,8 @@ export default function PlatformDocumentSettingsPage() {
               </label>
             ) : (
               <p className="rounded-lg border p-3 text-sm text-muted-foreground">
-                لا توجد وثيقة محفوظة قابلة للمعاينة بعد. أنشئ وثيقة من قسم الوثائق
+                لا توجد وثيقة محفوظة قابلة للمعاينة بعد. أنشئ وثيقة من قسم
+                الوثائق
                 لتظهر هنا بنفس شكل الطباعة الفعلي.
               </p>
             )}
