@@ -9,8 +9,8 @@ export type DocumentSignatureBlockProps = {
 };
 
 /**
- * Renders two configurable signatory lines after the document body.
- * The four settings are paired into two readable lines and remain editable.
+ * Renders the two configured signatory lines centred after the document body.
+ * The first line is the signatory name and the second is the organizational role.
  */
 export default function DocumentSignatureBlock({
   settings,
@@ -30,7 +30,7 @@ export default function DocumentSignatureBlock({
 
   return (
     <footer
-      className="mt-8 space-y-1 text-left text-[12pt] font-semibold leading-[1.7]"
+      className="mt-8 space-y-1 text-center text-[12pt] font-semibold leading-[1.7]"
       dir="rtl"
       data-testid="document-signature-block"
     >
