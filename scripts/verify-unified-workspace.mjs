@@ -158,7 +158,7 @@ try {
       `Unexpected horizontal overflow at ${width}px: ${overflow}px`
     );
   }
-  const manifest = await context.request.get(`${baseUrl}/manus-routes.json`);
+  const manifest = await context.request.get(`${baseUrl}/document-routes.json`);
   assert.equal(manifest.status(), 200);
   assert.ok(
     (await manifest.json()).routes.some(route => route.path === "/documents")
