@@ -42,6 +42,19 @@ export function normalizePlatformDocumentSettings(
 ): PlatformDocumentSettings {
   const source = input !== null && typeof input === "object" ? input : {};
   const defaults = DEFAULT_PLATFORM_DOCUMENT_SETTINGS;
+  const storedTitle = safeText(source.headerTitle, defaults.headerTitle, 255);
+  const storedSubtitle = safeText(
+    source.headerSubtitle,
+    defaults.headerSubtitle,
+    255
+  );
+  const storedChiefRank = safeText(source.headerChiefRank, "", 120);
+  const storedChiefName = safeText(source.headerChiefName, "", 255);
+  const isPreviousTwoLineDefault =
+    storedTitle === "المقدم غسان صالح كنو" &&
+    storedSubtitle === "رئيس قسم الشهباء" &&
+    !storedChiefRank &&
+    !storedChiefName;
 
   return {
     ...defaults,
@@ -76,24 +89,23 @@ export function normalizePlatformDocumentSettings(
       source.headerDividerWidthPt,
       defaults.headerDividerWidthPt
     ),
-    headerTitle:
-      safeText(source.headerTitle, defaults.headerTitle, 255) ||
-      defaults.headerTitle,
-    headerSubtitle:
-      safeText(source.headerSubtitle, defaults.headerSubtitle, 255) ||
-      defaults.headerSubtitle,
-    headerChiefRank: safeText(
-      source.headerChiefRank,
-      defaults.headerChiefRank,
-      120
-    ),
-    headerChiefName: safeText(
-      source.headerChiefName,
-      defaults.headerChiefName,
-      255
-    ),
+    headerTitle: isPreviousTwoLineDefault
+      ? defaults.headerTitle
+      : storedTitle || defaults.headerTitle,
+    headerSubtitle: isPreviousTwoLineDefault
+      ? defaults.headerSubtitle
+      : storedSubtitle || defaults.headerSubtitle,
+    headerChiefRank: isPreviousTwoLineDefault
+      ? defaults.headerChiefRank
+      : storedChiefRank,
+    headerChiefName: isPreviousTwoLineDefault
+      ? defaults.headerChiefName
+      : storedChiefName,
     headerShowLogo: safeBoolean(source.headerShowLogo, defaults.headerShowLogo),
-    headerLogoSize: safeNumber(source.headerLogoSize, defaults.headerLogoSize),
+    headerLogoSize: Math.max(
+      160,
+      Math.min(220, safeNumber(source.headerLogoSize, defaults.headerLogoSize))
+    ),
     headerTopPaddingMm: safeNumber(
       source.headerTopPaddingMm,
       defaults.headerTopPaddingMm
