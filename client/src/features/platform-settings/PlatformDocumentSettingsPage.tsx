@@ -741,7 +741,7 @@ export default function PlatformDocumentSettingsPage() {
               </label>
               <label className="block space-y-1">
                 <span className="flex justify-between text-sm font-medium">
-                  <span>حجم الشعار</span>
+                  <span>حجم شعار الوثيقة (تكبير / تصغير)</span>
                   <output>{values.headerLogoSize}px</output>
                 </span>
                 <input
