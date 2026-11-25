@@ -1590,7 +1590,9 @@ export default function DocumentStudioPage() {
                   <DocumentWatermark
                     logoUrl={logoUrl}
                     watermarkText={
-                      platformDocumentSettings.data?.watermarkText ?? ""
+                      platformDocumentSettings.data?.watermarkText === "وثائقي"
+                        ? ""
+                        : (platformDocumentSettings.data?.watermarkText ?? "")
                     }
                     opacityPercent={
                       platformDocumentSettings.data?.watermarkOpacityPercent ??
