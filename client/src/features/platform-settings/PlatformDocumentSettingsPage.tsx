@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ImagePlus, Save, Settings2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { ownerTrpc } from "@/lib/ownerTrpc";
+import DocumentEditor from "@/features/document-studio/DocumentEditor";
+import DocumentLetterhead from "@/features/document-studio/DocumentLetterhead";
+import DocumentSignatureBlock from "@/features/document-studio/DocumentSignatureBlock";
+import DocumentWatermark from "@/features/document-studio/DocumentWatermark";
+import ResponsiveA4Preview from "@/features/document-studio/ResponsiveA4Preview";
+import { applyDocumentTemplateVariables } from "@shared/documentTemplateVariables";
 import {
   prepareOrganizationLogoUpload,
   uploadOrganizationLogoDirect,
@@ -13,6 +20,8 @@ import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
+  MIN_WATERMARK_SCALE_PERCENT,
+  MAX_WATERMARK_SCALE_PERCENT,
   MAX_PAGE_MARGIN_MM,
   MIN_DIVIDER_WIDTH_PT,
   MAX_DIVIDER_WIDTH_PT,
@@ -27,6 +36,19 @@ export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
   const settingsQuery = trpc.platformDocumentSettings.get.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
+  const documentsQuery = ownerTrpc.documentStudio.listDocuments.useQuery();
+  const [previewDocumentId, setPreviewDocumentId] = useState("");
+  const previewDocuments = useMemo(
+    () => (documentsQuery.data ?? []).filter(document => !document.file),
+    [documentsQuery.data]
+  );
+  const previewDocument = useMemo(
+    () =>
+      previewDocuments.find(document => document.id === previewDocumentId) ??
+      previewDocuments[0] ??
+      null,
+    [previewDocuments, previewDocumentId]
+  );
   const organizationId = organizationContext.data?.organizationId;
   const [organizationName, setOrganizationName] = useState("");
   const organizationLogoQuery = trpc.organizations.logo.useQuery(
@@ -59,6 +81,12 @@ export default function PlatformDocumentSettingsPage() {
   useEffect(() => {
     setLogoUrl(organizationLogoQuery.data?.dataUrl ?? "");
   }, [organizationLogoQuery.data?.dataUrl]);
+
+  useEffect(() => {
+    if (!previewDocumentId && previewDocuments[0]) {
+      setPreviewDocumentId(previewDocuments[0].id);
+    }
+  }, [previewDocumentId, previewDocuments]);
 
   const saveMutation = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
@@ -149,6 +177,24 @@ export default function PlatformDocumentSettingsPage() {
   const colorIsValid =
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
+  const previewDocumentContent =
+    previewDocument && previewDocument.status !== "draft"
+      ? applyDocumentTemplateVariables(previewDocument.content, {
+          number: previewDocument.serialCode,
+        })
+      : previewDocument?.content ?? { type: "doc", content: [{ type: "paragraph" }] };
+  const previewDateValue = previewDocument
+    ? new Date(previewDocument.documentDate)
+    : null;
+  const previewDate =
+    previewDateValue && Number.isFinite(previewDateValue.getTime())
+      ? new Intl.DateTimeFormat("ar", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          numberingSystem: "latn",
+        }).format(previewDateValue)
+      : undefined;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
@@ -914,107 +960,99 @@ export default function PlatformDocumentSettingsPage() {
           </Card>
 
           <Card className="space-y-3 p-5">
-            <h2 className="font-semibold">معاينة التنسيق</h2>
-            <p className="text-xs text-muted-foreground">
-              معاينة مباشرة للون الترويسة ودرجة ظهور العلامة المائية.
-            </p>
-            <div
-              className="relative min-h-[360px] overflow-hidden rounded-xl border bg-white text-slate-900 shadow-sm"
-              style={{ padding: "10mm" }}
-            >
-              <div
-                className="relative z-10 grid items-start gap-[2px] border-b-[3px] pb-3"
-                style={{
-                  borderColor: values.headerDividerColor,
-                  paddingTop: `${values.headerTopPaddingMm}mm`,
-                  paddingInline: `${values.headerHorizontalPaddingMm}mm`,
-                  paddingBottom: `${values.headerBottomPaddingMm}mm`,
-                  gridTemplateColumns: `minmax(0,1fr) ${Math.max(24, values.headerLogoSize * 0.55)}px minmax(0,1fr)`,
-                }}
-                dir="rtl"
-              >
-                <div className="min-w-0 text-right">
-                  <p className="truncate text-sm font-bold">
-                    {values.headerTitle || "وثائقي"}
-                  </p>
-                  <p className="truncate text-xs font-bold">
-                    {values.headerSubtitle || "الوثائق الرسمية"}
-                  </p>
-                </div>
-                <div className="flex items-center justify-center">
-                  {values.headerShowLogo ? (
-                    logoUrl ? (
-                      <img
-                        src={logoUrl}
-                        alt="شعار الجهة"
-                        style={{
-                          width: values.headerLogoSize,
-                          height: values.headerLogoSize,
-                          objectFit: "contain",
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-12 w-12 items-center justify-center rounded border border-dashed text-[9px] text-slate-500">
-                        أضف الشعار
-                      </div>
-                    )
-                  ) : null}
-                </div>
-                <div className="min-w-0 text-left text-xs font-bold">
-                  <p>الرقم: —</p>
-                  <p>التاريخ: —</p>
-                  {values.headerChiefRank ? (
-                    <p>{values.headerChiefRank}</p>
-                  ) : null}
-                  {values.headerChiefName ? (
-                    <p>{values.headerChiefName}</p>
-                  ) : null}
-                </div>
-              </div>
-              {values.showMinistryWatermarkText ? (
-                <div
-                  className="pointer-events-none absolute inset-[2.4mm_3.2mm_3mm] flex flex-col items-center justify-between overflow-hidden"
-                  style={{ opacity: values.watermarkOpacityPercent / 100 }}
-                  aria-hidden="true"
-                >
-                  {Array.from({ length: 33 }, (_, row) => (
-                    <div
-                      key={row}
-                      className={`flex w-max flex-none whitespace-nowrap ${row % 2 ? "-translate-x-[10.3mm]" : ""}`}
-                      style={{ gap: "6.16mm" }}
-                    >
-                      {Array.from({ length: 13 }, (_, column) => (
-                        <span
-                          key={column}
-                          className="text-[5pt] font-normal leading-none text-slate-500"
-                          style={{ fontFamily: '"Aref Ruqaa", serif' }}
-                        >
-                          {values.watermarkText || "وزارة الداخلية"}
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              <div className="relative z-10 space-y-4 pt-8 text-sm leading-8">
-                <p className="text-left">الرقم: —</p>
-                <p className="font-semibold">الموضوع: نموذج معاينة الوثيقة</p>
-                <p>
-                  يظهر محتوى الوثيقة هنا، وتبقى العلامة الأمنية خلف النص دون
-                  التأثير على وضوح القراءة.
-                </p>
-              </div>
-            </div>
-            {settingsQuery.data?.updatedAt ? (
-              <p className="text-xs text-muted-foreground">
-                آخر تحديث:{" "}
-                {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
+            <div>
+              <h2 className="font-semibold">معاينة الوثيقة الفعلية</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                تعرض هذه المعاينة آخر وثيقة محفوظة بالمحتوى والترويسة والتذييل
+                نفسيهما المستخدمين في الطباعة. تغييرات الإعدادات تظهر مباشرة هنا.
               </p>
+            </div>
+            {documentsQuery.isLoading ? (
+              <p className="rounded-lg border p-3 text-sm text-muted-foreground">
+                جارٍ تحميل الوثائق لعرض معاينة حقيقية...
+              </p>
+            ) : documentsQuery.isError ? (
+              <p role="alert" className="rounded-lg border border-destructive/40 p-3 text-sm text-destructive">
+                تعذر تحميل وثيقة للمعاينة: {documentsQuery.error.message}
+              </p>
+            ) : previewDocuments.length > 0 ? (
+              <label className="block space-y-1 text-sm">
+                <span className="font-medium">الوثيقة المعروضة</span>
+                <select
+                  value={previewDocument?.id ?? ""}
+                  onChange={event => setPreviewDocumentId(event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2"
+                >
+                  {previewDocuments.map(document => (
+                    <option key={document.id} value={document.id}>
+                      {document.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                لم تُحفظ إعدادات مخصصة بعد؛ تُستخدم القيم الافتراضية.
+              <p className="rounded-lg border p-3 text-sm text-muted-foreground">
+                لا توجد وثيقة محفوظة قابلة للمعاينة بعد. أنشئ وثيقة من قسم الوثائق
+                لتظهر هنا بنفس شكل الطباعة الفعلي.
               </p>
             )}
+            <ResponsiveA4Preview settings={values}>
+              <DocumentWatermark
+                logoUrl={logoUrl || null}
+                watermarkText={values.watermarkText}
+                opacityPercent={values.watermarkOpacityPercent}
+                scalePercent={values.watermarkScalePercent}
+                showMinistryText={values.showMinistryWatermarkText}
+              />
+              <DocumentLetterhead
+                logoUrl={logoUrl || null}
+                dividerColor={values.headerDividerColor}
+                headerSettings={values}
+                serial={previewDocument?.serialCode || (previewDocument ? "مسودة" : undefined)}
+                date={previewDate}
+              />
+              <div className="pt-6">
+                {previewDocument?.subject ? (
+                  <p className="mb-4 text-right font-semibold">
+                    الموضوع: {previewDocument.subject}
+                  </p>
+                ) : null}
+                {previewDocument ? (
+                  <DocumentEditor
+                    content={previewDocumentContent}
+                    onChange={() => undefined}
+                    editable={false}
+                    containerClassName="rounded-none border-0 shadow-none"
+                  />
+                ) : null}
+                <DocumentSignatureBlock
+                  organizationName={organizationContext.data?.organizationName ?? "الجهة"}
+                  unitName=""
+                  chiefRank=""
+                  chiefName=""
+                  settings={values}
+                />
+              </div>
+              <footer className="space-y-1 pb-8 pt-4 text-xs text-slate-500">
+                {values.pageFooterRows.map((row, index) => (
+                  <div
+                    key={"preview-footer-" + index}
+                    className="grid grid-cols-2 gap-4 font-semibold"
+                  >
+                    <span className="text-right">{row.right}</span>
+                    <span className="text-left" dir="ltr">{row.left}</span>
+                  </div>
+                ))}
+                {!values.pageFooterRows.length ? (
+                  <div className="text-center">وثائقي</div>
+                ) : null}
+              </footer>
+            </ResponsiveA4Preview>
+            {settingsQuery.data?.updatedAt ? (
+              <p className="text-xs text-muted-foreground">
+                آخر تحديث محفوظ: {new Date(settingsQuery.data.updatedAt).toLocaleString("ar")}
+              </p>
+            ) : null}
           </Card>
         </div>
       )}
