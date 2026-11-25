@@ -32,6 +32,10 @@ describe("isSafeSvgLogo", () => {
       '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><symbol id="mark"><path d="M0 0h10v10z"/></symbol></defs><use href="#mark" x="2" y="2"/><use xlink:href="#mark"/></svg>',
     ],
     [
+      "embedded PNG images without network access",
+      '<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/+ioAAAAASUVORK5CYII="/></svg>',
+    ],
+    [
       "text, textPath and safe embedded CSS",
       '<svg xmlns="http://www.w3.org/2000/svg"><style>.wordmark { fill: #123456; font-weight: 700; }</style><text class="wordmark"><textPath href="#curve">Wathaeqi</textPath></text><path id="curve" d="M0 10h100" fill="none"/></svg>',
     ],
