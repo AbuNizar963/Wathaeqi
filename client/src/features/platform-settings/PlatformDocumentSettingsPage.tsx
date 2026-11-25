@@ -387,7 +387,7 @@ export default function PlatformDocumentSettingsPage() {
                           ref={filesLogoInputRef}
                           id="organization-logo-files"
                           type="file"
-                          accept=".svg,image/svg+xml,.png,.jpg,.jpeg,image/png,image/jpeg"
+                          accept="*/*"
                           className="sr-only"
                           aria-label="اختيار شعار SVG أو PNG أو JPG من ملفاتي"
                           disabled={
