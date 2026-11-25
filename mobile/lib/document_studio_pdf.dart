@@ -190,8 +190,7 @@ class DocumentStudioPdf {
                                         ),
                                         child: pw.Text(
                                           watermarkText,
-                                          textDirection: pw.TextDirection.rtl,
-                                          style: pw.TextStyle(
+                                                                  style: pw.TextStyle(
                                             font: watermarkFont,
                                             fontSize: 11 * watermarkScale,
                                             color: watermarkColor,
@@ -228,6 +227,18 @@ class DocumentStudioPdf {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
+              if (headerShowLogo && logoImage != null)
+                pw.Padding(
+                  padding: pw.EdgeInsets.only(top: headerTopPadding),
+                  child: pw.Center(
+                    child: pw.Image(
+                      logoImage,
+                      width: headerLogoSizePoints,
+                      height: headerLogoSizePoints,
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                ),
               pw.Container(
                 padding: pw.EdgeInsets.fromLTRB(
                   headerHorizontalPadding,
@@ -311,13 +322,6 @@ class DocumentStudioPdf {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   mainAxisSize: pw.MainAxisSize.min,
                   children: [
-                    if (headerShowLogo && logoImage != null)
-                      pw.Image(
-                        logoImage,
-                        width: headerLogoSizePoints,
-                        height: headerLogoSizePoints,
-                        fit: pw.BoxFit.contain,
-                      ),
                     pw.Text(
                       department,
                       textDirection: pw.TextDirection.rtl,
