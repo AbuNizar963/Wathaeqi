@@ -27,6 +27,12 @@ describe("isSafeSvgLogo", () => {
     );
   });
 
+  it("accepts predefined and numeric XML references in visible text", () => {
+    expectValidSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><title>Research &amp; development &#x26; 2026</title></svg>'
+    );
+  });
+
   it("accepts Illustrator-style metadata, classes and inline presentation", () => {
     expectValidSvg(
       '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" version="1.1"><metadata>Artwork metadata</metadata><g class="logo" style="fill:#123456;stroke:none"><path id="mark" d="M0 0h100v100z"/></g></svg>'
