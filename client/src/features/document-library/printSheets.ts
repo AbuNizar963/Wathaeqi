@@ -303,7 +303,6 @@ export async function printHtmlDocument(
     printWindow.focus();
     printWindow.print();
   } catch (error) {
-    if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
     URL.revokeObjectURL(documentUrl);
     throw error;
   }
