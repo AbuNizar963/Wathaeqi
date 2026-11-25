@@ -13,6 +13,7 @@ function expectInvalidSvg(source: string): void {
   expect(isSafeSvgLogo(svg(source))).toBe(false);
 }
 
+// prettier-ignore
 describe("isSafeSvgLogo", () => {
   it("accepts standard vector shapes and paths", () => {
     expectValidSvg(
