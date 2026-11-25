@@ -2480,7 +2480,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     const Padding(
                       padding: EdgeInsets.only(top: 6, bottom: 8),
                       child: Text(
-                        'يظهر الشعار أسفل الوثيقة في الجهة اليسرى، وفوقه؟ لا، يظهر الشعار أولاً ثم سطرا رتبة رئيس الوحدة واسم الوحدة تحته.',
+                        'في أسفل الوثيقة من الجهة اليسرى يظهر الشعار أولاً، وتحته رتبة رئيس الوحدة واسم الوحدة في سطرين متتاليين.',
                         style: TextStyle(
                           color: Colors.black54,
                           fontSize: 12,
