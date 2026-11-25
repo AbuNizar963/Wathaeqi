@@ -58,10 +58,10 @@ export default function PlatformDocumentPreview({
         ? applyDocumentTemplateVariables(previewDocument.content, {
             number: previewDocument.serialCode,
           })
-        : previewDocument?.content ?? {
+        : (previewDocument?.content ?? {
             type: "doc",
             content: [{ type: "paragraph" }],
-          },
+          }),
     [previewDocument]
   );
 
