@@ -679,10 +679,10 @@ export default function PlatformDocumentSettingsPage() {
                 محتوى ترويسة الوثيقة
               </h2>
               <p className="text-xs text-muted-foreground">
-                بيانات الجهة والمسؤول التي تظهر في أعلى الوثيقة.
+                يظهر الشعار في منتصف أعلى الترويسة، وتظهر رتبة رئيس الوحدة واسم الوحدة في سطرين أسفل متن الوثيقة.
               </p>
               <label className="block space-y-1">
-                <span className="text-sm font-medium">العنوان الرئيسي</span>
+                <span className="text-sm font-medium">رتبة رئيس الوحدة</span>
                 <input
                   value={values.headerTitle}
                   maxLength={255}
@@ -694,7 +694,7 @@ export default function PlatformDocumentSettingsPage() {
               </label>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">
-                  العنوان الفرعي / اسم الوحدة
+                  اسم الوحدة / صفة المسؤول
                 </span>
                 <input
                   value={values.headerSubtitle}
@@ -747,8 +747,8 @@ export default function PlatformDocumentSettingsPage() {
                 </span>
                 <input
                   type="range"
-                  min={32}
-                  max={128}
+                  min={90}
+                  max={160}
                   step={4}
                   value={values.headerLogoSize}
                   onChange={event =>
