@@ -401,6 +401,9 @@ importers:
       pdfjs-dist:
         specifier: ^6.4.299
         version: 6.4.299
+      postcss:
+        specifier: ^8.5.31
+        version: 8.5.31
       playwright-core:
         specifier: 1.64.1
         version: 1.64.1
@@ -501,9 +504,6 @@ importers:
       picomatch:
         specifier: 4.0.7
         version: 4.0.7(patch_hash=7b567fd2e7549ba34ac3c8b67c2357560c88fa80671ad3e3e50f1d7f02e51a09)
-      postcss:
-        specifier: ^8.5.31
-        version: 8.5.31
       prettier:
         specifier: ^3.9.10
         version: 3.9.10
