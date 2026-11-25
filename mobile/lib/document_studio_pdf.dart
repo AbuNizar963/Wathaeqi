@@ -270,37 +270,7 @@ class DocumentStudioPdf {
                         ],
                       ),
                     ),
-                    pw.SizedBox(width: 12),
-                    pw.Expanded(
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
-                          if (headerShowLogo && logoImage != null)
-                            pw.Image(
-                              logoImage,
-                              width: headerLogoSizePoints,
-                              height: headerLogoSizePoints,
-                              fit: pw.BoxFit.contain,
-                            ),
-                          pw.Text(
-                            department,
-                            textDirection: pw.TextDirection.rtl,
-                            textAlign: pw.TextAlign.left,
-                            maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 13),
-                          ),
-                          if (unit != null)
-                            pw.Text(
-                              unit.startsWith('رئيس') ? unit : 'رئيس $unit',
-                              textDirection: pw.TextDirection.rtl,
-                              textAlign: pw.TextAlign.left,
-                              maxLines: 1,
-                              style: pw.TextStyle(font: bold, fontSize: 12),
-                            ),
 
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -333,13 +303,41 @@ class DocumentStudioPdf {
           );
         },
         footer: (context) => pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
-            pw.Text(
-              'وثائقي',
-              textDirection: pw.TextDirection.rtl,
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
-            ),
+            if (context.pageNumber == 1)
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  mainAxisSize: pw.MainAxisSize.min,
+                  children: [
+                    if (headerShowLogo && logoImage != null)
+                      pw.Image(
+                        logoImage,
+                        width: headerLogoSizePoints,
+                        height: headerLogoSizePoints,
+                        fit: pw.BoxFit.contain,
+                      ),
+                    pw.Text(
+                      department,
+                      textDirection: pw.TextDirection.rtl,
+                      textAlign: pw.TextAlign.left,
+                      maxLines: 1,
+                      style: pw.TextStyle(font: bold, fontSize: 13),
+                    ),
+                    if (unit != null)
+                      pw.Text(
+                        unit.startsWith('رئيس') ? unit : 'رئيس $unit',
+                        textDirection: pw.TextDirection.rtl,
+                        textAlign: pw.TextAlign.left,
+                        maxLines: 1,
+                        style: pw.TextStyle(font: bold, fontSize: 12),
+                      ),
+                  ],
+                ),
+              )
+            else
+              pw.Expanded(child: pw.SizedBox()),
             pw.Text(
               '${context.pageNumber} / ${context.pagesCount}',
               style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
