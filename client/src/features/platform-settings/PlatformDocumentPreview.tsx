@@ -52,15 +52,18 @@ export default function PlatformDocumentPreview({
     }
   }, [previewDocuments, selectedDocumentId]);
 
-  const previewDocumentContent =
-    previewDocument && previewDocument.status !== "draft"
-      ? applyDocumentTemplateVariables(previewDocument.content, {
-          number: previewDocument.serialCode,
-        })
-      : previewDocument?.content ?? {
-          type: "doc",
-          content: [{ type: "paragraph" }],
-        };
+  const previewDocumentContent = useMemo(
+    () =>
+      previewDocument && previewDocument.status !== "draft"
+        ? applyDocumentTemplateVariables(previewDocument.content, {
+            number: previewDocument.serialCode,
+          })
+        : previewDocument?.content ?? {
+            type: "doc",
+            content: [{ type: "paragraph" }],
+          },
+    [previewDocument]
+  );
 
   const dateValue = previewDocument
     ? new Date(previewDocument.documentDate)
