@@ -51,6 +51,12 @@ describe("isSafeSvgLogo", () => {
     );
   });
 
+  it("accepts local SVG anchors without external destinations", () => {
+    expectValidSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><a href="#mark"><path id="mark" d="M0 0h10v10z"/></a></svg>'
+    );
+  });
+
   it("accepts local symbol and xlink references", () => {
     expectValidSvg(
       '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><symbol id="mark"><path d="M0 0h10v10z"/></symbol></defs><use href="#mark" x="2" y="2"/><use xlink:href="#mark"/></svg>'
