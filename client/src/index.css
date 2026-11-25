@@ -961,9 +961,9 @@
   z-index: 1;
   top: 50%;
   left: 50%;
-  width: calc(93.75% * var(--document-watermark-scale, 1));
-  height: calc(93.75% * var(--document-watermark-scale, 1));
-  transform: translate(-50%, -50%);
+  width: 93.75%;
+  height: 93.75%;
+  transform: translate(-50%, -50%) scale(var(--document-watermark-scale, 1));
   object-fit: contain;
   opacity: var(--document-watermark-opacity, 0.12);
   -webkit-print-color-adjust: exact;
@@ -1001,8 +1001,11 @@
   color: #73777d;
   text-align: center;
   font-family: "Aref Ruqaa", serif;
-  font-size: calc(11pt * var(--document-watermark-scale, 1));
+  font-size: 11pt;
   font-weight: 400;
+  display: inline-block;
+  transform: scale(var(--document-watermark-scale, 1));
+  transform-origin: center;
   line-height: 1;
   white-space: nowrap;
 }
