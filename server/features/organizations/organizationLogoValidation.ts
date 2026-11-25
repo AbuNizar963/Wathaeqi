@@ -17,7 +17,7 @@ const SAFE_ELEMENTS = new Set([
   "feFuncA", "feFuncB", "feFuncG", "feFuncR", "feGaussianBlur",
   "feImage", "feMerge", "feMergeNode", "feMorphology", "feOffset",
   "fePointLight", "feSpecularLighting", "feSpotLight", "feTile",
-  "feTurbulence", "style",
+  "feTurbulence", "style", "namedview", "guide", "perspective", "RDF", "Description", "Work", "Agent", "Bag", "Seq", "li", "creator", "date", "format", "type", "identifier", "rights", "language", "subject", "coverage", "relation", "publisher", "contributor", "source", "license", "attributionURL", "attributionName",
 ]);
 
 const SAFE_NAMESPACE_ATTRIBUTES = new Set([
