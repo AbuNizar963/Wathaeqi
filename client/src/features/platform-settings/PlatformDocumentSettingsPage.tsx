@@ -158,7 +158,6 @@ export default function PlatformDocumentSettingsPage() {
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
 
-  // prettier-ignore
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
       <header className="document-page-header document-admin-header">
@@ -211,6 +210,7 @@ export default function PlatformDocumentSettingsPage() {
         </Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+          {/* prettier-ignore */}
           <Card className="space-y-6 p-5">
             <section
               id="organization-identity-settings"
