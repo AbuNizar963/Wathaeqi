@@ -113,8 +113,6 @@ class DocumentStudioPdf {
       'headerBottomPaddingMm',
       6,
     );
-    final headerAlignment = _clean(letterhead['headerAlignment']) ?? 'spread';
-
     pdf.addPage(
       pw.MultiPage(
         maxPages: 500,
@@ -227,14 +225,6 @@ class DocumentStudioPdf {
         ),
         header: (context) {
           if (context.pageNumber > 1) return pw.SizedBox(height: 8);
-          final titleAlignment = headerAlignment == 'center'
-              ? pw.TextAlign.center
-              : pw.TextAlign.right;
-          final metadataAlignment = headerAlignment == 'center'
-              ? pw.TextAlign.center
-              : headerAlignment == 'right'
-              ? pw.TextAlign.right
-              : pw.TextAlign.left;
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
