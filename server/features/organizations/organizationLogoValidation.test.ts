@@ -16,6 +16,13 @@ describe("isSafeSvgLogo", () => {
     ).toBe(true);
   });
 
+  it("accepts text elements used by common vector logos", () => {
+    expect(
+      isSafeSvgLogo(
+        svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><text x="0" y="15" font-size="12">Wathaeqi</text></svg>')
+      )
+    ).toBe(true);
+  });
   it("accepts static SVG shapes without external references", () => {
     expect(
       isSafeSvgLogo(
