@@ -61,8 +61,8 @@ export function normalizePlatformDocumentSettings(
   const isPreviousTwoLineDefault =
     storedTitle === "المقدم غسان صالح كنو" &&
     storedSubtitle === "رئيس قسم الشهباء" &&
-    !storedChiefRank &&
-    !storedChiefName;
+    !safeText(source.headerChiefRank, "", 120) &&
+    !safeText(source.headerChiefName, "", 255);
 
   return {
     ...defaults,
@@ -111,7 +111,7 @@ export function normalizePlatformDocumentSettings(
       : storedChiefName,
     headerShowLogo: safeBoolean(source.headerShowLogo, defaults.headerShowLogo),
     headerLogoSize: Math.max(
-      160,
+      32,
       Math.min(220, safeNumber(source.headerLogoSize, defaults.headerLogoSize))
     ),
     headerTopPaddingMm: safeNumber(
