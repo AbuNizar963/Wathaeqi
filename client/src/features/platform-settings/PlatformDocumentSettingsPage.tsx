@@ -731,7 +731,7 @@ export default function PlatformDocumentSettingsPage() {
               </div>
               <label className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
-                  إظهار شعار الجهة في الرأس
+                  إظهار شعار الجهة فوق بيانات المسؤول
                 </span>
                 <input
                   type="checkbox"
