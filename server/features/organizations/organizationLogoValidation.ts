@@ -430,7 +430,7 @@ function isTextElement(name: string): boolean {
 // prettier-ignore
 // prettier-ignore
 function validateAttributes(
-  attributes: Record<string, unknown>,
+  attributes: Map<string, string>,
   elementName: string
 ): boolean {
   for (const [name, rawValue] of attributes) {
