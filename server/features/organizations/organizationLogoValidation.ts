@@ -134,7 +134,7 @@ function validateNodes(nodes: unknown[], parent?: string): boolean {
     if (Object.hasOwn(node, "#text")) {
       const text = node["#text"];
       if (typeof text !== "string") return false;
-      if (text.trim() && !["text", "tspan", "textPath", "title", "desc"].includes(parent ?? "")) {
+      if (text.trim() && !["text", "tspan", "textPath", "title", "desc", "metadata"].includes(parent ?? "")) {
         return false;
       }
       continue;
