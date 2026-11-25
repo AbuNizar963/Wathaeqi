@@ -237,46 +237,21 @@ export function showPrintPreparingPage(printWindow: Window): void {
   document.close();
 }
 
-/** Navigate the owned window to a complete HTML document, then invoke native print. */
+/** Write a complete HTML document into the owned popup, then invoke native print. */
 export async function printHtmlDocument(
   printWindow: Window,
   html: string
 ): Promise<void> {
   printWindow.opener = null;
-  const documentUrl = URL.createObjectURL(
-    new Blob([html], { type: "text/html;charset=utf-8" })
-  );
   try {
-    // A listener attached to the initial about:blank Window can be discarded
-    // when navigation replaces that document. Poll the WindowProxy instead,
-    // which survives navigation and lets us observe the committed Blob page.
-    const deadline = Date.now() + 30_000;
-    printWindow.location.replace(documentUrl);
+    // Keep the existing browsing context and write the final document into it.
+    // Navigating a popup to a Blob URL is unreliable for opaque-origin pages,
+    // and pagehide during that navigation can revoke the page-image Blob URLs.
+    const document = printWindow.document;
+    document.open();
+    document.write(html);
+    document.close();
 
-    let document: Document | null = null;
-    while (Date.now() < deadline) {
-      if (printWindow.closed) {
-        throw new Error("أُغلقت نافذة الطباعة قبل اكتمال تجهيز الوثيقة");
-      }
-
-      try {
-        if (
-          printWindow.location.href === documentUrl &&
-          printWindow.document.readyState === "complete"
-        ) {
-          document = printWindow.document;
-          break;
-        }
-      } catch {
-        // The browsing context may be between the old and new documents.
-      }
-
-      await new Promise(resolve => window.setTimeout(resolve, 25));
-    }
-
-    if (!document) {
-      throw new Error("انتهت مهلة تحميل صفحة الطباعة");
-    }
     await document.fonts?.ready;
     await Promise.all(
       Array.from(document.images).map(async image => {
@@ -286,24 +261,17 @@ export async function printHtmlDocument(
             image.addEventListener("error", () => resolve(), { once: true });
           });
         }
-        if (image.complete && image.naturalWidth > 0 && image.decode) {
-          await image.decode().catch(() => undefined);
+        if (!image.complete || image.naturalWidth === 0) {
+          throw new Error("تعذر تحميل إحدى صور الوثيقة للطباعة");
         }
+        if (image.decode) await image.decode();
       })
     );
     await new Promise(resolve => printWindow.setTimeout(resolve, 100));
 
-    const releaseDocumentUrl = () => URL.revokeObjectURL(documentUrl);
-    printWindow.addEventListener("afterprint", releaseDocumentUrl, {
-      once: true,
-    });
-    printWindow.addEventListener("pagehide", releaseDocumentUrl, {
-      once: true,
-    });
     printWindow.focus();
     printWindow.print();
   } catch (error) {
-    URL.revokeObjectURL(documentUrl);
     throw error;
   }
 }
