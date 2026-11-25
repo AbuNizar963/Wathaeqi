@@ -107,8 +107,9 @@ const UNSAFE_CSS =
   /(?:@import|@namespace|@font-face|@keyframes|expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding|behavior\s*:)/i;
 const EXTERNAL_SCHEME =
   /(?:javascript|vbscript|https?|file|ftp|blob|data)\s*:/i;
-const URL_FUNCTION =
-  /url\(\s*(?:(["'])\s*(.*?)\s*\1|([^)]*?))\s*\)/gi;
+const URL_FUNCTION_START = /url\s*\(/gi;
+const SAFE_LOCAL_URL_FUNCTION =
+  /url\(\s*(?:"#[A-Za-z_][\w:.-]*"|'#[A-Za-z_][\w:.-]*'|#[A-Za-z_][\w:.-]*)\s*\)/gi;
 
 type XmlNode = Record<string, unknown>;
 
@@ -295,14 +296,7 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
 
     if (name === "style" && !isSafeCss(value)) return false;
 
-    URL_FUNCTION.lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = URL_FUNCTION.exec(value)) !== null) {
-      const reference = (match[2] ?? match[3] ?? "").trim();
-      if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
-    }
-    const withoutLocalUrls = value.replace(URL_FUNCTION, "");
-    if (/url\s*\(/i.test(withoutLocalUrls)) return false;
+    if (!hasOnlyLocalUrlFunctions(value)) return false;
     if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(value)) {
       return false;
     }
@@ -321,13 +315,19 @@ function isSafeCss(css: string): boolean {
     return false;
   }
 
-  URL_FUNCTION.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = URL_FUNCTION.exec(normalizedCss)) !== null) {
-    const reference = (match[2] ?? match[3] ?? "").trim();
-    if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
-  }
+  return (
+    hasOnlyLocalUrlFunctions(normalizedCss) &&
+    !/expression\s*\(|javascript\s*:/i.test(normalizedCss)
+  );
+}
 
-  const withoutLocalUrls = normalizedCss.replace(URL_FUNCTION, "");
-  return !/url\s*\(|expression\s*\(|javascript\s*:/i.test(withoutLocalUrls);
+function hasOnlyLocalUrlFunctions(value: string): boolean {
+  URL_FUNCTION_START.lastIndex = 0;
+  SAFE_LOCAL_URL_FUNCTION.lastIndex = 0;
+
+  const urlCount = value.match(URL_FUNCTION_START)?.length ?? 0;
+  if (urlCount === 0) return true;
+
+  const safeUrlCount = value.match(SAFE_LOCAL_URL_FUNCTION)?.length ?? 0;
+  return urlCount === safeUrlCount;
 }
