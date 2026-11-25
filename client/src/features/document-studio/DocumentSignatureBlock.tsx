@@ -22,7 +22,9 @@ export default function DocumentSignatureBlock({
   const secondLine = configuredSecondLine.startsWith("رئيس")
     ? configuredSecondLine
     : `رئيس ${configuredSecondLine}`;
-  const lines = [firstLine, secondLine].filter(value => value.trim().length > 0);
+  const lines = [firstLine, secondLine].filter(
+    value => value.trim().length > 0
+  );
 
   if (lines.length === 0) return null;
 
