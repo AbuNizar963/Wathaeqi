@@ -124,7 +124,28 @@ describe("platform document settings UI normalization", () => {
       headerLogoSize: 120,
     });
 
-    expect(normalized.headerLogoSize).toBe(160);
+    expect(normalized.headerLogoSize).toBe(120);
+  });
+
+  it("migrates older saved records when the added signatory fields are absent", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      headerTitle: "المقدم غسان صالح كنو",
+      headerSubtitle: "رئيس قسم الشهباء",
+    });
+
+    expect(normalized.headerTitle).toBe("المقدم");
+    expect(normalized.headerSubtitle).toBe("غسان صالح كنو");
+    expect(normalized.headerChiefRank).toBe("رئيس قسم شرطة");
+    expect(normalized.headerChiefName).toBe("الشهباء");
+  });
+
+  it("keeps legacy logo sizes valid while enforcing the new maximum", () => {
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 120 }).headerLogoSize
+    ).toBe(120);
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 999 }).headerLogoSize
+    ).toBe(220);
   });
 
   it("returns complete defaults for missing settings", () => {
