@@ -302,5 +302,4 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       await browser.close();
     }
   });
-
 });
