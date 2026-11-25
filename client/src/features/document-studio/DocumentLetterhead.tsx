@@ -21,7 +21,8 @@ export default function DocumentLetterhead({
   date,
 }: DocumentLetterheadProps) {
   const showLogo = headerSettings?.headerShowLogo !== false;
-  const logoSize = headerSettings?.headerLogoSize ?? 200;
+  const configuredLogoSize = headerSettings?.headerLogoSize ?? 220;
+  const logoSize = Math.min(220, Math.round(configuredLogoSize * 1.1));
 
   return (
     <header
@@ -63,13 +64,18 @@ export default function DocumentLetterhead({
       <div className="document-letterhead__row">
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
-          style={{ width: "100%", textAlign: "center" }}
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
         >
           {showLogo && logoUrl ? (
             <img
               src={logoUrl}
               alt="الشعار الرسمي"
-              className="block object-contain"
+              className="mx-auto block object-contain"
               style={{ width: logoSize, height: logoSize }}
             />
           ) : null}
