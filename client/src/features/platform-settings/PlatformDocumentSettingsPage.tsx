@@ -34,6 +34,7 @@ type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
 
 export default function PlatformDocumentSettingsPage() {
   const utils = trpc.useUtils();
+  const ownerUtils = ownerTrpc.useUtils();
   const settingsQuery = trpc.platformDocumentSettings.get.useQuery();
   const organizationContext = trpc.organizations.context.useQuery();
   const documentsQuery = ownerTrpc.documentStudio.listDocuments.useQuery();
@@ -95,7 +96,10 @@ export default function PlatformDocumentSettingsPage() {
   const saveMutation = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
       setValues(normalizePlatformDocumentSettings(saved));
-      await utils.platformDocumentSettings.get.invalidate();
+      await Promise.all([
+        utils.platformDocumentSettings.get.invalidate(),
+        ownerUtils.platformDocumentSettings.get.invalidate(),
+      ]);
       toast.success("تم حفظ إعدادات الوثائق");
     },
     onError: error => toast.error(error.message),
