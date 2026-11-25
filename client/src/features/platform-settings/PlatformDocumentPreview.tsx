@@ -19,7 +19,6 @@ type PlatformDocumentPreviewProps = {
   updatedAt?: string | Date | null;
 };
 
-// prettier-ignore
 export default function PlatformDocumentPreview({
   settings,
   logoUrl,
@@ -87,6 +86,7 @@ export default function PlatformDocumentPreview({
     }).format(date);
   }
 
+  // prettier-ignore
   return (
     <Card className="space-y-3 p-5">
       <div>
