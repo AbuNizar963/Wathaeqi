@@ -687,6 +687,8 @@ export const appwriteSchema: SchemaTable[] = [
         key: "watermarkScalePercent",
         type: "integer",
         required: false,
+        min: 40,
+        max: 180,
         default: 100,
       },
       {
