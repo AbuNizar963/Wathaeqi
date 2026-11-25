@@ -161,43 +161,53 @@ function isTextAllowed(_depth: number, ancestors: string[]): boolean {
 }
 
 function validateAttributes(attributes: Record<string, unknown>): boolean {
-  for (const [rawName, rawValue] of Object.entries(attributes)) {
+  for (const [name, rawValue] of Object.entries(attributes)) {
     if (typeof rawValue !== "string") return false;
 
-    const name = rawName;
     const value = rawValue.trim();
-
     if (/^on/i.test(name) || name.toLowerCase() === "src") return false;
-    if (name === "xml:base") return false;
 
-    if (SAFE_NAMESPACE_ATTRIBUTES.has(name)) {
-      if (name === "xmlns" && value !== SVG_NAMESPACE) return false;
-      if (name === "xmlns:xlink" && value !== XLINK_NAMESPACE) return false;
-      if (name === "xml:space" && value !== "default" && value !== "preserve") {
-        return false;
-      }
+    if (name === "xmlns") {
+      if (value !== SVG_NAMESPACE) return false;
       continue;
     }
-
-    if (name.startsWith("xmlns:") || name.startsWith("xml:")) return false;
-    if (name.includes(":") && name !== "xlink:href") return false;
+    if (name === "xmlns:xlink") {
+      if (value !== XLINK_NAMESPACE) return false;
+      continue;
+    }
+    if (name.startsWith("xmlns:")) {
+      if (EXTERNAL_SCHEME.test(value) || value.includes("\\\\")) return false;
+      continue;
+    }
+    if (name === "xml:space") {
+      if (value !== "default" && value !== "preserve") return false;
+      continue;
+    }
+    if (name.startsWith("xml:") || name === "xml:base") return false;
 
     if (name === "href" || name === "xlink:href") {
-      if (value && !/^#[A-Za-z_][\w:.-]*$/.test(value)) return false;
+      if (value && !/^#[A-Za-z_][\\w:.-]*$/.test(value)) return false;
       continue;
     }
 
-    if (value.includes("\\\\")) return false;\n    if (name === "style" && !isSafeCss(value)) return false;
+    if (value.includes("\\\\")) return false;
     if (EXTERNAL_SCHEME.test(value)) return false;
+
+    if (name.includes(":")) {
+      // Editor and metadata namespaces are inert; event-like names are denied above.
+      continue;
+    }
+
+    if (name === "style" && !isSafeCss(value)) return false;
 
     URL_FUNCTION.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = URL_FUNCTION.exec(value)) !== null) {
       const reference = (match[2] ?? match[3] ?? "").trim();
-      if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
+      if (!/^#[A-Za-z_][\\w:.-]*$/.test(reference)) return false;
     }
-    if (/url\s*\(/i.test(value) && !/url\s*\(/i.test(value)) return false;
-    if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(value)) {
+    if (/url\\s*\\(/i.test(value) && !/url\\s*\\(/i.test(value)) return false;
+    if (/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(value)) {
       return false;
     }
   }
@@ -205,15 +215,23 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
 }
 
 function isSafeCss(css: string): boolean {
-  if (UNSAFE_CSS.test(css) || /[<>]/.test(css)) return false;
+  const normalizedCss = css.replace(/\\/\\*[\\s\\S]*?\\*\\//g, "");
+  if (
+    normalizedCss.includes("\\\\") ||
+    /\\/\\*|\\*\\//.test(normalizedCss) ||
+    UNSAFE_CSS.test(normalizedCss) ||
+    /[<>]/.test(normalizedCss)
+  ) {
+    return false;
+  }
 
   URL_FUNCTION.lastIndex = 0;
   let match: RegExpExecArray | null;
-  while ((match = URL_FUNCTION.exec(css)) !== null) {
+  while ((match = URL_FUNCTION.exec(normalizedCss)) !== null) {
     const reference = (match[2] ?? match[3] ?? "").trim();
-    if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
+    if (!/^#[A-Za-z_][\\w:.-]*$/.test(reference)) return false;
   }
 
   const withoutLocalUrls = normalizedCss.replace(URL_FUNCTION, "");
-  return !/url\s*\(|expression\s*\(|javascript\s*:/i.test(withoutLocalUrls);
+  return !/url\\s*\\(|expression\\s*\\(|javascript\\s*:/i.test(withoutLocalUrls);
 }
