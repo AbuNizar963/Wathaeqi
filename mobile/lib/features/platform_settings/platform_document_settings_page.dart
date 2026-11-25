@@ -471,9 +471,14 @@ class _PlatformDocumentSettingsPageState
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
             '${value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 2)}$suffix',
           ),
