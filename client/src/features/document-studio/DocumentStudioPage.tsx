@@ -46,7 +46,11 @@ import DocumentLetterhead from "./DocumentLetterhead";
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 import DocumentWatermark from "./DocumentWatermark";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
-import { isDocumentFormDirty, parseDocumentDate } from "./documentFormState";
+import {
+  isDocumentFormDirty,
+  missingRequiredTemplateFields,
+  parseDocumentDate,
+} from "./documentFormState";
 import { applyDocumentTemplateVariables } from "../../../../shared/documentTemplateVariables";
 import { importDocxTemplate } from "./docxTemplateImporter";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
@@ -451,8 +455,9 @@ export default function DocumentStudioPage() {
       toast.error("أدخل تاريخاً صالحاً للوثيقة أولاً");
       return;
     }
-    const missingFields = documentTemplateFields.filter(
-      field => field.required && !(documentFieldValues[field.key] ?? "").trim()
+    const missingFields = missingRequiredTemplateFields(
+      documentTemplateFields,
+      documentFieldValues
     );
     if (selectedTemplateId && missingFields.length > 0) {
       toast.error(
