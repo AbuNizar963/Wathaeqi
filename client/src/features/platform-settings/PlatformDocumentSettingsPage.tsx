@@ -705,28 +705,6 @@ export default function PlatformDocumentSettingsPage() {
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
                 />
               </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">رتبة / صفة المسؤول</span>
-                <input
-                  value={values.headerChiefRank}
-                  maxLength={120}
-                  onChange={event =>
-                    updateValue("headerChiefRank", event.target.value)
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium">اسم المسؤول</span>
-                <input
-                  value={values.headerChiefName}
-                  maxLength={255}
-                  onChange={event =>
-                    updateValue("headerChiefName", event.target.value)
-                  }
-                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
-                />
-              </label>
               <label className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">
                   إظهار شعار الجهة في الرأس
