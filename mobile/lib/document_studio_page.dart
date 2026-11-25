@@ -2399,8 +2399,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     var showWatermark = values['showMinistryWatermarkText'] != false;
     var showLogo = values['headerShowLogo'] != false;
     var opacity = (values['watermarkOpacityPercent'] as num? ?? 12).toDouble();
-    var watermarkScale =
-        (values['watermarkScalePercent'] as num? ?? 100).toDouble();
+    var watermarkScale = (values['watermarkScalePercent'] as num? ?? 100)
+        .toDouble();
     var logoSize = (values['headerLogoSize'] as num? ?? 120).toDouble();
     var topPadding = (values['headerTopPaddingMm'] as num? ?? 0).toDouble();
     var horizontalPadding = (values['headerHorizontalPaddingMm'] as num? ?? 0)
