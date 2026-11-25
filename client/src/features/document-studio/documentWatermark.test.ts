@@ -9,10 +9,11 @@ import {
 
 describe("official document watermark", () => {
   it("exposes its opacity setting to the shared watermark stylesheet", () => {
-    const css = buildDocumentWatermarkCss(0.12);
+    const css = buildDocumentWatermarkCss(0.12, 1.25);
     expect(DOCUMENT_WATERMARK_ROWS).toBe(33);
     expect(DOCUMENT_WATERMARK_COLUMNS).toBe(13);
     expect(css).toContain("--document-watermark-opacity: 0.12;");
+    expect(css).toContain("--document-watermark-scale: 1.25;");
   });
 
   it("calculates one or more continuous A4 preview sheets from measured content", () => {
@@ -24,7 +25,7 @@ describe("official document watermark", () => {
     expect(getA4PreviewPageCount(793.7, Number.NaN)).toBe(1);
   });
 
-  it("clamps malformed opacity values without disabling the watermark", () => {
+  it("clamps malformed opacity and scale values without disabling the watermark", () => {
     expect(buildDocumentWatermarkCss(2)).toContain(
       "--document-watermark-opacity: 0.6;"
     );
@@ -33,6 +34,12 @@ describe("official document watermark", () => {
     );
     expect(buildDocumentWatermarkCss(Number.NaN)).toContain(
       `--document-watermark-opacity: ${DOCUMENT_WATERMARK_DEFAULT_OPACITY};`
+    );
+    expect(buildDocumentWatermarkCss(0.12, 3)).toContain(
+      "--document-watermark-scale: 1.8;"
+    );
+    expect(buildDocumentWatermarkCss(0.12, 0)).toContain(
+      "--document-watermark-scale: 0.4;"
     );
   });
 });
