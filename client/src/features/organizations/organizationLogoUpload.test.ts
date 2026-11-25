@@ -55,8 +55,12 @@ describe("prepared organization logo size", () => {
     }
   );
 
-  it("passes SVG files through unchanged for strict server-side validation", async () => {
-    const source = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0 L10 10"/></svg>';
+  it("passes SVG files through unchanged", async () => {
+    const source = [
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">',
+      '<path d="M0 0 L10 10"/>',
+      "</svg>",
+    ].join("");
     const file = new File([source], "organization-logo.svg", {
       type: "image/svg+xml",
     });
@@ -67,7 +71,7 @@ describe("prepared organization logo size", () => {
     expect(result.contentType).toBe("image/svg+xml");
   });
 
-  it("recognizes SVG files from Android file providers with a generic MIME type", async () => {
+  it("recognizes Android SVG files with a generic MIME type", async () => {
     const file = new File(
       ['<svg xmlns="http://www.w3.org/2000/svg"/>'],
       "organization-logo.svg",
