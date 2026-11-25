@@ -109,7 +109,7 @@ describe("DocumentLetterhead", () => {
     );
     expect(markup).toContain("width:220px");
     expect(markup).toContain("height:220px");
-    expect(markup).toContain("justify-content:center");
+    expect(markup).toContain("margin-inline:auto");
   });
 
   it("honours the logo size setting", () => {
