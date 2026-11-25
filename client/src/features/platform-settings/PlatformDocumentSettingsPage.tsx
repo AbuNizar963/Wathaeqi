@@ -192,17 +192,17 @@ export default function PlatformDocumentSettingsPage() {
         className="flex flex-wrap gap-2 rounded-xl border bg-card p-3"
       >
         {[
-          ["organization-identity-settings", "هوية الجهة"],
-          ["watermark-settings", "العلامة المائية"],
-          ["page-layout-settings", "الصفحة والإطار"],
-          ["header-divider-settings", "فاصل الترويسة"],
-          ["header-content-settings", "محتوى الترويسة"],
-          ["page-rows-settings", "سطور الصفحة"],
-          ["verification-settings", "رمز التحقق"],
-        ].map(([id, label]) => (
+          { id: "organization-identity-settings", label: "هوية الجهة" },
+          { id: "watermark-settings", label: "العلامة المائية" },
+          { id: "page-layout-settings", label: "الصفحة والإطار" },
+          { id: "header-divider-settings", label: "فاصل الترويسة" },
+          { id: "header-content-settings", label: "محتوى الترويسة" },
+          { id: "page-rows-settings", label: "سطور الصفحة" },
+          { id: "verification-settings", label: "رمز التحقق" },
+        ].map(({ id, label }) => (
           <a
             key={id}
-            href={"#" + id}
+            href={`#${id}`}
             className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {label}
