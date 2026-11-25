@@ -598,11 +598,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ..._letterhead,
         'departmentName': _headerSetting(
           'headerTitle',
-          _letterhead['departmentName']?.toString() ?? 'وثائقي',
+          'المقدم غسان صالح كنو',
         ),
         'unitName': _headerSetting(
           'headerSubtitle',
-          _letterhead['unitName']?.toString() ?? '',
+          'رئيس قسم شرطة الشهباء',
         ),
         'unitChiefRank': _headerSetting(
           'headerChiefRank',
@@ -2512,8 +2512,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     _documentSettingSlider(
                       label: 'حجم الشعار',
                       value: logoSize,
-                      min: 32,
-                      max: 220,
+                      min: 90,
+                      max: 160,
                       suffix: ' px',
                       onChanged: (value) =>
                           setDialogState(() => logoSize = value),
@@ -2803,11 +2803,11 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     const pixelsPerMillimeter = 794 / 210;
     final headerTitle = _headerSetting(
       'headerTitle',
-      _letterhead['departmentName']?.toString() ?? 'وثائقي',
+      'المقدم غسان صالح كنو',
     );
     final headerSubtitle = _headerSetting(
       'headerSubtitle',
-      _letterhead['unitName']?.toString() ?? '',
+      'رئيس قسم شرطة الشهباء',
     );
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
