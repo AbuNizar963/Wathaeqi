@@ -4,6 +4,7 @@ import { XMLParser, XMLValidator } from "fast-xml-parser";
 const MAX_SVG_BYTES = 2.5 * 1024 * 1024;
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XLINK_NAMESPACE = "http://www.w3.org/1999/xlink";
+// prettier-ignore
 const TEXT_ELEMENTS = new Set([
   "text",
   "tspan",
@@ -13,6 +14,7 @@ const TEXT_ELEMENTS = new Set([
   "metadata",
 ]);
 
+// prettier-ignore
 const SVG_ELEMENTS = new Set([
   "svg",
   "g",
@@ -67,6 +69,7 @@ const SVG_ELEMENTS = new Set([
   "feTurbulence",
 ]);
 
+// prettier-ignore
 const SVG_ATTRIBUTES = new Set([
   "xmlns",
   "xmlns:xlink",
@@ -219,6 +222,7 @@ const SVG_ATTRIBUTES = new Set([
   "isolation",
 ]);
 
+// prettier-ignore
 const SAFE_STYLE_PROPERTIES = new Set([
   "color",
   "fill",
