@@ -5,6 +5,7 @@ function svg(source: string): Buffer {
   return Buffer.from(source, "utf8");
 }
 
+// prettier-ignore
 describe("isSafeSvgLogo", () => {
   it("accepts basic vector paths and local gradients", () => {
     const source =
@@ -49,7 +50,6 @@ describe("isSafeSvgLogo", () => {
     expect(isSafeSvgLogo(svg(source))).toBe(true);
   });
 
-  // prettier-ignore
   it.each([
     '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject/></svg>',
