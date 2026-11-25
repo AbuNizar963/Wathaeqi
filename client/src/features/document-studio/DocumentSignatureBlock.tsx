@@ -15,8 +15,7 @@ export type DocumentSignatureBlockProps = {
 export default function DocumentSignatureBlock({
   settings,
 }: DocumentSignatureBlockProps) {
-  const firstLine =
-    settings?.headerTitle?.trim() || "المقدم غسان صالح كنو";
+  const firstLine = settings?.headerTitle?.trim() || "المقدم غسان صالح كنو";
   const configuredSecondLine =
     settings?.headerSubtitle?.trim() || "رئيس قسم الشهباء";
   const secondLine = configuredSecondLine.startsWith("رئيس")
