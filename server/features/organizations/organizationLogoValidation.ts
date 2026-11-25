@@ -1,5 +1,3 @@
-import { XMLParser, XMLValidator } from "fast-xml-parser";
-
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const XLINK_NAMESPACE = "http://www.w3.org/1999/xlink";
 const MAX_SVG_NODES = 20_000;
@@ -130,129 +128,217 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
   try {
     if (bytes.length === 0) return false;
 
-    const source = bytes.toString("utf8");
+    let source = bytes.toString("utf8");
     if (
       !source.trim() ||
       source.includes("\u0000") ||
       source.includes("\uFFFD") ||
-      /<!DOCTYPE|<!ENTITY/i.test(source) ||
-      /<\?(?!xml(?:\s|\?>))/i.test(source)
+      /<!DOCTYPE|<!ENTITY/i.test(source)
     ) {
       return false;
     }
 
-    const withoutBom = source
-      .replace(/^\uFEFF/, "")
-      .replace(/^\s*<\?xml\s+[^?]*\?>/i, "");
-    const validation = XMLValidator.validate(withoutBom, {
-      allowBooleanAttributes: false,
-      unpairedTags: [],
-    });
-    if (validation !== true) return false;
+    source = source.replace(/^\uFEFF/, "");
+    const declaration = /^\s*<\?xml\s+version\s*=\s*(['"])1\.[01]\1(?:\s+encoding\s*=\s*(['"])[A-Za-z][A-Za-z0-9._-]*\2)?(?:\s+standalone\s*=\s*(['"])(?:yes|no)\3)?\s*\?>/i.exec(source);
+    if (declaration) {
+      source = source.slice(declaration[0].length);
+    }
+    if (/<\?/.test(source)) return false;
 
-    const parser = new XMLParser({
-      preserveOrder: true,
-      ignoreAttributes: false,
-      attributeNamePrefix: "",
-      textNodeName: "#text",
-      commentPropName: "#comment",
-      cdataPropName: "#cdata",
-      parseTagValue: false,
-      parseAttributeValue: false,
-      trimValues: false,
-      processEntities: false,
-      htmlEntities: false,
-      allowBooleanAttributes: false,
-    });
-
-    const document = parser.parse(withoutBom) as unknown;
-    if (!Array.isArray(document)) return false;
-
+    const stack: string[] = [];
+    let index = 0;
+    let rootSeen = false;
+    let rootClosed = false;
     let nodeCount = 0;
-    let rootCount = 0;
 
-    const visit = (
-      items: unknown[],
-      depth: number,
-      isRoot = false
-    ): boolean => {
-      if (depth > MAX_SVG_DEPTH) return false;
-
-      for (const item of items) {
-        if (!item || typeof item !== "object" || Array.isArray(item)) {
-          return false;
-        }
-
-        const record = item as XmlNode;
-        if ("#comment" in record) continue;
-
-        if ("#text" in record || "#cdata" in record) {
-          const rawText = String(
-            record["#text"] ?? record["#cdata"] ?? ""
-          );
-          const value =
-            "#cdata" in record ? rawText : decodeXmlEntities(rawText);
-          if (value === null) return false;
-          if (value.trim() && !isTextAllowed(currentTextElements)) {
-            return false;
-          }
-          if (
-            currentTextElements[currentTextElements.length - 1] === "style" &&
-            !isSafeCss(value)
-          ) {
-            return false;
-          }
-          continue;
-        }
-
-        const names = Object.keys(record).filter(
-          key => key !== ":@" && !key.startsWith("?")
-        );
-        if (names.length !== 1) return false;
-
-        const qualifiedName = names[0];
-        const elementName = qualifiedName.split(":").pop() ?? qualifiedName;
-        if (!SAFE_ELEMENTS.has(elementName)) return false;
-
-        if (isRoot) {
-          rootCount += 1;
-          if (rootCount !== 1 || elementName !== "svg") return false;
-        }
-
-        nodeCount += 1;
-        if (nodeCount > MAX_SVG_NODES) return false;
-
-        const attributes = record[":@"];
-        if (
-          attributes !== undefined &&
-          (!attributes ||
-            typeof attributes !== "object" ||
-            Array.isArray(attributes) ||
-            !validateAttributes(
-              attributes as Record<string, unknown>,
-              elementName
-            ))
-        ) {
-          return false;
-        }
-
-        const children = record[qualifiedName];
-        if (!Array.isArray(children)) return false;
-
-        currentTextElements.push(elementName);
-        const validChildren = visit(children, depth + 1);
-        currentTextElements.pop();
-        if (!validChildren) return false;
+    while (index < source.length) {
+      if (source.startsWith("<!--", index)) {
+        const commentEnd = source.indexOf("-->", index + 4);
+        if (commentEnd < 0) return false;
+        if (source.slice(index + 4, commentEnd).includes("--")) return false;
+        index = commentEnd + 3;
+        continue;
       }
-      return true;
-    };
 
-    const currentTextElements: string[] = [];
-    const valid = visit(document, 0, true);
-    return valid && rootCount === 1;
+      if (source.startsWith("<![CDATA[", index)) {
+        const parentName = stack[stack.length - 1]?.split(":").pop() ?? "";
+        if (!isTextElement(parentName)) return false;
+
+        const cdataEnd = source.indexOf("]]>", index + 9);
+        if (cdataEnd < 0) return false;
+        const value = source.slice(index + 9, cdataEnd);
+        if (parentName === "style" && !isSafeCss(value)) return false;
+        index = cdataEnd + 3;
+        continue;
+      }
+
+      if (source[index] !== "<") {
+        const textEnd = source.indexOf("<", index);
+        const end = textEnd < 0 ? source.length : textEnd;
+        const value = decodeXmlEntities(source.slice(index, end));
+        if (value === null) return false;
+
+        const parentName = stack[stack.length - 1]?.split(":").pop() ?? "";
+        if (value.trim() && !isTextElement(parentName)) return false;
+        if (parentName === "style" && !isSafeCss(value)) return false;
+
+        index = end;
+        continue;
+      }
+
+      if (source.startsWith("</", index)) {
+        index += 2;
+        const nameStart = index;
+        while (index < source.length && isXmlNameCharacter(source[index])) {
+          index += 1;
+        }
+        const qualifiedName = source.slice(nameStart, index);
+        if (!isValidXmlName(qualifiedName)) return false;
+
+        while (index < source.length && isXmlWhitespace(source[index])) {
+          index += 1;
+        }
+        if (source[index] !== ">") return false;
+        if (stack.pop() !== qualifiedName) return false;
+
+        index += 1;
+        if (stack.length === 0) rootClosed = true;
+        continue;
+      }
+
+      if (source.startsWith("<!", index) || source.startsWith("<?", index)) {
+        return false;
+      }
+
+      index += 1;
+      const nameStart = index;
+      while (index < source.length && isXmlNameCharacter(source[index])) {
+        index += 1;
+      }
+      const qualifiedName = source.slice(nameStart, index);
+      if (!isValidXmlName(qualifiedName)) return false;
+
+      const elementName = qualifiedName.split(":").pop() ?? qualifiedName;
+      if (!SAFE_ELEMENTS.has(elementName)) return false;
+
+      if (!rootSeen) {
+        if (elementName !== "svg" || stack.length !== 0) return false;
+        rootSeen = true;
+      } else if (stack.length === 0 || rootClosed) {
+        return false;
+      }
+
+      nodeCount += 1;
+      if (nodeCount > MAX_SVG_NODES) return false;
+
+      const attributes: Record<string, unknown> = {};
+      let attributeCount = 0;
+      let selfClosing = false;
+
+      while (index < source.length) {
+        while (index < source.length && isXmlWhitespace(source[index])) {
+          index += 1;
+        }
+
+        if (source.startsWith("/>", index)) {
+          index += 2;
+          selfClosing = true;
+          break;
+        }
+        if (source[index] === ">") {
+          index += 1;
+          break;
+        }
+
+        const attributeStart = index;
+        while (
+          index < source.length &&
+          isXmlNameCharacter(source[index])
+        ) {
+          index += 1;
+        }
+        const attributeName = source.slice(attributeStart, index);
+        if (!isValidXmlName(attributeName)) return false;
+        if (Object.prototype.hasOwnProperty.call(attributes, attributeName)) {
+          return false;
+        }
+
+        while (index < source.length && isXmlWhitespace(source[index])) {
+          index += 1;
+        }
+        if (source[index] !== "=") return false;
+        index += 1;
+
+        while (index < source.length && isXmlWhitespace(source[index])) {
+          index += 1;
+        }
+        const quote = source[index];
+        if (quote !== '"' && quote !== "'") return false;
+        index += 1;
+
+        const valueStart = index;
+        while (index < source.length && source[index] !== quote) {
+          if (source[index] === "<") return false;
+          index += 1;
+        }
+        if (index >= source.length) return false;
+
+        attributes[attributeName] = source.slice(valueStart, index);
+        index += 1;
+
+        attributeCount += 1;
+        if (attributeCount > 256) return false;
+      }
+
+      if (
+        index > source.length ||
+        (source[index - 1] !== ">" && !selfClosing) ||
+        !validateAttributes(attributes, elementName)
+      ) {
+        return false;
+      }
+
+      if (selfClosing) {
+        if (stack.length === 0) rootClosed = true;
+      } else {
+        stack.push(qualifiedName);
+        if (stack.length > MAX_SVG_DEPTH) return false;
+      }
+    }
+
+    return rootSeen && rootClosed && stack.length === 0;
   } catch {
     return false;
   }
+}
+
+function isXmlNameCharacter(character: string): boolean {
+  return /^[A-Za-z0-9_.:-]$/.test(character);
+}
+
+function isXmlWhitespace(character: string): boolean {
+  return character === " " || character === "\t" ||
+    character === "\n" || character === "\r";
+}
+
+function isValidXmlName(name: string): boolean {
+  const parts = name.split(":");
+  return (
+    parts.length <= 2 &&
+    parts.every(part => /^[A-Za-z_][A-Za-z0-9_.-]*$/.test(part))
+  );
+}
+
+function isTextElement(name: string): boolean {
+  return (
+    name === "text" ||
+    name === "tspan" ||
+    name === "textPath" ||
+    name === "title" ||
+    name === "desc" ||
+    name === "style" ||
+    name === "metadata"
+  );
 }
 
 // prettier-ignore
