@@ -20,12 +20,18 @@ void main() {
       final theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
-      expect(theme.colorScheme.primary, AppPalette.navy);
+      expect(theme.colorScheme.primary, AppPalette.brandBlue);
       expect(theme.colorScheme.secondary, AppPalette.brandBlue);
       expect(theme.scaffoldBackgroundColor, AppPalette.canvas);
       expect(theme.iconTheme.color, AppPalette.navy);
       expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
       expect(theme.cardTheme.color, AppPalette.surface);
+      expect(AppPalette.brandBlue, const Color(0xFF0F766E));
+      expect(AppPalette.canvas, const Color(0xFFF4F7F8));
+      expect(AppPalette.navy, const Color(0xFF102E3C));
+      expect(AppPalette.ink, const Color(0xFF172B36));
+      expect(AppPalette.border, const Color(0xFFDBE5E8));
+      expect(AppPalette.gold, const Color(0xFFC9964D));
       expect(
         _contrastRatio(AppPalette.mutedInk, AppPalette.muted),
         greaterThanOrEqualTo(4.5),
@@ -45,8 +51,8 @@ void main() {
 
       expect(theme.useMaterial3, isTrue);
       expect(theme.brightness, Brightness.dark);
-      expect(theme.colorScheme.primary, AppPalette.brandBlue);
-      expect(theme.colorScheme.secondary, AppPalette.brandBlue);
+      expect(theme.colorScheme.primary, AppPalette.darkMint);
+      expect(theme.colorScheme.secondary, AppPalette.darkMint);
       expect(theme.scaffoldBackgroundColor, AppPalette.darkCanvas);
       expect(theme.iconTheme.color, AppPalette.darkInk);
       expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');

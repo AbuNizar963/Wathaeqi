@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart' show PdfPreview, Printing;
+import 'package:printing/printing.dart' show PdfPreview;
 import 'package:share_plus/share_plus.dart';
 
 import 'api.dart';
@@ -14,6 +15,10 @@ import 'document_studio_models.dart';
 import 'document_file_support.dart';
 import 'document_print_layout.dart';
 import 'document_library_filters.dart';
+import 'document_transfer.dart';
+import 'document_native_output.dart';
+
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Native mobile counterpart of the web document library.
 ///
@@ -24,9 +29,11 @@ class DocumentLibraryPage extends StatefulWidget {
     super.key,
     required this.api,
     this.onEditDocument,
+    this.embedded = false,
   });
 
   final PoliceApi api;
+  final bool embedded;
   final ValueChanged<OfficialDocument>? onEditDocument;
 
   @override
@@ -49,15 +56,20 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
   String? _error;
   bool _loading = true;
   bool _uploading = false;
+  StreamSubscription<ApiMutationEvent>? _subscription;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _subscription = widget.api.mutationEvents.listen((event) {
+      if (event.isDocumentStudioMutation && mounted) unawaited(_load());
+    });
   }
 
   @override
   void dispose() {
+    _subscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -92,7 +104,11 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _error = error.toString().replaceFirst('Exception: ', '');
+        _error = documentOutputError(error);
+        if (error is ApiException &&
+            (error.statusCode == 401 || error.statusCode == 403)) {
+          _documents = const [];
+        }
         _loading = false;
       });
     }
@@ -279,17 +295,50 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     final pagesPerSheet = ValueNotifier<int>(1);
     Uint8List? printableBytes;
     int? printableLayout;
-    Future<Uint8List> loadBytes() => widget.api.fetchDocumentFileBytes(
-      documentId: document.id,
-      mimeType: file.mimeType,
-    );
-    Future<Uint8List> loadPrintableBytes() async {
+    Future<Uint8List> loadBytes({DocumentTransfer? transfer}) =>
+        widget.api.fetchDocumentFileBytes(
+          documentId: document.id,
+          mimeType: file.mimeType,
+          transfer: transfer,
+        );
+    Future<Uint8List> loadPrintableBytes({DocumentTransfer? transfer}) async {
       final selectedLayout = pagesPerSheet.value;
-      if (isWord || selectedLayout == 1) return loadBytes();
-      if (printableBytes != null && printableLayout == selectedLayout) {
+      if (file.mimeType.startsWith('image/')) {
+        // Read the authorized original from Appwrite, then wrap it locally.
+        // Never feed image bytes into PdfPreview/layoutPdf or require a new API.
+        final imageBytes = await loadBytes(transfer: transfer);
+        transfer?.stage('جارٍ تجهيز PDF للصورة على الجهاز');
+        final pdf = await imageDocumentPdf(imageBytes);
+        transfer?.checkCancelled();
+        if (selectedLayout == 1) return pdf;
+        transfer?.stage('جارٍ ترتيب صفحات A4');
+        return DocumentPrintLayout.createA4Pdf(
+          sourcePdf: pdf,
+          pagesPerSheet: selectedLayout,
+          dpi: 180,
+        );
+      }
+      if (isWord) {
+        final sourcePdf = await widget.api.fetchDocumentPrintPdf(
+          document.id,
+          transfer: transfer,
+        );
+        if (selectedLayout == 1) return sourcePdf;
+        transfer?.stage('جارٍ ترتيب صفحات A4');
+        return DocumentPrintLayout.createA4Pdf(
+          sourcePdf: sourcePdf,
+          pagesPerSheet: selectedLayout,
+          dpi: 180,
+        );
+      }
+      if (selectedLayout == 1) return loadBytes(transfer: transfer);
+      if (transfer == null &&
+          printableBytes != null &&
+          printableLayout == selectedLayout) {
         return printableBytes!;
       }
-      final original = await loadBytes();
+      final original = await loadBytes(transfer: transfer);
+      transfer?.stage('جارٍ ترتيب صفحات A4');
       printableBytes = await DocumentPrintLayout.createA4Pdf(
         sourcePdf: original,
         pagesPerSheet: selectedLayout,
@@ -299,58 +348,68 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
       return printableBytes!;
     }
 
-    Future<void> downloadFile() async {
+    bool outputBusy = false;
+    Future<void> runOutput(
+      String title,
+      Future<bool> Function(DocumentTransfer) action,
+    ) async {
+      if (outputBusy) return;
+      outputBusy = true;
       try {
-        final bytes = await loadBytes();
-        final path = await FilePicker.saveFile(
-          dialogTitle: isWord ? 'حفظ ملف Word الأصلي' : 'حفظ ملف PDF الأصلي',
-          fileName: file.fileName,
-          bytes: bytes,
+        final result = await showDocumentOutputDialog(
+          context: context,
+          title: title,
+          action: action,
         );
-        if (path != null) _showMessage('تم حفظ الملف الأصلي');
-      } catch (error) {
-        _showMessage('تعذر تنزيل الوثيقة: $error');
+        if (mounted && result == false) {
+          _showMessage('تم إلغاء العملية أو إغلاقها');
+        }
+      } finally {
+        outputBusy = false;
       }
     }
 
-    Future<void> printFile() async {
-      if (isWord) {
-        _showMessage(
-          'معاينة Word غير مدعومة محلياً؛ نزّل الملف الأصلي أو شاركه',
-        );
-        return;
-      }
-      try {
-        final bytes = await loadPrintableBytes();
-        await Printing.layoutPdf(
-          name: document.title,
-          onLayout: (_) async => bytes,
-        );
-      } catch (error) {
-        _showMessage('تعذرت طباعة الوثيقة: $error');
-      }
-    }
+    Future<void> downloadFile() =>
+        runOutput('تنزيل الملف الأصلي', (transfer) async {
+          final bytes = await loadBytes(transfer: transfer);
+          transfer.stage('اختر مكان الحفظ من مربع النظام', canCancel: false);
+          final path = await FilePicker.saveFile(
+            dialogTitle: 'حفظ الملف الأصلي',
+            fileName: safeDocumentFileName(file.fileName),
+            bytes: bytes,
+          );
+          if (path != null) _showMessage('تم حفظ الملف الأصلي');
+          return path != null;
+        });
 
-    Future<void> shareFile() async {
-      try {
-        final bytes = await loadBytes();
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [
-              XFile.fromData(
-                bytes,
-                name: file.fileName,
-                mimeType: file.mimeType,
-              ),
-            ],
-            title: document.title,
-            text: 'الملف الأصلي لوثيقة ${document.title}',
-          ),
-        );
-      } catch (error) {
-        _showMessage('تعذرت مشاركة الوثيقة: $error');
-      }
-    }
+    Future<void> printFile() => runOutput('طباعة الوثيقة', (transfer) async {
+      final bytes = await loadPrintableBytes(transfer: transfer);
+      transfer.stage(
+        'استخدم مربع الطباعة لإكمال الإجراء أو إلغائه',
+        canCancel: false,
+      );
+      return printDocumentBytes(bytes, name: '${document.title}.pdf');
+    });
+
+    Future<void> shareFile() => runOutput('مشاركة الملف الأصلي', (
+      transfer,
+    ) async {
+      final bytes = await loadBytes(transfer: transfer);
+      transfer.stage('اختر تطبيق المشاركة من مربع النظام', canCancel: false);
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              bytes,
+              name: safeDocumentFileName(file.fileName),
+              mimeType: file.mimeType,
+            ),
+          ],
+          title: document.title,
+        ),
+      );
+      return result.status != ShareResultStatus.dismissed;
+    });
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -395,28 +454,20 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
             body: Column(
               children: [
                 Expanded(
-                  child: isWord
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Text(
-                              'معاينة Word غير مدعومة محلياً.\n\nالملف الأصلي جاهز للتنزيل أو المشاركة دون تحويل أو فقدان للتنسيق.',
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        )
-                      : ValueListenableBuilder<int>(
-                          valueListenable: pagesPerSheet,
-                          builder: (context, selectedLayout, _) => PdfPreview(
-                            key: ValueKey('pdf-preview-$selectedLayout'),
-                            pdfFileName: file.fileName,
-                            canChangePageFormat: false,
-                            canChangeOrientation: false,
-                            allowPrinting: false,
-                            allowSharing: false,
-                            build: (_) => loadPrintableBytes(),
-                          ),
-                        ),
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: pagesPerSheet,
+                    builder: (context, selectedLayout, _) => PdfPreview(
+                      key: ValueKey('pdf-preview-$selectedLayout'),
+                      pdfFileName: isWord
+                          ? '${document.title}.pdf'
+                          : file.fileName,
+                      canChangePageFormat: false,
+                      canChangeOrientation: false,
+                      allowPrinting: false,
+                      allowSharing: false,
+                      build: (_) => loadPrintableBytes(),
+                    ),
+                  ),
                 ),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 330),
@@ -443,20 +494,18 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                                   return ChoiceChip(
                                     label: Text(label),
                                     selected: selectedLayout == value,
-                                    onSelected: isWord
-                                        ? null
-                                        : (_) {
-                                            printableBytes = null;
-                                            printableLayout = null;
-                                            pagesPerSheet.value = value;
-                                          },
+                                    onSelected: (_) {
+                                      printableBytes = null;
+                                      printableLayout = null;
+                                      pagesPerSheet.value = value;
+                                    },
                                   );
                                 }).toList(),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 isWord
-                                    ? 'ملف Word محفوظ للتنزيل والمشاركة بصيغته الأصلية.'
+                                    ? 'تُنشأ معاينة PDF للطباعة على الخادم، ويبقى ملف Word الأصلي دون تغيير.'
                                     : 'يُستخدم الملف الأصلي، ويُنشأ توزيع A4 للطباعة فقط.',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
@@ -493,7 +542,11 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                                   (constraints.maxWidth - spacing * 2) / 3;
                               final actions = <Widget>[
                                 _documentAction(
-                                  label: isWord ? 'تنزيل Word' : 'تنزيل PDF',
+                                  label: isWord
+                                      ? 'تنزيل Word'
+                                      : file.mimeType.startsWith('image/')
+                                      ? 'تنزيل الصورة'
+                                      : 'تنزيل PDF',
                                   icon: Icons.download_outlined,
                                   onPressed: downloadFile,
                                 ),
@@ -501,10 +554,14 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                                   label: 'طباعة',
                                   icon: Icons.print_outlined,
                                   primary: true,
-                                  onPressed: isWord ? null : printFile,
+                                  onPressed: printFile,
                                 ),
                                 _documentAction(
-                                  label: isWord ? 'مشاركة Word' : 'مشاركة PDF',
+                                  label: isWord
+                                      ? 'مشاركة Word'
+                                      : file.mimeType.startsWith('image/')
+                                      ? 'مشاركة الصورة'
+                                      : 'مشاركة PDF',
                                   icon: Icons.share_outlined,
                                   onPressed: shareFile,
                                 ),
@@ -624,7 +681,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'مكتبة الوثائق',
+                      widget.embedded ? 'الملفات' : 'مكتبة الوثائق',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ],
@@ -988,7 +1045,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
     children: [
       const SizedBox(height: 70),
       Icon(
-        Icons.folder_open_outlined,
+        LucideIcons.folderOpen,
         size: 48,
         color: Theme.of(context).disabledColor,
       ),

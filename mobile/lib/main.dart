@@ -12,7 +12,6 @@ import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
 import 'document_studio_page.dart';
-import 'document_library_page.dart';
 import 'document_studio_outbox.dart';
 import 'app_theme.dart';
 import 'app_update_page.dart';
@@ -431,7 +430,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'برقيات الشرطة',
+                      'وثائقك. منظّمة وواضحة.',
                       style: TextStyle(
                         color: navy,
                         fontSize: 27,
@@ -440,7 +439,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'منصة وثائقي الرسمية لإدارة الوثائق',
+                      'سجّل الدخول للوصول إلى وثائقك وقوالبك وملفاتك المحفوظة بأمان.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 26),
@@ -676,6 +675,7 @@ class _DashboardPageState extends State<DashboardPage>
   int unreadNotificationCount = 0;
   final push = PushNotificationService();
   late final TelegramOutbox _outbox;
+  final _documentWorkspaceKey = GlobalKey<DocumentStudioPageState>();
   late final DocumentStudioOutbox _documentStudioOutbox;
   bool _outboxSyncInProgress = false;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
@@ -1218,7 +1218,7 @@ class _DashboardPageState extends State<DashboardPage>
             const SizedBox(width: 8),
             const Flexible(
               child: Text(
-                'وثائقي',
+                'مساحة الوثائق',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
@@ -1443,7 +1443,7 @@ class _DashboardPageState extends State<DashboardPage>
               textColor: Colors.white,
               iconColor: Color(0xFFB8C5D6),
               selectedColor: Colors.white,
-              selectedTileColor: Color(0xFF12385D),
+              selectedTileColor: AppPalette.sidebarAccent,
               titleTextStyle: TextStyle(
                 color: Colors.white,
                 fontFamily: 'Cairo',
@@ -1496,7 +1496,7 @@ class _DashboardPageState extends State<DashboardPage>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                color: Color(0xFFD8C38E),
+                                color: AppPalette.gold,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1528,23 +1528,10 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.description_outlined),
-                  title: const Text('مكتبة الوثائق'),
+                  leading: const Icon(LucideIcons.fileText),
+                  title: const Text('مساحة الوثائق'),
                   selected: true,
                   onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.edit_outlined),
-                  title: const Text('استوديو الوثائق'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pushPage(
-                      DocumentStudioPage(
-                        api: widget.api,
-                        outbox: _documentStudioOutbox,
-                      ),
-                    );
-                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.sync_outlined),
@@ -1598,30 +1585,17 @@ class _DashboardPageState extends State<DashboardPage>
       floatingActionButton: FloatingActionButton(
         heroTag: 'create-document-fab',
         tooltip: 'إنشاء وثيقة',
-        backgroundColor: navy,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 4,
-        onPressed: () => _pushPage(
-          DocumentStudioPage(
-            api: widget.api,
-            outbox: _documentStudioOutbox,
-            initialTab: DocumentStudioTab.documents,
-            openCreationOptionsOnOpen: true,
-          ),
-        ),
+        onPressed: () => _documentWorkspaceKey.currentState?.createDocument(),
         child: const Icon(LucideIcons.plus),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: DocumentLibraryPage(
+      body: DocumentStudioPage(
+        key: _documentWorkspaceKey,
         api: widget.api,
-        onEditDocument: (document) => _pushPage(
-          DocumentStudioPage(
-            api: widget.api,
-            outbox: _documentStudioOutbox,
-            initialTab: DocumentStudioTab.documents,
-            initialDocumentId: document.id,
-          ),
-        ),
+        outbox: _documentStudioOutbox,
       ),
     ),
   );

@@ -13,6 +13,8 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:police_telegrams/api.dart';
+import 'package:police_telegrams/document_transfer.dart';
+import 'package:police_telegrams/document_native_output.dart';
 import 'package:police_telegrams/features/organizations/organization_logo_resolution.dart';
 import 'package:police_telegrams/telegram_display.dart';
 import 'package:police_telegrams/features/reports/telegram_report_labels.dart';
@@ -235,6 +237,7 @@ class _OfficialTelegramDocumentPageState
   static const _preparationTimeout = Duration(seconds: 120);
   bool loading = true;
   bool busy = false;
+  DocumentTransfer? _outputTransfer;
   double _progress = 0;
   String _progressTitle = 'جارٍ تنفيذ الإجراء';
   String _progressMessage = 'بدء التنفيذ';
@@ -783,23 +786,44 @@ class _OfficialTelegramDocumentPageState
     ].join('\n');
   }
 
-  void _updateProgress(double value, String message) {
+  void _syncTransferProgress() {
     if (!mounted) return;
+    final transfer = _outputTransfer;
+    if (transfer == null) return;
     setState(() {
-      _progress = value.clamp(0, 100).toDouble();
-      _progressMessage = message;
-      _hasMeasuredProgress = true;
+      _progressMessage = transfer.message;
+      _hasMeasuredProgress = transfer.fraction != null;
+      _progress = (transfer.fraction ?? 0) * 100;
     });
   }
 
   void _beginIndeterminateProgress(String message) {
+    _outputTransfer?.stage(message);
     if (!mounted) return;
     setState(() {
-      // Keep the last completed milestone visible while Chromium is working.
-      // The displayed percentage represents completed stages, not fabricated
-      // live progress inside the server process.
       _progressMessage = message;
+      _hasMeasuredProgress = false;
     });
+  }
+
+  Future<Uint8List> _renderOutputBytes(String html) async {
+    _outputTransfer?.checkCancelled();
+    final renderer = _renderer;
+    final bytes = renderer is ServerOfficialTelegramDocumentRenderer
+        ? await renderer.api.renderTelegramDocument(
+            html: html,
+            format: 'pdf',
+            organizationId: _documentLogoOrganizationId,
+            logoSource: _documentLogoSource,
+            transfer: _outputTransfer,
+          )
+        : await renderer.renderPdf(
+            html,
+            organizationId: _documentLogoOrganizationId,
+            logoSource: _documentLogoSource,
+          );
+    _outputTransfer?.checkCancelled();
+    return bytes;
   }
 
   Future<String> _recordDocumentOutput(String operation, String format) async {
@@ -816,7 +840,7 @@ class _OfficialTelegramDocumentPageState
     if (result is Map) {
       final occurredAt = result['occurredAt']?.toString().trim();
       if (occurredAt != null && DateTime.tryParse(occurredAt) != null) {
-        _updateProgress(15, 'تم تسجيل عملية الإخراج');
+        _beginIndeterminateProgress('تم تسجيل عملية الإخراج');
         return occurredAt;
       }
     }
@@ -844,32 +868,26 @@ class _OfficialTelegramDocumentPageState
   Future<Uint8List> _renderOutputPdf(String operation, String format) async {
     final occurredAt = await _recordDocumentOutput(operation, format);
     final html = _htmlWithOutputTimestamp(occurredAt);
-    _updateProgress(35, 'اكتمل إعداد قالب الوثيقة');
+    _beginIndeterminateProgress('اكتمل إعداد قالب الوثيقة');
     _beginIndeterminateProgress('جارٍ تجهيز ملف PDF');
-    final bytes = await _renderer
-        .renderPdf(
-          html,
-          organizationId: _documentLogoOrganizationId,
-          logoSource: _documentLogoSource,
-        )
-        .timeout(
-          const Duration(seconds: 60),
-          onTimeout: () =>
-              throw Exception('انتهت مهلة تجهيز ملف الوثيقة. أعد المحاولة.'),
-        );
-    if (bytes.isEmpty) {
+    final bytes = await _renderOutputBytes(html).timeout(
+      const Duration(seconds: 60),
+      onTimeout: () =>
+          throw Exception('انتهت مهلة تجهيز ملف الوثيقة. أعد المحاولة.'),
+    );
+    if (!_hasPdfSignature(bytes)) {
       throw Exception('تعذر إنشاء ملف الوثيقة على الجهاز.');
     }
-    _updateProgress(82, 'اكتمل إنشاء ملف PDF');
+    _beginIndeterminateProgress('اكتمل إنشاء ملف PDF');
     if (mounted) {
       try {
         _beginIndeterminateProgress('جارٍ تحديث معاينة الوثيقة');
         final updatedPreview = await _renderer.renderPreviewPages(bytes);
         if (mounted) setState(() => previewPages = updatedPreview);
-        _updateProgress(92, 'تم تحديث معاينة الوثيقة');
+        _beginIndeterminateProgress('تم تحديث معاينة الوثيقة');
       } catch (_) {
         // A preview refresh must not cancel a valid export or print request.
-        _updateProgress(90, 'ملف PDF جاهز للإخراج');
+        _beginIndeterminateProgress('ملف PDF جاهز للإخراج');
       }
     }
     return bytes;
@@ -878,29 +896,23 @@ class _OfficialTelegramDocumentPageState
   Future<List<Uint8List>> _renderOutputImages() async {
     final occurredAt = await _recordDocumentOutput('download', 'png');
     final html = _htmlWithOutputTimestamp(occurredAt);
-    _updateProgress(35, 'اكتمل إعداد قالب الوثيقة');
+    _beginIndeterminateProgress('اكتمل إعداد قالب الوثيقة');
 
     // Always request the complete PDF from Chromium for image export.
     // The server's PNG response is intentionally a single-page image for
     // single-page exports; using it here silently dropped every later page
     // from long telegrams.
     _beginIndeterminateProgress('جارٍ تجهيز صفحات البرقية من محرك Chromium');
-    final pdfBytes = await _renderer
-        .renderPdf(
-          html,
-          organizationId: _documentLogoOrganizationId,
-          logoSource: _documentLogoSource,
-        )
-        .timeout(
-          const Duration(seconds: 60),
-          onTimeout: () =>
-              throw Exception('انتهت مهلة تجهيز الوثيقة. أعد المحاولة.'),
-        );
+    final pdfBytes = await _renderOutputBytes(html).timeout(
+      const Duration(seconds: 60),
+      onTimeout: () =>
+          throw Exception('انتهت مهلة تجهيز الوثيقة. أعد المحاولة.'),
+    );
 
     if (!_hasPdfSignature(pdfBytes)) {
       throw Exception('أعاد محرك Chromium ملف PDF غير صالح لتصدير الصور.');
     }
-    _updateProgress(72, 'اكتمل إنشاء الوثيقة متعددة الصفحات');
+    _beginIndeterminateProgress('اكتمل إنشاء الوثيقة متعددة الصفحات');
 
     _beginIndeterminateProgress(
       'جارٍ تحويل جميع صفحات الوثيقة إلى صور عالية الدقة',
@@ -909,7 +921,7 @@ class _OfficialTelegramDocumentPageState
     if (images.isEmpty || images.any((image) => !_hasPngSignature(image))) {
       throw Exception('تعذر تجهيز صور صفحات الوثيقة بدقة الطباعة.');
     }
-    _updateProgress(96, 'اكتمل تجهيز ${images.length} صفحة كصور');
+    _beginIndeterminateProgress('اكتمل تجهيز ${images.length} صفحة كصور');
     return images;
   }
 
@@ -918,6 +930,8 @@ class _OfficialTelegramDocumentPageState
     String title = 'جارٍ تنفيذ الإجراء',
   }) async {
     if (busy) return;
+    final transfer = DocumentTransfer()..addListener(_syncTransferProgress);
+    _outputTransfer = transfer;
     setState(() {
       busy = true;
       _progress = 0;
@@ -925,33 +939,25 @@ class _OfficialTelegramDocumentPageState
       _progressMessage = 'بدء التنفيذ';
       _hasMeasuredProgress = false;
     });
-    var completed = false;
     try {
       await action();
-      completed = true;
+      transfer.checkCancelled();
+    } on DocumentTransferCancelled {
+      if (mounted) Toast.info(context, 'تم إلغاء الإجراء.');
     } catch (exception) {
-      if (!mounted) return;
-      Toast.error(
-        context,
-        exception.toString().replaceFirst('Exception: ', ''),
-      );
+      if (mounted) Toast.error(context, documentOutputError(exception));
     } finally {
-      if (mounted) {
-        if (completed) {
-          setState(() {
-            _progress = 100;
-            _progressMessage = 'اكتمل العمل';
-            _hasMeasuredProgress = true;
-          });
-          await Future<void>.delayed(const Duration(milliseconds: 450));
-        }
-        if (mounted) setState(() => busy = false);
-      }
+      transfer.removeListener(_syncTransferProgress);
+      transfer.cancel();
+      transfer.dispose();
+      _outputTransfer = null;
+      if (mounted) setState(() => busy = false);
     }
   }
 
   @override
   void dispose() {
+    _outputTransfer?.cancel();
     _loadGeneration++;
     _loadingWatchdog?.cancel();
     _loadingWatchdog = null;
@@ -1129,15 +1135,19 @@ class _OfficialTelegramDocumentPageState
 
   Future<void> _printPdf() => _perform(() async {
     final bytes = await _renderOutputPdf('print', 'pdf');
-    await Printing.layoutPdf(
-      name: '$_fileBaseName.pdf',
-      onLayout: (_) async => bytes,
+    _outputTransfer?.stage(
+      'استخدم مربع الطباعة لإكمال الإجراء أو إلغائه',
+      canCancel: false,
     );
+    final printed = await printDocumentBytes(bytes, name: '$_fileBaseName.pdf');
+    if (!printed) throw const DocumentTransferCancelled();
   }, title: 'تصدير PDF للطباعة');
-
   Future<void> _savePdf() => _perform(() async {
     final bytes = await _renderOutputPdf('download', 'pdf');
-    _updateProgress(95, 'ملف PDF جاهز للحفظ');
+    _outputTransfer?.stage(
+      'اختر مكان الحفظ أو ألغِ من مربع النظام',
+      canCancel: false,
+    );
     final path = await FilePicker.saveFile(
       dialogTitle: 'حفظ الوثيقة الرسمية',
       fileName: '$_fileBaseName.pdf',
@@ -1147,7 +1157,7 @@ class _OfficialTelegramDocumentPageState
     );
     if (!mounted) return;
     if (path == null) {
-      Toast.info(context, 'تم إلغاء حفظ الملف.');
+      throw const DocumentTransferCancelled();
     } else {
       Toast.success(context, 'تم حفظ الوثيقة.');
     }
@@ -1155,13 +1165,19 @@ class _OfficialTelegramDocumentPageState
 
   Future<void> _sharePdf() => _perform(() async {
     final bytes = await _renderOutputPdf('download', 'pdf');
-    _updateProgress(95, 'ملف PDF جاهز للمشاركة');
+    _outputTransfer?.stage(
+      'اختر تطبيق المشاركة من مربع النظام',
+      canCancel: false,
+    );
     await Printing.sharePdf(bytes: bytes, filename: '$_fileBaseName.pdf');
   }, title: 'مشاركة وثيقة PDF');
 
   Future<void> _shareImage() => _perform(() async {
     final images = await _renderOutputImages();
-    _updateProgress(98, 'صور الصفحات جاهزة للمشاركة');
+    _outputTransfer?.stage(
+      'اختر تطبيق المشاركة من مربع النظام',
+      canCancel: false,
+    );
     await SharePlus.instance.share(
       ShareParams(
         files: List<XFile>.generate(
@@ -1184,10 +1200,13 @@ class _OfficialTelegramDocumentPageState
     final images = await _renderOutputImages();
     final isMultiPage = images.length > 1;
     final bytes = isMultiPage
-        ? createTelegramPageImageArchive(images)
+        ? await compute(createTelegramPageImageArchive, images)
         : images.single;
     final extension = isMultiPage ? 'zip' : 'png';
-    _updateProgress(98, 'صور الصفحات جاهزة للحفظ');
+    _outputTransfer?.stage(
+      'اختر مكان الحفظ أو ألغِ من مربع النظام',
+      canCancel: false,
+    );
     final path = await FilePicker.saveFile(
       dialogTitle: isMultiPage
           ? 'حفظ صور صفحات الوثيقة الرسمية'
@@ -1199,7 +1218,7 @@ class _OfficialTelegramDocumentPageState
     );
     if (!mounted) return;
     if (path == null) {
-      Toast.info(context, 'تم إلغاء حفظ الصورة.');
+      throw const DocumentTransferCancelled();
     } else {
       Toast.success(
         context,
@@ -1223,7 +1242,9 @@ class _OfficialTelegramDocumentPageState
         'webm',
       ],
     );
-    if (result == null || result.files.isEmpty) return;
+    if (result == null || result.files.isEmpty) {
+      throw const DocumentTransferCancelled();
+    }
     final file = result.files.single;
     if (file.bytes == null || file.bytes!.isEmpty) {
       throw Exception('تعذر قراءة الملف المحدد.');
@@ -1704,10 +1725,17 @@ class _OfficialTelegramDocumentPageState
                                   ),
                                 ),
                               ),
+                              if (_outputTransfer?.cancellable == true)
+                                TextButton(
+                                  onPressed: _outputTransfer!.isCancelled
+                                      ? null
+                                      : _outputTransfer!.cancel,
+                                  child: const Text('إلغاء'),
+                                ),
                               if (_hasMeasuredProgress) ...[
                                 const SizedBox(width: 10),
                                 Text(
-                                  '${_progress.round()}%',
+                                  '${_progress.floor()}% من البايتات',
                                   textDirection: TextDirection.ltr,
                                   style: TextStyle(
                                     color:
@@ -1731,7 +1759,7 @@ class _OfficialTelegramDocumentPageState
                               value: _hasMeasuredProgress
                                   ? _progress / 100
                                   : null,
-                              minHeight: 38,
+                              minHeight: 8,
                               backgroundColor: Theme.of(context)
                                   .colorScheme
                                   .surfaceContainerHighest,

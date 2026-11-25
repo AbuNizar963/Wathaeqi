@@ -1541,6 +1541,7 @@ void main() {
   test(
     'accepts a direct Chromium PNG response for single-page export',
     () async {
+      _secureStorageForTest['session_token'] = 'synthetic-render-session';
       const html = '<article class="telegram-export-page"></article>';
       const pngBytes = <int>[137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3];
       final client = MockClient((request) async {
@@ -1567,6 +1568,7 @@ void main() {
   test(
     'accepts the shared renderer PDF response for multi-page PNG export',
     () async {
+      _secureStorageForTest['session_token'] = 'synthetic-render-session';
       const html =
           '<article class="telegram-export-page telegram-multipage"></article>';
       final pdfBytes = Uint8List.fromList(
@@ -1643,6 +1645,7 @@ void main() {
   test(
     'reports serverless PDF renderer timeouts as a recoverable network error',
     () async {
+      _secureStorageForTest['session_token'] = 'synthetic-render-session';
       final client = MockClient((request) async {
         expect(request.url.path, '/api/telegram-render');
         return http.Response(
@@ -1699,7 +1702,7 @@ void main() {
               .having(
                 (error) => error.message,
                 'message',
-                'يجب تسجيل الدخول أولًا',
+                'تعذر الوصول إلى الوثيقة',
               ),
         ),
       );

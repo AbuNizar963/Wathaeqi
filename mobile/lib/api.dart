@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 
 import 'offline_vault.dart';
 import 'document_file_support.dart';
+import 'document_output_security.dart';
+import 'document_transfer.dart';
 
 /// Keep client-side waits below the Appwrite Function request timeout.
 const telegramDocumentRenderTimeout = Duration(seconds: 50);
@@ -375,123 +377,196 @@ class PoliceApi {
     );
   }
 
-  /// Returns an authorized print-ready PDF without caching bytes or URLs.
-  /// The server enforces document ownership and accepts only supported input.
-  Future<Uint8List> fetchDocumentPrintPdf(String documentId) async {
-    if (!RegExp(r'^[A-Za-z0-9._-]{1,36}$').hasMatch(documentId)) {
-      throw const FormatException('معرّف الوثيقة غير صالح');
+  Uri _protectedDocumentUri(String path) {
+    final base = Uri.parse(baseUrl);
+    final local = {'localhost', '127.0.0.1', '::1'}.contains(base.host);
+    if ((!base.isScheme('https') && !(base.isScheme('http') && local)) ||
+        base.userInfo.isNotEmpty) {
+      throw const FormatException('يجب استخدام اتصال HTTPS لإخراج الوثائق');
     }
-    final baseUri = Uri.parse(baseUrl);
-    if (!baseUri.isScheme('https') &&
-        !{'localhost', '127.0.0.1', '::1'}.contains(baseUri.host)) {
-      throw const FormatException('يجب استخدام اتصال HTTPS لطباعة الوثائق');
-    }
-    final uri = baseUri.resolve(
-      '/api/documents/${Uri.encodeComponent(documentId)}/print-pdf',
-    );
-    final sessionToken = await _readSessionToken();
-    if (sessionToken == null || sessionToken.trim().isEmpty) {
+    return base.resolve(path);
+  }
+
+  /// Streaming is bounded before allocation and uses the existing Appwrite
+  /// bearer session. No signed/public URL fallback, redirects or offline bytes.
+  Future<http.Response> _receiveDocument(
+    String method,
+    Uri uri, {
+    required String accept,
+    String? body,
+    DocumentTransfer? transfer,
+    Duration timeout = _documentPdfTimeout,
+  }) async {
+    transfer?.checkCancelled();
+    final token = await _readSessionToken();
+    if (token == null) {
       throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
     }
+    transfer?.checkCancelled();
+    final abort = Completer<void>();
+    void abortRequest() {
+      if (!abort.isCompleted) abort.complete();
+    }
 
-    final request = http.Request('POST', uri)
-      ..followRedirects = false
-      ..headers.addAll({
-        'authorization': 'Bearer $sessionToken',
-        'accept': 'application/pdf',
-      });
-    late final http.Response response;
+    final cancelled = transfer?.cancelled.then<Never>((_) {
+      abortRequest();
+      throw const DocumentTransferCancelled();
+    });
+    final request =
+        http.AbortableRequest(method, uri, abortTrigger: abort.future)
+          ..followRedirects = false
+          ..headers.addAll({
+            'authorization': 'Bearer $token',
+            'accept': accept,
+            if (body != null) 'content-type': 'application/json',
+          });
+    if (body != null) request.body = body;
     try {
-      final streamed = await _httpClient
-          .send(request)
-          .timeout(_documentPdfTimeout);
-      response = await http.Response.fromStream(streamed)
-          .timeout(_documentPdfTimeout);
+      final response = await Future.any([_httpClient.send(request), ?cancelled])
+          .timeout(timeout);
+      // Do not expose storage URLs, upstream details or response bodies.
+      if (response.statusCode != 200) {
+        if (response.statusCode == 504) {
+          throw const NetworkException(
+            'انتهت مهلة الخادم أثناء إنشاء الوثيقة. أعد المحاولة بعد قليل.',
+          );
+        }
+        throw ApiException(response.statusCode, 'تعذر الوصول إلى الوثيقة');
+      }
+      final length = response.contentLength;
+      if (length != null && length > maxDocumentUploadBytes) {
+        throw const ApiException(502, 'حجم الملف يتجاوز الحد الآمن');
+      }
+      // Compressed bodies can be decoded by the HTTP client; their wire length
+      // is not a trustworthy denominator for decoded bytes.
+      final encoded = response.headers['content-encoding'];
+      final total =
+          (encoded == null || encoded == 'identity') &&
+              length != null &&
+              length > 0
+          ? length
+          : null;
+      final bytes = BytesBuilder(copy: false);
+      final complete = Completer<Uint8List>();
+      late StreamSubscription<List<int>> subscription;
+      transfer?.bytes(0, total);
+      subscription = response.stream.listen(
+        (chunk) {
+          if (complete.isCompleted) return;
+          try {
+            transfer?.checkCancelled();
+            if (bytes.length + chunk.length > maxDocumentUploadBytes) {
+              throw const ApiException(502, 'حجم الملف يتجاوز الحد الآمن');
+            }
+            bytes.add(chunk);
+            transfer?.bytes(bytes.length, total);
+          } catch (error, stack) {
+            complete.completeError(error, stack);
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!complete.isCompleted) complete.completeError(error, stack);
+        },
+        onDone: () {
+          if (!complete.isCompleted) {
+            if (total != null && bytes.length != total) {
+              complete.completeError(
+                const ApiException(502, 'تنزيل الملف غير مكتمل'),
+              );
+            } else {
+              complete.complete(bytes.takeBytes());
+            }
+          }
+        },
+      );
+      try {
+        final result = await Future.any([complete.future, ?cancelled])
+            .timeout(timeout);
+        transfer?.stage('جارٍ التحقق من سلامة الملف');
+        return http.Response.bytes(
+          result,
+          response.statusCode,
+          headers: response.headers,
+        );
+      } finally {
+        await subscription.cancel();
+      }
+    } on DocumentTransferCancelled {
+      rethrow;
+    } on http.RequestAbortedException {
+      if (transfer?.isCancelled == true) {
+        throw const DocumentTransferCancelled();
+      }
+      throw const NetworkException();
     } on TimeoutException {
-      throw const NetworkException('انتهت مهلة تجهيز الوثيقة للطباعة');
+      throw const NetworkException('انتهت مهلة إخراج الوثيقة؛ أعد المحاولة');
     } on IOException {
       throw const NetworkException();
     } on http.ClientException {
       throw const NetworkException();
+    } finally {
+      abortRequest();
     }
-    if (response.statusCode != 200) {
-      throw ApiException(response.statusCode, _message(response.body));
+  }
+
+  /// Returns an authorized print-ready PDF without caching bytes or URLs.
+  Future<Uint8List> fetchDocumentPrintPdf(
+    String documentId, {
+    DocumentTransfer? transfer,
+  }) async {
+    if (!isSafeDocumentOutputId(documentId)) {
+      throw const FormatException('معرّف الوثيقة غير صالح');
     }
-    final contentType = (response.headers['content-type'] ?? '')
+    transfer?.stage('جارٍ تجهيز PDF على الخادم والتحقق من الصلاحية');
+    final response = await _receiveDocument(
+      'POST',
+      _protectedDocumentUri(
+        '/api/documents/${Uri.encodeComponent(documentId)}/print-pdf',
+      ),
+      accept: 'application/pdf',
+      transfer: transfer,
+    );
+    final type = (response.headers['content-type'] ?? '')
+        .split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    if (type != DocumentFileSupport.pdfMime ||
+        !hasPdfSignature(response.bodyBytes)) {
+      throw const ApiException(502, 'أعاد الخادم ملف PDF غير صالح للطباعة');
+    }
+    return response.bodyBytes;
+  }
+
+  /// Downloads the private original object through the authorized Appwrite API.
+  Future<Uint8List> fetchDocumentFileBytes({
+    required String documentId,
+    required String mimeType,
+    DocumentTransfer? transfer,
+  }) async {
+    final expectedMime = DocumentFileSupport.mimeForFileName(
+      'file.${_extensionForMime(mimeType)}',
+    );
+    if (!isSafeDocumentOutputId(documentId) || expectedMime != mimeType) {
+      throw const FormatException('بيانات الملف غير صالحة');
+    }
+    transfer?.stage('جارٍ التحقق من صلاحية الوصول إلى الملف');
+    final response = await _receiveDocument(
+      'GET',
+      _protectedDocumentUri(
+        '/api/documents/${Uri.encodeComponent(documentId)}/file',
+      ),
+      accept: mimeType,
+      transfer: transfer,
+    );
+    final type = (response.headers['content-type'] ?? '')
         .split(';')
         .first
         .trim()
         .toLowerCase();
     final bytes = response.bodyBytes;
-    if (contentType != 'application/pdf' ||
-        bytes.length < 5 ||
-        bytes.length > maxDocumentUploadBytes ||
-        String.fromCharCodes(bytes.take(5)) != '%PDF-') {
-      throw const ApiException(502, 'أعاد الخادم ملف PDF غير صالح للطباعة');
-    }
-    return Uint8List.fromList(bytes);
-  }
-
-  /// Returns the private uploaded object without converting or rendering it.
-  /// The server remains responsible for authentication and document ownership.
-  Future<Uint8List> fetchDocumentFileBytes({
-    required String documentId,
-    required String mimeType,
-  }) async {
-    final expectedMime = DocumentFileSupport.mimeForFileName(
-      'file.${_extensionForMime(mimeType)}',
-    );
-    if (!RegExp(r'^[A-Za-z0-9._-]{1,36}$').hasMatch(documentId) ||
-        expectedMime != mimeType) {
-      throw const FormatException('بيانات الملف غير صالحة');
-    }
-    final baseUri = Uri.parse(baseUrl);
-    if (!baseUri.isScheme('https') &&
-        !{'localhost', '127.0.0.1', '::1'}.contains(baseUri.host)) {
-      throw const FormatException('يجب استخدام اتصال HTTPS لتنزيل الوثائق');
-    }
-    final sessionToken = await _readSessionToken();
-    if (sessionToken == null || sessionToken.trim().isEmpty) {
-      throw const ApiException(401, 'انتهت الجلسة؛ سجّل الدخول مجددًا');
-    }
-    final request =
-        http.Request(
-            'GET',
-            baseUri.resolve(
-              '/api/documents/${Uri.encodeComponent(documentId)}/file',
-            ),
-          )
-          ..followRedirects = false
-          ..headers.addAll({
-            'authorization': 'Bearer $sessionToken',
-            'accept': mimeType,
-          });
-    late final http.Response response;
-    try {
-      final streamed = await _httpClient
-          .send(request)
-          .timeout(_documentPdfTimeout);
-      response = await http.Response.fromStream(streamed)
-          .timeout(_documentPdfTimeout);
-    } on TimeoutException {
-      throw const NetworkException('انتهت مهلة تنزيل الوثيقة');
-    } on IOException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
-    if (response.statusCode != 200) {
-      throw ApiException(response.statusCode, _message(response.body));
-    }
-    final bytes = Uint8List.fromList(response.bodyBytes);
-    final contentType = (response.headers['content-type'] ?? '')
-        .split(';')
-        .first
-        .trim()
-        .toLowerCase();
-    if (contentType != mimeType ||
+    if (type != mimeType ||
         bytes.isEmpty ||
-        bytes.length > maxDocumentUploadBytes ||
         !DocumentFileSupport.matchesMime(mimeType, bytes)) {
       throw const ApiException(502, 'أعاد الخادم ملفاً غير صالح');
     }
@@ -518,6 +593,7 @@ class PoliceApi {
     required String format,
     String? organizationId,
     String? logoSource,
+    DocumentTransfer? transfer,
   }) async {
     if (html.trim().isEmpty || !{'pdf', 'png'}.contains(format)) {
       throw const FormatException('بيانات تصدير الوثيقة غير صالحة.');
@@ -530,16 +606,6 @@ class PoliceApi {
       throw const FormatException(
         'بيانات شعار الجهة غير مكتملة لتصدير الوثيقة.',
       );
-    }
-
-    final sessionToken = await _readSessionToken();
-    final uri = Uri.parse('$baseUrl/api/telegram-render');
-    final headers = <String, String>{
-      'content-type': 'application/json',
-      'accept': 'application/pdf, image/png',
-    };
-    if (sessionToken != null) {
-      headers['authorization'] = 'Bearer $sessionToken';
     }
 
     final body = <String, Object>{
@@ -557,30 +623,15 @@ class PoliceApi {
       );
     }
 
-    late final http.Response response;
-    try {
-      response = await _httpClient
-          .post(uri, headers: headers, body: encodedBody)
-          .timeout(telegramDocumentRenderTimeout);
-    } on TimeoutException {
-      throw const NetworkException(
-        'تجاوز إنشاء الوثيقة المهلة الآمنة للخادم. أعد المحاولة بعد قليل.',
-      );
-    } on IOException {
-      throw const NetworkException();
-    } on http.ClientException {
-      throw const NetworkException();
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      final isRenderTimeout = response.statusCode == 504;
-      if (isRenderTimeout) {
-        throw const NetworkException(
-          'انتهت مهلة الخادم أثناء إنشاء الوثيقة. أعد المحاولة بعد قليل.',
-        );
-      }
-      throw ApiException(response.statusCode, _message(response.body));
-    }
+    transfer?.stage('جارٍ تجهيز الوثيقة على الخادم');
+    final response = await _receiveDocument(
+      'POST',
+      _protectedDocumentUri('/api/telegram-render'),
+      accept: 'application/pdf, image/png',
+      body: encodedBody,
+      transfer: transfer,
+      timeout: telegramDocumentRenderTimeout,
+    );
 
     final contentType = (response.headers['content-type'] ?? '')
         .split(';')

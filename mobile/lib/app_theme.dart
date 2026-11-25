@@ -4,14 +4,16 @@ import 'package:flutter/material.dart';
 /// docs/DESIGN_SYSTEM_WEB_MOBILE_AR.md. Keep platform layouts native while
 /// keeping the shared visual identity stable.
 abstract final class AppPalette {
-  static const navy = Color(0xFF132D43);
-  static const brandBlue = Color(0xFF0F9F9A);
-  static const canvas = Color(0xFFF4F7FA);
+  static const navy = Color(0xFF102E3C);
+  static const brandBlue = Color(0xFF0F766E);
+  static const darkMint = Color(0xFF0F9F9A);
+  static const gold = Color(0xFFC9964D);
+  static const canvas = Color(0xFFF4F7F8);
   static const surface = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF16283B);
+  static const ink = Color(0xFF172B36);
   static const muted = Color(0xFFEEF2F6);
   static const mutedInk = Color(0xFF5B6B7C);
-  static const border = Color(0xFFDCE5ED);
+  static const border = Color(0xFFDBE5E8);
   static const danger = Color(0xFFC2414D);
   static const success = Color(0xFF147A66);
   static const warning = Color(0xFF8C570F);
@@ -37,20 +39,20 @@ abstract final class AppPalette {
   static const darkInfoContainer = Color(0xFF172B45);
 
   static const lightScheme = ColorScheme.light(
-    primary: navy,
+    primary: brandBlue,
     onPrimary: surface,
     secondary: brandBlue,
-    onSecondary: navy,
+    onSecondary: surface,
     surface: surface,
     onSurface: ink,
     onSurfaceVariant: mutedInk,
     tertiary: info,
     onTertiary: surface,
-    primaryContainer: Color(0xFFE7EEF4),
+    primaryContainer: Color(0xFFDDF4F1),
     onPrimaryContainer: navy,
     secondaryContainer: Color(0xFFDDF4F1),
     onSecondaryContainer: navy,
-    surfaceTint: navy,
+    surfaceTint: brandBlue,
     error: danger,
     onError: surface,
     outline: border,
@@ -63,20 +65,20 @@ abstract final class AppPalette {
   );
 
   static const darkScheme = ColorScheme.dark(
-    primary: brandBlue,
+    primary: darkMint,
     onPrimary: navy,
-    secondary: brandBlue,
+    secondary: darkMint,
     onSecondary: navy,
     surface: darkSurface,
     onSurface: darkInk,
     onSurfaceVariant: darkMutedInk,
     tertiary: Color(0xFF72B6F2),
-    onTertiary: Color(0xFF132D43),
+    onTertiary: Color(0xFF102E3C),
     primaryContainer: Color(0xFF1D4054),
     onPrimaryContainer: darkInk,
     secondaryContainer: darkMuted,
     onSecondaryContainer: Color(0xFFDDF4F1),
-    surfaceTint: brandBlue,
+    surfaceTint: darkMint,
     error: Color(0xFFF97066),
     onError: Color(0xFF341118),
     outline: darkOutline,
@@ -113,22 +115,22 @@ abstract final class AppTheme {
               displayColor: AppPalette.ink,
             ),
         appBarTheme: AppBarTheme(
-          backgroundColor: AppPalette.canvas,
-          foregroundColor: AppPalette.navy,
+          backgroundColor: AppPalette.navy,
+          foregroundColor: AppPalette.surface,
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           centerTitle: false,
           toolbarHeight: 58,
           titleSpacing: 8,
-          iconTheme: const IconThemeData(color: AppPalette.navy, size: 22),
+          iconTheme: const IconThemeData(color: AppPalette.surface, size: 22),
           actionsIconTheme: const IconThemeData(
-            color: AppPalette.navy,
+            color: AppPalette.surface,
             size: 21,
           ),
           shape: const Border(bottom: BorderSide(color: AppPalette.border)),
           titleTextStyle: const TextStyle(
-            color: AppPalette.navy,
+            color: AppPalette.surface,
             fontFamily: 'Cairo',
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -169,7 +171,7 @@ abstract final class AppTheme {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: AppPalette.navy,
+            backgroundColor: AppPalette.brandBlue,
             foregroundColor: Colors.white,
             minimumSize: const Size(48, 46),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
@@ -229,7 +231,7 @@ abstract final class AppTheme {
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFFDCE5ED)),
+            side: const BorderSide(color: Color(0xFFDBE5E8)),
           ),
           textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
         ),
@@ -311,11 +313,11 @@ abstract final class AppTheme {
           ),
         ),
         dividerTheme: const DividerThemeData(
-          color: Color(0xFFDCE5ED),
+          color: Color(0xFFDBE5E8),
           thickness: 1,
         ),
       ).copyWith(
-        primaryColor: AppPalette.navy,
+        primaryColor: AppPalette.brandBlue,
         iconTheme: const IconThemeData(color: AppPalette.navy, size: 20),
         primaryIconTheme: const IconThemeData(color: AppPalette.navy, size: 20),
         textSelectionTheme: const TextSelectionThemeData(
@@ -336,9 +338,9 @@ abstract final class AppTheme {
         colorScheme: AppPalette.darkScheme,
         iconTheme: const IconThemeData(color: AppPalette.darkInk),
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: AppPalette.brandBlue,
-          selectionColor: AppPalette.brandBlue.withValues(alpha: 0.28),
-          selectionHandleColor: AppPalette.brandBlue,
+          cursorColor: AppPalette.darkMint,
+          selectionColor: AppPalette.darkMint.withValues(alpha: 0.28),
+          selectionHandleColor: AppPalette.darkMint,
         ),
         dialogTheme: const DialogThemeData(
           backgroundColor: AppPalette.darkSurface,
@@ -356,7 +358,7 @@ abstract final class AppTheme {
           ),
         ),
         progressIndicatorTheme: const ProgressIndicatorThemeData(
-          color: AppPalette.brandBlue,
+          color: AppPalette.darkMint,
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: AppPalette.darkCanvas,
@@ -380,7 +382,7 @@ abstract final class AppTheme {
           minTileHeight: 48,
           iconColor: AppPalette.darkMutedInk,
           textColor: AppPalette.darkInk,
-          selectedColor: AppPalette.brandBlue,
+          selectedColor: AppPalette.darkMint,
           selectedTileColor: AppPalette.darkSidebarAccent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -394,7 +396,7 @@ abstract final class AppTheme {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            backgroundColor: AppPalette.brandBlue,
+            backgroundColor: AppPalette.darkMint,
             foregroundColor: AppPalette.navy,
             minimumSize: const Size(48, 46),
             textStyle: const TextStyle(
@@ -418,7 +420,7 @@ abstract final class AppTheme {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: AppPalette.brandBlue,
+            foregroundColor: AppPalette.darkMint,
             textStyle: const TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13,
@@ -479,12 +481,12 @@ abstract final class AppTheme {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(9),
             borderSide: const BorderSide(
-              color: AppPalette.brandBlue,
+              color: AppPalette.darkMint,
               width: 1.6,
             ),
           ),
           labelStyle: const TextStyle(color: Color(0xFFAFC0CE)),
-          floatingLabelStyle: const TextStyle(color: AppPalette.brandBlue),
+          floatingLabelStyle: const TextStyle(color: AppPalette.darkMint),
         ),
         popupMenuTheme: PopupMenuThemeData(
           color: AppPalette.darkSurface,
@@ -506,16 +508,16 @@ abstract final class AppTheme {
         dividerTheme: const DividerThemeData(color: AppPalette.darkBorder),
       )
       .copyWith(
-        primaryColor: AppPalette.brandBlue,
+        primaryColor: AppPalette.darkMint,
         iconTheme: const IconThemeData(color: AppPalette.darkInk, size: 20),
         primaryIconTheme: const IconThemeData(
           color: AppPalette.darkInk,
           size: 20,
         ),
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: AppPalette.brandBlue,
-          selectionColor: AppPalette.brandBlue.withValues(alpha: 0.28),
-          selectionHandleColor: AppPalette.brandBlue,
+          cursorColor: AppPalette.darkMint,
+          selectionColor: AppPalette.darkMint.withValues(alpha: 0.28),
+          selectionHandleColor: AppPalette.darkMint,
         ),
       );
 }

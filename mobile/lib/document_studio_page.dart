@@ -24,8 +24,14 @@ import 'document_output_security.dart';
 import 'document_paper.dart';
 import 'document_file_support.dart';
 import 'document_studio_quill_codec.dart';
+import 'document_library_page.dart';
+import 'document_transfer.dart';
+import 'document_native_output.dart';
+import 'app_theme.dart';
 
-enum DocumentStudioTab { documents, templates, archive }
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+enum DocumentStudioTab { documents, templates, archive, files }
 
 class DocumentStudioPage extends StatefulWidget {
   const DocumentStudioPage({
@@ -44,10 +50,12 @@ class DocumentStudioPage extends StatefulWidget {
   final String? initialDocumentId;
 
   @override
-  State<DocumentStudioPage> createState() => _DocumentStudioPageState();
+  State<DocumentStudioPage> createState() => DocumentStudioPageState();
 }
 
-class _DocumentStudioPageState extends State<DocumentStudioPage> {
+class DocumentStudioPageState extends State<DocumentStudioPage> {
+  void createDocument() => _showCreateDocumentOptions();
+  void selectDocument(OfficialDocument document) => _selectDocument(document);
   late final DocumentStudioOutbox _outbox;
   late QuillController _documentEditor;
   late QuillController _templateEditor;
@@ -224,21 +232,21 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       dynamic contextRaw;
       try {
         documentsRaw = await widget.api.call('documentStudio.listDocuments');
-      } catch (_) {
+      } on NetworkException {
         documentsRaw = await widget.api.readCachedResponse(
           'documentStudio.listDocuments',
         );
       }
       try {
         templatesRaw = await widget.api.call('documentStudio.listTemplates');
-      } catch (_) {
+      } on NetworkException {
         templatesRaw = await widget.api.readCachedResponse(
           'documentStudio.listTemplates',
         );
       }
       try {
         contextRaw = await widget.api.call('organizations.context');
-      } catch (_) {
+      } on NetworkException {
         contextRaw = await widget.api.readCachedResponse(
           'organizations.context',
         );
@@ -360,7 +368,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _loadError = error.toString();
+        _loadError = documentOutputError(error);
+        if (error is ApiException &&
+            (error.statusCode == 401 || error.statusCode == 403)) {
+          _documents = [];
+          _templates = [];
+          _selectedDocument = null;
+          _canIssueDocuments = false;
+          _isPlatformOwner = false;
+        }
       });
     }
   }
@@ -595,33 +611,44 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Future<void> _printDocumentFile(OfficialDocument document) async {
     final file = document.file;
-    if (file != null && file.mimeType == DocumentFileSupport.docxMime) {
-      _showMessage('معاينة Word غير مدعومة محلياً؛ نزّل الملف الأصلي أو شاركه');
-      return;
-    }
-
     final isImage = file?.mimeType.startsWith('image/') == true;
     final imageTiles = isImage ? await _chooseImageTiles() : 1;
     if (imageTiles == null || !mounted) return;
     final pagesPerSheet = isImage ? 1 : await _choosePrintPagesPerSheet();
     if (pagesPerSheet == null || !mounted) return;
 
-    setState(() => _saving = true);
-    try {
+    await _runOutput('طباعة الوثيقة', (transfer) async {
       final sourcePdf = await _fetchDocumentPdf(
         document,
         imageTiles: imageTiles,
+        transfer: transfer,
       );
+      transfer.stage('جارٍ ترتيب صفحات A4 للطباعة');
       final printPdf = await DocumentStudioPrintLayout.compose(
         sourcePdf,
         pagesPerSheet: pagesPerSheet,
       );
-      await Printing.layoutPdf(
-        name: document.title,
-        onLayout: (_) async => printPdf,
+      transfer.stage(
+        'استخدم مربع الطباعة لإكمال الإجراء أو إلغائه',
+        canCancel: false,
       );
-    } catch (error) {
-      _showMessage('تعذرت تهيئة الملف للطباعة: $error');
+      return printDocumentBytes(printPdf, name: '${document.title}.pdf');
+    });
+  }
+
+  Future<void> _runOutput(
+    String title,
+    Future<bool> Function(DocumentTransfer) action,
+  ) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final done = await showDocumentOutputDialog(
+        context: context,
+        title: title,
+        action: action,
+      );
+      if (mounted && done == false) _showMessage('تم إلغاء العملية أو إغلاقها');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -652,9 +679,51 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   Future<Uint8List> _fetchDocumentPdf(
     OfficialDocument document, {
     int imageTiles = 1,
+    DocumentTransfer? transfer,
   }) async {
+    transfer?.checkCancelled();
     final file = document.file;
     if (file == null) {
+      if (!isSafeDocumentOutputId(document.id)) {
+        throw StateError('احفظ الوثيقة ومزامنتها مع الخادم قبل الإخراج');
+      }
+      transfer?.stage('جارٍ التحقق من الوثيقة وإعدادات الترويسة الحالية');
+      final raw = await widget.api.call(
+        'documentStudio.listDocuments',
+        allowOfflineCache: false,
+      );
+      final rows = raw is List
+          ? raw
+          : raw is Map && raw['items'] is List
+          ? raw['items'] as List
+          : const [];
+      final matches = rows
+          .whereType<Map>()
+          .where((row) => row['id'] == document.id)
+          .toList();
+      if (matches.isEmpty) throw const ApiException(403, 'الوثيقة غير متاحة');
+      // Do not export a stale locally cached record after server authorization.
+      document = OfficialDocument.fromJson(
+        Map<String, dynamic>.from(matches.single),
+      );
+      final currentSettings = await widget.api.call(
+        'platformDocumentSettings.get',
+        allowOfflineCache: false,
+      );
+      final currentLetterhead = await widget.api.call(
+        'documentStudio.getLetterheadSettings',
+        input: const {},
+        allowOfflineCache: false,
+      );
+      if (currentSettings is! Map || currentLetterhead is! Map) {
+        throw const ApiException(502, 'تعذر تحميل إعدادات الوثيقة');
+      }
+      _platformDocumentSettings = {
+        ..._platformDocumentSettings,
+        ...Map<String, dynamic>.from(currentSettings),
+      };
+      _letterhead = Map<String, dynamic>.from(currentLetterhead);
+      transfer?.stage('جارٍ إنشاء PDF على الجهاز');
       final rawOpacity = _platformDocumentSettings['watermarkOpacityPercent'];
       final opacity =
           (rawOpacity is num
@@ -720,16 +789,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       throw StateError('احفظ الوثيقة ومزامنتها مع الخادم قبل إخراج PDF');
     }
     if (file.mimeType == DocumentFileSupport.docxMime) {
-      throw StateError('لا تتم إعادة بناء Word إلى PDF على الجهاز');
+      transfer?.stage('جارٍ تحويل ملف Word إلى PDF على الخادم');
+      return widget.api.fetchDocumentPrintPdf(document.id, transfer: transfer);
     }
     if (file.mimeType.startsWith('image/')) {
       final imageBytes = await widget.api.fetchDocumentFileBytes(
         documentId: document.id,
         mimeType: file.mimeType,
+        transfer: transfer,
       );
       if (!DocumentFileSupport.matchesMime(file.mimeType, imageBytes)) {
         throw StateError('تعذر التحقق من صيغة الصورة التي أعادها الخادم');
       }
+      transfer?.stage('جارٍ تجهيز الصورة وصفحات الطباعة');
       final codec = await ui.instantiateImageCodec(imageBytes);
       final frame = await codec.getNextFrame();
       final sourceImage = frame.image;
@@ -740,6 +812,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       try {
         for (var row = 0; row < columns; row += 1) {
           for (var column = 0; column < columns; column += 1) {
+            transfer?.checkCancelled();
             final recorder = ui.PictureRecorder();
             final canvas = ui.Canvas(recorder);
             final sourceRect = ui.Rect.fromLTWH(
@@ -800,6 +873,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final bytes = await widget.api.fetchDocumentFileBytes(
       documentId: document.id,
       mimeType: DocumentFileSupport.pdfMime,
+      transfer: transfer,
     );
     if (!hasPdfSignature(bytes)) {
       throw StateError('تعذر التحقق من ملف PDF الذي أعاده الخادم');
@@ -807,101 +881,92 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     return bytes;
   }
 
-  Future<Uint8List> _fetchOriginalDocument(OfficialDocument document) {
+  Future<Uint8List> _fetchOriginalDocument(
+    OfficialDocument document,
+    DocumentTransfer transfer,
+  ) {
     final file = document.file;
     if (file == null) throw StateError('لا يوجد ملف أصلي لهذه الوثيقة');
     return widget.api.fetchDocumentFileBytes(
       documentId: document.id,
       mimeType: file.mimeType,
+      transfer: transfer,
     );
   }
 
-  Future<void> _saveOriginalDocument(OfficialDocument document) async {
-    setState(() => _saving = true);
-    try {
-      final file = document.file!;
-      final bytes = await _fetchOriginalDocument(document);
-      final path = await FilePicker.saveFile(
-        dialogTitle: 'حفظ الملف الأصلي',
-        fileName: file.fileName,
-        bytes: bytes,
-      );
-      if (mounted) {
-        _showMessage(path == null ? 'تم إلغاء الحفظ' : 'تم حفظ الملف الأصلي');
-      }
-    } catch (error) {
-      _showMessage('تعذر تنزيل الملف الأصلي: $error');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  Future<void> _saveOriginalDocument(OfficialDocument document) =>
+      _runOutput('تنزيل الملف الأصلي', (transfer) async {
+        final file = document.file!;
+        final bytes = await _fetchOriginalDocument(document, transfer);
+        transfer.stage(
+          'اختر مكان الحفظ أو ألغِ من مربع النظام',
+          canCancel: false,
+        );
+        final path = await FilePicker.saveFile(
+          dialogTitle: 'حفظ الملف الأصلي',
+          fileName: safeDocumentFileName(file.fileName),
+          bytes: bytes,
+        );
+        if (path != null) _showMessage('تم حفظ الملف الأصلي');
+        return path != null;
+      });
 
-  Future<void> _shareOriginalDocument(OfficialDocument document) async {
-    setState(() => _saving = true);
-    try {
-      final file = document.file!;
-      final bytes = await _fetchOriginalDocument(document);
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(bytes, name: file.fileName, mimeType: file.mimeType),
-          ],
-          title: document.title,
-          text: 'الملف الأصلي لوثيقة ${document.title}',
-        ),
-      );
-    } catch (error) {
-      _showMessage('تعذرت مشاركة الملف الأصلي: $error');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  Future<void> _shareOriginalDocument(OfficialDocument document) =>
+      _runOutput('مشاركة الملف الأصلي', (transfer) async {
+        final file = document.file!;
+        final bytes = await _fetchOriginalDocument(document, transfer);
+        transfer.stage('اختر تطبيق المشاركة من مربع النظام', canCancel: false);
+        final result = await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                bytes,
+                name: safeDocumentFileName(file.fileName),
+                mimeType: file.mimeType,
+              ),
+            ],
+            title: document.title,
+          ),
+        );
+        return result.status != ShareResultStatus.dismissed;
+      });
 
-  Future<void> _saveDocumentPdf(OfficialDocument document) async {
-    setState(() => _saving = true);
-    try {
-      final bytes = await _fetchDocumentPdf(document);
-      final path = await FilePicker.saveFile(
-        dialogTitle: 'حفظ معاينة الوثيقة الرسمية',
-        fileName: '${document.title}.pdf',
-        type: FileType.custom,
-        allowedExtensions: const ['pdf'],
-        bytes: bytes,
-      );
-      if (!mounted) return;
-      _showMessage(
-        path == null ? 'تم إلغاء حفظ ملف PDF' : 'تم حفظ ملف PDF بنجاح',
-      );
-    } catch (error) {
-      _showMessage('تعذر تنزيل ملف PDF: $error');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  Future<void> _saveDocumentPdf(OfficialDocument document) =>
+      _runOutput('تنزيل PDF', (transfer) async {
+        final bytes = await _fetchDocumentPdf(document, transfer: transfer);
+        transfer.stage(
+          'اختر مكان الحفظ أو ألغِ من مربع النظام',
+          canCancel: false,
+        );
+        final path = await FilePicker.saveFile(
+          dialogTitle: 'حفظ الوثيقة الرسمية',
+          fileName: safeDocumentFileName('${document.title}.pdf'),
+          type: FileType.custom,
+          allowedExtensions: const ['pdf'],
+          bytes: bytes,
+        );
+        if (path != null) _showMessage('تم حفظ ملف PDF');
+        return path != null;
+      });
 
-  Future<void> _shareDocumentPdf(OfficialDocument document) async {
-    setState(() => _saving = true);
-    try {
-      final bytes = await _fetchDocumentPdf(document);
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile.fromData(
-              bytes,
-              name: '${document.title}.pdf',
-              mimeType: 'application/pdf',
-            ),
-          ],
-          title: document.title,
-          text: 'معاينة PDF لوثيقة ${document.title}',
-        ),
-      );
-    } catch (error) {
-      _showMessage('تعذرت مشاركة ملف PDF: $error');
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  Future<void> _shareDocumentPdf(OfficialDocument document) =>
+      _runOutput('مشاركة PDF', (transfer) async {
+        final bytes = await _fetchDocumentPdf(document, transfer: transfer);
+        transfer.stage('اختر تطبيق المشاركة من مربع النظام', canCancel: false);
+        final result = await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                bytes,
+                name: safeDocumentFileName('${document.title}.pdf'),
+                mimeType: 'application/pdf',
+              ),
+            ],
+            title: document.title,
+          ),
+        );
+        return result.status != ShareResultStatus.dismissed;
+      });
 
   Future<void> _syncLocalChanges() async {
     final result = await _outbox.sync();
@@ -1547,48 +1612,112 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
-        child: SegmentedButton<DocumentStudioTab>(
-          showSelectedIcon: false,
-          style: ButtonStyle(
-            visualDensity: VisualDensity.compact,
-            padding: const WidgetStatePropertyAll(
-              EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SegmentedButton<DocumentStudioTab>(
+            showSelectedIcon: false,
+            style: ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              padding: const WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+              shape: WidgetStatePropertyAll(
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
-            shape: WidgetStatePropertyAll(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
+            segments: const [
+              ButtonSegment(
+                value: DocumentStudioTab.documents,
+                label: Text('الوثائق'),
+                icon: Icon(LucideIcons.fileText),
+              ),
+              ButtonSegment(
+                value: DocumentStudioTab.templates,
+                label: Text('القوالب'),
+                icon: Icon(LucideIcons.layoutTemplate),
+              ),
+              ButtonSegment(
+                value: DocumentStudioTab.archive,
+                label: Text('الأرشيف'),
+                icon: Icon(LucideIcons.archive),
+              ),
+              ButtonSegment(
+                value: DocumentStudioTab.files,
+                label: Text('الملفات'),
+                icon: Icon(LucideIcons.folderOpen),
+              ),
+            ],
+            selected: {_tab},
+            onSelectionChanged: (selection) {
+              setState(() {
+                _tab = selection.first;
+              });
+            },
           ),
-          segments: const [
-            ButtonSegment(
-              value: DocumentStudioTab.documents,
-              label: Text('الوثائق'),
-              icon: Icon(Icons.description_outlined),
-            ),
-            ButtonSegment(
-              value: DocumentStudioTab.templates,
-              label: Text('القوالب'),
-              icon: Icon(Icons.dashboard_customize_outlined),
-            ),
-            ButtonSegment(
-              value: DocumentStudioTab.archive,
-              label: Text('الأرشيف'),
-              icon: Icon(Icons.archive_outlined),
-            ),
-          ],
-          selected: {_tab},
-          onSelectionChanged: (selection) {
-            setState(() {
-              _tab = selection.first;
-              if (_tab == DocumentStudioTab.archive) {
-                _selectedDocument = null;
-                _creatingDocument = false;
-              }
-            });
-          },
         ),
       ),
     );
   }
+
+  Widget _buildWorkspaceWelcome() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'من المسودة إلى الأرشيف',
+            style: Theme.of(context).textTheme.labelMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'كل وثيقة تبدأ بخطوة واضحة',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'اختر وثيقة من القائمة لمتابعة العمل، أو أنشئ وثيقة جديدة، أو استخدم قالباً جاهزاً. ملفاتك المستوردة متاحة في المكان نفسه.',
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Chip(
+                label: Text(
+                  'وثائق ${_documents.where((d) => d.status != "archived").length}',
+                ),
+              ),
+              Chip(label: Text('قوالب ${_templates.length}')),
+              Chip(
+                label: Text(
+                  'أرشيف ${_documents.where((d) => d.status == "archived").length}',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _saving ? null : _chooseTemplateForNewDocument,
+                icon: const Icon(LucideIcons.layoutTemplate),
+                label: const Text('استخدام قالب'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _tab = DocumentStudioTab.files),
+                icon: const Icon(LucideIcons.folderOpen),
+                label: const Text('إدارة الملفات'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildDocumentList({required bool archived}) {
     final items = _documents
@@ -1839,7 +1968,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                         ? 'ملف PDF سيُجهّز من محرك الوثائق عند الطلب'
                         : document.file!.mimeType ==
                               DocumentFileSupport.docxMime
-                        ? 'معاينة Word غير مدعومة محلياً؛ استخدم الملف الأصلي للتنزيل أو المشاركة.'
+                        ? 'تُنشأ معاينة PDF وملف الطباعة من Word على الخادم؛ يبقى الملف الأصلي متاحاً دون تغيير.'
                         : 'تتم معاينة PDF وتنزيله وطباعته من bytes الملف الأصلي.',
                   ),
                   const SizedBox(height: 8),
@@ -1862,6 +1991,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                               : () => _shareOriginalDocument(document),
                           icon: const Icon(Icons.share_outlined),
                           label: const Text('مشاركة Word الأصلي'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _saving
+                              ? null
+                              : () => _printDocumentFile(document),
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('طباعة'),
                         ),
                       ] else ...[
                         OutlinedButton.icon(
@@ -1954,6 +2090,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final isPdf = mimeType == DocumentFileSupport.pdfMime;
     final isNativeDocument = document.file == null;
     final canUsePdfActions = isPdf || isNativeDocument;
+    final canPrint = isWord || canUsePdfActions;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1983,15 +2120,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         _buildDocumentVersionHistory(),
         if (isNativeDocument)
           _buildA4Editor(controller: _documentEditor, editable: false)
-        else if (isWord)
-          _buildUnsupportedDocumentPreview(
-            document,
-            'معاينة ملفات Word غير متاحة داخل التطبيق حالياً',
-          )
-        else if (isPdf)
+        else if (isWord || isPdf)
           SizedBox(
             height: 620,
             child: PdfPreview(
+              pdfFileName: isWord
+                  ? '${document.title}.pdf'
+                  : document.file!.fileName,
               build: (_) => _fetchDocumentPdf(document),
               allowPrinting: false,
               allowSharing: false,
@@ -2038,7 +2173,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             _documentPreviewAction(
               icon: Icons.print_outlined,
               label: 'طباعة',
-              onPressed: _saving || !canUsePdfActions
+              onPressed: _saving || !canPrint
                   ? null
                   : () => _printDocumentFile(document),
             ),
@@ -2932,9 +3067,15 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (editable)
-          QuillSimpleToolbar(
-            controller: controller,
-            config: const QuillSimpleToolbarConfig(),
+          Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: QuillSimpleToolbar(
+                controller: controller,
+                config: const QuillSimpleToolbarConfig(),
+              ),
+            ),
           ),
         LayoutBuilder(
           builder: (context, _) {
@@ -3134,9 +3275,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _ => 'مسودة',
     };
     final color = switch (status) {
-      'issued' => Colors.green,
-      'archived' => Colors.blueGrey,
-      _ => Colors.orange,
+      'issued' => context.appSuccess,
+      'archived' => Theme.of(context).colorScheme.onSurfaceVariant,
+      _ => Theme.of(context).colorScheme.primary,
     };
     return Chip(
       label: Text(label),
@@ -3167,6 +3308,16 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final pendingCountFuture = _outbox.pendingCount();
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'أنشئ، نظّم، واطبع. وثائقك وقوالبك وملفاتك في مكان واحد.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ),
         _buildTabSelector(),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
@@ -3177,6 +3328,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                   DocumentStudioTab.documents => 'إعداد الوثائق الرسمية',
                   DocumentStudioTab.templates => 'النماذج الإدارية',
                   DocumentStudioTab.archive => 'أرشيف الوثائق',
+                  DocumentStudioTab.files => 'الملفات الأصلية',
                 }, style: Theme.of(context).textTheme.titleMedium),
               ),
               FutureBuilder<int>(
@@ -3204,71 +3356,99 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             ],
           ),
         ),
-        if (_loading)
-          const Expanded(child: Center(child: CircularProgressIndicator()))
-        else if (_loadError != null && _documents.isEmpty && _templates.isEmpty)
-          Expanded(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
+        Expanded(
+          child: Stack(
+            children: [
+              Offstage(
+                offstage: _tab != DocumentStudioTab.files,
+                child: DocumentLibraryPage(
+                  api: widget.api,
+                  embedded: true,
+                  onEditDocument: _selectDocument,
+                ),
+              ),
+              Offstage(
+                offstage: _tab == DocumentStudioTab.files,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_off_outlined, size: 44),
-                    const SizedBox(height: 12),
-                    Text(
-                      'تعذر تحميل البيانات: $_loadError',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    FilledButton(
-                      onPressed: _refresh,
-                      child: const Text('إعادة المحاولة'),
-                    ),
+                    if (_loading)
+                      const Expanded(
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_loadError != null &&
+                        _documents.isEmpty &&
+                        _templates.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.cloud_off_outlined, size: 44),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'تعذر تحميل البيانات: $_loadError',
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                FilledButton(
+                                  onPressed: _refresh,
+                                  child: const Text('إعادة المحاولة'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _refresh,
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
+                            children: [
+                              if (_tab == DocumentStudioTab.documents)
+                                if (_selectedDocument == null &&
+                                    !_creatingDocument) ...[
+                                  Align(
+                                    alignment: AlignmentDirectional.centerEnd,
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        FilledButton.icon(
+                                          onPressed: _saving
+                                              ? null
+                                              : _showCreateDocumentOptions,
+                                          icon: const Icon(Icons.add),
+                                          label: const Text('إنشاء وثيقة'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _buildWorkspaceWelcome(),
+                                  const SizedBox(height: 12),
+                                  _buildDocumentList(archived: false),
+                                ] else
+                                  _buildDocumentForm()
+                              else if (_tab == DocumentStudioTab.templates)
+                                _buildTemplateLibrary()
+                              else if (_selectedDocument?.status != 'archived')
+                                _buildDocumentList(archived: true)
+                              else
+                                _buildDocumentForm(),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-            ),
-          )
-        else
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
-                children: [
-                  if (_tab == DocumentStudioTab.documents)
-                    if (_selectedDocument == null && !_creatingDocument) ...[
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: _saving
-                                  ? null
-                                  : _showCreateDocumentOptions,
-                              icon: const Icon(Icons.add),
-                              label: const Text('إنشاء وثيقة'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildDocumentList(archived: false),
-                    ] else
-                      _buildDocumentForm()
-                  else if (_tab == DocumentStudioTab.templates)
-                    _buildTemplateLibrary()
-                  else if (_selectedDocument == null)
-                    _buildDocumentList(archived: true)
-                  else
-                    _buildDocumentForm(),
-                ],
-              ),
-            ),
+            ],
           ),
+        ),
       ],
     );
   }

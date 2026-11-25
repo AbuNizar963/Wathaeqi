@@ -931,7 +931,7 @@ void main() {
     await tester.pumpWidget(WathaeqiApp(api: _TestPoliceApi()));
     await tester.pumpAndSettle();
 
-    expect(find.text('برقيات الشرطة'), findsOneWidget);
+    expect(find.text('وثائقك. منظّمة وواضحة.'), findsOneWidget);
     expect(find.text('تسجيل الدخول'), findsOneWidget);
     expect(find.text('اسم المستخدم'), findsOneWidget);
     expect(
