@@ -115,11 +115,8 @@ const URL_FUNCTION_START = /url\s*\(/gi;
 const SAFE_LOCAL_URL_FUNCTION =
   /url\(\s*(?:"#[A-Za-z_][\w:.-]*"|'#[A-Za-z_][\w:.-]*'|#[A-Za-z_][\w:.-]*)\s*\)/gi;
 
-// prettier-ignore
-type XmlNode = Record<string, unknown>;
-
 /**
- * Validates static SVG logos with a real XML parser and a broad SVG 1.1/2
+ * Validates static SVG logos with a bounded XML tokenizer and a broad SVG 1.1/2
  * presentation allowlist. Active content and external references are rejected;
  * local fragment references remain supported for gradients, masks and filters.
  */
@@ -342,19 +339,6 @@ function isTextElement(name: string): boolean {
 }
 
 // prettier-ignore
-function isTextAllowed(ancestors: string[]): boolean {
-  const parent = ancestors[ancestors.length - 1];
-  return (
-    parent === "text" ||
-    parent === "tspan" ||
-    parent === "textPath" ||
-    parent === "title" ||
-    parent === "desc" ||
-    parent === "style" ||
-    parent === "metadata"
-  );
-}
-
 // prettier-ignore
 function validateAttributes(
   attributes: Record<string, unknown>,
