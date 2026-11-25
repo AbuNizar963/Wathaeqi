@@ -382,8 +382,12 @@ export default function DepartmentSettingsPage() {
 
   const handleLogoFile = async (file: File) => {
     if (!settings) return;
-    if (file.type !== "image/png" && file.type !== "image/jpeg") {
-      setLogoError("صيغة الشعار يجب أن تكون PNG أو JPG.");
+    if (
+      file.type !== "image/png" &&
+      file.type !== "image/jpeg" &&
+      file.type !== "image/svg+xml"
+    ) {
+      setLogoError("صيغة الشعار يجب أن تكون PNG أو JPG أو SVG.");
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
@@ -401,7 +405,7 @@ export default function DepartmentSettingsPage() {
       setLogoPreview(dataUrl);
       uploadLogo.mutate({
         id: settings.organizationId,
-        contentType: file.type === "image/jpeg" ? "image/jpeg" : "image/png",
+        contentType: file.type as "image/png" | "image/jpeg" | "image/svg+xml",
         base64,
       });
     } catch (error) {
@@ -599,7 +603,7 @@ export default function DepartmentSettingsPage() {
                       <Input
                         id="department-logo"
                         type="file"
-                        accept="image/png,image/jpeg"
+                        accept="image/png,image/jpeg,image/svg+xml,.svg"
                         disabled={!canEdit || uploadLogo.isPending}
                         onChange={event => {
                           const file = event.target.files?.[0];

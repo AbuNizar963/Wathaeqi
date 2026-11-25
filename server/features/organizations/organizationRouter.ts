@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
+import { isSafeSvgLogo } from "./organizationLogoValidation";
 import { authenticatedProcedure, router } from "../../_core/ownerTrpc";
 import { isPlatformOwner } from "../../ownerAccess";
 import { resolveOrganizationScope } from "./organizationAccess";
@@ -164,7 +165,7 @@ export const organizationRouter = router({
     .input(
       z.object({
         id: z.string().min(1).max(36),
-        contentType: z.enum(["image/png", "image/jpeg"]),
+        contentType: z.enum(["image/png", "image/jpeg", "image/svg+xml"]),
         base64: z.string().min(1),
       })
     )
@@ -181,6 +182,12 @@ export const organizationRouter = router({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "حجم الشعار يجب أن يكون بين 1 بايت و2.5 ميغابايت.",
+        });
+      }
+      if (input.contentType === "image/svg+xml" && !isSafeSvgLogo(bytes)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "ملف SVG غير صالح أو يحتوي على عناصر غير مسموح بها.",
         });
       }
       const logoKey = await saveOrganizationLogo(
