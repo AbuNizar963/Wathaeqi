@@ -21,6 +21,7 @@ const [
   appRoutes,
   settingsPage,
   documentStudio,
+  documentWatermarkComponent,
   workspacePage,
   workspaceRouter,
 ] = await Promise.all(
@@ -32,6 +33,7 @@ const [
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
+    "client/src/features/document-studio/DocumentWatermark.tsx",
     "client/src/features/workspace/WorkspacePage.tsx",
     "server/features/workspace/workspaceRouter.ts",
   ].map(readProjectFile)
@@ -111,7 +113,8 @@ assert(
 assert(
   documentStudio.includes("معاينة الوثيقة") &&
     documentStudio.includes("watermarkText") &&
-    documentStudio.includes("buildDocumentWatermarkCss") &&
+    documentStudio.includes('import DocumentWatermark from "./DocumentWatermark"') &&
+    documentWatermarkComponent.includes("buildDocumentWatermarkCss") &&
     documentStudio.includes("editable={!previewMode}"),
   "The document workspace must expose a read-only preview and apply watermark settings."
 );
