@@ -461,6 +461,12 @@ function validateAttributes(
       if (value !== "default" && value !== "preserve") return false;
       continue;
     }
+    if (name === "xml:lang") {
+      if (!/^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/.test(value)) {
+        return false;
+      }
+      continue;
+    }
     if (name.startsWith("xml:")) return false;
 
     if (name === "href" || name.endsWith(":href")) {
