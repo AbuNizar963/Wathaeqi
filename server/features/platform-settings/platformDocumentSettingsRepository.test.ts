@@ -30,7 +30,10 @@ describe("platform document settings nullable Appwrite columns", () => {
 
   it.each([
     ["pageMarginTopMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm],
-    ["watermarkScalePercent", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkScalePercent],
+    [
+      "watermarkScalePercent",
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkScalePercent,
+    ],
     ["pageMarginRightMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginRightMm],
     [
       "pageMarginBottomMm",
