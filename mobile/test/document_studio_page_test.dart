@@ -13,12 +13,14 @@ class _DocumentStudioTestApi extends PoliceApi {
     this.includeDocument = false,
     this.documentContent,
     this.templateContent,
+    this.templateFields = const <dynamic>[],
   });
 
   final bool includeOrganization;
   final bool includeDocument;
   final Map<String, dynamic>? documentContent;
   final Map<String, dynamic>? templateContent;
+  final List<dynamic> templateFields;
   final calls = <String, Map<String, dynamic>?>{};
 
   @override
@@ -67,7 +69,7 @@ class _DocumentStudioTestApi extends PoliceApi {
                   'title': 'نموذج تجريبي',
                   'category': 'general',
                   'content': templateContent,
-                  'fields': <dynamic>[],
+                  'fields': templateFields,
                   'revision': 3,
                   'isActive': true,
                   'createdAt': '2026-11-21T00:00:00.000Z',
@@ -112,6 +114,23 @@ class _RecordingDocumentOutbox extends _DocumentStudioTestOutbox {
   _RecordingDocumentOutbox({required super.api});
 
   Map<String, dynamic>? savedInput;
+
+  @override
+  Future<Map<String, dynamic>> createDocument(
+    Map<String, dynamic> input,
+  ) async {
+    savedInput = Map<String, dynamic>.from(input);
+    return {
+      ...input,
+      'id': 'doc-created-test',
+      'ownerId': 'owner-test',
+      'serialNumber': 0,
+      'serialCode': '',
+      'status': 'draft',
+      'createdAt': '2026-11-25T00:00:00.000Z',
+      'updatedAt': '2026-11-25T00:00:00.000Z',
+    };
+  }
 
   @override
   Future<Map<String, dynamic>> updateDocument(
@@ -345,6 +364,100 @@ void main() {
   });
 
   testWidgets(
+    'guided document creation fills required template fields without opening the editor',
+    (tester) async {
+      final api = _DocumentStudioTestApi(
+        templateContent: {
+          'type': 'doc',
+          'content': [
+            {
+              'type': 'paragraph',
+              'content': [
+                {'type': 'text', 'text': 'اسم الموظف: {{employee_name}}'},
+              ],
+            },
+          ],
+        },
+        templateFields: [
+          {
+            'key': 'employee_name',
+            'label': 'اسم الموظف',
+            'type': 'text',
+            'required': true,
+          },
+        ],
+      );
+      final outbox = _RecordingDocumentOutbox(api: api);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            FlutterQuillLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('ar')],
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              body: DocumentStudioPage(api: api, outbox: outbox),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('إنشاء وثيقة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تعبئة نموذج جاهز'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('نموذج تجريبي'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('حقول تعبئة النموذج'), findsOneWidget);
+      expect(find.text('اسم الموظف *'), findsOneWidget);
+      expect(
+        find.text(
+          'ستُنشأ الوثيقة تلقائياً من إجابات الحقول أعلاه. يمكنك فتح تحرير النص يدوياً عند الحاجة.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('تحرير النص يدوياً (اختياري)'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('حفظ الوثيقة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('حفظ الوثيقة'));
+      await tester.pumpAndSettle();
+      expect(outbox.savedInput, isNull);
+      expect(find.text('أكمل الحقول المطلوبة: اسم الموظف'), findsOneWidget);
+
+      final fieldInput = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'اسم الموظف *',
+      );
+      await tester.ensureVisible(fieldInput);
+      await tester.pumpAndSettle();
+      await tester.enterText(fieldInput, 'أحمد محمد');
+      tester.testTextInput.hide();
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('حفظ الوثيقة'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('حفظ الوثيقة'));
+      await tester.pumpAndSettle();
+
+      expect(outbox.savedInput?['templateId'], 'template-test');
+      expect(outbox.savedInput?['fieldValues'], {'employee_name': 'أحمد محمد'});
+      expect(outbox.savedInput?['content'].toString(), contains('أحمد محمد'));
+      expect(
+        outbox.savedInput?['content'].toString(),
+        isNot(contains('{{employee_name}}')),
+      );
+    },
+  );
+
+  testWidgets(
     'document studio exposes documents, templates, and archive areas',
     (tester) async {
       final api = _DocumentStudioTestApi(includeOrganization: false);
@@ -369,9 +482,9 @@ void main() {
       await tester.tap(find.text('إنشاء وثيقة'));
       await tester.pumpAndSettle();
 
-      expect(find.text('وثيقة جديدة'), findsOneWidget);
+      expect(find.text('تعبئة نموذج جاهز'), findsOneWidget);
+      expect(find.text('وثيقة فارغة'), findsOneWidget);
       expect(find.text('رفع ملف'), findsOneWidget);
-      expect(find.text('اختيار نموذج جاهز'), findsNothing);
 
       await tester.tap(find.text('إلغاء'));
       await tester.pumpAndSettle();

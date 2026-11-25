@@ -313,46 +313,43 @@ class DocumentStudioPdf {
             ],
           );
         },
-        footer: (context) => pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: [
-            if (context.pageNumber == 1)
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  mainAxisSize: pw.MainAxisSize.min,
-                  children: [
-                    pw.Text(
-                      department,
-                      textDirection: pw.TextDirection.rtl,
-                      textAlign: pw.TextAlign.left,
-                      maxLines: 1,
-                      style: pw.TextStyle(font: bold, fontSize: 13),
-                    ),
-                    if (unit != null)
-                      pw.Text(
-                        unit.startsWith('رئيس') ? unit : 'رئيس $unit',
-                        textDirection: pw.TextDirection.rtl,
-                        textAlign: pw.TextAlign.left,
-                        maxLines: 1,
-                        style: pw.TextStyle(font: bold, fontSize: 12),
-                      ),
-                  ],
+        footer: (context) => pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(
+            '${context.pageNumber} / ${context.pagesCount}',
+            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+          ),
+        ),
+        build: (context) => [
+          ..._buildBlocks(
+            _asMapList(content['content']),
+            regular: regular,
+            bold: bold,
+          ),
+          pw.SizedBox(height: 16),
+          pw.Center(
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.Text(
+                  department,
+                  textDirection: pw.TextDirection.rtl,
+                  textAlign: pw.TextAlign.center,
+                  maxLines: 1,
+                  style: pw.TextStyle(font: bold, fontSize: 13),
                 ),
-              )
-            else
-              pw.Expanded(child: pw.SizedBox()),
-            pw.Text(
-              '${context.pageNumber} / ${context.pagesCount}',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                if (unit != null)
+                  pw.Text(
+                    unit.startsWith('رئيس') ? unit : 'رئيس $unit',
+                    textDirection: pw.TextDirection.rtl,
+                    textAlign: pw.TextAlign.center,
+                    maxLines: 1,
+                    style: pw.TextStyle(font: bold, fontSize: 12),
+                  ),
+              ],
             ),
-          ],
-        ),
-        build: (context) => _buildBlocks(
-          _asMapList(content['content']),
-          regular: regular,
-          bold: bold,
-        ),
+          ),
+        ],
       ),
     );
 

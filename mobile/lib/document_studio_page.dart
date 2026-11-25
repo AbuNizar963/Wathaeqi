@@ -130,6 +130,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   bool _templateContentDirty = false;
   bool _creatingTemplate = false;
   bool _creatingDocument = false;
+  bool _showManualDocumentEditor = false;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
 
   static const _categories = <String, String>{
@@ -428,9 +429,17 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
+              leading: const Icon(Icons.assignment_outlined),
+              title: const Text('تعبئة نموذج جاهز'),
+              subtitle: const Text(
+                'اختر نموذج الوثيقة ثم املأ الحقول المطلوبة دون كتابة النص يدوياً',
+              ),
+              onTap: () => Navigator.pop(dialogContext, 'template'),
+            ),
+            ListTile(
               leading: const Icon(Icons.edit_outlined),
-              title: const Text('وثيقة جديدة'),
-              subtitle: const Text('ابدأ وثيقة رسمية جديدة على ورق A4 المعتمد'),
+              title: const Text('وثيقة فارغة'),
+              subtitle: const Text('افتح محرر A4 للكتابة اليدوية عند الحاجة'),
               onTap: () => Navigator.pop(dialogContext, 'write'),
             ),
             ListTile(
@@ -450,11 +459,69 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       ),
     );
     if (!mounted || choice == null) return;
-    if (choice == 'write') {
+    if (choice == 'template') {
+      await _chooseTemplateForNewDocument();
+    } else if (choice == 'write') {
       _startNewDocument();
     } else if (choice == 'import') {
       await _uploadDocumentFile();
     }
+  }
+
+  Future<void> _chooseTemplateForNewDocument() async {
+    final activeTemplates = _templates
+        .where((template) => template.isActive)
+        .toList(growable: false);
+
+    if (activeTemplates.isEmpty) {
+      _showMessage(
+        'لا توجد نماذج تعبئة جاهزة. أنشئ نموذجاً أولاً من تبويب مكتبة النماذج.',
+      );
+      if (mounted) setState(() => _tab = DocumentStudioTab.templates);
+      return;
+    }
+
+    final selected = await showDialog<DocumentTemplate>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: closableDialogTitle(
+          dialogContext,
+          const Text('اختر نموذج الوثيقة'),
+        ),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final template in activeTemplates)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.description_outlined),
+                    title: Text(template.title),
+                    subtitle: Text(
+                      template.description?.trim().isNotEmpty == true
+                          ? template.description!
+                          : _categories[template.category] ?? template.category,
+                    ),
+                    trailing: const Icon(Icons.chevron_left),
+                    onTap: () => Navigator.pop(dialogContext, template),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || selected == null) return;
+    _useTemplate(selected);
   }
 
   Future<int?> _choosePrintPagesPerSheet() {
@@ -597,7 +664,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       final configuredLetterhead = {
         ..._letterhead,
         'departmentName': _headerSetting('headerTitle', 'المقدم غسان صالح كنو'),
-        'unitName': _headerSetting('headerSubtitle', 'رئيس قسم شرطة الشهباء'),
+        'unitName': _headerSetting('headerSubtitle', 'رئيس قسم الشهباء'),
         'unitChiefRank': _headerSetting(
           'headerChiefRank',
           _letterhead['unitChiefRank']?.toString() ?? '',
@@ -890,6 +957,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
 
   void _startNewDocument() {
     _previewMode = false;
+    _showManualDocumentEditor = true;
     _selectedDocument = null;
     _creatingDocument = true;
     _selectedTemplateId = null;
@@ -1103,6 +1171,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   void _useTemplate(DocumentTemplate template) {
+    _previewMode = false;
+    _showManualDocumentEditor = false;
     _selectedDocument = null;
     _creatingDocument = true;
     _selectedTemplate = template;
@@ -1125,13 +1195,39 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _showMessage('أدخل عنوان الوثيقة أولاً');
       return;
     }
-    setState(() => _saving = true);
     final customFieldValues = Map<String, String>.from(_fieldValues)
       ..remove('organization')
       ..remove('date')
       ..remove('number')
       ..remove('subject');
-    final content = applyDocumentTemplateVariables(_documentContent, {
+    if (_selectedDocument == null && _selectedTemplateId != null) {
+      final selectedTemplateFields = _templates
+          .where((template) => template.id == _selectedTemplateId)
+          .expand((template) => template.fields);
+      final missingRequiredFields = selectedTemplateFields
+          .where(
+            (field) =>
+                field.required &&
+                (_fieldValues[field.key]?.trim().isNotEmpty != true),
+          )
+          .map((field) => field.label)
+          .toList(growable: false);
+      if (missingRequiredFields.isNotEmpty) {
+        _showMessage(
+          'أكمل الحقول المطلوبة: ${missingRequiredFields.join('، ')}',
+        );
+        return;
+      }
+    }
+
+    setState(() => _saving = true);
+    final sourceContent =
+        _selectedDocument == null &&
+            _selectedTemplateId != null &&
+            !_showManualDocumentEditor
+        ? _applyFieldValues(_templateBaseContent, customFieldValues)
+        : _documentContent;
+    final content = applyDocumentTemplateVariables(sourceContent, {
       ...customFieldValues,
       'organization':
           (_letterhead['departmentName'] ??
@@ -1691,18 +1787,31 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      TextButton(
-                        onPressed: canEdit
-                            ? () {
-                                final filled = _applyFieldValues(
-                                  _templateBaseContent,
-                                  _fieldValues,
-                                );
-                                _replaceDocumentEditor(filled);
-                              }
-                            : null,
-                        child: const Text('تطبيق في النص'),
-                      ),
+                      if (_selectedDocument == null)
+                        TextButton(
+                          onPressed: canEdit
+                              ? () {
+                                  final showEditor = !_showManualDocumentEditor;
+                                  if (showEditor) {
+                                    _replaceDocumentEditor(
+                                      _applyFieldValues(
+                                        _templateBaseContent,
+                                        _fieldValues,
+                                      ),
+                                    );
+                                  }
+                                  setState(
+                                    () =>
+                                        _showManualDocumentEditor = showEditor,
+                                  );
+                                }
+                              : null,
+                          child: Text(
+                            _showManualDocumentEditor
+                                ? 'إخفاء محرر النص'
+                                : 'تحرير النص يدوياً (اختياري)',
+                          ),
+                        ),
                     ],
                   ),
                   for (final field in fields)
@@ -1795,8 +1904,20 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
               ),
             ),
           ),
-        if (_selectedDocument?.file == null)
-          _buildA4Editor(controller: _documentEditor, editable: canEdit),
+        if (_selectedDocument?.file == null &&
+            (_selectedDocument != null ||
+                fields.isEmpty ||
+                _showManualDocumentEditor))
+          _buildA4Editor(controller: _documentEditor, editable: canEdit)
+        else if (_selectedDocument == null && fields.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'ستُنشأ الوثيقة تلقائياً من إجابات الحقول أعلاه. يمكنك فتح تحرير النص يدوياً عند الحاجة.',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -2386,7 +2507,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final subtitleController = TextEditingController(
       text: values['headerSubtitle']?.toString().trim().isNotEmpty == true
           ? values['headerSubtitle'].toString()
-          : 'رئيس قسم شرطة الشهباء',
+          : 'رئيس قسم الشهباء',
     );
     final rankController = TextEditingController(
       text: values['headerChiefRank']?.toString() ?? '',
@@ -2478,7 +2599,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     const Padding(
                       padding: EdgeInsets.only(top: 6, bottom: 8),
                       child: Text(
-                        'يظهر الشعار في منتصف الترويسة أعلى الصفحة، وتظهر رتبة رئيس الوحدة واسم الوحدة في سطرين متتاليين أسفل الوثيقة من الجهة اليسرى.',
+                        'يظهر الشعار في منتصف الترويسة أعلى الصفحة، ويظهر سطرا المسؤول في منتصف الصفحة أسفل متن الوثيقة مباشرة.',
                         style: TextStyle(
                           color: Colors.black54,
                           fontSize: 12,
@@ -2497,7 +2618,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       controller: subtitleController,
                       decoration: const InputDecoration(
                         labelText: 'اسم الوحدة / صفة المسؤول',
-                        hintText: 'رئيس قسم شرطة الشهباء',
+                        hintText: 'رئيس قسم الشهباء',
                       ),
                     ),
                     SwitchListTile(
@@ -2800,10 +2921,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             .toDouble();
     const pixelsPerMillimeter = 794 / 210;
     final headerTitle = _headerSetting('headerTitle', 'المقدم غسان صالح كنو');
-    final headerSubtitle = _headerSetting(
-      'headerSubtitle',
-      'رئيس قسم شرطة الشهباء',
-    );
+    final headerSubtitle = _headerSetting('headerSubtitle', 'رئيس قسم الشهباء');
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
     final logoSize =
@@ -2939,57 +3057,52 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (headerTitle.isNotEmpty)
-                                Text(
-                                  headerTitle,
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              if (headerSubtitle.isNotEmpty)
-                                Text(
-                                  headerSubtitle.startsWith('رئيس')
-                                      ? headerSubtitle
-                                      : 'رئيس $headerSubtitle',
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    height: 1.4,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const Expanded(
-                          child: Text(
-                            'وثائقي',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 11,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (headerTitle.isNotEmpty)
+                            Text(
+                              headerTitle,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                                height: 1.4,
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
+                          if (headerSubtitle.isNotEmpty)
+                            Text(
+                              headerSubtitle.startsWith('رئيس')
+                                  ? headerSubtitle
+                                  : 'رئيس $headerSubtitle',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                height: 1.4,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'وثائقي',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(color: Colors.black54, fontSize: 11),
+                      ),
                     ),
                   ),
                 ],
