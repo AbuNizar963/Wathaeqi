@@ -2492,24 +2492,14 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       controller: titleController,
                       decoration: const InputDecoration(
                         labelText: 'رتبة رئيس الوحدة',
+                        hintText: 'المقدم غسان صالح كنو',
                       ),
                     ),
                     TextField(
                       controller: subtitleController,
                       decoration: const InputDecoration(
                         labelText: 'اسم الوحدة / صفة المسؤول',
-                      ),
-                    ),
-                    TextField(
-                      controller: rankController,
-                      decoration: const InputDecoration(
-                        labelText: 'رتبة / صفة المسؤول',
-                      ),
-                    ),
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'اسم المسؤول',
+                        hintText: 'رئيس قسم شرطة الشهباء',
                       ),
                     ),
                     SwitchListTile(
@@ -2825,13 +2815,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ((logoSizeValue is num ? logoSizeValue.toDouble() : 160.0) * 1.35)
             .clamp(120.0, 220.0)
             .toDouble();
-    final headerAlignment =
-        _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
-    final blockAlignment = switch (headerAlignment) {
-      'center' => TextAlign.center,
-      'right' => TextAlign.right,
-      _ => null,
-    };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
