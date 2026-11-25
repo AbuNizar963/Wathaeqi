@@ -160,7 +160,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       parseTagValue: false,
       parseAttributeValue: false,
       trimValues: false,
-      processEntities: true,
+      processEntities: false,
       htmlEntities: false,
       allowBooleanAttributes: false,
     });
@@ -187,7 +187,12 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
         if ("#comment" in record) continue;
 
         if ("#text" in record || "#cdata" in record) {
-          const value = String(record["#text"] ?? record["#cdata"] ?? "");
+          const rawText = String(
+            record["#text"] ?? record["#cdata"] ?? ""
+          );
+          const value =
+            "#cdata" in record ? rawText : decodeXmlEntities(rawText);
+          if (value === null) return false;
           if (value.trim() && !isTextAllowed(currentTextElements)) {
             return false;
           }
@@ -272,7 +277,10 @@ function validateAttributes(
   for (const [name, rawValue] of Object.entries(attributes)) {
     if (typeof rawValue !== "string") return false;
 
-    const value = rawValue.trim();
+    const decodedValue = decodeXmlEntities(rawValue);
+    if (decodedValue === null) return false;
+
+    const value = decodedValue.trim();
     if (/^on/i.test(name) || name.toLowerCase() === "src") return false;
 
     if (name === "xmlns") {
@@ -402,4 +410,59 @@ function isSafeEmbeddedRaster(dataUri: string): boolean {
     default:
       return false;
   }
+}
+
+function decodeXmlEntities(value: string): string | null {
+  const entityPattern = /&(#x[0-9a-f]{1,6}|#\d{1,7}|amp|lt|gt|quot|apos);/gi;
+  let result = "";
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = entityPattern.exec(value)) !== null) {
+    const precedingText = value.slice(cursor, match.index);
+    if (precedingText.includes("&")) return null;
+    result += precedingText;
+
+    const entity = match[1].toLowerCase();
+    switch (entity) {
+      case "amp":
+        result += "&";
+        break;
+      case "lt":
+        result += "<";
+        break;
+      case "gt":
+        result += ">";
+        break;
+      case "quot":
+        result += '"';
+        break;
+      case "apos":
+        result += "'";
+        break;
+      default: {
+        const codePoint = entity.startsWith("#x")
+          ? Number.parseInt(entity.slice(2), 16)
+          : Number.parseInt(entity.slice(1), 10);
+        if (
+          !Number.isInteger(codePoint) ||
+          codePoint === 0 ||
+          codePoint > 0x10ffff ||
+          (codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a && codePoint !== 0x0d) ||
+          (codePoint >= 0xd800 && codePoint <= 0xdfff) ||
+          codePoint === 0xfffe ||
+          codePoint === 0xffff
+        ) {
+          return null;
+        }
+        result += String.fromCodePoint(codePoint);
+      }
+    }
+
+    cursor = entityPattern.lastIndex;
+  }
+
+  const trailingText = value.slice(cursor);
+  if (trailingText.includes("&")) return null;
+  return result + trailingText;
 }
