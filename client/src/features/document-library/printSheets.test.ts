@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildPrintHtml,
-  buildPrintSheets,
-  groupPages,
-} from "./printSheets";
+import { buildPrintHtml, buildPrintSheets, groupPages } from "./printSheets";
 import type { PrintOptions, SourcePage } from "./types";
 
 function page(index: number): SourcePage {
