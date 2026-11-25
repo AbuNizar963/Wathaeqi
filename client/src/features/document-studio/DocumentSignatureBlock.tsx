@@ -9,32 +9,26 @@ export type DocumentSignatureBlockProps = {
 };
 
 /**
- * Renders the four configurable organization/signatory lines after the
- * final paragraph of the document body. Existing settings keys are retained
- * so saved values remain compatible and are not lost.
+ * Renders the two editable responsible-person lines after the document body.
+ * Existing settings keys are reused to preserve compatibility with saved data.
  */
 export default function DocumentSignatureBlock({
-  organizationName,
-  unitName,
-  chiefRank,
-  chiefName,
   settings,
 }: DocumentSignatureBlockProps) {
-  const lines = [
-    settings?.headerTitle.trim() || organizationName,
-    settings?.headerSubtitle.trim() || unitName,
-    settings?.headerChiefRank.trim() || chiefRank,
-    settings?.headerChiefName.trim() || chiefName,
-  ].filter(value => value.trim().length > 0);
+  const firstLine =
+    settings?.headerTitle.trim() || "المقدم غسان صالح كنو";
+  const configuredSecondLine =
+    settings?.headerSubtitle.trim() || "رئيس قسم الشهباء";
+  const secondLine = configuredSecondLine.startsWith("رئيس")
+    ? configuredSecondLine
+    : `رئيس ${configuredSecondLine}`;
+  const lines = [firstLine, secondLine].filter(value => value.trim().length > 0);
 
   if (lines.length === 0) return null;
 
   return (
     <footer
-      className="mt-8 space-y-1 text-[12pt] font-semibold leading-[1.7]"
-      style={{
-        textAlign: settings?.headerAlignment === "center" ? "center" : "right",
-      }}
+      className="mt-8 space-y-1 text-center text-[12pt] font-semibold leading-[1.7]"
       dir="rtl"
       data-testid="document-signature-block"
     >
