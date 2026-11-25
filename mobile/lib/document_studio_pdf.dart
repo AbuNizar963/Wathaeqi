@@ -247,6 +247,7 @@ class DocumentStudioPdf {
                       ),
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  textDirection: pw.TextDirection.rtl,
                   children: [
                     pw.Expanded(
                       child: pw.Column(
