@@ -1,0 +1,45 @@
+name: Temporary document settings formatter
+
+on:
+  push:
+    branches:
+      - improve/document-settings-organization
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: improve/document-settings-organization
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format document settings page
+        run: pnpm exec prettier --write client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx
+
+      - name: Commit formatted file
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx
+            git commit -m "تنسيق صفحة إعدادات الوثائق"
+            git push origin HEAD:improve/document-settings-organization
+          fi
