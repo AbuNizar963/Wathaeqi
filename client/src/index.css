@@ -961,8 +961,8 @@
   z-index: 1;
   top: 50%;
   left: 50%;
-  width: 93.75%;
-  height: 93.75%;
+  width: calc(93.75% * var(--document-watermark-scale, 1));
+  height: calc(93.75% * var(--document-watermark-scale, 1));
   transform: translate(-50%, -50%);
   object-fit: contain;
   opacity: var(--document-watermark-opacity, 0.12);
@@ -1001,7 +1001,7 @@
   color: #73777d;
   text-align: center;
   font-family: "Aref Ruqaa", serif;
-  font-size: 11pt;
+  font-size: calc(11pt * var(--document-watermark-scale, 1));
   font-weight: 400;
   line-height: 1;
   white-space: nowrap;
