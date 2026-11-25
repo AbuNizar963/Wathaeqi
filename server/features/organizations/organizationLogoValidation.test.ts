@@ -31,6 +31,15 @@ describe("isSafeSvgLogo", () => {
     expect(isSafeSvgLogo(svg(source))).toBe(true);
   });
 
+  it("accepts safe embedded CSS style blocks", () => {
+    const source =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+      "<style>.mark { fill: #123456; stroke: #ffffff; stroke-width: 2; }</style>" +
+      '<path class="mark" d="M10 10 L90 90"/></svg>';
+
+    expect(isSafeSvgLogo(svg(source))).toBe(true);
+  });
+
   it("accepts symbols and local use references", () => {
     const source =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">' +
@@ -57,7 +66,7 @@ describe("isSafeSvgLogo", () => {
     '<svg xmlns="http://www.w3.org/2000/svg"><use href="file:///etc/passwd"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill: url(https://example.com/a.svg)" d="M0 0"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><path style="@import url(https://example.com/x.css)" d="M0 0"/></svg>',
-    '<svg xmlns="http://www.w3.org/2000/svg"><style>path { fill: red }</style></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>@import url(https://example.com/a.css);</style></svg>',
     '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"/>',
     '<?xml-stylesheet href="https://example.com/a.css"?><svg xmlns="http://www.w3.org/2000/svg"/>',
     '<svg xmlns="http://www.w3.org/2000/svg"><!-- malformed comment --!><path d="M0 0"/></svg>',
