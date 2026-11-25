@@ -283,7 +283,7 @@ function isSafeLocalReference(value: string): boolean {
 
 function isSafeStyle(value: string): boolean {
   if (
-    /[<>\\]|@import|expression\s*\(|javascript:|data:|https?:|\/\//i.test(
+    /[<>\\]|\/\*|\*/|@import|expression\s*\(|javascript:|data:|https?:|\/\//i.test(
       value
     )
   ) {
