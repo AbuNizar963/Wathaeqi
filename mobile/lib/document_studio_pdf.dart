@@ -94,7 +94,8 @@ class DocumentStudioPdf {
     final headerShowLogo = letterhead['headerShowLogo'] != false;
     final rawHeaderLogoSize = letterhead['headerLogoSize'];
     final headerLogoSize =
-        ((rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 160.0) * 1.35)
+        ((rawHeaderLogoSize is num ? rawHeaderLogoSize.toDouble() : 160.0) *
+                1.35)
             .clamp(120.0, 220.0)
             .toDouble();
     final headerLogoSizePoints = headerLogoSize * 0.75;

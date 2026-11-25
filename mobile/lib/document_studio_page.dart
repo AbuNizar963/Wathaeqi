@@ -596,14 +596,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           100;
       final configuredLetterhead = {
         ..._letterhead,
-        'departmentName': _headerSetting(
-          'headerTitle',
-          'المقدم غسان صالح كنو',
-        ),
-        'unitName': _headerSetting(
-          'headerSubtitle',
-          'رئيس قسم شرطة الشهباء',
-        ),
+        'departmentName': _headerSetting('headerTitle', 'المقدم غسان صالح كنو'),
+        'unitName': _headerSetting('headerSubtitle', 'رئيس قسم شرطة الشهباء'),
         'unitChiefRank': _headerSetting(
           'headerChiefRank',
           _letterhead['unitChiefRank']?.toString() ?? '',
@@ -2805,10 +2799,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             .clamp(40.0, 180.0)
             .toDouble();
     const pixelsPerMillimeter = 794 / 210;
-    final headerTitle = _headerSetting(
-      'headerTitle',
-      'المقدم غسان صالح كنو',
-    );
+    final headerTitle = _headerSetting('headerTitle', 'المقدم غسان صالح كنو');
     final headerSubtitle = _headerSetting(
       'headerSubtitle',
       'رئيس قسم شرطة الشهباء',
@@ -2850,8 +2841,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       (_letterhead['logoUrl']?.toString().isNotEmpty ?? false))
                     Padding(
                       padding: EdgeInsets.only(
-                        top: _headerMillimeters('headerTopPaddingMm', 0) *
-                            pixelsPerMillimeter,
+                        top:
+                            _headerMillimeters('headerTopPaddingMm', 0) *
+                                pixelsPerMillimeter,
                       ),
                       child: Center(
                         child: Image.network(
