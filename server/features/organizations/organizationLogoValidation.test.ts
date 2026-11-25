@@ -44,6 +44,8 @@ describe("isSafeSvgLogo", () => {
     '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"/>',
     '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill:red" d="M0 0"/></svg>',
     '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0" fill="url(https://example.com/a.svg)"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><!-- safe-looking comment --><path d="M0 0"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><!-- malformed comment --!><path d="M0 0"/></svg>',
   ])("rejects unsafe SVG content: %s", source => {
     expect(isSafeSvgLogo(svg(source))).toBe(false);
   });
