@@ -178,6 +178,22 @@ export default function PlatformDocumentSettingsPage() {
         </Button>
       </header>
 
+      <nav aria-label="أقسام إعدادات الوثائق" className="flex flex-wrap gap-2 rounded-xl border bg-card p-3">
+        {[
+          ["organization-identity-settings", "هوية الجهة"],
+          ["watermark-settings", "العلامة المائية"],
+          ["page-layout-settings", "الصفحة والإطار"],
+          ["header-divider-settings", "فاصل الترويسة"],
+          ["header-content-settings", "محتوى الترويسة"],
+          ["page-rows-settings", "سطور الصفحة"],
+          ["verification-settings", "رمز التحقق"],
+        ].map(([id, label]) => (
+          <a key={id} href={"#" + id} className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            {label}
+          </a>
+        ))}
+      </nav>
+
       {settingsQuery.isLoading ? (
         <Card className="p-6 text-center text-sm text-muted-foreground">
           جارٍ تحميل إعدادات الوثائق...
@@ -205,7 +221,7 @@ export default function PlatformDocumentSettingsPage() {
               <div className="flex items-center gap-2">
                 <ImagePlus className="h-5 w-5 text-primary" />
                 <div>
-                  <h2 className="font-semibold">هوية الجهة وشعارها</h2>
+                  <h2 id="organization-identity-title" className="font-semibold">هوية الجهة وشعارها</h2>
                   <p className="text-xs text-muted-foreground">
                     تُطبّق التغييرات تلقائياً على جهة عملك الحالية والوثائق
                     الرسمية.
@@ -378,11 +394,53 @@ export default function PlatformDocumentSettingsPage() {
               </p>
             </section>
 
+            <section id="watermark-settings" aria-labelledby="watermark-settings-title" className="space-y-4 rounded-xl border p-4">
+              <div>
+                <h2 id="watermark-settings-title" className="font-semibold">إعدادات العلامة المائية</h2>
+                <p className="mt-1 text-xs text-muted-foreground">تحكم في ظهور العلامة الأمنية وشفافيتها.</p>
+              </div>
+              <section className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="watermark-opacity" className="font-semibold">
+                    شفافية العلامة المائية
+                  </label>
+                  <output
+                    htmlFor="watermark-opacity"
+                    className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
+                  >
+                    {values.watermarkOpacityPercent}%
+                  </output>
+                </div>
+                <input
+                  id="watermark-opacity"
+                  type="range"
+                  min={0}
+                  max={MAX_WATERMARK_OPACITY_PERCENT}
+                  step={1}
+                  value={values.watermarkOpacityPercent}
+                  onChange={event =>
+                    updateValue(
+                      "watermarkOpacityPercent",
+                      Number(event.target.value)
+                    )
+                  }
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>شفاف تماماً</span>
+                  <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
+                </div>
+              </section>
+              {!values.watermarkText.trim() ? (
+                <p className="text-xs text-destructive">لا يمكن ترك نص العلامة الأمنية فارغاً.</p>
+              ) : null}
+            </section>
+
             <div className="h-px bg-border" />
 
-            <section className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
+            <section id="page-layout-settings" aria-labelledby="page-layout-title" className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
               <div>
-                <h2 className="font-semibold">صفحة الوثيقة والإطار</h2>
+                <h2 id="page-layout-title" className="font-semibold">حجم الصفحة والهوامش والإطار</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اضبط المساحات الآمنة حول المحتوى واختر إطارًا رسميًا واضحًا
                   للطباعة والمعاينة.
@@ -465,9 +523,9 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
             </section>
-            <section className="space-y-4 rounded-xl border p-4">
+            <section id="header-divider-settings" aria-labelledby="header-divider-title" className="space-y-4 rounded-xl border p-4">
               <div>
-                <h2 className="font-semibold">الفاصل بين الرأس والمحتوى</h2>
+                <h2 id="header-divider-title" className="font-semibold">فاصل ترويسة الوثيقة</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر نمطًا رسميًا ولونًا وسماكة متوازنة للفاصل.
                 </p>
@@ -527,10 +585,10 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
             </section>
-            <section className="space-y-4">
-              <h2 className="font-semibold">بيانات أسفل الوثيقة</h2>
+            <section id="header-content-settings" aria-labelledby="header-content-title" className="space-y-4 rounded-xl border p-4">
+              <h2 id="header-content-title" className="font-semibold">محتوى ترويسة الوثيقة</h2>
               <p className="text-xs text-muted-foreground">
-                تظهر هذه البيانات بعد آخر سطر من الوثيقة.
+                بيانات الجهة والمسؤول التي تظهر في أعلى الوثيقة.
               </p>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">العنوان الرئيسي</span>
@@ -670,7 +728,7 @@ export default function PlatformDocumentSettingsPage() {
               </label>
               <label className="block space-y-1">
                 <span className="text-sm font-medium">
-                  محاذاة بيانات أسفل الوثيقة
+                  محاذاة بيانات الترويسة
                 </span>
                 <select
                   value={values.headerAlignment}
@@ -691,9 +749,9 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-4">
+            <section id="page-rows-settings" aria-labelledby="page-rows-title" className="space-y-4 rounded-xl border p-4">
               <div>
-                <h2 className="font-semibold">سطور رأس الصفحة وتذييل الصفحة</h2>
+                <h2 id="page-rows-title" className="font-semibold">سطور أعلى الصفحة وأسفلها</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
                   اختر عدد السطور واكتب نصاً يميناً وآخر يساراً في السطر نفسه،
                   مثل: الجمهورية العربية السورية / Syrian Arab.
@@ -763,77 +821,18 @@ export default function PlatformDocumentSettingsPage() {
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <label htmlFor="watermark-opacity" className="font-semibold">
-                  شفافية العلامة المائية
-                </label>
-                <output
-                  htmlFor="watermark-opacity"
-                  className="rounded-lg bg-muted px-3 py-1 text-sm font-semibold tabular-nums"
-                >
-                  {values.watermarkOpacityPercent}%
-                </output>
-              </div>
-              <input
-                id="watermark-opacity"
-                type="range"
-                min={0}
-                max={MAX_WATERMARK_OPACITY_PERCENT}
-                step={1}
-                value={values.watermarkOpacityPercent}
-                onChange={event =>
-                  updateValue(
-                    "watermarkOpacityPercent",
-                    Number(event.target.value)
-                  )
-                }
-                className="w-full accent-primary"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>شفاف تماماً</span>
-                <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
-              </div>
-            </section>
+
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-2">
-              <label htmlFor="document-divider-color" className="font-semibold">
-                لون خط ترويسة الوثيقة
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="document-divider-color"
-                  type="color"
-                  value={values.headerDividerColor}
-                  onChange={event =>
-                    updateValue("headerDividerColor", event.target.value)
-                  }
-                  className="h-11 w-16 cursor-pointer rounded-lg border bg-background p-1"
-                />
-                <span className="font-mono text-sm" dir="ltr">
-                  {values.headerDividerColor}
-                </span>
-              </div>
-              {!colorIsValid ? (
-                <p className="text-xs text-destructive">
-                  أدخل لوناً صالحاً بصيغة HEX.
-                </p>
-              ) : null}
-              {!values.watermarkText.trim() ? (
-                <p className="text-xs text-destructive">
-                  لا يمكن ترك نص العلامة الأمنية فارغاً.
-                </p>
-              ) : null}
-            </section>
+
 
             <div className="h-px bg-border" />
 
-            <section className="space-y-2">
+            <section id="verification-settings" aria-labelledby="verification-title" className="space-y-3 rounded-xl border p-4">
               <label className="flex items-center justify-between gap-3">
                 <span>
-                  <span className="block font-semibold">رمز التحقق</span>
+                  <span id="verification-title" className="block font-semibold">رمز التحقق</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     حفظ تفضيل إظهار رمز التحقق في مخرجات الوثائق المدعومة
                   </span>
