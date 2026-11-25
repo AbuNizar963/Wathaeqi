@@ -280,7 +280,9 @@ export async function openPrintWindow(
         printWindow.print();
       } catch {
         const help = doc.querySelector<HTMLElement>(".print-help");
-        if (help) help.textContent = "تعذر فتح نافذة الطباعة. افتح قائمة المتصفح واختر طباعة.";
+        if (help) {
+          help.textContent = "تعذر فتح نافذة الطباعة. افتح قائمة المتصفح واختر طباعة.";
+        }
       }
     });
     const help = doc.createElement("p");
