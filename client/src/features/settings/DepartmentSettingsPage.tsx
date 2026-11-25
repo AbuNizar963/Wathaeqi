@@ -610,7 +610,10 @@ export default function DepartmentSettingsPage() {
                           disabled={!canEdit || uploadLogo.isPending}
                           onClick={() => galleryLogoInputRef.current?.click()}
                         >
-                          <ImagePlus className="ml-2 h-4 w-4" aria-hidden="true" />
+                          <ImagePlus
+                            className="ml-2 h-4 w-4"
+                            aria-hidden="true"
+                          />
                           من الاستديو
                         </Button>
                         <Button
@@ -619,7 +622,10 @@ export default function DepartmentSettingsPage() {
                           disabled={!canEdit || uploadLogo.isPending}
                           onClick={() => filesLogoInputRef.current?.click()}
                         >
-                          <FolderOpen className="ml-2 h-4 w-4" aria-hidden="true" />
+                          <FolderOpen
+                            className="ml-2 h-4 w-4"
+                            aria-hidden="true"
+                          />
                           من ملفاتي
                         </Button>
                       </div>
@@ -652,8 +658,9 @@ export default function DepartmentSettingsPage() {
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        اختر PNG أو JPG من الاستديو، أو SVG أو صورة من ملفاتي. الحد الأقصى 2.5 ميغابايت.
-                        يُرفع الشعار مباشرة ويُستخدم في ترويسة المخرجات.
+                        اختر PNG أو JPG من الاستديو، أو SVG أو صورة من
+                        ملفاتي. الحد الأقصى 2.5 ميغابايت. يُرفع الشعار مباشرة
+                        ويُستخدم في ترويسة المخرجات.
                       </p>
                       {logoError ? (
                         <p className="text-xs text-destructive">{logoError}</p>
