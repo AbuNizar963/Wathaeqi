@@ -2843,7 +2843,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       padding: EdgeInsets.only(
                         top:
                             _headerMillimeters('headerTopPaddingMm', 0) *
-                                pixelsPerMillimeter,
+                            pixelsPerMillimeter,
                       ),
                       child: Center(
                         child: Image.network(
@@ -2910,7 +2910,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                             ],
                           ),
                         ),
-
                       ],
                     ),
                   ),
