@@ -4,6 +4,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { ownerTrpc } from "@/lib/ownerTrpc";
+import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   MAX_WATERMARK_OPACITY_PERCENT,
@@ -15,7 +16,8 @@ import {
 type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
 
 function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
-  const { updatedAt: _updatedAt, ...values } = settings;
+  const { updatedAt: _updatedAt, ...values } =
+    normalizePlatformDocumentSettings(settings);
   return values;
 }
 
