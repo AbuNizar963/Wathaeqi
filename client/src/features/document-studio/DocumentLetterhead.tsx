@@ -63,11 +63,7 @@ export default function DocumentLetterhead({
       <div className="document-letterhead__row">
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-          }}
+          style={{ width: "100%", textAlign: "center" }}
         >
           {showLogo && logoUrl ? (
             <img
