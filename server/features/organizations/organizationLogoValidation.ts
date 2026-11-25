@@ -5,6 +5,7 @@ const XLINK_NAMESPACE = "http://www.w3.org/1999/xlink";
 const MAX_SVG_NODES = 20_000;
 const MAX_SVG_DEPTH = 128;
 
+// prettier-ignore
 const SAFE_ELEMENTS = new Set([
   "svg",
   "g",
@@ -103,14 +104,19 @@ const SAFE_ELEMENTS = new Set([
   "attributionName",
 ]);
 
+// prettier-ignore
 const UNSAFE_CSS =
   /(?:@import|@namespace|@font-face|@keyframes|expression\s*\(|javascript\s*:|vbscript\s*:|-moz-binding|behavior\s*:)/i;
+// prettier-ignore
 const EXTERNAL_SCHEME =
   /(?:javascript|vbscript|https?|file|ftp|blob|data)\s*:/i;
+// prettier-ignore
 const URL_FUNCTION_START = /url\s*\(/gi;
+// prettier-ignore
 const SAFE_LOCAL_URL_FUNCTION =
   /url\(\s*(?:"#[A-Za-z_][\w:.-]*"|'#[A-Za-z_][\w:.-]*'|#[A-Za-z_][\w:.-]*)\s*\)/gi;
 
+// prettier-ignore
 type XmlNode = Record<string, unknown>;
 
 /**
@@ -243,6 +249,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
   }
 }
 
+// prettier-ignore
 function isTextAllowed(ancestors: string[]): boolean {
   const parent = ancestors[ancestors.length - 1];
   return (
@@ -256,6 +263,7 @@ function isTextAllowed(ancestors: string[]): boolean {
   );
 }
 
+// prettier-ignore
 function validateAttributes(
   attributes: Record<string, unknown>,
   elementName: string
@@ -320,6 +328,7 @@ function validateAttributes(
   return true;
 }
 
+// prettier-ignore
 function isSafeCss(css: string): boolean {
   const normalizedCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
   if (
@@ -337,6 +346,7 @@ function isSafeCss(css: string): boolean {
   );
 }
 
+// prettier-ignore
 function hasOnlyLocalUrlFunctions(value: string): boolean {
   URL_FUNCTION_START.lastIndex = 0;
   SAFE_LOCAL_URL_FUNCTION.lastIndex = 0;
@@ -348,6 +358,7 @@ function hasOnlyLocalUrlFunctions(value: string): boolean {
   return urlCount === safeUrlCount;
 }
 
+// prettier-ignore
 function isSafeEmbeddedRaster(dataUri: string): boolean {
   const match =
     /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=\s]+)$/i.exec(dataUri);
