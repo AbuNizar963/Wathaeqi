@@ -426,7 +426,30 @@ function isTextElement(name: string): boolean {
     name === "title" ||
     name === "desc" ||
     name === "style" ||
-    name === "metadata"
+    name === "metadata" ||
+    name === "RDF" ||
+    name === "Description" ||
+    name === "Work" ||
+    name === "Agent" ||
+    name === "Bag" ||
+    name === "Seq" ||
+    name === "li" ||
+    name === "creator" ||
+    name === "date" ||
+    name === "format" ||
+    name === "type" ||
+    name === "identifier" ||
+    name === "rights" ||
+    name === "language" ||
+    name === "subject" ||
+    name === "coverage" ||
+    name === "relation" ||
+    name === "publisher" ||
+    name === "contributor" ||
+    name === "source" ||
+    name === "license" ||
+    name === "attributionURL" ||
+    name === "attributionName"
   );
 }
 
