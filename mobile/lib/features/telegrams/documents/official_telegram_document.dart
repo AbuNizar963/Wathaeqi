@@ -1939,6 +1939,7 @@ String buildOfficialTelegramHtml({
       return '<div class="custom-document-row"><span>$right</span><span dir="ltr">$left</span></div>';
     }).join();
   }
+
   final customHeaderRows = customRowsMarkup(
     platformDocumentSettings['pageHeaderRows'],
   );
