@@ -52,6 +52,7 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: Number.NaN },
     { watermarkOpacityPercent: -1 },
     { watermarkOpacityPercent: 61 },
+    { watermarkScalePercent: 181 },
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
     { watermarkText: "   " },
@@ -77,6 +78,7 @@ describe("platform document settings UI normalization", () => {
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       showMinistryWatermarkText: false,
       watermarkOpacityPercent: 0,
+      watermarkScalePercent: Number.NaN,
       watermarkText: null as unknown as string,
       pageHeaderRows:
         null as unknown as PlatformDocumentSettings["pageHeaderRows"],
@@ -88,6 +90,9 @@ describe("platform document settings UI normalization", () => {
 
     expect(normalized.showMinistryWatermarkText).toBe(false);
     expect(normalized.watermarkOpacityPercent).toBe(0);
+    expect(normalized.watermarkScalePercent).toBe(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkScalePercent
+    );
     expect(normalized.watermarkText).toBe(
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkText
     );
