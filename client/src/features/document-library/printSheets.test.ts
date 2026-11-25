@@ -27,23 +27,14 @@ const baseOptions: PrintOptions = {
 
 describe("document print sheet layout", () => {
   it("requires a deliberate print tap on Android browsers", () => {
-    expect(
-      requiresManualPrint(
-        "Mozilla/5.0 (Linux; Android 14) Chrome/120.0 Mobile",
-      ),
-    ).toBe(true);
-    expect(
-      requiresManualPrint(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0",
-      ),
-    ).toBe(false);
-    expect(
-      requiresManualPrint(
-        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
-      ),
-    ).toBe(false);
-  });
+    const androidAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/120.0 Mobile";
+    const desktopAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0";
+    const iosAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)";
 
+    expect(requiresManualPrint(androidAgent)).toBe(true);
+    expect(requiresManualPrint(desktopAgent)).toBe(false);
+    expect(requiresManualPrint(iosAgent)).toBe(false);
+  });
   it("places one, two, four, six, or eight pages on each A4 sheet", () => {
     expect(groupPages(pages, 1)).toHaveLength(5);
     expect(groupPages(pages, 2)).toHaveLength(3);
