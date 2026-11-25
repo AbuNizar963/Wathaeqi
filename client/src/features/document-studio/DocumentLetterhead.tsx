@@ -64,19 +64,18 @@ export default function DocumentLetterhead({
       <div className="document-letterhead__row">
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+          style={{ width: "100%", textAlign: "center" }}
         >
           {showLogo && logoUrl ? (
             <img
               src={logoUrl}
               alt="الشعار الرسمي"
               className="mx-auto block object-contain"
-              style={{ width: logoSize, height: logoSize }}
+              style={{
+                width: logoSize,
+                height: logoSize,
+                marginInline: "auto",
+              }}
             />
           ) : null}
         </div>
