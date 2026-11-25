@@ -51,10 +51,11 @@ export default function PlatformDocumentSettingsPage() {
     [previewDocuments, previewDocumentId]
   );
   const organizationId = organizationContext.data?.organizationId;
-  const previewLetterheadSettings = ownerTrpc.documentStudio.getLetterheadSettings.useQuery(
-    { organizationId },
-    { enabled: Boolean(organizationId) }
-  );
+  const previewLetterheadSettings =
+    ownerTrpc.documentStudio.getLetterheadSettings.useQuery(
+      { organizationId },
+      { enabled: Boolean(organizationId) }
+    );
   const [organizationName, setOrganizationName] = useState("");
   const organizationLogoQuery = trpc.organizations.logo.useQuery(
     { id: organizationId ?? "unavailable" },
@@ -1036,8 +1037,7 @@ export default function PlatformDocumentSettingsPage() {
               </label>
             ) : (
               <p className="rounded-lg border p-3 text-sm text-muted-foreground">
-                لا توجد وثيقة محفوظة قابلة للمعاينة بعد. أنشئ وثيقة من قسم
-                الوثائق
+                لا توجد وثيقة محفوظة قابلة للمعاينة بعد. أنشئ وثيقة من قسم الوثائق
                 لتظهر هنا بنفس شكل الطباعة الفعلي.
               </p>
             )}
