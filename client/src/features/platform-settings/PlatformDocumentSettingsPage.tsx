@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ImagePlus, Save, Settings2, Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { FolderOpen, ImagePlus, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -45,6 +45,11 @@ export default function PlatformDocumentSettingsPage() {
   );
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const galleryLogoInputRef = useRef<HTMLInputElement>(null);
+  const filesLogoInputRef = useRef<HTMLInputElement>(null);
+
+  const openGalleryLogoPicker = () => galleryLogoInputRef.current?.click();
+  const openFilesLogoPicker = () => filesLogoInputRef.current?.click();
   const [values, setValues] = useState<SettingsForm>({
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
@@ -335,25 +340,66 @@ export default function PlatformDocumentSettingsPage() {
                         )}
                       </div>
                       <div className="min-w-[180px] flex-1 space-y-2">
-                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium hover:bg-muted">
-                          <Upload className="h-4 w-4" />
-                          {isUploadingLogo
-                            ? "جارٍ رفع الشعار..."
-                            : "اختيار صورة الشعار"}
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg"
-                            className="sr-only"
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
                             disabled={
                               isUploadingLogo ||
                               !organizationContext.data?.canAdministrate
                             }
-                            onChange={event => {
-                              void handleLogoFile(event.target.files?.[0]);
-                              event.currentTarget.value = "";
-                            }}
-                          />
-                        </label>
+                            onClick={openGalleryLogoPicker}
+                          >
+                            <ImagePlus className="ml-2 h-4 w-4" />
+                            من الاستديو
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={
+                              isUploadingLogo ||
+                              !organizationContext.data?.canAdministrate
+                            }
+                            onClick={openFilesLogoPicker}
+                          >
+                            <FolderOpen className="ml-2 h-4 w-4" />
+                            من ملفاتي
+                          </Button>
+                        </div>
+                        <input
+                          ref={galleryLogoInputRef}
+                          id="organization-logo-gallery"
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          className="sr-only"
+                          aria-label="اختيار شعار PNG أو JPG من الاستديو"
+                          disabled={
+                            isUploadingLogo ||
+                            !organizationContext.data?.canAdministrate
+                          }
+                          onChange={event => {
+                            const file = event.currentTarget.files?.[0];
+                            event.currentTarget.value = "";
+                            if (file) void handleLogoFile(file);
+                          }}
+                        />
+                        <input
+                          ref={filesLogoInputRef}
+                          id="organization-logo-files"
+                          type="file"
+                          accept=".svg,image/svg+xml,.png,.jpg,.jpeg,image/png,image/jpeg"
+                          className="sr-only"
+                          aria-label="اختيار شعار SVG أو PNG أو JPG من ملفاتي"
+                          disabled={
+                            isUploadingLogo ||
+                            !organizationContext.data?.canAdministrate
+                          }
+                          onChange={event => {
+                            const file = event.currentTarget.files?.[0];
+                            event.currentTarget.value = "";
+                            if (file) void handleLogoFile(file);
+                          }}
+                        />
                         <p className="text-xs text-muted-foreground">
                           PNG أو JPG، بحد أقصى 5 ميغابايت. احتفظ بخلفية شفافة
                           عند الحاجة.
