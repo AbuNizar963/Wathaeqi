@@ -2480,13 +2480,13 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     TextField(
                       controller: titleController,
                       decoration: const InputDecoration(
-                        labelText: 'العنوان الرئيسي',
+                        labelText: 'رتبة رئيس الوحدة',
                       ),
                     ),
                     TextField(
                       controller: subtitleController,
                       decoration: const InputDecoration(
-                        labelText: 'العنوان الفرعي / الوحدة',
+                        labelText: 'اسم الوحدة / صفة المسؤول',
                       ),
                     ),
                     TextField(
@@ -2512,7 +2512,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       label: 'حجم الشعار',
                       value: logoSize,
                       min: 32,
-                      max: 128,
+                      max: 220,
                       suffix: ' px',
                       onChanged: (value) =>
                           setDialogState(() => logoSize = value),
@@ -2818,9 +2818,10 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
-    final logoSize = (logoSizeValue is num ? logoSizeValue.toDouble() : 120.0)
-        .clamp(32.0, 128.0)
-        .toDouble();
+    final logoSize =
+        ((logoSizeValue is num ? logoSizeValue.toDouble() : 160.0) * 1.35)
+            .clamp(120.0, 220.0)
+            .toDouble();
     final headerAlignment =
         _platformDocumentSettings['headerAlignment']?.toString() ?? 'spread';
     final blockAlignment = switch (headerAlignment) {
@@ -2919,79 +2920,78 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                             ],
                           ),
                         ),
-                        SizedBox(
-                          width: logoSize,
-                          child:
-                              showLogo &&
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (showLogo &&
                                   (_letterhead['logoUrl']
                                           ?.toString()
                                           .isNotEmpty ??
-                                      false)
-                              ? Image.network(
+                                      false))
+                                Image.network(
                                   _letterhead['logoUrl'].toString(),
                                   width: logoSize,
                                   height: logoSize,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, _, _) => SizedBox(
-                                    width: logoSize,
-                                    height: logoSize,
+                                  alignment: Alignment.centerLeft,
+                                  errorBuilder: (_, _, _) =>
+                                      SizedBox(width: logoSize, height: logoSize),
+                                ),
+                              if (headerTitle.isNotEmpty)
+                                Text(
+                                  headerTitle,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                    height: 1.4,
                                   ),
-                                )
-                              : SizedBox(width: logoSize, height: logoSize),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
+                                ),
+                              if (headerSubtitle.isNotEmpty)
+                                Text(
+                                  headerSubtitle.startsWith('رئيس')
+                                      ? headerSubtitle
+                                      : 'رئيس $headerSubtitle',
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  textAlign: TextAlign.left,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              const SizedBox(height: 6),
                               Text(
                                 'الرقم: ${_selectedDocument?.serialCode.isNotEmpty == true ? _selectedDocument!.serialCode : 'يخصص عند الإصدار'}',
                                 maxLines: 1,
                                 softWrap: false,
-                                textAlign: blockAlignment ?? TextAlign.left,
+                                textAlign: TextAlign.left,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  height: 1.5,
+                                  fontSize: 16,
+                                  height: 1.4,
                                 ),
                               ),
                               Text(
                                 'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
                                 maxLines: 1,
                                 softWrap: false,
-                                textAlign: blockAlignment ?? TextAlign.left,
+                                textAlign: TextAlign.left,
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  height: 1.5,
+                                  fontSize: 16,
+                                  height: 1.4,
                                 ),
                               ),
-                              if (chiefRank.isNotEmpty)
-                                Text(
-                                  chiefRank,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: blockAlignment ?? TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 16,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              if (chiefName.isNotEmpty)
-                                Text(
-                                  chiefName,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: blockAlignment ?? TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                    height: 1.5,
-                                  ),
-                                ),
                             ],
                           ),
                         ),
