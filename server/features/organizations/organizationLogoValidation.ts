@@ -176,21 +176,21 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
       continue;
     }
     if (name.startsWith("xmlns:")) {
-      if (EXTERNAL_SCHEME.test(value) || value.includes("\\\\")) return false;
+      if (EXTERNAL_SCHEME.test(value) || value.includes("\\")) return false;
       continue;
     }
     if (name === "xml:space") {
       if (value !== "default" && value !== "preserve") return false;
       continue;
     }
-    if (name.startsWith("xml:") || name === "xml:base") return false;
+    if (name.startsWith("xml:")) return false;
 
-    if (name === "href" || name === "xlink:href") {
-      if (value && !/^#[A-Za-z_][\\w:.-]*$/.test(value)) return false;
+    if (name === "href" || name.endsWith(":href")) {
+      if (value && !/^#[A-Za-z_][\w:.-]*$/.test(value)) return false;
       continue;
     }
 
-    if (value.includes("\\\\")) return false;
+    if (value.includes("\\")) return false;
     if (EXTERNAL_SCHEME.test(value)) return false;
 
     if (name.includes(":")) {
@@ -204,10 +204,11 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
     let match: RegExpExecArray | null;
     while ((match = URL_FUNCTION.exec(value)) !== null) {
       const reference = (match[2] ?? match[3] ?? "").trim();
-      if (!/^#[A-Za-z_][\\w:.-]*$/.test(reference)) return false;
+      if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
     }
-    if (/url\\s*\\(/i.test(value) && !/url\\s*\\(/i.test(value)) return false;
-    if (/[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F]/.test(value)) {
+    const withoutLocalUrls = value.replace(URL_FUNCTION, "");
+    if (/url\s*\(/i.test(withoutLocalUrls)) return false;
+    if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(value)) {
       return false;
     }
   }
@@ -215,10 +216,10 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
 }
 
 function isSafeCss(css: string): boolean {
-  const normalizedCss = css.replace(/\\/\\*[\\s\\S]*?\\*\\//g, "");
+  const normalizedCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
   if (
-    normalizedCss.includes("\\\\") ||
-    /\\/\\*|\\*\\//.test(normalizedCss) ||
+    normalizedCss.includes("\\") ||
+    /\/\*|\*\//.test(normalizedCss) ||
     UNSAFE_CSS.test(normalizedCss) ||
     /[<>]/.test(normalizedCss)
   ) {
@@ -229,9 +230,9 @@ function isSafeCss(css: string): boolean {
   let match: RegExpExecArray | null;
   while ((match = URL_FUNCTION.exec(normalizedCss)) !== null) {
     const reference = (match[2] ?? match[3] ?? "").trim();
-    if (!/^#[A-Za-z_][\\w:.-]*$/.test(reference)) return false;
+    if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
   }
 
   const withoutLocalUrls = normalizedCss.replace(URL_FUNCTION, "");
-  return !/url\\s*\\(|expression\\s*\\(|javascript\\s*:/i.test(withoutLocalUrls);
+  return !/url\s*\(|expression\s*\(|javascript\s*:/i.test(withoutLocalUrls);
 }
