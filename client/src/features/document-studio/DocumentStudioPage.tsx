@@ -1621,9 +1621,12 @@ export default function DocumentStudioPage() {
                     {selectedTemplateId &&
                     documentTemplateFields.length > 0 &&
                     !previewMode ? (
-                      <div className="document-studio-no-print mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed p-3">
+                      <div
+                        className="document-studio-no-print mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed p-3"
+                      >
                         <p className="text-xs text-muted-foreground">
-                          تُنشأ الوثيقة من قيم الحقول تلقائياً. تحرير النص يدوياً اختياري.
+                          تُنشأ الوثيقة من قيم الحقول تلقائياً. تحرير النص
+                          يدوياً اختياري.
                         </p>
                         <Button
                           type="button"
