@@ -3,7 +3,6 @@ import {
   buildPrintHtml,
   buildPrintSheets,
   groupPages,
-  requiresManualPrint,
 } from "./printSheets";
 import type { PrintOptions, SourcePage } from "./types";
 
@@ -26,15 +25,13 @@ const baseOptions: PrintOptions = {
 };
 
 describe("document print sheet layout", () => {
-  it("requires a deliberate print tap on Android browsers", () => {
-    const androidAgent = "Mozilla/5.0 (Linux; Android 14) Chrome/120.0 Mobile";
-    const desktopAgent =
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0";
-    const iosAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)";
+  it("builds a printable document without a second manual-print screen", () => {
+    const html = buildPrintHtml(pages, baseOptions);
 
-    expect(requiresManualPrint(androidAgent)).toBe(true);
-    expect(requiresManualPrint(desktopAgent)).toBe(false);
-    expect(requiresManualPrint(iosAgent)).toBe(false);
+    expect(html).toContain("@page { size: A4 portrait; margin: 0; }");
+    expect(html).toContain('class="sheet"');
+    expect(html).not.toContain("about:blank");
+    expect(html).not.toContain("اضغط هنا لفتح الطباعة");
   });
 
   it("places one, two, four, six, or eight pages on each A4 sheet", () => {
