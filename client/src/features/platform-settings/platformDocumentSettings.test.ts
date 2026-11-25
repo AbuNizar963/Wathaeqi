@@ -103,6 +103,30 @@ describe("platform document settings UI normalization", () => {
     );
   });
 
+  it("migrates the previous two-line defaults into the four editable values", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerTitle: "المقدم غسان صالح كنو",
+      headerSubtitle: "رئيس قسم الشهباء",
+      headerChiefRank: "",
+      headerChiefName: "",
+    });
+
+    expect(normalized.headerTitle).toBe("المقدم");
+    expect(normalized.headerSubtitle).toBe("غسان صالح كنو");
+    expect(normalized.headerChiefRank).toBe("رئيس قسم شرطة");
+    expect(normalized.headerChiefName).toBe("الشهباء");
+  });
+
+  it("keeps the logo in the enlarged supported range", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerLogoSize: 120,
+    });
+
+    expect(normalized.headerLogoSize).toBe(160);
+  });
+
   it("returns complete defaults for missing settings", () => {
     expect(normalizePlatformDocumentSettings(null)).toMatchObject(
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS
