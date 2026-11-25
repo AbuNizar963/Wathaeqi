@@ -77,7 +77,7 @@ const SVG_ATTRIBUTES = new Set([
 ]);
 
 const SAFE_XML_ENTITIES = /&(?:amp|quot|apos|lt|gt);/g;
-const XML_DECLARATION = /^\\s*<\\?xml[^>]*\\?>/i;
+const XML_DECLARATION = /^\s*<\?xml[^>]*\?>/i;
 
 /**
  * Accepts a deliberately small, static SVG subset for organization logos.
