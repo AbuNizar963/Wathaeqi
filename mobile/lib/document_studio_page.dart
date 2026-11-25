@@ -502,8 +502,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     subtitle: Text(
                       template.description?.trim().isNotEmpty == true
                           ? template.description!
-                          : _categories[template.category] ??
-                                template.category,
+                          : _categories[template.category] ?? template.category,
                     ),
                     trailing: const Icon(Icons.chevron_left),
                     onTap: () => Navigator.pop(dialogContext, template),
@@ -664,14 +663,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
           100;
       final configuredLetterhead = {
         ..._letterhead,
-        'departmentName': _headerSetting(
-          'headerTitle',
-          'المقدم غسان صالح كنو',
-        ),
-        'unitName': _headerSetting(
-          'headerSubtitle',
-          'رئيس قسم الشهباء',
-        ),
+        'departmentName': _headerSetting('headerTitle', 'المقدم غسان صالح كنو'),
+        'unitName': _headerSetting('headerSubtitle', 'رئيس قسم الشهباء'),
         'unitChiefRank': _headerSetting(
           'headerChiefRank',
           _letterhead['unitChiefRank']?.toString() ?? '',
@@ -1228,7 +1221,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     }
 
     setState(() => _saving = true);
-    final sourceContent = _selectedDocument == null &&
+    final sourceContent =
+        _selectedDocument == null &&
             _selectedTemplateId != null &&
             !_showManualDocumentEditor
         ? _applyFieldValues(_templateBaseContent, customFieldValues)
@@ -1807,7 +1801,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                                     );
                                   }
                                   setState(
-                                    () => _showManualDocumentEditor = showEditor,
+                                    () =>
+                                        _showManualDocumentEditor = showEditor,
                                   );
                                 }
                               : null,
@@ -2925,14 +2920,8 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
             .clamp(40.0, 180.0)
             .toDouble();
     const pixelsPerMillimeter = 794 / 210;
-    final headerTitle = _headerSetting(
-      'headerTitle',
-      'المقدم غسان صالح كنو',
-    );
-    final headerSubtitle = _headerSetting(
-      'headerSubtitle',
-      'رئيس قسم الشهباء',
-    );
+    final headerTitle = _headerSetting('headerTitle', 'المقدم غسان صالح كنو');
+    final headerSubtitle = _headerSetting('headerSubtitle', 'رئيس قسم الشهباء');
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
     final logoSize =
@@ -2970,8 +2959,9 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       (_letterhead['logoUrl']?.toString().isNotEmpty ?? false))
                     Padding(
                       padding: EdgeInsets.only(
-                        top: _headerMillimeters('headerTopPaddingMm', 0) *
-                            pixelsPerMillimeter,
+                        top:
+                            _headerMillimeters('headerTopPaddingMm', 0) *
+                                pixelsPerMillimeter,
                       ),
                       child: Center(
                         child: Image.network(
@@ -3112,10 +3102,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       child: Text(
                         'وثائقي',
                         textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 11,
-                        ),
+                        style: TextStyle(color: Colors.black54, fontSize: 11),
                       ),
                     ),
                   ),

@@ -363,7 +363,6 @@ void main() {
     expect(find.text('تحرير الوثيقة'), findsOneWidget);
   });
 
-
   testWidgets(
     'guided document creation fills required template fields without opening the editor',
     (tester) async {
@@ -427,32 +426,34 @@ void main() {
       expect(find.text('تحرير النص يدوياً (اختياري)'), findsOneWidget);
 
       await tester.ensureVisible(find.text('حفظ الوثيقة'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('حفظ الوثيقة'));
       await tester.pumpAndSettle();
       expect(outbox.savedInput, isNull);
+      expect(find.text('أكمل الحقول المطلوبة: اسم الموظف'), findsOneWidget);
 
       final fieldInput = find.byWidgetPredicate(
         (widget) =>
             widget is TextField &&
             widget.decoration?.labelText == 'اسم الموظف *',
       );
-      final titleInput = find.byWidgetPredicate(
-        (widget) =>
-            widget is TextField &&
-            widget.decoration?.labelText == 'عنوان الوثيقة',
-      );
       await tester.ensureVisible(fieldInput);
+      await tester.pumpAndSettle();
       await tester.enterText(fieldInput, 'أحمد محمد');
-      await tester.ensureVisible(titleInput);
-      await tester.enterText(titleInput, 'كتاب تكليف');
+      tester.testTextInput.hide();
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('حفظ الوثيقة'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('حفظ الوثيقة'));
       await tester.pumpAndSettle();
 
       expect(outbox.savedInput?['templateId'], 'template-test');
       expect(outbox.savedInput?['fieldValues'], {'employee_name': 'أحمد محمد'});
       expect(outbox.savedInput?['content'].toString(), contains('أحمد محمد'));
-      expect(outbox.savedInput?['content'].toString(), isNot(contains('{{employee_name}}')));
+      expect(
+        outbox.savedInput?['content'].toString(),
+        isNot(contains('{{employee_name}}')),
+      );
     },
   );
 
