@@ -2474,8 +2474,19 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     ),
                     const Divider(height: 28),
                     const Text(
-                      'رأس الصفحة',
+                      'محتوى ترويسة الوثيقة',
                       style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6, bottom: 8),
+                      child: Text(
+                        'يظهر الشعار أعلى بيانات رئيس الوحدة، وتُعرض الرتبة واسم الوحدة في سطرين متتاليين على يسار الوثيقة.',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                          height: 1.5,
+                        ),
+                      ),
                     ),
                     TextField(
                       controller: titleController,
