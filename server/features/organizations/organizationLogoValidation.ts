@@ -169,6 +169,7 @@ const SVG_ATTRIBUTES = new Set([
   "mode",
   "values",
   "type",
+  "media",
   "operator",
   "k1",
   "k2",
@@ -352,8 +353,8 @@ function isSafeStylesheetNodes(nodes: unknown[]): boolean {
 
     if (Object.hasOwn(node, "#comment")) continue;
 
-    if (Object.hasOwn(node, "#text")) {
-      const text = node["#text"];
+    if (Object.hasOwn(node, "#text") || Object.hasOwn(node, "#cdata")) {
+      const text = node["#text"] ?? node["#cdata"];
       if (typeof text !== "string") return false;
       css += text;
       continue;
