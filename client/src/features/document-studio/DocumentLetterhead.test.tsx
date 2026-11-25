@@ -107,8 +107,9 @@ describe("DocumentLetterhead", () => {
         headerSettings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
       />
     );
-    expect(markup).toContain("width:200px");
-    expect(markup).toContain("height:200px");
+    expect(markup).toContain("width:220px");
+    expect(markup).toContain("height:220px");
+    expect(markup).toContain("justify-content:center");
   });
 
   it("honours the logo size setting", () => {
@@ -122,7 +123,7 @@ describe("DocumentLetterhead", () => {
         }}
       />
     );
-    expect(markup).toContain("width:96px");
+    expect(markup).toContain("width:106px");
     expect(markup).toContain('alt="الشعار الرسمي"');
   });
 });
