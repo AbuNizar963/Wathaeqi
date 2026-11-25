@@ -461,7 +461,9 @@ export default function DocumentStudioPage() {
     );
     if (selectedTemplateId && missingFields.length > 0) {
       toast.error(
-        `أكمل الحقول المطلوبة: ${missingFields.map(field => field.label).join("، ")}`
+        `أكمل الحقول المطلوبة: ${missingFields
+          .map(field => field.label)
+          .join("، ")}`
       );
       return;
     }
@@ -1611,7 +1613,9 @@ export default function DocumentStudioPage() {
                         الموضوع: {documentSubject}
                       </p>
                     ) : null}
-                    {selectedTemplateId && documentTemplateFields.length > 0 && !previewMode ? (
+                    {selectedTemplateId &&
+                    documentTemplateFields.length > 0 &&
+                    !previewMode ? (
                       <div className="document-studio-no-print mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed p-3">
                         <p className="text-xs text-muted-foreground">
                           تُنشأ الوثيقة من قيم الحقول تلقائياً. تحرير النص يدوياً اختياري.
@@ -1620,16 +1624,24 @@ export default function DocumentStudioPage() {
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => setManualTemplateEditing(value => !value)}
+                          onClick={() =>
+                            setManualTemplateEditing(value => !value)
+                          }
                         >
-                          {manualTemplateEditing ? "إيقاف التحرير اليدوي" : "تحرير النص يدوياً (اختياري)"}
+                          {manualTemplateEditing
+                            ? "إيقاف التحرير اليدوي"
+                            : "تحرير النص يدوياً (اختياري)"}
                         </Button>
                       </div>
                     ) : null}
                     <DocumentEditor
                       content={documentPreviewContent}
                       onChange={handleDocumentContentChange}
-                      editable={canEditDocument && !previewMode && (!selectedTemplateId || manualTemplateEditing)}
+                      editable={
+                        canEditDocument &&
+                        !previewMode &&
+                        (!selectedTemplateId || manualTemplateEditing)
+                      }
                       containerClassName="rounded-none border-0 shadow-none"
                     />
                     <DocumentSignatureBlock
@@ -1727,7 +1739,8 @@ export default function DocumentStudioPage() {
           <DialogHeader>
             <DialogTitle className="text-right">إنشاء وثيقة</DialogTitle>
             <DialogDescription className="text-right">
-              اختر نموذجاً جاهزاً لتعبئة حقوله، أو ابدأ وثيقة فارغة، أو ارفع ملفاً للطباعة.
+              اختر نموذجاً جاهزاً لتعبئة حقوله، أو ابدأ وثيقة فارغة، أو ارفع
+              ملفاً للطباعة.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">
