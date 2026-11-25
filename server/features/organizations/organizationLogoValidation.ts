@@ -309,15 +309,18 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
   }
 }
 
+// prettier-ignore
 function isXmlNameCharacter(character: string): boolean {
   return /^[A-Za-z0-9_.:-]$/.test(character);
 }
 
+// prettier-ignore
 function isXmlWhitespace(character: string): boolean {
   return character === " " || character === "\t" ||
     character === "\n" || character === "\r";
 }
 
+// prettier-ignore
 function isValidXmlName(name: string): boolean {
   const parts = name.split(":");
   return (
@@ -326,6 +329,7 @@ function isValidXmlName(name: string): boolean {
   );
 }
 
+// prettier-ignore
 function isTextElement(name: string): boolean {
   return (
     name === "text" ||
