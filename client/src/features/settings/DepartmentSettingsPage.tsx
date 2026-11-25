@@ -661,9 +661,9 @@ export default function DepartmentSettingsPage() {
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        اختر PNG أو JPG من الاستديو، أو SVG أو صورة من
-                        ملفاتي. الحد الأقصى 2.5 ميغابايت. يُرفع الشعار مباشرة
-                        ويُستخدم في ترويسة المخرجات.
+                        اختر PNG أو JPG من الاستديو، أو SVG أو صورة من ملفاتي.
+                        الحد الأقصى 2.5 ميغابايت. يُرفع الشعار مباشرة ويُستخدم
+                        في ترويسة المخرجات.
                       </p>
                       {logoError ? (
                         <p className="text-xs text-destructive">{logoError}</p>
