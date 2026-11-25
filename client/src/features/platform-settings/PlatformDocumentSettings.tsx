@@ -172,7 +172,9 @@ export default function PlatformDocumentSettings() {
             <label className="block rounded-xl border p-4">
               <span className="flex items-center justify-between gap-3 text-sm font-bold">
                 <span>حجم العلامة المائية</span>
-                <output className="tabular-nums">{values.watermarkScalePercent}%</output>
+                <output className="tabular-nums">
+                  {values.watermarkScalePercent}%
+                </output>
               </span>
               <input
                 type="range"
@@ -181,7 +183,10 @@ export default function PlatformDocumentSettings() {
                 step={5}
                 value={values.watermarkScalePercent}
                 onChange={event =>
-                  updateValue("watermarkScalePercent", Number(event.target.value))
+                  updateValue(
+                    "watermarkScalePercent",
+                    Number(event.target.value)
+                  )
                 }
                 aria-label="حجم العلامة المائية"
                 className="mt-3 w-full accent-[#10233f]"
