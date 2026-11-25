@@ -41,7 +41,7 @@ describe("isSafeSvgLogo", () => {
 
   it("accepts Inkscape and RDF editor metadata", () => {
     expectValidSvg(
-      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><sodipodi:namedview inkscape:zoom="1"/><metadata><rdf:RDF><rdf:Description><dc:title>Logo</dc:title></rdf:Description></rdf:RDF></metadata><path d="M0 0h10v10z"/></svg>'
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><sodipodi:namedview inkscape:zoom="1"/><metadata><rdf:RDF><rdf:Description><dc:title>Logo</dc:title></rdf:Description></rdf:RDF><x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF><rdf:Description><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Logo</rdf:li></rdf:Alt></dc:title></rdf:Description></rdf:RDF></x:xmpmeta></metadata><path d="M0 0h10v10z"/></svg>'
     );
   });
 
