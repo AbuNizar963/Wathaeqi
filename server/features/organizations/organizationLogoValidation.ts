@@ -137,12 +137,12 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
         return false;
       }
       const withoutLocalReferences = value.replace(
-        /url\\(\\s*#[A-Za-z_][\\w.-]*\\s*\\)/gi,
+        /url\(\s*#[A-Za-z_][\w.-]*\s*\)/gi,
         ""
       );
       if (
         name !== "xmlns" &&
-        /(?:javascript:|data:|https?:|url\\s*\\(|\\\\|<|>)/i.test(
+        /(?:javascript:|data:|https?:|url\s*\(|\\|<|>)/i.test(
           withoutLocalReferences
         )
       ) {
