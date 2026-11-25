@@ -431,14 +431,20 @@ void main() {
       await tester.pumpAndSettle();
       expect(outbox.savedInput, isNull);
 
-      final fieldInput = find.widgetWithText(TextField, 'اسم الموظف *');
+      final fieldInput = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'اسم الموظف *',
+      );
+      final titleInput = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'عنوان الوثيقة',
+      );
       await tester.ensureVisible(fieldInput);
       await tester.enterText(fieldInput, 'أحمد محمد');
-      await tester.ensureVisible(find.widgetWithText(TextField, 'عنوان الوثيقة'));
-      await tester.enterText(
-        find.widgetWithText(TextField, 'عنوان الوثيقة'),
-        'كتاب تكليف',
-      );
+      await tester.ensureVisible(titleInput);
+      await tester.enterText(titleInput, 'كتاب تكليف');
       await tester.ensureVisible(find.text('حفظ الوثيقة'));
       await tester.tap(find.text('حفظ الوثيقة'));
       await tester.pumpAndSettle();
