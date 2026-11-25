@@ -26,7 +26,7 @@ const SVG_ATTRIBUTES = new Set([
   "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset",
   "stroke-opacity", "opacity", "transform", "transform-origin",
   "preserveAspectRatio", "id", "class", "role", "focusable",
-  "aria-label", "aria-labelledby", "aria-hidden", "xml:space",
+  "aria-label", "aria-labelledby", "aria-hidden", "xml:space", "style",
   "offset", "stop-color", "stop-opacity", "gradientUnits",
   "gradientTransform", "spreadMethod", "clip-rule", "clip-path", "mask",
   "maskUnits", "maskContentUnits", "clipPathUnits", "patternUnits",
