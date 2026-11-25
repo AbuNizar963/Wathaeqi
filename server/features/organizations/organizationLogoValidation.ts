@@ -70,7 +70,7 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       parseTagValue: false,
       parseAttributeValue: false,
       trimValues: false,
-      processEntities: false,
+      processEntities: true,
       htmlEntities: false,
       allowBooleanAttributes: false,
     });
@@ -187,7 +187,7 @@ function validateAttributes(attributes: Record<string, unknown>): boolean {
       continue;
     }
 
-    if (name === "style" && !isSafeCss(value)) return false;
+    if (value.includes("\\\\")) return false;\n    if (name === "style" && !isSafeCss(value)) return false;
     if (EXTERNAL_SCHEME.test(value)) return false;
 
     URL_FUNCTION.lastIndex = 0;
@@ -214,6 +214,6 @@ function isSafeCss(css: string): boolean {
     if (!/^#[A-Za-z_][\w:.-]*$/.test(reference)) return false;
   }
 
-  const withoutLocalUrls = css.replace(URL_FUNCTION, "");
+  const withoutLocalUrls = normalizedCss.replace(URL_FUNCTION, "");
   return !/url\s*\(|expression\s*\(|javascript\s*:/i.test(withoutLocalUrls);
 }
