@@ -7,13 +7,13 @@ import {
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 
 describe("DocumentSignatureBlock", () => {
-  it("renders the two configured responsible-person lines centered below the body", () => {
+  it("renders the four configured values as two stacked lines aligned left", () => {
     const settings: PlatformDocumentSettings = {
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-      headerTitle: "المقدم غسان صالح كنو",
-      headerSubtitle: "رئيس قسم الشهباء",
-      headerChiefRank: "قيمة قديمة لا تعرض",
-      headerChiefName: "قيمة قديمة لا تعرض",
+      headerTitle: "المقدم",
+      headerSubtitle: "غسان صالح كنو",
+      headerChiefRank: "رئيس قسم شرطة",
+      headerChiefName: "الشهباء",
     };
     const markup = renderToStaticMarkup(
       <DocumentSignatureBlock
@@ -25,17 +25,14 @@ describe("DocumentSignatureBlock", () => {
       />
     );
 
-    const first = markup.indexOf("المقدم غسان صالح كنو");
-    const second = markup.indexOf("رئيس قسم الشهباء");
-    expect(first).toBeGreaterThan(-1);
-    expect(second).toBeGreaterThan(first);
-    expect(markup).not.toContain("قيمة قديمة لا تعرض");
+    expect(markup).toContain("المقدم غسان صالح كنو");
+    expect(markup).toContain("رئيس قسم شرطة الشهباء");
+    expect(markup).toContain('class="mt-8 space-y-1 text-left');
+    expect(markup.match(/<p /g)).toHaveLength(2);
     expect(markup).toContain('data-testid="document-signature-block"');
-    expect(markup).toContain('dir="rtl"');
-    expect(markup).toContain('class="mt-8 space-y-1 text-center');
   });
 
-  it("uses the approved defaults when the two editable fields are empty", () => {
+  it("uses the approved two-line defaults", () => {
     const markup = renderToStaticMarkup(
       <DocumentSignatureBlock
         organizationName="قسم شرطة الشهباء"
@@ -45,14 +42,19 @@ describe("DocumentSignatureBlock", () => {
         settings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
       />
     );
+
     expect(markup).toContain("المقدم غسان صالح كنو");
-    expect(markup).toContain("رئيس قسم الشهباء");
+    expect(markup).toContain("رئيس قسم شرطة الشهباء");
+    expect(markup.match(/<p /g)).toHaveLength(2);
   });
 
-  it("adds the رئيس prefix to a configured unit description only once", () => {
+  it("keeps each configured value editable without adding extra display lines", () => {
     const settings = {
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-      headerSubtitle: "قسم الشهباء",
+      headerTitle: "عميد",
+      headerSubtitle: "اسم المسؤول",
+      headerChiefRank: "رئيس",
+      headerChiefName: "الوحدة",
     };
     const markup = renderToStaticMarkup(
       <DocumentSignatureBlock
@@ -63,7 +65,9 @@ describe("DocumentSignatureBlock", () => {
         settings={settings}
       />
     );
-    expect(markup).toContain("رئيس قسم الشهباء");
-    expect(markup).not.toContain("رئيس رئيس");
+
+    expect(markup).toContain("عميد اسم المسؤول");
+    expect(markup).toContain("رئيس الوحدة");
+    expect(markup.match(/<p /g)).toHaveLength(2);
   });
 });

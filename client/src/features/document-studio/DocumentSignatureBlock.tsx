@@ -9,18 +9,19 @@ export type DocumentSignatureBlockProps = {
 };
 
 /**
- * Renders the two editable responsible-person lines after the document body.
- * Existing settings keys are reused to preserve compatibility with saved data.
+ * Renders two configurable signatory lines after the document body.
+ * The four settings are paired into two readable lines and remain editable.
  */
 export default function DocumentSignatureBlock({
   settings,
 }: DocumentSignatureBlockProps) {
-  const firstLine = settings?.headerTitle?.trim() || "المقدم غسان صالح كنو";
-  const configuredSecondLine =
-    settings?.headerSubtitle?.trim() || "رئيس قسم الشهباء";
-  const secondLine = configuredSecondLine.startsWith("رئيس")
-    ? configuredSecondLine
-    : `رئيس ${configuredSecondLine}`;
+  const firstRank = settings?.headerTitle.trim() || "المقدم";
+  const firstName = settings?.headerSubtitle.trim() || "غسان صالح كنو";
+  const secondRole = settings?.headerChiefRank.trim() || "رئيس قسم شرطة";
+  const secondUnit = settings?.headerChiefName.trim() || "الشهباء";
+
+  const firstLine = [firstRank, firstName].filter(Boolean).join(" ");
+  const secondLine = [secondRole, secondUnit].filter(Boolean).join(" ");
   const lines = [firstLine, secondLine].filter(
     value => value.trim().length > 0
   );
@@ -29,7 +30,7 @@ export default function DocumentSignatureBlock({
 
   return (
     <footer
-      className="mt-8 space-y-1 text-center text-[12pt] font-semibold leading-[1.7]"
+      className="mt-8 space-y-1 text-left text-[12pt] font-semibold leading-[1.7]"
       dir="rtl"
       data-testid="document-signature-block"
     >

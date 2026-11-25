@@ -99,6 +99,18 @@ describe("DocumentLetterhead", () => {
     expect(markup).not.toContain("document-tricolor-stars-divider");
   });
 
+  it("uses the enlarged default logo size", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentLetterhead
+        logoUrl="data:image/png;base64,AAAA"
+        dividerColor="#000000"
+        headerSettings={DEFAULT_PLATFORM_DOCUMENT_SETTINGS}
+      />
+    );
+    expect(markup).toContain("width:200px");
+    expect(markup).toContain("height:200px");
+  });
+
   it("honours the logo size setting", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead

@@ -4,6 +4,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { ownerTrpc } from "@/lib/ownerTrpc";
+import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   MAX_WATERMARK_OPACITY_PERCENT,
@@ -15,7 +16,8 @@ import {
 type SettingsForm = Omit<PlatformDocumentSettings, "updatedAt">;
 
 function toFormSettings(settings: PlatformDocumentSettings): SettingsForm {
-  const { updatedAt: _updatedAt, ...values } = settings;
+  const { updatedAt: _updatedAt, ...values } =
+    normalizePlatformDocumentSettings(settings);
   return values;
 }
 
@@ -205,11 +207,13 @@ export default function PlatformDocumentSettings() {
             <div className="rounded-xl border p-4">
               <h3 className="font-bold">بيانات أسفل الوثيقة</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                تظهر هذه البيانات بعد آخر سطر من الوثيقة.
+                تظهر هذه البيانات أسفل متن الوثيقة في سطرين بمحاذاة اليسار؛
+                السطر الأول لرتبة واسم رئيس الوحدة، والثاني لصفة المسؤول واسم
+                الوحدة. يظهر الشعار أعلى الوثيقة وفوق النص.
               </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
-                  العنوان الرئيسي
+                  رتبة رئيس الوحدة
                   <input
                     value={values.headerTitle}
                     maxLength={255}
@@ -220,7 +224,7 @@ export default function PlatformDocumentSettings() {
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  العنوان الفرعي / اسم الوحدة
+                  اسم رئيس الوحدة
                   <input
                     value={values.headerSubtitle}
                     maxLength={255}
@@ -231,7 +235,7 @@ export default function PlatformDocumentSettings() {
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  رتبة / صفة المسؤول
+                  صفة المسؤول
                   <input
                     value={values.headerChiefRank}
                     maxLength={120}
@@ -242,7 +246,7 @@ export default function PlatformDocumentSettings() {
                   />
                 </label>
                 <label className="space-y-1 text-sm">
-                  اسم المسؤول
+                  اسم الوحدة
                   <input
                     value={values.headerChiefName}
                     maxLength={255}
@@ -262,7 +266,7 @@ export default function PlatformDocumentSettings() {
                       updateValue("headerShowLogo", event.target.checked)
                     }
                   />
-                  إظهار شعار الجهة
+                  إظهار شعار الجهة فوق بيانات المسؤول
                 </label>
                 <label className="space-y-1 text-sm">
                   المحاذاة
@@ -290,7 +294,7 @@ export default function PlatformDocumentSettings() {
                 <input
                   type="range"
                   min={32}
-                  max={128}
+                  max={220}
                   step={4}
                   value={values.headerLogoSize}
                   onChange={event =>

@@ -56,7 +56,7 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
     { watermarkText: "   " },
-    { headerLogoSize: 200 },
+    { headerLogoSize: 221 },
     { headerTopPaddingMm: -1 },
     { headerAlignment: "invalid" },
   ])("blocks export with invalid effective settings: %o", async invalid => {
@@ -101,6 +101,51 @@ describe("platform document settings UI normalization", () => {
     expect(normalized.headerLogoSize).toBe(
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerLogoSize
     );
+  });
+
+  it("migrates the previous two-line defaults into the four editable values", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerTitle: "المقدم غسان صالح كنو",
+      headerSubtitle: "رئيس قسم الشهباء",
+      headerChiefRank: "",
+      headerChiefName: "",
+    });
+
+    expect(normalized.headerTitle).toBe("المقدم");
+    expect(normalized.headerSubtitle).toBe("غسان صالح كنو");
+    expect(normalized.headerChiefRank).toBe("رئيس قسم شرطة");
+    expect(normalized.headerChiefName).toBe("الشهباء");
+  });
+
+  it("keeps the logo in the enlarged supported range", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+      headerLogoSize: 120,
+    });
+
+    expect(normalized.headerLogoSize).toBe(120);
+  });
+
+  it("migrates older saved records when the added signatory fields are absent", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      headerTitle: "المقدم غسان صالح كنو",
+      headerSubtitle: "رئيس قسم الشهباء",
+    });
+
+    expect(normalized.headerTitle).toBe("المقدم");
+    expect(normalized.headerSubtitle).toBe("غسان صالح كنو");
+    expect(normalized.headerChiefRank).toBe("رئيس قسم شرطة");
+    expect(normalized.headerChiefName).toBe("الشهباء");
+  });
+
+  it("keeps legacy logo sizes valid while enforcing the new maximum", () => {
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 120 }).headerLogoSize
+    ).toBe(120);
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 999 }).headerLogoSize
+    ).toBe(220);
   });
 
   it("returns complete defaults for missing settings", () => {

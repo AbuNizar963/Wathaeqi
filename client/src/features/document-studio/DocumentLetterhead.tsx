@@ -21,7 +21,7 @@ export default function DocumentLetterhead({
   date,
 }: DocumentLetterheadProps) {
   const showLogo = headerSettings?.headerShowLogo !== false;
-  const logoSize = headerSettings?.headerLogoSize ?? 160;
+  const logoSize = headerSettings?.headerLogoSize ?? 200;
 
   return (
     <header

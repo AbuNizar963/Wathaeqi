@@ -8,12 +8,12 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   headerDividerColor: "#b49a55",
   headerDividerStyle: "double" as const,
   headerDividerWidthPt: 2.25,
-  headerTitle: "المقدم غسان صالح كنو",
-  headerSubtitle: "رئيس قسم الشهباء",
-  headerChiefRank: "",
-  headerChiefName: "",
+  headerTitle: "المقدم",
+  headerSubtitle: "غسان صالح كنو",
+  headerChiefRank: "رئيس قسم شرطة",
+  headerChiefName: "الشهباء",
   headerShowLogo: true,
-  headerLogoSize: 160,
+  headerLogoSize: 200,
   headerTopPaddingMm: 0,
   headerHorizontalPaddingMm: 0,
   headerBottomPaddingMm: 6,
@@ -70,7 +70,7 @@ export type PlatformDocumentSettings = {
 export const MAX_WATERMARK_OPACITY_PERCENT = 60;
 export const MIN_WATERMARK_SCALE_PERCENT = 40;
 export const MAX_WATERMARK_SCALE_PERCENT = 180;
-export const MAX_HEADER_LOGO_SIZE = 160;
+export const MAX_HEADER_LOGO_SIZE = 220;
 export const MIN_HEADER_LOGO_SIZE = 32;
 export const MAX_HEADER_PADDING_MM = 30;
 export const MAX_PAGE_MARGIN_MM = 35;
