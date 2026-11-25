@@ -1491,23 +1491,25 @@ export default function DocumentStudioPage() {
                           <Textarea
                             rows={3}
                             value={documentFieldValues[field.key] ?? ""}
-                            onChange={event =>
+                            onChange={event => {
                               setDocumentFieldValues(current => ({
                                 ...current,
                                 [field.key]: event.target.value,
-                              }))
-                            }
+                              }));
+                              setTemplateValuesApplied(false);
+                            }}
                             disabled={!canEditDocument}
                           />
                         ) : field.type === "select" ? (
                           <select
                             value={documentFieldValues[field.key] ?? ""}
-                            onChange={event =>
+                            onChange={event => {
                               setDocumentFieldValues(current => ({
                                 ...current,
                                 [field.key]: event.target.value,
-                              }))
-                            }
+                              }));
+                              setTemplateValuesApplied(false);
+                            }}
                             disabled={!canEditDocument}
                             className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                           >
@@ -1528,12 +1530,13 @@ export default function DocumentStudioPage() {
                                   : "text"
                             }
                             value={documentFieldValues[field.key] ?? ""}
-                            onChange={event =>
+                            onChange={event => {
                               setDocumentFieldValues(current => ({
                                 ...current,
                                 [field.key]: event.target.value,
-                              }))
-                            }
+                              }));
+                              setTemplateValuesApplied(false);
+                            }}
                             disabled={!canEditDocument}
                           />
                         )}
