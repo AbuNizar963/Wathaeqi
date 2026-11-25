@@ -13,6 +13,7 @@ const SAFE_ELEMENTS = new Set([
   "switch",
   "view",
   "path",
+  "a",
   "image",
   "rect",
   "circle",
