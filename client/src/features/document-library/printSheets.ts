@@ -251,10 +251,9 @@ async function waitForPrintAssets(document: Document): Promise<void> {
           image.addEventListener("error", () => resolve(), { once: true });
         });
       }
-      if (!image.complete || image.naturalWidth === 0) {
-        throw new Error("تعذر تحميل إحدى صور الوثيقة للطباعة");
+      if (image.complete && image.naturalWidth > 0 && image.decode) {
+        await image.decode().catch(() => undefined);
       }
-      if (image.decode) await image.decode();
     })
   );
 }
