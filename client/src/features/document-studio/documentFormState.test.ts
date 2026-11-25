@@ -55,16 +55,41 @@ describe("document editor safety", () => {
 
 describe("guided template field validation", () => {
   const fields = [
-    { key: "employee", label: "اسم الموظف", type: "text" as const, required: true },
-    { key: "notes", label: "ملاحظات", type: "multiline" as const, required: false },
-    { key: "date", label: "التاريخ", type: "date" as const, required: true },
+    {
+      key: "employee",
+      label: "اسم الموظف",
+      type: "text" as const,
+      required: true,
+    },
+    {
+      key: "notes",
+      label: "ملاحظات",
+      type: "multiline" as const,
+      required: false,
+    },
+    {
+      key: "date",
+      label: "التاريخ",
+      type: "date" as const,
+      required: true,
+    },
   ];
 
   it("returns only required fields that are empty or whitespace", () => {
-    expect(missingRequiredTemplateFields(fields, { employee: "  ", date: "2026-11-25" }).map(field => field.key)).toEqual(["employee"]);
+    expect(
+      missingRequiredTemplateFields(fields, {
+        employee: "  ",
+        date: "2026-11-25",
+      }).map(field => field.key)
+    ).toEqual(["employee"]);
   });
 
   it("accepts completed required fields and ignores optional fields", () => {
-    expect(missingRequiredTemplateFields(fields, { employee: "أحمد", date: "2026-11-25" })).toEqual([]);
+    expect(
+      missingRequiredTemplateFields(fields, {
+        employee: "أحمد",
+        date: "2026-11-25",
+      })
+    ).toEqual([]);
   });
 });
