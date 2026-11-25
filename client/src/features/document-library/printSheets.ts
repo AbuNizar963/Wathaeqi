@@ -32,6 +32,9 @@ export interface PrintWindowContent {
   title?: string;
 }
 
+const ANDROID_PRINT_ERROR = "تعذر فتح الطباعة. استخدم قائمة المتصفح لاختيار طباعة.";
+const ANDROID_PRINT_HELP = "الوثيقة جاهزة. اضغط الزر للطباعة أو حفظ PDF.";
+
 /** Android browsers are more reliable when printing follows an explicit tap. */
 export function requiresManualPrint(userAgent: string): boolean {
   return /Android/i.test(userAgent);
@@ -280,12 +283,12 @@ export async function openPrintWindow(
         printWindow.print();
       } catch {
         const help = doc.querySelector<HTMLElement>(".print-help");
-        if (help) help.textContent = "تعذر فتح الطباعة. استخدم قائمة المتصفح لاختيار طباعة.";
+        if (help) help.textContent = ANDROID_PRINT_ERROR;
       }
     });
     const help = doc.createElement("p");
     help.className = "print-help";
-    help.textContent = "الوثيقة جاهزة. اضغط الزر للطباعة أو حفظ PDF.";
+    help.textContent = ANDROID_PRINT_HELP;
     doc.body.append(action, help);
   }
   sheets.forEach((sheetPages, sheetIndex) => {
