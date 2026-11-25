@@ -54,6 +54,10 @@ export function normalizePlatformDocumentSettings(
       source.watermarkOpacityPercent,
       defaults.watermarkOpacityPercent
     ),
+    watermarkScalePercent: safeNumber(
+      source.watermarkScalePercent,
+      defaults.watermarkScalePercent
+    ),
     headerDividerColor: safeText(
       source.headerDividerColor,
       defaults.headerDividerColor,
