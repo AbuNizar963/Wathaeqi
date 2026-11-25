@@ -341,6 +341,7 @@ function isSafeStylesheet(css: string): boolean {
   }
 }
 
+// prettier-ignore
 function isSafeStylesheetNodes(nodes: unknown[]): boolean {
   let css = "";
 
