@@ -120,7 +120,16 @@ export function isSafeSvgLogo(bytes: Buffer): boolean {
       if (name === "xmlns" && value !== "http://www.w3.org/2000/svg") {
         return false;
       }
-      if (name !== "xmlns" && /(?:javascript:|data:|https?:|url\s*\(|\\|<|>)/i.test(value)) {
+      const withoutLocalReferences = value.replace(
+        /url\\(\\s*#[A-Za-z_][\\w.-]*\\s*\\)/gi,
+        ""
+      );
+      if (
+        name !== "xmlns" &&
+        /(?:javascript:|data:|https?:|url\\s*\\(|\\\\|<|>)/i.test(
+          withoutLocalReferences
+        )
+      ) {
         return false;
       }
       const entitiesRemoved = value.replace(SAFE_XML_ENTITIES, "");
