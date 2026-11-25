@@ -684,6 +684,12 @@ export const appwriteSchema: SchemaTable[] = [
         default: 12,
       },
       {
+        key: "watermarkScalePercent",
+        type: "integer",
+        required: false,
+        default: 100,
+      },
+      {
         key: "headerDividerColor",
         type: "varchar",
         size: 7,
