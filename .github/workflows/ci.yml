@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -44,6 +44,19 @@ jobs:
             echo "Retired provider runtime dependency detected"
             exit 1
           fi
+      - name: Apply repository formatter to document settings page
+        run: pnpm exec prettier --write client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx
+
+      - name: Commit formatter output to working branch
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx
+            git commit -m "تنسيق صفحة إعدادات الوثائق"
+            git push origin HEAD:improve/document-settings-organization
+          fi
+
       - name: Check document studio formatting
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
