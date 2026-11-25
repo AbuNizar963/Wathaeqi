@@ -1202,7 +1202,6 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       _showMessage('أدخل عنوان الوثيقة أولاً');
       return;
     }
-    setState(() => _saving = true);
     final customFieldValues = Map<String, String>.from(_fieldValues)
       ..remove('organization')
       ..remove('date')
@@ -1228,6 +1227,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
       }
     }
 
+    setState(() => _saving = true);
     final sourceContent = _selectedDocument == null &&
             _selectedTemplateId != null &&
             !_showManualDocumentEditor
