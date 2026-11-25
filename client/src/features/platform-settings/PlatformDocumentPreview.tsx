@@ -65,24 +65,26 @@ export default function PlatformDocumentPreview({
     [previewDocument]
   );
 
-  const dateValue = previewDocument
-    ? new Date(previewDocument.documentDate)
-    : null;
-  const previewDate =
-    dateValue && Number.isFinite(dateValue.getTime())
-      ? new Intl.DateTimeFormat("ar", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          numberingSystem: "latn",
-        }).format(dateValue)
-      : undefined;
+  const previewDate = previewDocument
+    ? formatArabicDate(previewDocument.documentDate)
+    : undefined;
   const previewLogoUrl =
     letterheadSettings.data?.logoUrl ?? (logoUrl || null);
   const previewOrganizationName =
     letterheadSettings.data?.departmentName ??
     organizationName ??
     "وثائقي";
+
+  function formatArabicDate(value: string): string {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return value;
+    return new Intl.DateTimeFormat("ar", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      numberingSystem: "latn",
+    }).format(date);
+  }
 
   return (
     <Card className="space-y-3 p-5">
@@ -141,7 +143,7 @@ export default function PlatformDocumentPreview({
           headerSettings={settings}
           serial={
             previewDocument?.serialCode ||
-            (previewDocument ? "مسودة" : undefined)
+            (previewDocument ? "يخصص عند الإصدار" : undefined)
           }
           date={previewDate}
         />
