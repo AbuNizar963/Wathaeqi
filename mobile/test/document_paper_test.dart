@@ -50,7 +50,9 @@ void main() {
       'عبارة أمنية مخصصة',
     );
     expect(
-      tester.widget<DocumentPaper>(find.byType(DocumentPaper)).watermarkScalePercent,
+      tester
+          .widget<DocumentPaper>(find.byType(DocumentPaper))
+          .watermarkScalePercent,
       150,
     );
   });
