@@ -71,18 +71,21 @@ describe("prepared organization logo size", () => {
     expect(result.contentType).toBe("image/svg+xml");
   });
 
-  it("recognizes Android SVG files with a generic MIME type", async () => {
-    const file = new File(
-      ['<svg xmlns="http://www.w3.org/2000/svg"/>'],
-      "organization-logo.svg",
-      { type: "application/octet-stream" }
-    );
+  it.each(["", "application/octet-stream", "application/xml", "text/xml"])(
+    "recognizes Android SVG files reported as %s",
+    async mimeType => {
+      const file = new File(
+        ['<svg xmlns="http://www.w3.org/2000/svg"/>'],
+        "organization-logo.svg",
+        { type: mimeType }
+      );
 
-    const result = await prepareOrganizationLogoUpload(file);
+      const result = await prepareOrganizationLogoUpload(file);
 
-    expect(result.blob).toBe(file);
-    expect(result.contentType).toBe("image/svg+xml");
-  });
+      expect(result.blob).toBe(file);
+      expect(result.contentType).toBe("image/svg+xml");
+    }
+  );
 
   it("rejects SVG files larger than the server upload limit", async () => {
     const file = new File(
