@@ -7,7 +7,7 @@ import {
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 
 describe("DocumentSignatureBlock", () => {
-  it("renders the four configured values as two stacked lines aligned left", () => {
+  it("renders the four configured values as two stacked, centred lines", () => {
     const settings: PlatformDocumentSettings = {
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
       headerTitle: "المقدم",
@@ -27,7 +27,7 @@ describe("DocumentSignatureBlock", () => {
 
     expect(markup).toContain("المقدم غسان صالح كنو");
     expect(markup).toContain("رئيس قسم شرطة الشهباء");
-    expect(markup).toContain('class="mt-8 space-y-1 text-left');
+    expect(markup).toContain('class="mt-8 space-y-1 text-center');
     expect(markup.match(/<p /g)).toHaveLength(2);
     expect(markup).toContain('data-testid="document-signature-block"');
   });
@@ -69,5 +69,6 @@ describe("DocumentSignatureBlock", () => {
     expect(markup).toContain("عميد اسم المسؤول");
     expect(markup).toContain("رئيس الوحدة");
     expect(markup.match(/<p /g)).toHaveLength(2);
+    expect(markup).toContain("text-center");
   });
 });

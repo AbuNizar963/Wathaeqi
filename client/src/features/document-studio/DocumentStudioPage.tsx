@@ -670,7 +670,7 @@ export default function DocumentStudioPage() {
     (documentOrganizationId === organizationContext.data?.organizationId
       ? organizationContext.data?.organizationName
       : null) ??
-    "وثائقي";
+    "";
 
   function getDocumentSystemVariables(): Record<string, string> {
     const values: Record<string, string> = {
@@ -696,6 +696,8 @@ export default function DocumentStudioPage() {
           )
         : documentContent;
   const logoUrl = settings?.logoUrl ?? null;
+  const documentWatermarkText =
+    platformDocumentSettings.data?.watermarkText?.replace(/^وثائقي$/, "") ?? "";
   const dividerColor =
     platformDocumentSettings.data?.headerDividerColor ?? "#334155";
   const isSavingDocument =
@@ -1589,9 +1591,7 @@ export default function DocumentStudioPage() {
                 >
                   <DocumentWatermark
                     logoUrl={logoUrl}
-                    watermarkText={
-                      platformDocumentSettings.data?.watermarkText ?? "وثائقي"
-                    }
+                    watermarkText={documentWatermarkText}
                     opacityPercent={
                       platformDocumentSettings.data?.watermarkOpacityPercent ??
                       12
@@ -1686,9 +1686,6 @@ export default function DocumentStudioPage() {
                         </div>
                       )
                     )}
-                    {!platformDocumentSettings.data?.pageFooterRows?.length ? (
-                      <div className="text-center">وثائقي</div>
-                    ) : null}
                   </footer>
                 </ResponsiveA4Preview>
               )}
