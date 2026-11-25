@@ -670,7 +670,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
         'unitName': _headerSetting(
           'headerSubtitle',
-          'رئيس قسم شرطة الشهباء',
+          'رئيس قسم الشهباء',
         ),
         'unitChiefRank': _headerSetting(
           'headerChiefRank',
@@ -2512,7 +2512,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     final subtitleController = TextEditingController(
       text: values['headerSubtitle']?.toString().trim().isNotEmpty == true
           ? values['headerSubtitle'].toString()
-          : 'رئيس قسم شرطة الشهباء',
+          : 'رئيس قسم الشهباء',
     );
     final rankController = TextEditingController(
       text: values['headerChiefRank']?.toString() ?? '',
@@ -2623,7 +2623,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       controller: subtitleController,
                       decoration: const InputDecoration(
                         labelText: 'اسم الوحدة / صفة المسؤول',
-                        hintText: 'رئيس قسم شرطة الشهباء',
+                        hintText: 'رئيس قسم الشهباء',
                       ),
                     ),
                     SwitchListTile(
@@ -2931,7 +2931,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
     );
     final headerSubtitle = _headerSetting(
       'headerSubtitle',
-      'رئيس قسم شرطة الشهباء',
+      'رئيس قسم الشهباء',
     );
     final showLogo = _platformDocumentSettings['headerShowLogo'] != false;
     final logoSizeValue = _platformDocumentSettings['headerLogoSize'];
@@ -3068,57 +3068,55 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (headerTitle.isNotEmpty)
-                                Text(
-                                  headerTitle,
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              if (headerSubtitle.isNotEmpty)
-                                Text(
-                                  headerSubtitle.startsWith('رئيس')
-                                      ? headerSubtitle
-                                      : 'رئيس $headerSubtitle',
-                                  textAlign: TextAlign.left,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    height: 1.4,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const Expanded(
-                          child: Text(
-                            'وثائقي',
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 11,
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (headerTitle.isNotEmpty)
+                            Text(
+                              headerTitle,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                                height: 1.4,
+                              ),
                             ),
-                          ),
+                          if (headerSubtitle.isNotEmpty)
+                            Text(
+                              headerSubtitle.startsWith('رئيس')
+                                  ? headerSubtitle
+                                  : 'رئيس $headerSubtitle',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                height: 1.4,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'وثائقي',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 11,
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
