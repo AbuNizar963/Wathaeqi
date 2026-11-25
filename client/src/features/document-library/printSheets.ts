@@ -246,23 +246,37 @@ export async function printHtmlDocument(
   const documentUrl = URL.createObjectURL(
     new Blob([html], { type: "text/html;charset=utf-8" })
   );
-  let loadTimeout: number | undefined;
-
   try {
-    const loaded = new Promise<void>((resolve, reject) => {
-      const onLoad = () => resolve();
-      printWindow.addEventListener("load", onLoad, { once: true });
-      loadTimeout = window.setTimeout(
-        () => reject(new Error("انتهت مهلة تحميل صفحة الطباعة")),
-        30_000
-      );
-    });
-
+    // A listener attached to the initial about:blank Window can be discarded
+    // when navigation replaces that document. Poll the WindowProxy instead,
+    // which survives navigation and lets us observe the committed Blob page.
+    const deadline = Date.now() + 30_000;
     printWindow.location.replace(documentUrl);
-    await loaded;
-    if (loadTimeout !== undefined) window.clearTimeout(loadTimeout);
 
-    const document = printWindow.document;
+    let document: Document | null = null;
+    while (Date.now() < deadline) {
+      if (printWindow.closed) {
+        throw new Error("أُغلقت نافذة الطباعة قبل اكتمال تجهيز الوثيقة");
+      }
+
+      try {
+        if (
+          printWindow.location.href === documentUrl &&
+          printWindow.document.readyState === "complete"
+        ) {
+          document = printWindow.document;
+          break;
+        }
+      } catch {
+        // The browsing context may be between the old and new documents.
+      }
+
+      await new Promise(resolve => window.setTimeout(resolve, 25));
+    }
+
+    if (!document) {
+      throw new Error("انتهت مهلة تحميل صفحة الطباعة");
+    }
     await document.fonts?.ready;
     await Promise.all(
       Array.from(document.images).map(async image => {
