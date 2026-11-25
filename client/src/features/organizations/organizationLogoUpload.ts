@@ -3,6 +3,8 @@ import { fetchWithSession } from "@/lib/trpcFetch";
 import { MAX_ORGANIZATION_LOGO_BYTES } from "@shared/organizationLogoLimits";
 
 const MAX_SOURCE_LOGO_BYTES = 5 * 1024 * 1024;
+const MAX_SOURCE_LOGO_DIMENSION = 16_000;
+const MAX_SOURCE_LOGO_PIXELS = 60_000_000;
 const INITIAL_MAX_DIMENSION = 1600;
 const MINIMUM_DIMENSION = 256;
 
@@ -39,8 +41,17 @@ export async function prepareOrganizationLogoUpload(
       throw new Error("ملف الشعار ليس صورة صالحة");
     }
 
-    // Do not reject a valid image only because its source dimensions are large.
-    // Draw it proportionally into a bounded canvas before encoding and upload.
+    if (
+      image.naturalWidth > MAX_SOURCE_LOGO_DIMENSION ||
+      image.naturalHeight > MAX_SOURCE_LOGO_DIMENSION ||
+      image.naturalWidth * image.naturalHeight > MAX_SOURCE_LOGO_PIXELS
+    ) {
+      throw new Error(
+        "أبعاد الصورة تتجاوز الحد الآمن للمعالجة (16,000 بكسل للضلع أو 60 ميغابكسل). اختر صورة بأبعاد أقل."
+      );
+    }
+
+    // Large but safe source images are proportionally downsampled before upload.
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("تعذر تجهيز صورة الشعار للرفع");
