@@ -13,10 +13,6 @@ export type DocumentSignatureBlockProps = {
  * The four settings are paired into two readable lines and remain editable.
  */
 export default function DocumentSignatureBlock({
-  organizationName,
-  unitName,
-  chiefRank,
-  chiefName,
   settings,
 }: DocumentSignatureBlockProps) {
   const firstRank = settings?.headerTitle.trim() || "المقدم";
