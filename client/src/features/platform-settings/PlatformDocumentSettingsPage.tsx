@@ -510,6 +510,32 @@ export default function PlatformDocumentSettingsPage() {
                   <span>{MAX_WATERMARK_OPACITY_PERCENT}%</span>
                 </div>
               </section>
+              <section className="space-y-3 rounded-lg bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="watermark-scale" className="font-semibold">
+                    حجم العلامة المائية
+                  </label>
+                  <output htmlFor="watermark-scale" className="font-semibold tabular-nums">
+                    {values.watermarkScalePercent}%
+                  </output>
+                </div>
+                <input
+                  id="watermark-scale"
+                  type="range"
+                  min={MIN_WATERMARK_SCALE_PERCENT}
+                  max={MAX_WATERMARK_SCALE_PERCENT}
+                  step={5}
+                  value={values.watermarkScalePercent}
+                  onChange={event =>
+                    updateValue("watermarkScalePercent", Number(event.target.value))
+                  }
+                  className="w-full accent-primary"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>أصغر</span>
+                  <span>أكبر</span>
+                </div>
+              </section>
               {!values.watermarkText.trim() ? (
                 <p className="text-xs text-destructive">
                   لا يمكن ترك نص العلامة الأمنية فارغاً.
