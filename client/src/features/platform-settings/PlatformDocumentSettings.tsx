@@ -3,6 +3,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import { ownerTrpc } from "@/lib/ownerTrpc";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   MAX_WATERMARK_OPACITY_PERCENT,
@@ -26,6 +27,7 @@ export default function PlatformDocumentSettings() {
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
   const utils = trpc.useUtils();
+  const ownerUtils = ownerTrpc.useUtils();
   const settings = trpc.platformDocumentSettings.get.useQuery(undefined, {
     enabled: open && isPlatformOwner,
     retry: false,
@@ -35,7 +37,10 @@ export default function PlatformDocumentSettings() {
   const update = trpc.platformDocumentSettings.update.useMutation({
     onSuccess: async saved => {
       setValues(toFormSettings(saved));
-      await utils.platformDocumentSettings.get.invalidate();
+      await Promise.all([
+        utils.platformDocumentSettings.get.invalidate(),
+        ownerUtils.platformDocumentSettings.get.invalidate(),
+      ]);
       toast.success("تم حفظ إعدادات وثائق النظام");
       setOpen(false);
     },
