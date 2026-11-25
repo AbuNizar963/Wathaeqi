@@ -2480,7 +2480,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                     const Padding(
                       padding: EdgeInsets.only(top: 6, bottom: 8),
                       child: Text(
-                        'يظهر الشعار أعلى بيانات رئيس الوحدة، وتُعرض الرتبة واسم الوحدة في سطرين متتاليين على يسار الوثيقة.',
+                        'يظهر الشعار أسفل الوثيقة في الجهة اليسرى، وفوقه؟ لا، يظهر الشعار أولاً ثم سطرا رتبة رئيس الوحدة واسم الوحدة تحته.',
                         style: TextStyle(
                           color: Colors.black54,
                           fontSize: 12,
@@ -2896,57 +2896,7 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (showLogo &&
-                                  (_letterhead['logoUrl']
-                                          ?.toString()
-                                          .isNotEmpty ??
-                                      false))
-                                Image.network(
-                                  _letterhead['logoUrl'].toString(),
-                                  width: logoSize,
-                                  height: logoSize,
-                                  fit: BoxFit.contain,
-                                  alignment: Alignment.centerLeft,
-                                  errorBuilder: (_, _, _) =>
-                                      SizedBox(width: logoSize, height: logoSize),
-                                ),
-                              if (headerTitle.isNotEmpty)
-                                Text(
-                                  headerTitle,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 17,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              if (headerSubtitle.isNotEmpty)
-                                Text(
-                                  headerSubtitle.startsWith('رئيس')
-                                      ? headerSubtitle
-                                      : 'رئيس $headerSubtitle',
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  textAlign: TextAlign.left,
-                                  style: const TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 16,
-                                    height: 1.4,
-                                  ),
-                                ),
 
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -2975,12 +2925,72 @@ class _DocumentStudioPageState extends State<DocumentStudioPage> {
                       config: const QuillEditorConfig(padding: EdgeInsets.zero),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
-                    child: Text(
-                      'وثائقي',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54, fontSize: 11),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (showLogo &&
+                                  (_letterhead['logoUrl']
+                                          ?.toString()
+                                          .isNotEmpty ??
+                                      false))
+                                Image.network(
+                                  _letterhead['logoUrl'].toString(),
+                                  width: logoSize,
+                                  height: logoSize,
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.centerLeft,
+                                  errorBuilder: (_, _, _) =>
+                                      SizedBox(width: logoSize, height: logoSize),
+                                ),
+                              if (headerTitle.isNotEmpty)
+                                Text(
+                                  headerTitle,
+                                  textAlign: TextAlign.left,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 17,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              if (headerSubtitle.isNotEmpty)
+                                Text(
+                                  headerSubtitle.startsWith('رئيس')
+                                      ? headerSubtitle
+                                      : 'رئيس $headerSubtitle',
+                                  textAlign: TextAlign.left,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    height: 1.4,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'وثائقي',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
