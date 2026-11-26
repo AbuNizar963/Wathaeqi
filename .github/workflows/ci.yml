@@ -44,6 +44,13 @@ jobs:
             echo "Retired provider runtime dependency detected"
             exit 1
           fi
+      - name: Diagnose remaining Prettier differences
+        if: always()
+        run: |
+          pnpm exec prettier --write client/src/features/platform-settings/platformDocumentSettings.ts shared/features/platform-settings/platformDocumentSettings.ts
+          git diff -- client/src/features/platform-settings/platformDocumentSettings.ts shared/features/platform-settings/platformDocumentSettings.ts
+          git checkout -- client/src/features/platform-settings/platformDocumentSettings.ts shared/features/platform-settings/platformDocumentSettings.ts
+
       - name: Check document studio formatting
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
