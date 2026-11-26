@@ -16,6 +16,20 @@ export type {
 
 export type DocumentTextRow = { right: string; left: string };
 
+export const DOCUMENT_FONT_FAMILIES = [
+  "Cairo",
+  "Arial",
+  "Tahoma",
+  "Traditional Arabic",
+  "Times New Roman",
+] as const;
+
+export type DocumentFontFamily = (typeof DOCUMENT_FONT_FAMILIES)[number];
+
+export const DOCUMENT_FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
+
+export type DocumentFontWeight = (typeof DOCUMENT_FONT_WEIGHTS)[number];
+
 export const REFERENCE_DOCUMENT_LOGO_SIZE = 120;
 export const DOCUMENT_DATE_FORMATS = [
   "yyyy/MM/dd",
@@ -73,6 +87,14 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   frameStyle: "box" as const,
   frameColor: "#000000",
   frameWidthPt: 1,
+  documentFontFamily: "Cairo" as const,
+  documentFontSizePt: 12,
+  documentFontWeight: 400 as const,
+  documentFontColor: "#0f172a",
+  recipientFontFamily: "Cairo" as const,
+  recipientFontSizePt: 12,
+  recipientFontWeight: 600 as const,
+  recipientFontColor: "#0f172a",
   showVerificationQr: true,
 } as const;
 
@@ -108,6 +130,14 @@ export type PlatformDocumentSettings = {
   frameStyle: DocumentFrameStyle;
   frameColor: string;
   frameWidthPt: number;
+  documentFontFamily: DocumentFontFamily;
+  documentFontSizePt: number;
+  documentFontWeight: DocumentFontWeight;
+  documentFontColor: string;
+  recipientFontFamily: DocumentFontFamily;
+  recipientFontSizePt: number;
+  recipientFontWeight: DocumentFontWeight;
+  recipientFontColor: string;
   showVerificationQr: boolean;
   updatedAt?: string | Date | null;
 };
@@ -123,4 +153,8 @@ export const MIN_DIVIDER_WIDTH_PT = 0.5;
 export const MAX_DIVIDER_WIDTH_PT = 6;
 export const MIN_FRAME_WIDTH_PT = 0.5;
 export const MAX_FRAME_WIDTH_PT = 4;
+export const MIN_DOCUMENT_FONT_SIZE_PT = 9;
+export const MAX_DOCUMENT_FONT_SIZE_PT = 24;
+export const MIN_RECIPIENT_FONT_SIZE_PT = 9;
+export const MAX_RECIPIENT_FONT_SIZE_PT = 24;
 export const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;

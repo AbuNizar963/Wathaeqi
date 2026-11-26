@@ -25,6 +25,8 @@ import {
   MAX_HEADER_LOGO_SIZE,
   MIN_DIVIDER_WIDTH_PT,
   MAX_DIVIDER_WIDTH_PT,
+  MIN_FRAME_WIDTH_PT,
+  MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -204,6 +206,10 @@ export default function PlatformDocumentSettingsPage() {
           { id: "organization-identity-settings", label: "هوية الجهة" },
           { id: "watermark-settings", label: "العلامة المائية" },
           { id: "page-layout-settings", label: "الصفحة والإطار" },
+          {
+            id: "document-typography-settings",
+            label: "خط الوثيقة والجهة المستلمة",
+          },
           { id: "header-divider-settings", label: "فاصل الترويسة" },
           { id: "header-content-settings", label: "بيانات المسؤول" },
           { id: "page-rows-settings", label: "سطور الصفحة" },
@@ -599,6 +605,201 @@ export default function PlatformDocumentSettingsPage() {
                 value={values.frameStyle}
                 onChange={style => updateValue("frameStyle", style)}
               />
+              <label className="block space-y-2 text-sm">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-medium">سماكة الإطار</span>
+                  <output
+                    aria-live="polite"
+                    className="rounded-md bg-muted px-2 py-1 font-mono text-xs tabular-nums"
+                  >
+                    {values.frameWidthPt} نقطة
+                  </output>
+                </span>
+                <input
+                  type="range"
+                  aria-label="سماكة الإطار"
+                  min={MIN_FRAME_WIDTH_PT}
+                  max={MAX_FRAME_WIDTH_PT}
+                  step={0.25}
+                  value={values.frameWidthPt}
+                  disabled={values.frameStyle === "none"}
+                  onChange={event =>
+                    updateValue("frameWidthPt", Number(event.target.value))
+                  }
+                  className="w-full accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <span className="flex justify-between text-xs text-muted-foreground">
+                  <span>{MIN_FRAME_WIDTH_PT} نقطة — رفيع</span>
+                  <span>{MAX_FRAME_WIDTH_PT} نقاط — سميك</span>
+                </span>
+              </label>
+            </section>
+            <section
+              id="document-typography-settings"
+              aria-labelledby="document-typography-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
+              <div>
+                <h2 id="document-typography-title" className="font-semibold">
+                  تنسيق الخطوط في الوثيقة
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  تتحكم هذه الإعدادات في نص الوثيقة وسطر الجهة المستلمة،
+                  وتنعكس على المعاينة والطباعة.
+                </p>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <section className="space-y-3 rounded-lg bg-muted/30 p-3">
+                  <h3 className="font-medium">نص الوثيقة</h3>
+                  <label className="block space-y-1 text-sm">
+                    <span>نوع الخط</span>
+                    <select
+                      value={values.documentFontFamily}
+                      onChange={event =>
+                        updateValue(
+                          "documentFontFamily",
+                          event.target.value as
+                            SettingsForm["documentFontFamily"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
+                      <option value="Cairo">Cairo</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Tahoma">Tahoma</option>
+                      <option value="Traditional Arabic">Traditional Arabic</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                    </select>
+                  </label>
+                  <label className="block space-y-1 text-sm">
+                    <span className="flex justify-between">
+                      <span>حجم الخط</span>
+                      <output>{values.documentFontSizePt} نقطة</output>
+                    </span>
+                    <input
+                      type="range"
+                      min={9}
+                      max={24}
+                      step={1}
+                      value={values.documentFontSizePt}
+                      onChange={event =>
+                        updateValue(
+                          "documentFontSizePt",
+                          Number(event.target.value)
+                        )
+                      }
+                      className="w-full accent-primary"
+                    />
+                  </label>
+                  <label className="block space-y-1 text-sm">
+                    <span>سماكة الخط</span>
+                    <select
+                      value={values.documentFontWeight}
+                      onChange={event =>
+                        updateValue(
+                          "documentFontWeight",
+                          Number(event.target.value) as
+                            SettingsForm["documentFontWeight"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
+                      <option value={400}>عادي</option>
+                      <option value={500}>متوسط</option>
+                      <option value={600}>شبه عريض</option>
+                      <option value={700}>عريض</option>
+                      <option value={800}>عريض جداً</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center justify-between gap-3 text-sm">
+                    <span>لون الخط</span>
+                    <input
+                      type="color"
+                      value={values.documentFontColor}
+                      onChange={event =>
+                        updateValue("documentFontColor", event.target.value)
+                      }
+                      aria-label="لون خط نص الوثيقة"
+                      className="h-10 w-16 cursor-pointer rounded border bg-background p-1"
+                    />
+                  </label>
+                </section>
+                <section className="space-y-3 rounded-lg bg-muted/30 p-3">
+                  <h3 className="font-medium">الجهة المستلمة</h3>
+                  <label className="block space-y-1 text-sm">
+                    <span>نوع الخط</span>
+                    <select
+                      value={values.recipientFontFamily}
+                      onChange={event =>
+                        updateValue(
+                          "recipientFontFamily",
+                          event.target.value as
+                            SettingsForm["recipientFontFamily"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
+                      <option value="Cairo">Cairo</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Tahoma">Tahoma</option>
+                      <option value="Traditional Arabic">Traditional Arabic</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                    </select>
+                  </label>
+                  <label className="block space-y-1 text-sm">
+                    <span className="flex justify-between">
+                      <span>حجم الخط</span>
+                      <output>{values.recipientFontSizePt} نقطة</output>
+                    </span>
+                    <input
+                      type="range"
+                      min={9}
+                      max={24}
+                      step={1}
+                      value={values.recipientFontSizePt}
+                      onChange={event =>
+                        updateValue(
+                          "recipientFontSizePt",
+                          Number(event.target.value)
+                        )
+                      }
+                      className="w-full accent-primary"
+                    />
+                  </label>
+                  <label className="block space-y-1 text-sm">
+                    <span>سماكة الخط</span>
+                    <select
+                      value={values.recipientFontWeight}
+                      onChange={event =>
+                        updateValue(
+                          "recipientFontWeight",
+                          Number(event.target.value) as
+                            SettingsForm["recipientFontWeight"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
+                      <option value={400}>عادي</option>
+                      <option value={500}>متوسط</option>
+                      <option value={600}>شبه عريض</option>
+                      <option value={700}>عريض</option>
+                      <option value={800}>عريض جداً</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center justify-between gap-3 text-sm">
+                    <span>لون الخط</span>
+                    <input
+                      type="color"
+                      value={values.recipientFontColor}
+                      onChange={event =>
+                        updateValue("recipientFontColor", event.target.value)
+                      }
+                      aria-label="لون خط الجهة المستلمة"
+                      className="h-10 w-16 cursor-pointer rounded border bg-background p-1"
+                    />
+                  </label>
+                </section>
+              </div>
             </section>
             <section
               id="header-divider-settings"

@@ -787,6 +787,20 @@ export default function DocumentStudioPage() {
       })
     : false;
   const documentRecipientLine = getDocumentRecipientLine(documentFieldValues);
+  // prettier-ignore
+  const documentFontStyle = {
+    fontFamily: platformDocumentSettings.data?.documentFontFamily ?? "Cairo",
+    fontSize: `${platformDocumentSettings.data?.documentFontSizePt ?? 12}pt`,
+    fontWeight: platformDocumentSettings.data?.documentFontWeight ?? 400,
+    color: platformDocumentSettings.data?.documentFontColor ?? "#0f172a",
+  };
+  // prettier-ignore
+  const recipientFontStyle = {
+    fontFamily: platformDocumentSettings.data?.recipientFontFamily ?? "Cairo",
+    fontSize: `${platformDocumentSettings.data?.recipientFontSizePt ?? 12}pt`,
+    fontWeight: platformDocumentSettings.data?.recipientFontWeight ?? 600,
+    color: platformDocumentSettings.data?.recipientFontColor ?? "#0f172a",
+  };
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1338,6 +1352,7 @@ export default function DocumentStudioPage() {
                         onChange={handleTemplateContentChange}
                         editable={!previewMode}
                         containerClassName="rounded-none border-0 shadow-none"
+                        textStyle={documentFontStyle}
                         placeholder="اكتب نص النموذج واستخدم {{employee_name}} للحقول المخصصة أو {{organization}} و{{date}} و{{number}} و{{subject}} للبيانات التلقائية."
                       />
                     </div>
@@ -1760,7 +1775,10 @@ export default function DocumentStudioPage() {
                       />
                       <div className="pt-6">
                         {documentRecipientLine ? (
-                          <p className="mb-4 text-center text-base font-semibold">
+                          <p
+                            className="mb-4 text-center"
+                            style={recipientFontStyle}
+                          >
                             {documentRecipientLine}
                           </p>
                         ) : null}
@@ -1809,6 +1827,7 @@ export default function DocumentStudioPage() {
                             (!selectedTemplateId || manualTemplateEditing)
                           }
                           containerClassName="rounded-none border-0 shadow-none"
+                          textStyle={documentFontStyle}
                         />
                         <DocumentSignatureBlock
                           organizationName={organizationName}

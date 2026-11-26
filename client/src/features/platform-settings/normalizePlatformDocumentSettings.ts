@@ -1,7 +1,13 @@
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   DOCUMENT_DATE_FORMATS,
+  DOCUMENT_FONT_FAMILIES,
+  DOCUMENT_FONT_WEIGHTS,
   HEX_COLOR_PATTERN,
+  MIN_DOCUMENT_FONT_SIZE_PT,
+  MAX_DOCUMENT_FONT_SIZE_PT,
+  MIN_RECIPIENT_FONT_SIZE_PT,
+  MAX_RECIPIENT_FONT_SIZE_PT,
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
   isDocumentFrameStyle,
@@ -22,6 +28,33 @@ function safeNumber(value: unknown, fallback: number): number {
 
 function safeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function safeFontFamily(value: unknown, fallback: string): string {
+  return typeof value === "string" &&
+    DOCUMENT_FONT_FAMILIES.includes(
+      value as (typeof DOCUMENT_FONT_FAMILIES)[number]
+    )
+    ? value
+    : fallback;
+}
+
+function safeFontWeight(value: unknown, fallback: number): number {
+  return DOCUMENT_FONT_WEIGHTS.includes(
+    value as (typeof DOCUMENT_FONT_WEIGHTS)[number]
+  )
+    ? (value as number)
+    : fallback;
+}
+
+function boundedFontSize(
+  value: unknown,
+  fallback: number,
+  minimum: number,
+  maximum: number
+): number {
+  const number = safeNumber(value, fallback);
+  return Math.max(minimum, Math.min(maximum, number));
 }
 
 function safeHexColor(value: unknown, fallback: string): string {
@@ -200,6 +233,42 @@ export function normalizePlatformDocumentSettings(
       : defaults.frameStyle,
     frameColor: safeHexColor(source.frameColor, defaults.frameColor),
     frameWidthPt: safeNumber(source.frameWidthPt, defaults.frameWidthPt),
+    documentFontFamily: safeFontFamily(
+      source.documentFontFamily,
+      defaults.documentFontFamily
+    ) as PlatformDocumentSettings["documentFontFamily"],
+    documentFontSizePt: boundedFontSize(
+      source.documentFontSizePt,
+      defaults.documentFontSizePt,
+      MIN_DOCUMENT_FONT_SIZE_PT,
+      MAX_DOCUMENT_FONT_SIZE_PT
+    ),
+    documentFontWeight: safeFontWeight(
+      source.documentFontWeight,
+      defaults.documentFontWeight
+    ) as PlatformDocumentSettings["documentFontWeight"],
+    documentFontColor: safeHexColor(
+      source.documentFontColor,
+      defaults.documentFontColor
+    ),
+    recipientFontFamily: safeFontFamily(
+      source.recipientFontFamily,
+      defaults.recipientFontFamily
+    ) as PlatformDocumentSettings["recipientFontFamily"],
+    recipientFontSizePt: boundedFontSize(
+      source.recipientFontSizePt,
+      defaults.recipientFontSizePt,
+      MIN_RECIPIENT_FONT_SIZE_PT,
+      MAX_RECIPIENT_FONT_SIZE_PT
+    ),
+    recipientFontWeight: safeFontWeight(
+      source.recipientFontWeight,
+      defaults.recipientFontWeight
+    ) as PlatformDocumentSettings["recipientFontWeight"],
+    recipientFontColor: safeHexColor(
+      source.recipientFontColor,
+      defaults.recipientFontColor
+    ),
     showVerificationQr: safeBoolean(
       source.showVerificationQr,
       defaults.showVerificationQr

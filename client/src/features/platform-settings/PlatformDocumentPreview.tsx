@@ -9,6 +9,7 @@ import DocumentSignatureBlock from "@/features/document-studio/DocumentSignature
 import DocumentWatermark from "@/features/document-studio/DocumentWatermark";
 import ResponsiveA4Preview from "@/features/document-studio/ResponsiveA4Preview";
 import { formatDocumentDate } from "@/features/document-studio/formatDocumentDate";
+import { getDocumentRecipientLine } from "@/features/document-studio/documentRecipient";
 
 type PreviewSettings = Omit<PlatformDocumentSettings, "updatedAt">;
 
@@ -70,6 +71,9 @@ export default function PlatformDocumentPreview({
   const previewDate = previewDocument
     ? formatDocumentDate(previewDocument.documentDate, settings.documentDateFormat)
     : undefined;
+  const previewRecipientLine = getDocumentRecipientLine(
+    previewDocument?.fieldValues ?? {}
+  );
   const previewLogoUrl =
     letterheadSettings.data?.logoUrl ?? (logoUrl || null);
   const previewOrganizationName =
@@ -146,12 +150,31 @@ export default function PlatformDocumentPreview({
               الموضوع: {previewDocument.subject}
             </p>
           ) : null}
+          {previewRecipientLine ? (
+            <p
+              className="mb-4 text-center"
+              style={{
+                fontFamily: settings.recipientFontFamily,
+                fontSize: `${settings.recipientFontSizePt}pt`,
+                fontWeight: settings.recipientFontWeight,
+                color: settings.recipientFontColor,
+              }}
+            >
+              {previewRecipientLine}
+            </p>
+          ) : null}
           {previewDocument ? (
             <DocumentEditor
               content={previewDocumentContent}
               onChange={() => undefined}
               editable={false}
               containerClassName="rounded-none border-0 shadow-none"
+              textStyle={{
+                fontFamily: settings.documentFontFamily,
+                fontSize: `${settings.documentFontSizePt}pt`,
+                fontWeight: settings.documentFontWeight,
+                color: settings.documentFontColor,
+              }}
             />
           ) : null}
           <DocumentSignatureBlock
