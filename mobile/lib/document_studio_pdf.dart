@@ -24,11 +24,29 @@ class DocumentStudioPdf {
     required double watermarkOpacity,
     double watermarkScalePercent = 100,
   }) async {
+    final documentFontFamily =
+        _clean(letterhead['documentFontFamily']) ?? 'Amiri';
+    final documentFontWeight =
+        (letterhead['documentFontWeight'] as num? ?? 400).toInt();
+    final recipientFontFamily =
+        _clean(letterhead['recipientFontFamily']) ?? documentFontFamily;
+    final recipientFontWeight =
+        (letterhead['recipientFontWeight'] as num? ?? 600).toInt();
     final regular = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/amiri-regular.ttf'),
+      await rootBundle.load(
+        _fontAssetForFamily(documentFontFamily, documentFontWeight),
+      ),
     );
     final bold = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/amiri-bold.ttf'),
+      await rootBundle.load(_fontAssetForFamily(documentFontFamily, 700)),
+    );
+    final recipientRegular = pw.Font.ttf(
+      await rootBundle.load(
+        _fontAssetForFamily(recipientFontFamily, recipientFontWeight),
+      ),
+    );
+    final recipientBold = pw.Font.ttf(
+      await rootBundle.load(_fontAssetForFamily(recipientFontFamily, 700)),
     );
     final watermarkFont = pw.Font.ttf(
       await rootBundle.load('assets/fonts/aref-ruqaa-regular.ttf'),
@@ -90,7 +108,28 @@ class DocumentStudioPdf {
             .toDouble();
     final isTricolorStars =
         _clean(letterhead['headerDividerStyle']) == 'tricolor-stars';
-    final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
+    final documentFontSize =
+        ((letterhead['documentFontSizePt'] as num? ?? 12).toDouble())
+            .clamp(9.0, 24.0)
+            .toDouble();
+    final recipientFontSize =
+        ((letterhead['recipientFontSizePt'] as num? ?? 12).toDouble())
+            .clamp(9.0, 24.0)
+            .toDouble();
+    final documentFontScale = documentFontSize / 12;
+    final documentColor =
+        _parseHexColor(_clean(letterhead['documentFontColor'])) ??
+        PdfColors.black;
+    final recipientColor =
+        _parseHexColor(_clean(letterhead['recipientFontColor'])) ??
+        PdfColors.black;
+    final datePattern =
+        _clean(letterhead['documentDateFormat']) ?? 'yyyy/MM/dd';
+    final dateLocale = datePattern.contains('MMMM') ? 'ar' : 'en';
+    final dateText = DateFormat(
+      datePattern,
+      dateLocale,
+    ).format(documentDate.toLocal());
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
     final headerShowLogo = letterhead['headerShowLogo'] != false;
@@ -272,14 +311,22 @@ class DocumentStudioPdf {
                             textDirection: pw.TextDirection.rtl,
                             textAlign: pw.TextAlign.right,
                             maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 15),
+                            style: pw.TextStyle(
+                              font: bold,
+                              fontSize: documentFontSize * 1.25,
+                              color: documentColor,
+                            ),
                           ),
                           pw.Text(
                             'التاريخ: $dateText',
                             textDirection: pw.TextDirection.rtl,
                             textAlign: pw.TextAlign.right,
                             maxLines: 1,
-                            style: pw.TextStyle(font: bold, fontSize: 15),
+                            style: pw.TextStyle(
+                              font: bold,
+                              fontSize: documentFontSize * 1.25,
+                              color: documentColor,
+                            ),
                           ),
                         ],
                       ),
@@ -305,12 +352,20 @@ class DocumentStudioPdf {
                     children: [
                       pw.TextSpan(
                         text: '${_clean(recipientLabel) ?? 'إلى'}: ',
-                        style: pw.TextStyle(font: bold, fontSize: 18),
+                        style: pw.TextStyle(
+                          font: recipientBold,
+                          fontSize: recipientFontSize + 2.0,
+                          color: recipientColor,
+                        ),
                       ),
                       if (_clean(recipient) case final recipientText?)
                         pw.TextSpan(
                           text: recipientText,
-                          style: pw.TextStyle(font: regular, fontSize: 16),
+                          style: pw.TextStyle(
+                            font: recipientRegular,
+                            fontSize: recipientFontSize,
+                            color: recipientColor,
+                          ),
                         ),
                     ],
                   ),
@@ -320,7 +375,11 @@ class DocumentStudioPdf {
                 pw.Text(
                   'الموضوع: ${subject.trim()}',
                   textDirection: pw.TextDirection.rtl,
-                  style: pw.TextStyle(font: bold, fontSize: 16),
+                  style: pw.TextStyle(
+                    font: bold,
+                    fontSize: documentFontSize * 1.33,
+                    color: documentColor,
+                  ),
                 ),
                 pw.SizedBox(height: 12),
               ],
@@ -328,7 +387,11 @@ class DocumentStudioPdf {
                 title,
                 textDirection: pw.TextDirection.rtl,
                 textAlign: pw.TextAlign.center,
-                style: pw.TextStyle(font: bold, fontSize: 12),
+                style: pw.TextStyle(
+                  font: bold,
+                  fontSize: documentFontSize,
+                  color: documentColor,
+                ),
               ),
               pw.SizedBox(height: 12),
             ],
@@ -346,6 +409,8 @@ class DocumentStudioPdf {
             _asMapList(content['content']),
             regular: regular,
             bold: bold,
+            fontScale: documentFontScale,
+            textColor: documentColor,
           ),
           pw.SizedBox(height: 16),
           pw.Center(
@@ -357,7 +422,11 @@ class DocumentStudioPdf {
                   textDirection: pw.TextDirection.rtl,
                   textAlign: pw.TextAlign.center,
                   maxLines: 1,
-                  style: pw.TextStyle(font: bold, fontSize: 13),
+                  style: pw.TextStyle(
+                      font: bold,
+                      fontSize: documentFontSize * 1.08,
+                      color: documentColor,
+                    ),
                 ),
                 if (unit != null)
                   pw.Text(
@@ -365,7 +434,11 @@ class DocumentStudioPdf {
                     textDirection: pw.TextDirection.rtl,
                     textAlign: pw.TextAlign.center,
                     maxLines: 1,
-                    style: pw.TextStyle(font: bold, fontSize: 12),
+                    style: pw.TextStyle(
+                      font: bold,
+                      fontSize: documentFontSize,
+                      color: documentColor,
+                    ),
                   ),
               ],
             ),
@@ -375,6 +448,33 @@ class DocumentStudioPdf {
     );
 
     return pdf.save();
+  }
+
+  static String _fontAssetForFamily(String family, int weight) {
+    final normalizedWeight = weight.clamp(400, 800);
+    if (family == 'IBM Plex Sans Arabic') {
+      final suffix = normalizedWeight >= 700
+          ? 'bold'
+          : normalizedWeight >= 600
+          ? 'semibold'
+          : normalizedWeight >= 500
+          ? 'medium'
+          : 'regular';
+      return 'assets/fonts/ibm-plex-sans-arabic-$suffix.ttf';
+    }
+    if (family == 'Cairo') {
+      final suffix = normalizedWeight >= 700
+          ? '700'
+          : normalizedWeight >= 600
+          ? '600'
+          : normalizedWeight >= 500
+          ? '500'
+          : '400';
+      return 'assets/fonts/cairo-$suffix.ttf';
+    }
+    return normalizedWeight >= 600
+        ? 'assets/fonts/amiri-bold.ttf'
+        : 'assets/fonts/amiri-regular.ttf';
   }
 
   static double _headerPadding(
@@ -413,15 +513,28 @@ class DocumentStudioPdf {
     List<Map<String, dynamic>> nodes, {
     required pw.Font regular,
     required pw.Font bold,
+    required double fontScale,
+    required PdfColor textColor,
   }) {
     final result = <pw.Widget>[];
     for (final node in nodes) {
       final type = node['type']?.toString() ?? '';
       final children = _asMapList(node['content']);
       if (type == 'paragraph' || type == 'heading') {
-        final spans = _inlineSpans(children, regular: regular, bold: bold);
+        final spans = _inlineSpans(
+          children,
+          regular: regular,
+          bold: bold,
+          fontScale: fontScale,
+          textColor: textColor,
+        );
         final level = (node['attrs'] as Map?)?['level'];
         final heading = type == 'heading';
+        final headingSize = level == 1
+            ? 18.0
+            : level == 2
+            ? 15.0
+            : 13.0;
         result.add(
           pw.Padding(
             padding: const pw.EdgeInsets.only(bottom: 7),
@@ -433,19 +546,17 @@ class DocumentStudioPdf {
                     ? [
                         pw.TextSpan(
                           text: ' ',
-                          style: pw.TextStyle(font: regular),
+                          style: pw.TextStyle(
+                            font: regular,
+                            color: textColor,
+                          ),
                         ),
                       ]
                     : spans,
                 style: pw.TextStyle(
                   font: heading ? bold : regular,
-                  fontSize: heading
-                      ? (level == 1
-                            ? 18
-                            : level == 2
-                            ? 15
-                            : 13)
-                      : 16,
+                  fontSize: (heading ? headingSize : 16.0) * fontScale,
+                  color: textColor,
                   lineSpacing: 3,
                 ),
               ),
@@ -466,7 +577,11 @@ class DocumentStudioPdf {
                     width: 18,
                     child: pw.Text(
                       type == 'orderedList' ? '$index.' : '•',
-                      style: pw.TextStyle(font: bold, fontSize: 16),
+                      style: pw.TextStyle(
+                        font: bold,
+                        fontSize: 16.0 * fontScale,
+                        color: textColor,
+                      ),
                     ),
                   ),
                   pw.Expanded(
@@ -474,7 +589,11 @@ class DocumentStudioPdf {
                       _plainText(item),
                       textDirection: pw.TextDirection.rtl,
                       textAlign: pw.TextAlign.right,
-                      style: pw.TextStyle(font: regular, fontSize: 16),
+                      style: pw.TextStyle(
+                        font: regular,
+                        fontSize: 16.0 * fontScale,
+                        color: textColor,
+                      ),
                     ),
                   ),
                 ],
@@ -498,7 +617,11 @@ class DocumentStudioPdf {
               _plainText(node),
               textDirection: pw.TextDirection.rtl,
               textAlign: pw.TextAlign.right,
-              style: pw.TextStyle(font: regular, fontSize: 16),
+              style: pw.TextStyle(
+                font: regular,
+                fontSize: 16.0 * fontScale,
+                color: textColor,
+              ),
             ),
           ),
         );
@@ -523,7 +646,11 @@ class DocumentStudioPdf {
                   cells.join('   |   '),
                   textDirection: pw.TextDirection.rtl,
                   textAlign: pw.TextAlign.right,
-                  style: pw.TextStyle(font: regular, fontSize: 16),
+                  style: pw.TextStyle(
+                    font: regular,
+                    fontSize: 16.0 * fontScale,
+                    color: textColor,
+                  ),
                 ),
               ),
             );
@@ -531,7 +658,15 @@ class DocumentStudioPdf {
         }
         result.add(pw.SizedBox(height: 6));
       } else if (children.isNotEmpty) {
-        result.addAll(_buildBlocks(children, regular: regular, bold: bold));
+        result.add(
+          ..._buildBlocks(
+            children,
+            regular: regular,
+            bold: bold,
+            fontScale: fontScale,
+            textColor: textColor,
+          ),
+        );
       }
     }
     return result;
@@ -541,6 +676,8 @@ class DocumentStudioPdf {
     List<Map<String, dynamic>> nodes, {
     required pw.Font regular,
     required pw.Font bold,
+    required double fontScale,
+    required PdfColor textColor,
   }) {
     final spans = <pw.InlineSpan>[];
     for (final node in nodes) {
@@ -555,6 +692,8 @@ class DocumentStudioPdf {
             _asMapList(node['content']),
             regular: regular,
             bold: bold,
+            fontScale: fontScale,
+            textColor: textColor,
           ),
         );
         continue;
@@ -570,7 +709,8 @@ class DocumentStudioPdf {
             font: isBold ? bold : regular,
             fontStyle: isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
             decoration: isUnderline ? pw.TextDecoration.underline : null,
-            fontSize: 16,
+            fontSize: 16.0 * fontScale,
+            color: textColor,
           ),
         ),
       );

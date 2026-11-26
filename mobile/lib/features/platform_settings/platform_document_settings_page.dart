@@ -58,6 +58,28 @@ class _PlatformDocumentSettingsPageState
     '#5D6775',
     '#202833',
   ];
+  static const _fontFamilies = <String>[
+    'Amiri',
+    'IBM Plex Sans Arabic',
+    'Cairo',
+    'Arial',
+    'Tahoma',
+    'Traditional Arabic',
+    'Times New Roman',
+  ];
+  static const _fontWeights = <int>[400, 500, 600, 700, 800];
+  static const _dateFormatLabels = <String, String>{
+    'yyyy/MM/dd': '2026/11/25 — سنة/شهر/يوم',
+    'dd/MM/yyyy': '25/11/2026 — يوم/شهر/سنة',
+    'MM/dd/yyyy': '11/25/2026 — شهر/يوم/سنة',
+    'yyyy-MM-dd': '2026-11-25 — سنة-شهر-يوم',
+    'dd-MM-yyyy': '25-11-2026 — يوم-شهر-سنة',
+    'MM-dd-yyyy': '11-25-2026 — شهر-يوم-سنة',
+    'yyyy.MM.dd': '2026.11.25 — سنة.شهر.يوم',
+    'dd.MM.yyyy': '25.11.2026 — يوم.شهر.سنة',
+    'd MMMM yyyy': '25 نوفمبر 2026 — شهر مكتوب',
+    'MMMM d, yyyy': 'نوفمبر 25, 2026 — شهر مكتوب أولاً',
+  };
 
   bool _loading = true;
   bool _saving = false;
@@ -74,6 +96,15 @@ class _PlatformDocumentSettingsPageState
   String _frameColor = _defaultColor;
   double _headerDividerWidthPt = 2.25;
   double _frameWidthPt = 1;
+  String _documentDateFormat = 'yyyy/MM/dd';
+  String _documentFontFamily = 'Amiri';
+  double _documentFontSizePt = 12;
+  int _documentFontWeight = 400;
+  String _documentFontColor = '#0f172a';
+  String _recipientFontFamily = 'Amiri';
+  double _recipientFontSizePt = 12;
+  int _recipientFontWeight = 600;
+  String _recipientFontColor = '#0f172a';
   double _marginTopMm = 10;
   double _marginRightMm = 10;
   double _marginBottomMm = 10;
@@ -92,6 +123,10 @@ class _PlatformDocumentSettingsPageState
   final TextEditingController _frameColorController = TextEditingController(
     text: _defaultColor,
   );
+  final TextEditingController _documentFontColorController =
+      TextEditingController(text: '#0f172a');
+  final TextEditingController _recipientFontColorController =
+      TextEditingController(text: '#0f172a');
 
   @override
   void initState() {
@@ -104,6 +139,8 @@ class _PlatformDocumentSettingsPageState
   void dispose() {
     _colorController.dispose();
     _frameColorController.dispose();
+    _documentFontColorController.dispose();
+    _recipientFontColorController.dispose();
     super.dispose();
   }
 
@@ -117,6 +154,13 @@ class _PlatformDocumentSettingsPageState
     final opacity = result['watermarkOpacityPercent'];
     final color = result['headerDividerColor'];
     final scale = result['watermarkScalePercent'];
+    final documentDateFormat = result['documentDateFormat'];
+    final documentFontSize = result['documentFontSizePt'];
+    final recipientFontSize = result['recipientFontSizePt'];
+    final documentFontWeight = result['documentFontWeight'];
+    final recipientFontWeight = result['recipientFontWeight'];
+    final documentFontColor = result['documentFontColor'];
+    final recipientFontColor = result['recipientFontColor'];
     return (scale == null || (scale is int && scale >= 40 && scale <= 180)) &&
         result['showMinistryWatermarkText'] is bool &&
         result['showVerificationQr'] is bool &&
@@ -124,7 +168,25 @@ class _PlatformDocumentSettingsPageState
         opacity >= 0 &&
         opacity <= 60 &&
         color is String &&
-        RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(color);
+        RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(color) &&
+        documentDateFormat is String &&
+        _dateFormatLabels.containsKey(documentDateFormat) &&
+        _fontFamilies.contains(result['documentFontFamily']) &&
+        _fontFamilies.contains(result['recipientFontFamily']) &&
+        documentFontSize is num &&
+        documentFontSize >= 9 &&
+        documentFontSize <= 24 &&
+        recipientFontSize is num &&
+        recipientFontSize >= 9 &&
+        recipientFontSize <= 24 &&
+        documentFontWeight is int &&
+        _fontWeights.contains(documentFontWeight) &&
+        recipientFontWeight is int &&
+        _fontWeights.contains(recipientFontWeight) &&
+        documentFontColor is String &&
+        RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(documentFontColor) &&
+        recipientFontColor is String &&
+        RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(recipientFontColor);
   }
 
   List<Map<String, String>> _readTextRows(Object? value) {
@@ -258,6 +320,26 @@ class _PlatformDocumentSettingsPageState
         _frameColor = result['frameColor']?.toString() ?? _defaultColor;
         _frameColorController.text = _frameColor;
         _frameWidthPt = (result['frameWidthPt'] as num? ?? 1).toDouble();
+        _documentDateFormat =
+            result['documentDateFormat']?.toString() ?? 'yyyy/MM/dd';
+        _documentFontFamily =
+            result['documentFontFamily']?.toString() ?? 'Amiri';
+        _documentFontSizePt =
+            (result['documentFontSizePt'] as num? ?? 12).toDouble();
+        _documentFontWeight =
+            (result['documentFontWeight'] as num? ?? 400).toInt();
+        _documentFontColor =
+            result['documentFontColor']?.toString() ?? '#0f172a';
+        _documentFontColorController.text = _documentFontColor;
+        _recipientFontFamily =
+            result['recipientFontFamily']?.toString() ?? 'Amiri';
+        _recipientFontSizePt =
+            (result['recipientFontSizePt'] as num? ?? 12).toDouble();
+        _recipientFontWeight =
+            (result['recipientFontWeight'] as num? ?? 600).toInt();
+        _recipientFontColor =
+            result['recipientFontColor']?.toString() ?? '#0f172a';
+        _recipientFontColorController.text = _recipientFontColor;
         _marginTopMm = (result['pageMarginTopMm'] as num? ?? 10).toDouble();
         _marginRightMm = (result['pageMarginRightMm'] as num? ?? 10).toDouble();
         _marginBottomMm = (result['pageMarginBottomMm'] as num? ?? 10)
@@ -429,7 +511,16 @@ class _PlatformDocumentSettingsPageState
       setState(() => _error = 'أدخل لونًا صحيحًا بصيغة #RRGGBB.');
       return;
     }
+    final documentFontColor = _documentFontColorController.text.trim();
+    final recipientFontColor = _recipientFontColorController.text.trim();
+    if (!RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(documentFontColor) ||
+        !RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(recipientFontColor)) {
+      setState(() => _error = 'أدخل لون خط صحيحًا بصيغة #RRGGBB.');
+      return;
+    }
     setState(() {
+      _documentFontColor = documentFontColor.toLowerCase();
+      _recipientFontColor = recipientFontColor.toLowerCase();
       _saving = true;
       _error = null;
     });
@@ -451,6 +542,15 @@ class _PlatformDocumentSettingsPageState
           'frameStyle': _frameStyle,
           'frameColor': _frameColor,
           'frameWidthPt': _frameWidthPt,
+          'documentDateFormat': _documentDateFormat,
+          'documentFontFamily': _documentFontFamily,
+          'documentFontSizePt': _documentFontSizePt,
+          'documentFontWeight': _documentFontWeight,
+          'documentFontColor': _documentFontColor,
+          'recipientFontFamily': _recipientFontFamily,
+          'recipientFontSizePt': _recipientFontSizePt,
+          'recipientFontWeight': _recipientFontWeight,
+          'recipientFontColor': _recipientFontColor,
           'showVerificationQr': _showVerificationQr,
           'pageHeaderRows': _pageHeaderRows,
           'pageFooterRows': _pageFooterRows,
@@ -474,6 +574,30 @@ class _PlatformDocumentSettingsPageState
         _headerDividerColor = (result['headerDividerColor'] as String)
             .toLowerCase();
         _colorController.text = _headerDividerColor;
+        _documentDateFormat =
+            result['documentDateFormat']?.toString() ?? _documentDateFormat;
+        _documentFontFamily =
+            result['documentFontFamily']?.toString() ?? _documentFontFamily;
+        _documentFontSizePt =
+            (result['documentFontSizePt'] as num? ?? _documentFontSizePt)
+                .toDouble();
+        _documentFontWeight =
+            (result['documentFontWeight'] as num? ?? _documentFontWeight)
+                .toInt();
+        _documentFontColor =
+            result['documentFontColor']?.toString() ?? _documentFontColor;
+        _documentFontColorController.text = _documentFontColor;
+        _recipientFontFamily =
+            result['recipientFontFamily']?.toString() ?? _recipientFontFamily;
+        _recipientFontSizePt =
+            (result['recipientFontSizePt'] as num? ?? _recipientFontSizePt)
+                .toDouble();
+        _recipientFontWeight =
+            (result['recipientFontWeight'] as num? ?? _recipientFontWeight)
+                .toInt();
+        _recipientFontColor =
+            result['recipientFontColor']?.toString() ?? _recipientFontColor;
+        _recipientFontColorController.text = _recipientFontColor;
       });
       Toast.success(context, 'تم حفظ إعدادات وثائق النظام');
     } catch (exception) {
@@ -722,7 +846,7 @@ class _PlatformDocumentSettingsPageState
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'تُطبّق هذه الإعدادات على وثائق جميع الجهات الجديدة، ويستطيع مالك النظام وحده تعديلها.',
+                          'تُطبّق هذه الإعدادات على الوثائق الرسمية الجديدة، ويستطيع مالك النظام وحده تعديلها.',
                           style: TextStyle(
                             color: Theme.of(context)
                                 .colorScheme
@@ -734,6 +858,33 @@ class _PlatformDocumentSettingsPageState
                         _buildTextRowsEditor('سطور رأس الصفحة', true),
                         const SizedBox(height: 20),
                         _buildTextRowsEditor('سطور تذييل الصفحة', false),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: _documentDateFormat,
+                          decoration: const InputDecoration(
+                            labelText: 'صيغة تاريخ الوثيقة',
+                          ),
+                          items: _dateFormatLabels.entries
+                              .map(
+                                (entry) => DropdownMenuItem(
+                                  value: entry.key,
+                                  child: Text(
+                                    entry.value,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _documentDateFormat = value);
+                                  }
+                                },
+                        ),
                         const Divider(height: 28),
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,
@@ -801,7 +952,7 @@ class _PlatformDocumentSettingsPageState
                         ),
                         const SizedBox(height: 18),
                         const Text(
-                          'لون الخط الفاصل في ترويسة البرقية',
+                          'لون الخط الفاصل في ترويسة الوثيقة',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 10),
@@ -1028,15 +1179,161 @@ class _PlatformDocumentSettingsPageState
                             ' مم',
                             item.onChanged,
                           ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'الخط والجهة المستلمة',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: _documentFontFamily,
+                          decoration: const InputDecoration(
+                            labelText: 'نوع خط الوثيقة',
+                          ),
+                          items: _fontFamilies
+                              .map(
+                                (family) => DropdownMenuItem(
+                                  value: family,
+                                  child: Text(family),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _documentFontFamily = value);
+                                  }
+                                },
+                        ),
+                        _settingsSlider(
+                          'حجم خط الوثيقة',
+                          _documentFontSizePt,
+                          9,
+                          24,
+                          ' نقطة',
+                          (value) =>
+                              setState(() => _documentFontSizePt = value),
+                        ),
+                        DropdownButtonFormField<int>(
+                          isExpanded: true,
+                          initialValue: _documentFontWeight,
+                          decoration: const InputDecoration(
+                            labelText: 'سماكة خط الوثيقة',
+                          ),
+                          items: _fontWeights
+                              .map(
+                                (weight) => DropdownMenuItem(
+                                  value: weight,
+                                  child: Text('$weight'),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _documentFontWeight = value);
+                                  }
+                                },
+                        ),
+                        TextField(
+                          controller: _documentFontColorController,
+                          enabled: !_saving,
+                          textDirection: TextDirection.ltr,
+                          decoration: const InputDecoration(
+                            labelText: 'لون خط الوثيقة #RRGGBB',
+                          ),
+                          onChanged: (value) {
+                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value)) {
+                              setState(
+                                () => _documentFontColor = value.toLowerCase(),
+                              );
+                            }
+                          },
+                        ),
+                        const Divider(height: 24),
+                        DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          initialValue: _recipientFontFamily,
+                          decoration: const InputDecoration(
+                            labelText: 'نوع خط الجهة المستلمة',
+                          ),
+                          items: _fontFamilies
+                              .map(
+                                (family) => DropdownMenuItem(
+                                  value: family,
+                                  child: Text(family),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _recipientFontFamily = value);
+                                  }
+                                },
+                        ),
+                        _settingsSlider(
+                          'حجم خط الجهة المستلمة',
+                          _recipientFontSizePt,
+                          9,
+                          24,
+                          ' نقطة',
+                          (value) =>
+                              setState(() => _recipientFontSizePt = value),
+                        ),
+                        DropdownButtonFormField<int>(
+                          isExpanded: true,
+                          initialValue: _recipientFontWeight,
+                          decoration: const InputDecoration(
+                            labelText: 'سماكة خط الجهة المستلمة',
+                          ),
+                          items: _fontWeights
+                              .map(
+                                (weight) => DropdownMenuItem(
+                                  value: weight,
+                                  child: Text('$weight'),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: _saving
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setState(() => _recipientFontWeight = value);
+                                  }
+                                },
+                        ),
+                        TextField(
+                          controller: _recipientFontColorController,
+                          enabled: !_saving,
+                          textDirection: TextDirection.ltr,
+                          decoration: const InputDecoration(
+                            labelText: 'لون خط الجهة المستلمة #RRGGBB',
+                          ),
+                          onChanged: (value) {
+                            if (RegExp(r'^#[0-9a-fA-F]{6}$').hasMatch(value)) {
+                              setState(
+                                () => _recipientFontColor = value.toLowerCase(),
+                              );
+                            }
+                          },
+                        ),
                         const SizedBox(height: 8),
                         SwitchListTile.adaptive(
                           contentPadding: EdgeInsets.zero,
                           title: const Text(
-                            'إظهار QR للتحقق في وثائق جميع الجهات',
+                            'إظهار QR للتحقق في الوثائق الرسمية',
                             style: TextStyle(fontWeight: FontWeight.w700),
                           ),
                           subtitle: const Text(
-                            'إخفاء الرمز المطبوع لا يعطّل رابط التحقق أو صلاحية التحقق من البرقية.',
+                            'إخفاء الرمز المطبوع لا يعطّل صلاحية التحقق من الوثيقة.',
                           ),
                           value: _showVerificationQr,
                           onChanged: _saving

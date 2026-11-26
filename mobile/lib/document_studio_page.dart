@@ -772,6 +772,24 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         'frameStyle': _platformDocumentSettings['frameStyle'] ?? 'single',
         'frameColor': _platformDocumentSettings['frameColor'] ?? '#b49a55',
         'frameWidthPt': _platformDocumentSettings['frameWidthPt'] ?? 1,
+        'documentDateFormat':
+            _platformDocumentSettings['documentDateFormat'] ?? 'yyyy/MM/dd',
+        'documentFontFamily':
+            _platformDocumentSettings['documentFontFamily'] ?? 'Amiri',
+        'documentFontSizePt':
+            _platformDocumentSettings['documentFontSizePt'] ?? 12,
+        'documentFontWeight':
+            _platformDocumentSettings['documentFontWeight'] ?? 400,
+        'documentFontColor':
+            _platformDocumentSettings['documentFontColor'] ?? '#0f172a',
+        'recipientFontFamily':
+            _platformDocumentSettings['recipientFontFamily'] ?? 'Amiri',
+        'recipientFontSizePt':
+            _platformDocumentSettings['recipientFontSizePt'] ?? 12,
+        'recipientFontWeight':
+            _platformDocumentSettings['recipientFontWeight'] ?? 600,
+        'recipientFontColor':
+            _platformDocumentSettings['recipientFontColor'] ?? '#0f172a',
       };
       return DocumentStudioPdf.build(
         content: _documentContentForDisplay(document),
@@ -3235,24 +3253,89 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                                 maxLines: 1,
                                 softWrap: false,
                                 textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
+                                style: TextStyle(
+                                  color: _documentSettingColor(
+                                    'documentFontColor',
+                                    Colors.black,
+                                  ),
+                                  fontFamily: _documentSettingFamily(
+                                    'documentFontFamily',
+                                    'Amiri',
+                                  ),
+                                  fontWeight: _documentSettingWeight(
+                                    'documentFontWeight',
+                                    FontWeight.w700,
+                                  ),
+                                  fontSize:
+                                      _documentSettingSize(
+                                        'documentFontSizePt',
+                                        12,
+                                      ) *
+                                      1.65,
                                   height: 1.5,
                                 ),
                               ),
-                              Text(
-                                'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
-                                maxLines: 1,
-                                softWrap: false,
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  height: 1.5,
-                                ),
+                              Row(
+                                textDirection: ui.TextDirection.rtl,
+                                children: [
+                                  Text(
+                                    'التاريخ:',
+                                    style: TextStyle(
+                                      color: _documentSettingColor(
+                                        'documentFontColor',
+                                        Colors.black,
+                                      ),
+                                      fontFamily: _documentSettingFamily(
+                                        'documentFontFamily',
+                                        'Amiri',
+                                      ),
+                                      fontWeight: _documentSettingWeight(
+                                        'documentFontWeight',
+                                        FontWeight.w700,
+                                      ),
+                                      fontSize:
+                                          _documentSettingSize(
+                                            'documentFontSizePt',
+                                            12,
+                                          ) *
+                                          1.65,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Directionality(
+                                    textDirection: ui.TextDirection.ltr,
+                                    child: Text(
+                                      _formatOfficialDate(_documentDate),
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: TextStyle(
+                                        color: _documentSettingColor(
+                                          'documentFontColor',
+                                          Colors.black,
+                                        ),
+                                        fontFamily: _documentSettingFamily(
+                                          'documentFontFamily',
+                                          'Amiri',
+                                        ),
+                                        fontWeight: _documentSettingWeight(
+                                          'documentFontWeight',
+                                          FontWeight.w700,
+                                        ),
+                                        fontSize:
+                                            _documentSettingSize(
+                                              'documentFontSizePt',
+                                              12,
+                                            ) *
+                                            1.65,
+                                        height: 1.5,
+                                        fontFeatures: const [
+                                          ui.FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -3267,25 +3350,45 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                         textDirection: ui.TextDirection.rtl,
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontFamily: 'Amiri',
+                          style: TextStyle(
+                            color: _documentSettingColor(
+                              'recipientFontColor',
+                              Colors.black,
+                            ),
+                            fontFamily: _documentSettingFamily(
+                              'recipientFontFamily',
+                              'Amiri',
+                            ),
                           ),
                           children: [
                             TextSpan(
                               text:
                                   '${_recipientLabelController.text.trim().isEmpty ? defaultDocumentRecipientLabel : _recipientLabelController.text.trim()}: ',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                              style: TextStyle(
+                                fontSize:
+                                    _documentSettingSize(
+                                      'recipientFontSizePt',
+                                      12,
+                                    ) +
+                                    2,
+                                fontWeight: _documentSettingWeight(
+                                  'recipientFontWeight',
+                                  FontWeight.w600,
+                                ),
                                 height: 1.5,
                               ),
                             ),
                             TextSpan(
                               text: _recipientValueController.text,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
+                              style: TextStyle(
+                                fontSize: _documentSettingSize(
+                                  'recipientFontSizePt',
+                                  12,
+                                ),
+                                fontWeight: _documentSettingWeight(
+                                  'recipientFontWeight',
+                                  FontWeight.w600,
+                                ),
                                 height: 1.8,
                               ),
                             ),
@@ -3303,9 +3406,20 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                       _subjectController.text.isEmpty
                           ? 'الموضوع: —'
                           : 'الموضوع: ${_subjectController.text}',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        color: _documentSettingColor(
+                          'documentFontColor',
+                          Colors.black,
+                        ),
+                        fontFamily: _documentSettingFamily(
+                          'documentFontFamily',
+                          'Amiri',
+                        ),
+                        fontWeight: _documentSettingWeight(
+                          'documentFontWeight',
+                          FontWeight.w600,
+                        ),
+                        fontSize: _documentSettingSize('documentFontSizePt', 12),
                       ),
                     ),
                   ),
@@ -3314,9 +3428,31 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                       minHeight: math.max(96, pageHeight - 350),
                     ),
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
-                    child: QuillEditor.basic(
-                      controller: controller,
-                      config: const QuillEditorConfig(padding: EdgeInsets.zero),
+                    child: DefaultTextStyle(
+                      style: TextStyle(
+                        fontFamily: _documentSettingFamily(
+                          'documentFontFamily',
+                          'Amiri',
+                        ),
+                        color: _documentSettingColor(
+                          'documentFontColor',
+                          Colors.black,
+                        ),
+                        fontSize: _documentSettingSize(
+                          'documentFontSizePt',
+                          12,
+                        ),
+                        fontWeight: _documentSettingWeight(
+                          'documentFontWeight',
+                          FontWeight.w400,
+                        ),
+                      ),
+                      child: QuillEditor.basic(
+                        controller: controller,
+                        config: const QuillEditorConfig(
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
                   ),
                   Padding(
@@ -3331,10 +3467,25 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                               textAlign: TextAlign.center,
                               maxLines: 1,
                               softWrap: false,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 17,
+                              style: TextStyle(
+                                color: _documentSettingColor(
+                                  'documentFontColor',
+                                  Colors.black,
+                                ),
+                                fontFamily: _documentSettingFamily(
+                                  'documentFontFamily',
+                                  'Amiri',
+                                ),
+                                fontWeight: _documentSettingWeight(
+                                  'documentFontWeight',
+                                  FontWeight.w700,
+                                ),
+                                fontSize:
+                                    _documentSettingSize(
+                                      'documentFontSizePt',
+                                      12,
+                                    ) *
+                                    1.4,
                                 height: 1.4,
                               ),
                             ),
@@ -3346,10 +3497,25 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                               textAlign: TextAlign.center,
                               maxLines: 1,
                               softWrap: false,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
+                              style: TextStyle(
+                                color: _documentSettingColor(
+                                  'documentFontColor',
+                                  Colors.black,
+                                ),
+                                fontFamily: _documentSettingFamily(
+                                  'documentFontFamily',
+                                  'Amiri',
+                                ),
+                                fontWeight: _documentSettingWeight(
+                                  'documentFontWeight',
+                                  FontWeight.w700,
+                                ),
+                                fontSize:
+                                    _documentSettingSize(
+                                      'documentFontSizePt',
+                                      12,
+                                    ) *
+                                    1.3,
                                 height: 1.4,
                               ),
                             ),
@@ -3380,6 +3546,45 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         ),
       ],
     );
+  }
+
+  String _formatOfficialDate(DateTime value) {
+    final pattern =
+        _platformDocumentSettings['documentDateFormat']?.toString() ??
+        'yyyy/MM/dd';
+    final locale = pattern.contains('MMMM') ? 'ar' : 'en';
+    return DateFormat(pattern, locale).format(value.toLocal());
+  }
+
+  String _documentSettingFamily(String key, String fallback) =>
+      _platformDocumentSettings[key]?.toString() ?? fallback;
+
+  double _documentSettingSize(String key, double fallback) {
+    final value = _platformDocumentSettings[key];
+    return (value is num ? value.toDouble() : fallback)
+        .clamp(8.0, 30.0)
+        .toDouble();
+  }
+
+  FontWeight _documentSettingWeight(String key, FontWeight fallback) {
+    final value = _platformDocumentSettings[key];
+    final weight = value is num ? value.toInt() : null;
+    return switch (weight) {
+      >= 800 => FontWeight.w800,
+      >= 700 => FontWeight.w700,
+      >= 600 => FontWeight.w600,
+      >= 500 => FontWeight.w500,
+      >= 400 => FontWeight.w400,
+      _ => fallback,
+    };
+  }
+
+  Color _documentSettingColor(String key, Color fallback) {
+    final value = _platformDocumentSettings[key]
+        ?.toString()
+        .replaceFirst('#', '');
+    final parsed = int.tryParse(value ?? '', radix: 16);
+    return parsed == null ? fallback : Color(0xFF000000 | parsed);
   }
 
   Color _documentHeaderDividerColor() {
