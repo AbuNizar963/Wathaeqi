@@ -19,7 +19,6 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -451,23 +450,18 @@ export default function WorkspacePage({
                   const documentId = encodeURIComponent(item.id);
                   const documentUrl = `/documents?document=${documentId}`;
                   const printUrl = `${documentUrl}&print=1`;
+                  const documentDate = item.documentDate || item.updatedAt;
 
                   return (
                     <article
                       key={item.id}
-                      className={cn(
-                        "flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl p-3",
-                        "transition-colors hover:bg-muted/40"
-                      )}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"
                     >
                       <button
                         type="button"
                         onClick={() => setLocation(documentUrl)}
                         aria-label={`معاينة الوثيقة ${item.title}`}
-                        className={cn(
-                          "flex min-w-0 flex-1 items-center gap-3 text-right",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        )}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-right"
                       >
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <FileText className="h-5 w-5" />
@@ -510,9 +504,7 @@ export default function WorkspacePage({
                           className="text-xs font-medium tabular-nums text-muted-foreground"
                           dir="ltr"
                         >
-                          {formatDashboardDate(
-                            item.documentDate || item.updatedAt
-                          )}
+                          {formatDashboardDate(documentDate)}
                         </time>
                         <Button
                           type="button"
