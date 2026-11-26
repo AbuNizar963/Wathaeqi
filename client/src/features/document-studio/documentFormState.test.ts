@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER,
+  DOCUMENT_RECIPIENT_LABEL_KEY,
+  DOCUMENT_RECIPIENT_LINE_KEY,
+  DOCUMENT_RECIPIENT_VALUE_KEY,
+  getDocumentRecipientLine,
+  withDocumentRecipientLine,
+} from "./documentRecipient";
+import {
   isDocumentFormDirty,
   missingRequiredTemplateFields,
   normalizeTemplateFieldValues,
@@ -120,5 +128,59 @@ describe("guided template field validation", () => {
       employee: "أحمد محمد",
       department: "الإدارة العامة",
     });
+  });
+});
+
+
+describe("document recipient line", () => {
+  it("provides an editable default suggestion without forcing its value", () => {
+    expect(DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER).toBe("إلى");
+    expect(getDocumentRecipientLine({})).toBe("");
+  });
+
+  it("reads a new unified line before legacy split values", () => {
+    expect(
+      getDocumentRecipientLine({
+        [DOCUMENT_RECIPIENT_LINE_KEY]: "السيد مدير القسم المحترم",
+        [DOCUMENT_RECIPIENT_LABEL_KEY]: "إلى",
+        [DOCUMENT_RECIPIENT_VALUE_KEY]: "الإدارة العامة",
+      })
+    ).toBe("السيد مدير القسم المحترم");
+  });
+
+  it("combines legacy label and recipient when reading older documents", () => {
+    expect(
+      getDocumentRecipientLine({
+        [DOCUMENT_RECIPIENT_LABEL_KEY]: "إلى",
+        [DOCUMENT_RECIPIENT_VALUE_KEY]: "الإدارة العامة",
+      })
+    ).toBe("إلى الإدارة العامة");
+  });
+
+  it("preserves other fields and removes obsolete split keys when saving", () => {
+    expect(
+      withDocumentRecipientLine(
+        {
+          employee_name: "أحمد",
+          [DOCUMENT_RECIPIENT_LABEL_KEY]: "إلى",
+          [DOCUMENT_RECIPIENT_VALUE_KEY]: "الإدارة العامة",
+        },
+        "السيد مدير القسم"
+      )
+    ).toEqual({
+      employee_name: "أحمد",
+      [DOCUMENT_RECIPIENT_LINE_KEY]: "السيد مدير القسم",
+    });
+  });
+
+  it("does not persist an empty recipient line", () => {
+    expect(
+      withDocumentRecipientLine(
+        {
+          [DOCUMENT_RECIPIENT_LINE_KEY]: "إلى الإدارة",
+        },
+        "   "
+      )
+    ).toEqual({});
   });
 });
