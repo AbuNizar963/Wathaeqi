@@ -242,7 +242,7 @@ describe("Appwrite operational schema", () => {
       expect.objectContaining({
         key: "frameStyle",
         type: "varchar",
-        size: 16,
+        size: 32,
         default: "box",
       })
     );
