@@ -15,13 +15,21 @@ export type {
 } from "./documentFrameCatalog";
 
 export type DocumentTextRow = { right: string; left: string };
+
 export type DocumentFontFamily =
   | "Cairo"
   | "Arial"
   | "Tahoma"
   | "Traditional Arabic"
   | "Times New Roman";
-export type DocumentFontWeight = 400 | 500 | 600 | 700 | 800;
+
+export type DocumentFontWeight =
+  | 400
+  | 500
+  | 600
+  | 700
+  | 800;
+
 export const DOCUMENT_FONT_FAMILIES: readonly DocumentFontFamily[] = [
   "Cairo",
   "Arial",
@@ -29,6 +37,7 @@ export const DOCUMENT_FONT_FAMILIES: readonly DocumentFontFamily[] = [
   "Traditional Arabic",
   "Times New Roman",
 ];
+
 export const DOCUMENT_FONT_WEIGHTS: readonly DocumentFontWeight[] = [
   400,
   500,
