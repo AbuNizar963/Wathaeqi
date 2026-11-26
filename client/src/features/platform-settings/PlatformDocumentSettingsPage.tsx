@@ -178,6 +178,10 @@ export default function PlatformDocumentSettingsPage() {
   const colorIsValid =
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
+  const hasUnsavedChanges =
+    Boolean(settingsQuery.data) &&
+    JSON.stringify(values) !==
+      JSON.stringify(normalizePlatformDocumentSettings(settingsQuery.data));
 
   // prettier-ignore
   return (
@@ -195,6 +199,19 @@ export default function PlatformDocumentSettingsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!hasUnsavedChanges || saveMutation.isPending}
+          onClick={() => {
+            if (settingsQuery.data) {
+              setValues(normalizePlatformDocumentSettings(settingsQuery.data));
+            }
+          }}
+          className="hidden sm:inline-flex"
+        >
+          تراجع عن التعديلات
+        </Button>
         <Button
           type="button"
           variant="outline"
@@ -351,7 +368,16 @@ export default function PlatformDocumentSettingsPage() {
                       {organizationLogoQuery.error.message}
                     </p>
                   ) : (
-                    <div className="flex flex-wrap items-center gap-4">
+                    <div
+                      className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-border p-3 transition-colors hover:border-primary/50"
+                      onDragOver={event => event.preventDefault()}
+                      onDrop={event => {
+                        event.preventDefault();
+                        const file = event.dataTransfer.files?.[0];
+                        if (file) void handleLogoFile(file);
+                      }}
+                      aria-label="منطقة إسقاط شعار الجهة"
+                    >
                       <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border bg-background">
                         {logoUrl ? (
                           <img
