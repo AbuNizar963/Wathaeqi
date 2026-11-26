@@ -1527,8 +1527,14 @@ export default function DocumentStudioPage() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-sm font-medium">رقم الوثيقة</label>
+                      <label
+                        htmlFor="document-number"
+                        className="text-sm font-medium"
+                      >
+                        رقم الوثيقة
+                      </label>
                       <Input
+                        id="document-number"
                         value={documentSubject}
                         onChange={event =>
                           setDocumentSubject(event.target.value)
@@ -1780,8 +1786,7 @@ export default function DocumentStudioPage() {
                         <div className="document-studio-no-print mb-2">
                           <h3 className="text-sm font-semibold">نص الوثيقة</h3>
                           <p className="text-xs text-muted-foreground">
-                            اكتب محتوى الكتاب؛ سيظهر أسفل جهة التوجيه في
-                            الوثيقة المطبوعة.
+                            اكتب محتوى الكتاب ليظهر أسفل جهة التوجيه.
                           </p>
                         </div>
                         <DocumentEditor
