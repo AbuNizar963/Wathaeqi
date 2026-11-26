@@ -64,7 +64,21 @@ function Router() {
           </DashboardPage>
         </Route>
         <Route path="/studio" component={LegacyWorkspaceRoute} />
-        <Route path="/dashboard" component={LegacyWorkspaceRoute} />
+        <Route path="/dashboard">
+          <DashboardPage>
+            <WorkspacePage section="dashboard" />
+          </DashboardPage>
+        </Route>
+        <Route path="/contacts">
+          <DashboardPage>
+            <WorkspacePage section="contacts" />
+          </DashboardPage>
+        </Route>
+        <Route path="/notifications">
+          <DashboardPage>
+            <WorkspacePage section="notifications" />
+          </DashboardPage>
+        </Route>
         <Route path="/users">
           <DashboardPage>
             <WorkspacePage section="users" />

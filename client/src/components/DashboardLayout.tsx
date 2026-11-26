@@ -4,6 +4,9 @@ import {
   SidebarContent,
   SidebarHeader,
   SidebarInset,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -21,6 +24,8 @@ import {
   PanelLeft,
   ShieldCheck,
   Users,
+  Bell,
+  Contact,
   WifiOff,
   X,
 } from "lucide-react";
@@ -33,13 +38,39 @@ import { trpc } from "@/lib/trpc";
 import { setSessionToken } from "@/lib/sessionToken";
 import { BrandMark } from "./BrandMark";
 import HeaderActions from "./HeaderActions";
+import {
+  hasOrganizationSettingsMenuAccess,
+  hasUserManagementMenuAccess,
+} from "@/features/admin/menuAccess";
 
 const menuItems = [
+  {
+    key: "dashboard",
+    icon: LayoutDashboard,
+    label: "لوحة العمل",
+    path: "/dashboard",
+    group: "workspace",
+  },
   {
     key: "library",
     icon: FileText,
     label: "مساحة الوثائق",
     path: "/documents",
+    group: "workspace",
+  },
+  {
+    key: "contacts",
+    icon: Contact,
+    label: "جهات الاتصال",
+    path: "/contacts",
+    group: "workspace",
+  },
+  {
+    key: "notifications",
+    icon: Bell,
+    label: "الإشعارات",
+    path: "/notifications",
+    group: "workspace",
   },
   {
     key: "workspace-users",
@@ -47,6 +78,7 @@ const menuItems = [
     label: "إدارة المستخدمين",
     path: "/users",
     adminOnly: true,
+    group: "management",
   },
   {
     key: "document-settings",
@@ -54,8 +86,14 @@ const menuItems = [
     label: "إعدادات الوثائق",
     path: "/settings",
     ownerOnly: true,
+    group: "management",
   },
 ];
+
+const menuGroups = [
+  { key: "workspace", label: "مساحة العمل" },
+  { key: "management", label: "الإدارة" },
+] as const;
 
 const LAST_NAVIGATION_KEY = "wathaeqi:last-navigation";
 
@@ -409,14 +447,15 @@ function DashboardLayoutContent({
     staleTime: 30_000,
   });
   const isPlatformOwnerAccount = organizationContext.data?.isOwner === true;
-  const canManageUsers =
-    user?.role === "admin" ||
-    [
-      "system_admin",
-      "organization_admin",
-      "regional_admin",
-      "organization_supervisor",
-    ].includes(organizationContext.data?.role ?? "");
+  const canManageUsers = hasUserManagementMenuAccess({
+    accountRole: user?.role,
+    organizationRole: organizationContext.data?.role,
+    isPlatformOwner: isPlatformOwnerAccount,
+  });
+  const canManageDocumentSettings = hasOrganizationSettingsMenuAccess({
+    organizationRole: organizationContext.data?.role,
+    isPlatformOwner: isPlatformOwnerAccount,
+  });
   const [location, setLocation] = useLocation();
   const { state, setOpen, openMobile, setOpenMobile, toggleSidebar } =
     useSidebar();
@@ -531,36 +570,45 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 px-3 py-5">
-            <p className="mb-3 px-2 text-[11px] font-semibold tracking-[0.14em] text-sidebar-foreground/55">
-              التنقل الرئيسي
-            </p>
-            <SidebarMenu className="gap-1.5">
-              {menuItems
-                .filter(
-                  item =>
-                    (!item.adminOnly || canManageUsers) &&
-                    (!item.ownerOnly || isPlatformOwnerAccount)
-                )
-                .map(item => {
-                  const isActive = isRouteActive(location, item.path);
-                  return (
-                    <SidebarMenuItem key={item.key}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => navigateTo(item.path)}
-                        aria-current={isActive ? "page" : undefined}
-                        tooltip={item.label}
-                        className="h-11 rounded-xl px-3 font-medium transition-colors hover:translate-x-[-2px] data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
-                      >
-                        <item.icon
-                          className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
-                        />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-            </SidebarMenu>
+            {menuGroups.map(group => {
+              const groupItems = menuItems.filter(
+                item =>
+                  item.group === group.key &&
+                  (!item.adminOnly || canManageUsers) &&
+                  (!item.ownerOnly || canManageDocumentSettings)
+              );
+              if (!groupItems.length) return null;
+              return (
+                <SidebarGroup key={group.key} className="px-0 py-0 [&+&]:mt-5">
+                  <SidebarGroupLabel className="mb-2 px-2 text-[11px] font-semibold tracking-[0.14em] text-sidebar-foreground/55">
+                    {group.label}
+                  </SidebarGroupLabel>
+                  <SidebarGroupContent>
+                    <SidebarMenu className="gap-1.5">
+                      {groupItems.map(item => {
+                        const isActive = isRouteActive(location, item.path);
+                        return (
+                          <SidebarMenuItem key={item.key}>
+                            <SidebarMenuButton
+                              isActive={isActive}
+                              onClick={() => navigateTo(item.path)}
+                              aria-current={isActive ? "page" : undefined}
+                              tooltip={item.label}
+                              className="h-11 rounded-xl px-3 font-medium transition-colors hover:translate-x-[-2px] data-[active=true]:bg-primary data-[active=true]:text-primary-foreground data-[active=true]:shadow-md data-[active=true]:hover:bg-primary/90"
+                            >
+                              <item.icon
+                                className={`h-[18px] w-[18px] ${isActive ? "text-current" : "text-sidebar-foreground/70"}`}
+                              />
+                              <span>{item.label}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              );
+            })}
           </SidebarContent>
         </Sidebar>
         <div

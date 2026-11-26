@@ -1,0 +1,14 @@
+{
+  "routes": [
+    { "path": "/", "title": "وثائقي" },
+    { "path": "/dashboard", "title": "لوحة العمل" },
+    { "path": "/documents", "title": "مساحة الوثائق" },
+    { "path": "/contacts", "title": "جهات الاتصال" },
+    { "path": "/notifications", "title": "الإشعارات" },
+    { "path": "/users", "title": "إدارة المستخدمين" },
+    { "path": "/settings", "title": "إعدادات الوثائق" },
+    { "path": "/profile", "title": "الملف الشخصي" },
+    { "path": "/about", "title": "حول النظام" },
+    { "path": "/terms", "title": "الشروط والأحكام" }
+  ]
+}

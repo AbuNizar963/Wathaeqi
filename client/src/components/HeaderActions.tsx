@@ -22,10 +22,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth-session/useAuth";
+import { useLocation } from "wouter";
 
 export default function HeaderActions() {
   const { preference, setThemePreference } = useTheme();
   const { user, logout } = useAuth();
+  const [, setLocation] = useLocation();
 
   if (!user) {
     return null;
@@ -104,7 +106,7 @@ export default function HeaderActions() {
           </DropdownMenuLabel>
           <DropdownMenuItem
             onSelect={() => {
-              window.location.href = "/profile";
+              setLocation("/profile");
             }}
             className="cursor-pointer justify-end gap-2"
           >
@@ -114,7 +116,7 @@ export default function HeaderActions() {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => {
-              window.location.href = "/terms";
+              setLocation("/terms");
             }}
             className="cursor-pointer justify-end gap-2"
           >
@@ -123,7 +125,7 @@ export default function HeaderActions() {
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => {
-              window.location.href = "/about";
+              setLocation("/about");
             }}
             className="cursor-pointer justify-end gap-2"
           >

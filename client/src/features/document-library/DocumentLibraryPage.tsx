@@ -218,10 +218,12 @@ export default function DocumentLibraryPage({
             صفحاته وتنسيقه.
           </p>
         </div>
-        <Button onClick={() => setCreationOpen(true)} className="gap-2">
-          <Plus className="size-4" />
-          إنشاء
-        </Button>
+        {!embedded ? (
+          <Button onClick={() => setCreationOpen(true)} className="gap-2">
+            <Plus className="size-4" />
+            إنشاء
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
