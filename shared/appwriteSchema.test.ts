@@ -222,7 +222,7 @@ describe("Appwrite operational schema", () => {
           key: "recipientFontColor",
           type: "varchar",
           required: false,
-          default: "#111827",
+          default: "#0f172a",
         }),
       ])
     );
