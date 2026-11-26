@@ -25,6 +25,7 @@ describe("unified document workspace routes", () => {
   });
   it("builds safe deep links for upload and template library actions", () => {
     expect(documentUploadTarget()).toBe("/documents?upload=1");
+    expect(workspaceTabFromSearch("?upload=1")).toBe("documents");
     expect(templateImportTarget()).toBe("/documents?tab=templates");
   });
   it("opens each section from a deep link and defaults safely", () => {
