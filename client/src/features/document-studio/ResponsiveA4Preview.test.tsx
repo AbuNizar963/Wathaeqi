@@ -5,7 +5,36 @@ import DocumentFrameDecoration from "./DocumentFrameDecoration";
 import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "@shared/features/platform-settings/platformDocumentSettings";
 
 describe("ResponsiveA4Preview", () => {
-  it("renders professional multi-line frame styling", () => {
+  it.each([
+    ["box", 'data-document-frame="box"'],
+    ["shadow", 'data-document-frame="shadow"'],
+    ["double", 'data-document-frame="double"'],
+  ] as const)("renders the %s Word-style page border", (frameStyle, marker) => {
+    const markup = renderToStaticMarkup(
+      <DocumentFrameDecoration
+        frameStyle={frameStyle}
+        frameColor="#123456"
+        frameWidthPt={1}
+      />
+    );
+
+    expect(markup).toContain(marker);
+    expect(markup).toContain('stroke="#123456"');
+  });
+
+  it("omits the page border when the no-border option is selected", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentFrameDecoration
+        frameStyle="none"
+        frameColor="#123456"
+        frameWidthPt={1}
+      />
+    );
+
+    expect(markup).toBe("");
+  });
+
+  it("renders a Word-style three-dimensional page border", () => {
     const markup = renderToStaticMarkup(
       <ResponsiveA4Preview
         settings={{
