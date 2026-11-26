@@ -97,11 +97,11 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   documentFontFamily: "Cairo" as const,
   documentFontSizePt: 12,
   documentFontWeight: 400 as const,
-  documentFontColor: "#1f2937",
+  documentFontColor: "#0f172a",
   recipientFontFamily: "Cairo" as const,
-  recipientFontSizePt: 14,
+  recipientFontSizePt: 12,
   recipientFontWeight: 600 as const,
-  recipientFontColor: "#111827",
+  recipientFontColor: "#0f172a",
   showVerificationQr: true,
 } as const;
 
