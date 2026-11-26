@@ -55,10 +55,10 @@ export const DOCUMENT_FRAME_STYLES: readonly DocumentFrameStyle[] = [
 export function isDocumentFrameStyle(
   value: unknown
 ): value is DocumentFrameStyle {
+  if (typeof value !== "string") return false;
   return (
-    typeof value === "string" &&
-    (DOCUMENT_FRAME_STYLES.includes(value as DocumentFrameStyle) ||
-      /^f(?:0[1-9]|10)[gnebs]$/.test(value))
+    DOCUMENT_FRAME_STYLES.includes(value as DocumentFrameStyle) ||
+    /^f(?:0[1-9]|10)[gnebs]$/.test(value)
   );
 }
 
