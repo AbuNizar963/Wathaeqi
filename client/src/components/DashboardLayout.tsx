@@ -565,8 +565,10 @@ function DashboardLayoutContent({
               <button
                 onClick={toggleSidebar}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sidebar-border bg-sidebar-accent/40 text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="إغلاق القائمة الجانبية"
-                title="إغلاق القائمة"
+                aria-label={
+                  isCollapsed ? "توسيع القائمة الجانبية" : "طي القائمة إلى أيقونات"
+                }
+                title={isCollapsed ? "توسيع القائمة" : "طي القائمة"}
               >
                 <PanelLeft className="h-4 w-4" />
               </button>
