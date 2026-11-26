@@ -267,12 +267,11 @@ async function applyTable(
         columns: table.columns.map(column => {
           const base = {
             key: column.key,
-            type: column.type,
+            type: column.type === "double" ? "float" : column.type,
             required: column.required,
             ...(column.type === "varchar" || column.type === "string"
               ? { size: column.size ?? 255 }
               : {}),
-            ...(column.type === "double" ? { type: "float" } : {}),
             ...((column.type === "integer" || column.type === "double") &&
             column.min !== undefined
               ? { min: column.min }
