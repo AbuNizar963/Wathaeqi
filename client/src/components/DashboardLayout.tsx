@@ -99,6 +99,14 @@ const menuItems = [
     ownerOnly: true,
     group: "management",
   },
+  {
+    key: "audit-log",
+    icon: History,
+    label: "سجل الحركات",
+    path: "/audit-log",
+    ownerOnly: true,
+    group: "management",
+  },
 ];
 
 const menuGroups = [
