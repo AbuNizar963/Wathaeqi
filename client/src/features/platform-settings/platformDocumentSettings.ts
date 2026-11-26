@@ -11,6 +11,12 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
+  MIN_DOCUMENT_FONT_SIZE_PT,
+  MAX_DOCUMENT_FONT_SIZE_PT,
+  MIN_RECIPIENT_FONT_SIZE_PT,
+  MAX_RECIPIENT_FONT_SIZE_PT,
+  DOCUMENT_FONT_FAMILIES,
+  DOCUMENT_FONT_WEIGHTS,
   isDocumentFrameStyle,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
@@ -46,6 +52,16 @@ export async function loadDocumentSettingsForExport(
       !isDocumentFrameStyle(settings.frameStyle) ||
       settings.frameWidthPt < MIN_FRAME_WIDTH_PT ||
       settings.frameWidthPt > MAX_FRAME_WIDTH_PT ||
+      !DOCUMENT_FONT_FAMILIES.includes(settings.documentFontFamily) ||
+      settings.documentFontSizePt < MIN_DOCUMENT_FONT_SIZE_PT ||
+      settings.documentFontSizePt > MAX_DOCUMENT_FONT_SIZE_PT ||
+      !DOCUMENT_FONT_WEIGHTS.includes(settings.documentFontWeight) ||
+      !HEX_COLOR_PATTERN.test(settings.documentFontColor) ||
+      !DOCUMENT_FONT_FAMILIES.includes(settings.recipientFontFamily) ||
+      settings.recipientFontSizePt < MIN_RECIPIENT_FONT_SIZE_PT ||
+      settings.recipientFontSizePt > MAX_RECIPIENT_FONT_SIZE_PT ||
+      !DOCUMENT_FONT_WEIGHTS.includes(settings.recipientFontWeight) ||
+      !HEX_COLOR_PATTERN.test(settings.recipientFontColor) ||
       ![
         settings.pageMarginTopMm,
         settings.pageMarginRightMm,
