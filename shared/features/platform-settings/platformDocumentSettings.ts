@@ -16,30 +16,19 @@ export type {
 
 export type DocumentTextRow = { right: string; left: string };
 
-export type DocumentFontFamily =
-  | "Cairo"
-  | "Arial"
-  | "Tahoma"
-  | "Traditional Arabic"
-  | "Times New Roman";
-
-export type DocumentFontWeight = 400 | 500 | 600 | 700 | 800;
-
-export const DOCUMENT_FONT_FAMILIES: readonly DocumentFontFamily[] = [
+export const DOCUMENT_FONT_FAMILIES = [
   "Cairo",
   "Arial",
   "Tahoma",
   "Traditional Arabic",
   "Times New Roman",
-];
+] as const;
 
-export const DOCUMENT_FONT_WEIGHTS: readonly DocumentFontWeight[] = [
-  400,
-  500,
-  600,
-  700,
-  800,
-];
+export type DocumentFontFamily = (typeof DOCUMENT_FONT_FAMILIES)[number];
+
+export const DOCUMENT_FONT_WEIGHTS = [400, 500, 600, 700, 800] as const;
+
+export type DocumentFontWeight = (typeof DOCUMENT_FONT_WEIGHTS)[number];
 
 export const REFERENCE_DOCUMENT_LOGO_SIZE = 120;
 export const DOCUMENT_DATE_FORMATS = [
