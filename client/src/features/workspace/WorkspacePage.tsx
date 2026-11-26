@@ -115,6 +115,9 @@ export default function WorkspacePage({
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery(undefined, {
     enabled: section === "dashboard",
   });
+  const templatesQuery = trpc.documentStudio.listTemplates.useQuery(undefined, {
+    enabled: section === "dashboard",
+  });
   const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
     enabled: section === "contacts",
   });
@@ -127,7 +130,9 @@ export default function WorkspacePage({
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
     {
-      enabled: section === "users",
+      enabled:
+        section === "users" ||
+        (section === "dashboard" && canOpenAdvancedManagement),
     }
   );
   const utils = trpc.useUtils();
@@ -248,6 +253,8 @@ export default function WorkspacePage({
   const refresh = () => {
     if (section === "dashboard") {
       void documentsQuery.refetch();
+      void templatesQuery.refetch();
+      if (canOpenAdvancedManagement) void administrationQuery.refetch();
     } else if (section === "contacts") void contactsQuery.refetch();
     else if (section === "notifications") void notificationsQuery.refetch();
     else void administrationQuery.refetch();
@@ -357,7 +364,7 @@ export default function WorkspacePage({
 
       {section === "dashboard" ? (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-6">
             <SummaryCard
               label="إجمالي الوثائق"
               value={documentsQuery.data?.length}
@@ -386,6 +393,20 @@ export default function WorkspacePage({
                   .length
               }
               icon={<FileClock className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="القوالب والنماذج"
+              value={templatesQuery.data?.filter(item => item.isActive).length}
+              icon={<FileText className="h-4 w-4" />}
+            />
+            <SummaryCard
+              label="المستخدمون"
+              value={
+                canOpenAdvancedManagement
+                  ? administrationQuery.data?.totals.users
+                  : undefined
+              }
+              icon={<Users className="h-4 w-4" />}
             />
           </div>
           <Card className="space-y-3 p-4 sm:p-5">

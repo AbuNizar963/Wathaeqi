@@ -54,11 +54,11 @@ assert(
 
 assert(
   dashboardLayout.includes(
-    '<h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">'
+    '<h1 className="min-w-0 truncate text-sm font-semibold text-foreground">'
   ) &&
-    dashboardLayout.includes('className="h-11 w-11 rounded-lg"') &&
+    dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes('aria-label="الإشعارات"'),
-  "The mobile dashboard header must stay minimal and expose the page title and notifications."
+  "The mobile dashboard header must expose the page title, full navigation drawer, and notifications."
 );
 
 assert(
@@ -132,6 +132,13 @@ assert(
 );
 
 assert(
+  dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
+    dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
+    dashboardLayout.includes("aria-expanded={openMobile}"),
+  "The mobile top bar must expose an explicit button for opening the full navigation drawer."
+);
+
+assert(
   dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
     dashboardLayout.includes("DEFAULT_WIDTH = 240"),
   "The desktop navigation must use a 240px expanded rail and a 72px icon-collapsed state."
@@ -140,13 +147,13 @@ assert(
 assert(
   appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--background: #f9fafb"
+      "--background: #f1f5f9"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--card: #121215"
+      "--card: #131c31"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--primary: #fafafa"
+      "--primary: #0ea5e9"
     ),
   "The crisp light theme must be the initial preference while remaining switchable."
 );

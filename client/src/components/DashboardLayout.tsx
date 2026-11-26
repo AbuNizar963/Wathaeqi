@@ -774,14 +774,27 @@ function DashboardLayoutContent({
         ) : null}
         {isMobile && (
           <div className="app-header sticky top-0 z-40 flex h-[52px] items-center justify-between border-b border-border bg-card px-3">
-            <h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">
-              {activeMenuItem?.label ?? "مساحة العمل"}
-            </h1>
+            <div className="flex min-w-0 items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 shrink-0 rounded-lg"
+                aria-label="فتح القائمة الجانبية الكاملة"
+                aria-expanded={openMobile}
+                onClick={() => setOpenMobile(true)}
+              >
+                <PanelLeft className="h-[18px] w-[18px]" />
+              </Button>
+              <h1 className="min-w-0 truncate text-sm font-semibold text-foreground">
+                {activeMenuItem?.label ?? "مساحة العمل"}
+              </h1>
+            </div>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-11 w-11 rounded-lg"
+              className="h-11 w-11 shrink-0 rounded-lg"
               aria-label="الإشعارات"
               onClick={() => setLocation("/notifications")}
             >
