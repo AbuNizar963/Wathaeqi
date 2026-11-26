@@ -51,7 +51,9 @@ assert(
 );
 
 assert(
-  dashboardLayout.includes('<h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">') &&
+  dashboardLayout.includes(
+    '<h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">'
+  ) &&
     dashboardLayout.includes('className="h-11 w-11 rounded-lg"') &&
     dashboardLayout.includes('aria-label="الإشعارات"'),
   "The mobile dashboard header must stay minimal and expose the page title and notifications."
@@ -120,9 +122,15 @@ assert(
 
 assert(
   appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
-    (await readProjectFile("client/src/index.css")).includes("--background: #f9fafb") &&
-    (await readProjectFile("client/src/index.css")).includes("--card: #121215") &&
-    (await readProjectFile("client/src/index.css")).includes("--primary: #fafafa"),
+    (await readProjectFile("client/src/index.css")).includes(
+      "--background: #f9fafb"
+    ) &&
+    (await readProjectFile("client/src/index.css")).includes(
+      "--card: #121215"
+    ) &&
+    (await readProjectFile("client/src/index.css")).includes(
+      "--primary: #fafafa"
+    ),
   "The crisp light theme must be the initial preference while remaining switchable."
 );
 
