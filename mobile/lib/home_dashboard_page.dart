@@ -35,6 +35,14 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant HomeDashboardPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isPlatformOwner != widget.isPlatformOwner) {
+      _load();
+    }
+  }
+
   Future<dynamic> _readList(String procedure) async {
     try {
       return await widget.api.call(procedure);
