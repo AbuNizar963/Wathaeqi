@@ -1567,9 +1567,12 @@ export default function DocumentStudioPage() {
                             [DOCUMENT_RECIPIENT_LINE_KEY]: event.target.value,
                           }))
                         }
-                        placeholder={`${DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER} (يمكنك استبدالها بأي صياغة تريدها)`}
+                        placeholder={DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER}
                         disabled={!canEditDocument}
                       />
+                      <p className="text-xs text-muted-foreground">
+                        يمكنك كتابة أي صياغة؛ كلمة «إلى» مجرد اقتراح قابل للتغيير.
+                      </p>
                     </div>
                   </div>
 
@@ -1777,7 +1780,8 @@ export default function DocumentStudioPage() {
                         <div className="document-studio-no-print mb-2">
                           <h3 className="text-sm font-semibold">نص الوثيقة</h3>
                           <p className="text-xs text-muted-foreground">
-                            اكتب محتوى الكتاب؛ سيظهر أسفل جهة التوجيه في الوثيقة المطبوعة.
+                            اكتب محتوى الكتاب؛ سيظهر أسفل جهة التوجيه في
+                            الوثيقة المطبوعة.
                           </p>
                         </div>
                         <DocumentEditor
