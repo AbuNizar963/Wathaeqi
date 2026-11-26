@@ -77,11 +77,11 @@ describe("platform document settings nullable Appwrite columns", () => {
       documentFontFamily: "Cairo",
       documentFontSizePt: 12,
       documentFontWeight: 400,
-      documentFontColor: "#1f2937",
+      documentFontColor: "#0f172a",
       recipientFontFamily: "Cairo",
-      recipientFontSizePt: 14,
+      recipientFontSizePt: 12,
       recipientFontWeight: 600,
-      recipientFontColor: "#111827",
+      recipientFontColor: "#0f172a",
     });
   });
 
