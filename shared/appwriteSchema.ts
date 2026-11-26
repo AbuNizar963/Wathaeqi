@@ -574,6 +574,12 @@ export const appwriteSchema: SchemaTable[] = [
         type: "unique",
         columns: ["recordType", "recordKey"],
       },
+      {
+        key: "record_type_created",
+        type: "key",
+        columns: ["recordType", "createdAt"],
+        orders: ["ASC", "DESC"],
+      },
     ],
   },
   {
