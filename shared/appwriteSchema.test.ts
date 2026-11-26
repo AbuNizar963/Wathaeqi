@@ -199,7 +199,7 @@ describe("Appwrite operational schema", () => {
       expect.arrayContaining([
         expect.objectContaining({
           key: "documentFontFamily",
-          type: "varchar",
+          type: "string",
           required: false,
           default: "Cairo",
         }),
@@ -219,7 +219,7 @@ describe("Appwrite operational schema", () => {
         }),
         expect.objectContaining({
           key: "recipientFontColor",
-          type: "varchar",
+          type: "string",
           required: false,
           default: "#0f172a",
         }),
@@ -239,7 +239,46 @@ describe("Appwrite operational schema", () => {
       expect.objectContaining({ key: "headerLogoSize", min: 60, max: 240 })
     );
     expect(settings?.columns).toContainEqual(
-      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 7 })
+      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 16 })
+    );
+  });
+
+  it("matches the live document settings column types and constraints", () => {
+    const settings = findSchemaTable("platform_document_settings");
+    const columns = settings?.columns ?? [];
+
+    expect(columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "headerDividerStyle",
+          type: "varchar",
+          size: 32,
+        }),
+        expect.objectContaining({
+          key: "headerDividerWidthPt",
+          type: "double",
+          min: 0.5,
+          max: 6,
+          default: 2.25,
+        }),
+        expect.objectContaining({
+          key: "frameWidthPt",
+          type: "double",
+          min: 0.5,
+          max: 4,
+          default: 1,
+        }),
+        expect.objectContaining({
+          key: "pageHeaderRows",
+          type: "text",
+          default: undefined,
+        }),
+        expect.objectContaining({
+          key: "pageFooterRows",
+          type: "text",
+          default: undefined,
+        }),
+      ])
     );
   });
 });
