@@ -69,7 +69,9 @@ export default function ResponsiveA4Preview({
       ? "none"
       : [
           `${settings?.frameWidthPt ?? 1}pt`,
-          settings?.frameStyle === "double" || settings?.frameStyle === "ornate"
+          ["double", "ornate", "classic", "triple"].includes(
+            settings?.frameStyle ?? ""
+          )
             ? "double"
             : "solid",
           settings?.frameColor ?? "#b49a55",
