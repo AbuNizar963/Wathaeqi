@@ -19,6 +19,7 @@ describe("ResponsiveA4Preview", () => {
 
     expect(markup).toContain("inset 0 0 0 3px #123456");
     expect(markup).toContain("inset 0 0 0 7px #123456");
+    expect(markup).toContain("border:1pt double #123456");
   });
 
   it("renders the fitted A4 page without zoom controls", () => {
