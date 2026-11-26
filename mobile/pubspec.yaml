@@ -75,3 +75,10 @@ flutter:
           weight: 600
         - asset: assets/fonts/ibm-plex-sans-arabic-bold.ttf
           weight: 700
+
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/amiri-regular.ttf
+          weight: 400
+        - asset: assets/fonts/amiri-bold.ttf
+          weight: 700
