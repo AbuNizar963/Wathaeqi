@@ -24,5 +24,5 @@ export function documentUploadTarget(): string {
 }
 
 export function templateImportTarget(): string {
-  return `${DOCUMENT_WORKSPACE_PATH}?tab=templates&importTemplate=1`;
+  return `${DOCUMENT_WORKSPACE_PATH}?tab=templates`;
 }
