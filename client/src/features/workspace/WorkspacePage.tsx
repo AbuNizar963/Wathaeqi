@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Pencil,
   Plus,
+  Printer,
   RefreshCw,
   Save,
   Search,
@@ -445,56 +446,85 @@ export default function WorkspacePage({
               </div>
             ) : (
               <div className="divide-y divide-border/70">
-                {(documentsQuery.data ?? []).slice(0, 8).map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() =>
-                      setLocation(
-                        `/documents?document=${encodeURIComponent(item.id)}`
-                      )
-                    }
-                    className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl p-3 text-right transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <FileText className="h-5 w-5" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold">{item.title}</p>
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                          {item.subject || item.category}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <Badge
-                        variant={
-                          item.status === "issued" ? "default" : "secondary"
-                        }
-                        className={
-                          item.status === "issued"
-                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                {(documentsQuery.data ?? []).slice(0, 8).map(item => {
+                  const documentUrl = `/documents?document=${encodeURIComponent(item.id)}`;
+                  const printUrl = `${documentUrl}&print=1`;
+
+                  return (
+                    <article
+                      key={item.id}
+                      className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-muted/40"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setLocation(documentUrl)}
+                        aria-label={`معاينة الوثيقة ${item.title}`}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <FileText className="h-5 w-5" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold">
+                            {item.title}
+                          </span>
+                          <span className="mt-1 block truncate text-xs text-muted-foreground">
+                            {item.subject || item.category}
+                          </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            رقم الوثيقة:{" "}
+                            <bdi dir="ltr" className="tabular-nums font-semibold">
+                              {item.serialCode || "غير مرقمة"}
+                            </bdi>
+                          </span>
+                        </span>
+                      </button>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Badge
+                          variant={
+                            item.status === "issued" ? "default" : "secondary"
+                          }
+                          className={
+                            item.status === "issued"
+                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                              : item.status === "archived"
+                                ? "border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+                                : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                          }
+                        >
+                          {item.status === "issued"
+                            ? "صادرة"
                             : item.status === "archived"
-                              ? "border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
-                              : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                        }
-                      >
-                        {item.status === "issued"
-                          ? "صادرة"
-                          : item.status === "archived"
-                            ? "مؤرشفة"
-                            : "مسودة"}
-                      </Badge>
-                      <time
-                        className="text-xs font-medium tabular-nums text-muted-foreground"
-                        dir="ltr"
-                      >
-                        {formatDashboardDate(item.updatedAt)}
-                      </time>
-                    </div>
-                  </button>
-                ))}
+                              ? "مؤرشفة"
+                              : "مسودة"}
+                        </Badge>
+                        <time
+                          className="text-xs font-medium tabular-nums text-muted-foreground"
+                          dir="ltr"
+                        >
+                          {formatDashboardDate(item.documentDate || item.updatedAt)}
+                        </time>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setLocation(documentUrl)}
+                        >
+                          معاينة
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setLocation(printUrl)}
+                        >
+                          <Printer className="ml-2 h-4 w-4" />
+                          طباعة
+                        </Button>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </Card>
