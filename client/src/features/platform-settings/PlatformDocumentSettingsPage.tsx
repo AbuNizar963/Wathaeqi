@@ -25,6 +25,8 @@ import {
   MAX_HEADER_LOGO_SIZE,
   MIN_DIVIDER_WIDTH_PT,
   MAX_DIVIDER_WIDTH_PT,
+  MIN_FRAME_WIDTH_PT,
+  MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -599,6 +601,34 @@ export default function PlatformDocumentSettingsPage() {
                 value={values.frameStyle}
                 onChange={style => updateValue("frameStyle", style)}
               />
+              <label className="block space-y-2 text-sm">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-medium">سماكة الإطار</span>
+                  <output
+                    aria-live="polite"
+                    className="rounded-md bg-muted px-2 py-1 font-mono text-xs tabular-nums"
+                  >
+                    {values.frameWidthPt} نقطة
+                  </output>
+                </span>
+                <input
+                  type="range"
+                  aria-label="سماكة الإطار"
+                  min={MIN_FRAME_WIDTH_PT}
+                  max={MAX_FRAME_WIDTH_PT}
+                  step={0.25}
+                  value={values.frameWidthPt}
+                  disabled={values.frameStyle === "none"}
+                  onChange={event =>
+                    updateValue("frameWidthPt", Number(event.target.value))
+                  }
+                  className="w-full accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <span className="flex justify-between text-xs text-muted-foreground">
+                  <span>{MIN_FRAME_WIDTH_PT} نقطة — رفيع</span>
+                  <span>{MAX_FRAME_WIDTH_PT} نقاط — سميك</span>
+                </span>
+              </label>
             </section>
             <section
               id="header-divider-settings"
