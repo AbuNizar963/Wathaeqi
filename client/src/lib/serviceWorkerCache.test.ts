@@ -26,6 +26,7 @@ describe("service worker cache cleanup", () => {
       keys: vi.fn(async () => [
         "police-telegrams-shell-v3",
         "police-telegrams-shell-v4",
+        "wathaeqi-shell-v13",
         "transformers-cache",
         "another-library-cache",
       ]),
@@ -45,9 +46,10 @@ describe("service worker cache cleanup", () => {
     });
     await activation;
 
-    expect(deleteCache).toHaveBeenCalledTimes(2);
+    expect(deleteCache).toHaveBeenCalledTimes(3);
     expect(deleteCache).toHaveBeenCalledWith("police-telegrams-shell-v3");
     expect(deleteCache).toHaveBeenCalledWith("police-telegrams-shell-v4");
+    expect(deleteCache).toHaveBeenCalledWith("wathaeqi-shell-v13");
     expect(deleteCache).not.toHaveBeenCalledWith("transformers-cache");
     expect(deleteCache).not.toHaveBeenCalledWith("another-library-cache");
   });
