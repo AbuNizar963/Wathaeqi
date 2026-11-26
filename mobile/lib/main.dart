@@ -831,13 +831,12 @@ class _DashboardPageState extends State<DashboardPage>
       return;
     }
     if (index == 2) {
-      setState(() => _selectedWorkspaceDestination = 0);
       _documentWorkspaceKey.currentState?.createDocument();
       return;
     }
     final tab = index == 0
-        ? DocumentStudioTab.documents
-        : DocumentStudioTab.archive;
+        ? DocumentStudioTab.home
+        : DocumentStudioTab.documents;
     setState(() => _selectedWorkspaceDestination = index);
     _documentWorkspaceKey.currentState?.showTab(tab);
   }
@@ -1560,9 +1559,27 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
                 ListTile(
                   leading: const Icon(LucideIcons.fileText),
-                  title: const Text('مساحة الوثائق'),
-                  selected: true,
-                  onTap: () => Navigator.pop(context),
+                  title: const Text('الرئيسية'),
+                  selected: _selectedWorkspaceDestination == 0,
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => _selectedWorkspaceDestination = 0);
+                    _documentWorkspaceKey.currentState?.showTab(
+                      DocumentStudioTab.home,
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.fileText),
+                  title: const Text('الوثائق'),
+                  selected: _selectedWorkspaceDestination == 1,
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => _selectedWorkspaceDestination = 1);
+                    _documentWorkspaceKey.currentState?.showTab(
+                      DocumentStudioTab.documents,
+                    );
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.dashboard_outlined),
@@ -1740,14 +1757,14 @@ class _DashboardPageState extends State<DashboardPage>
           onDestinationSelected: _selectWorkspaceDestination,
           destinations: const [
             NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard_rounded),
+              label: 'الرئيسية',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.description_outlined),
               selectedIcon: Icon(Icons.description_rounded),
               label: 'الوثائق',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.archive_outlined),
-              selectedIcon: Icon(Icons.archive_rounded),
-              label: 'الأرشيف',
             ),
             NavigationDestination(
               icon: Icon(Icons.add_circle_outline_rounded),
@@ -1765,6 +1782,7 @@ class _DashboardPageState extends State<DashboardPage>
         key: _documentWorkspaceKey,
         api: widget.api,
         outbox: _documentStudioOutbox,
+        initialTab: DocumentStudioTab.home,
       ),
     ),
   );
