@@ -131,7 +131,6 @@ describe("guided template field validation", () => {
   });
 });
 
-
 describe("document recipient line", () => {
   it("provides an editable default suggestion without forcing its value", () => {
     expect(DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER).toBe("إلى");
