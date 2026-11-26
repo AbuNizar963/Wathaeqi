@@ -206,7 +206,10 @@ export default function PlatformDocumentSettingsPage() {
           { id: "organization-identity-settings", label: "هوية الجهة" },
           { id: "watermark-settings", label: "العلامة المائية" },
           { id: "page-layout-settings", label: "الصفحة والإطار" },
-          { id: "document-typography-settings", label: "خط الوثيقة والجهة المستلمة" },
+          {
+            id: "document-typography-settings",
+            label: "خط الوثيقة والجهة المستلمة",
+          },
           { id: "header-divider-settings", label: "فاصل الترويسة" },
           { id: "header-content-settings", label: "بيانات المسؤول" },
           { id: "page-rows-settings", label: "سطور الصفحة" },
@@ -649,7 +652,16 @@ export default function PlatformDocumentSettingsPage() {
                   <h3 className="font-medium">نص الوثيقة</h3>
                   <label className="block space-y-1 text-sm">
                     <span>نوع الخط</span>
-                    <select value={values.documentFontFamily} onChange={event => updateValue("documentFontFamily", event.target.value as SettingsForm["documentFontFamily"])} className="w-full rounded-lg border bg-background px-3 py-2">
+                    <select
+                      value={values.documentFontFamily}
+                      onChange={event =>
+                        updateValue(
+                          "documentFontFamily",
+                          event.target.value as SettingsForm["documentFontFamily"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
                       <option value="Cairo">Cairo</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Traditional Arabic">Traditional Arabic</option><option value="Times New Roman">Times New Roman</option>
                     </select>
                   </label>
@@ -659,19 +671,46 @@ export default function PlatformDocumentSettingsPage() {
                   </label>
                   <label className="block space-y-1 text-sm">
                     <span>سماكة الخط</span>
-                    <select value={values.documentFontWeight} onChange={event => updateValue("documentFontWeight", Number(event.target.value) as SettingsForm["documentFontWeight"])} className="w-full rounded-lg border bg-background px-3 py-2">
+                    <select
+                      value={values.documentFontWeight}
+                      onChange={event =>
+                        updateValue(
+                          "documentFontWeight",
+                          Number(event.target.value) as SettingsForm["documentFontWeight"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
                       <option value={400}>عادي</option><option value={500}>متوسط</option><option value={600}>شبه عريض</option><option value={700}>عريض</option><option value={800}>عريض جداً</option>
                     </select>
                   </label>
                   <label className="flex items-center justify-between gap-3 text-sm">
-                    <span>لون الخط</span><input type="color" value={values.documentFontColor} onChange={event => updateValue("documentFontColor", event.target.value)} aria-label="لون خط نص الوثيقة" className="h-10 w-16 cursor-pointer rounded border bg-background p-1" />
+                    <span>لون الخط</span>
+                    <input
+                      type="color"
+                      value={values.documentFontColor}
+                      onChange={event =>
+                        updateValue("documentFontColor", event.target.value)
+                      }
+                      aria-label="لون خط نص الوثيقة"
+                      className="h-10 w-16 cursor-pointer rounded border bg-background p-1"
+                    />
                   </label>
                 </section>
                 <section className="space-y-3 rounded-lg bg-muted/30 p-3">
                   <h3 className="font-medium">الجهة المستلمة</h3>
                   <label className="block space-y-1 text-sm">
                     <span>نوع الخط</span>
-                    <select value={values.recipientFontFamily} onChange={event => updateValue("recipientFontFamily", event.target.value as SettingsForm["recipientFontFamily"])} className="w-full rounded-lg border bg-background px-3 py-2">
+                    <select
+                      value={values.recipientFontFamily}
+                      onChange={event =>
+                        updateValue(
+                          "recipientFontFamily",
+                          event.target.value as SettingsForm["recipientFontFamily"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
                       <option value="Cairo">Cairo</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Traditional Arabic">Traditional Arabic</option><option value="Times New Roman">Times New Roman</option>
                     </select>
                   </label>
@@ -681,12 +720,30 @@ export default function PlatformDocumentSettingsPage() {
                   </label>
                   <label className="block space-y-1 text-sm">
                     <span>سماكة الخط</span>
-                    <select value={values.recipientFontWeight} onChange={event => updateValue("recipientFontWeight", Number(event.target.value) as SettingsForm["recipientFontWeight"])} className="w-full rounded-lg border bg-background px-3 py-2">
+                    <select
+                      value={values.recipientFontWeight}
+                      onChange={event =>
+                        updateValue(
+                          "recipientFontWeight",
+                          Number(event.target.value) as SettingsForm["recipientFontWeight"]
+                        )
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2"
+                    >
                       <option value={400}>عادي</option><option value={500}>متوسط</option><option value={600}>شبه عريض</option><option value={700}>عريض</option><option value={800}>عريض جداً</option>
                     </select>
                   </label>
                   <label className="flex items-center justify-between gap-3 text-sm">
-                    <span>لون الخط</span><input type="color" value={values.recipientFontColor} onChange={event => updateValue("recipientFontColor", event.target.value)} aria-label="لون خط الجهة المستلمة" className="h-10 w-16 cursor-pointer rounded border bg-background p-1" />
+                    <span>لون الخط</span>
+                    <input
+                      type="color"
+                      value={values.recipientFontColor}
+                      onChange={event =>
+                        updateValue("recipientFontColor", event.target.value)
+                      }
+                      aria-label="لون خط الجهة المستلمة"
+                      className="h-10 w-16 cursor-pointer rounded border bg-background p-1"
+                    />
                   </label>
                 </section>
               </div>
