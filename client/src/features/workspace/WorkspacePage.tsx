@@ -6,9 +6,7 @@ import {
   FileClock,
   FilePlus2,
   FileText,
-  FileUp,
   LayoutDashboard,
-  LayoutTemplate,
   Pencil,
   Plus,
   RefreshCw,
@@ -28,10 +26,6 @@ import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import { trpc as appTrpc } from "@/lib/trpc";
 import { useAuth } from "@/features/auth-session/useAuth";
 import { hasUserManagementMenuAccess } from "@/features/admin/menuAccess";
-import {
-  documentUploadTarget,
-  templateImportTarget,
-} from "../document-studio/workspaceRoutes";
 
 type WorkspaceSection = "dashboard" | "contacts" | "notifications" | "users";
 
@@ -111,9 +105,6 @@ export default function WorkspacePage({
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery(undefined, {
     enabled: section === "dashboard",
   });
-  const templatesQuery = trpc.documentStudio.listTemplates.useQuery(undefined, {
-    enabled: section === "dashboard",
-  });
   const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
     enabled: section === "contacts",
   });
@@ -126,7 +117,7 @@ export default function WorkspacePage({
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
     {
-      enabled: section === "dashboard" || section === "users",
+      enabled: section === "users",
     }
   );
   const utils = trpc.useUtils();
@@ -211,9 +202,7 @@ export default function WorkspacePage({
 
   const isLoading =
     section === "dashboard"
-      ? documentsQuery.isLoading ||
-        templatesQuery.isLoading ||
-        administrationQuery.isLoading
+      ? documentsQuery.isLoading
       : section === "contacts"
         ? contactsQuery.isLoading
         : section === "notifications"
@@ -221,9 +210,7 @@ export default function WorkspacePage({
           : administrationQuery.isLoading;
   const isError =
     section === "dashboard"
-      ? documentsQuery.isError ||
-        templatesQuery.isError ||
-        administrationQuery.isError
+      ? documentsQuery.isError
       : section === "contacts"
         ? contactsQuery.isError
         : section === "notifications"
@@ -231,9 +218,7 @@ export default function WorkspacePage({
           : administrationQuery.isError;
   const errorMessage =
     section === "dashboard"
-      ? (documentsQuery.error?.message ??
-        templatesQuery.error?.message ??
-        administrationQuery.error?.message)
+      ? documentsQuery.error?.message
       : section === "contacts"
         ? contactsQuery.error?.message
         : section === "notifications"
@@ -243,8 +228,6 @@ export default function WorkspacePage({
   const refresh = () => {
     if (section === "dashboard") {
       void documentsQuery.refetch();
-      void templatesQuery.refetch();
-      void administrationQuery.refetch();
     } else if (section === "contacts") void contactsQuery.refetch();
     else if (section === "notifications") void notificationsQuery.refetch();
     else void administrationQuery.refetch();
@@ -303,7 +286,7 @@ export default function WorkspacePage({
             <h1 className="text-2xl font-bold">{sectionTitles[section]}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {section === "dashboard"
-                ? "ملخص الوثائق والنماذج وحالة المنصة"
+                ? "مؤشرات الوثائق وآخر الوثائق المحفوظة"
                 : section === "contacts"
                   ? "إدارة دليل الجهات والأشخاص المرتبطين بالوثائق المطبوعة"
                   : section === "notifications"
@@ -352,52 +335,7 @@ export default function WorkspacePage({
 
       {section === "dashboard" ? (
         <div className="space-y-5">
-          <section className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm sm:p-5">
-            <div className="mb-3">
-              <h2 className="text-sm font-bold">إجراءات سريعة</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                الوصول المباشر إلى إنشاء الوثائق والملفات والقوالب
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Button
-                type="button"
-                onClick={() => setLocation("/documents?create=1")}
-                className="h-12 justify-start gap-2 rounded-xl px-3"
-              >
-                <FilePlus2 className="h-4 w-4 shrink-0" />
-                إنشاء وثيقة
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setLocation(documentUploadTarget())}
-                className="h-12 justify-start gap-2 rounded-xl px-3"
-              >
-                <FileUp className="h-4 w-4 shrink-0" />
-                رفع ملف
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setLocation(templateImportTarget())}
-                className="h-12 justify-start gap-2 rounded-xl px-3"
-              >
-                <LayoutTemplate className="h-4 w-4 shrink-0" />
-                استيراد قالب
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setLocation("/contacts")}
-                className="h-12 justify-start gap-2 rounded-xl px-3"
-              >
-                <Contact className="h-4 w-4 shrink-0" />
-                جهات الاتصال
-              </Button>
-            </div>
-          </section>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryCard
               label="إجمالي الوثائق"
               value={documentsQuery.data?.length}
@@ -426,16 +364,6 @@ export default function WorkspacePage({
                   .length
               }
               icon={<FileClock className="h-4 w-4" />}
-            />
-            <SummaryCard
-              label="النماذج النشطة"
-              value={templatesQuery.data?.length}
-              icon={<Contact className="h-4 w-4" />}
-            />
-            <SummaryCard
-              label="المستخدمون"
-              value={administrationQuery.data?.totals.users}
-              icon={<Users className="h-4 w-4" />}
             />
           </div>
           <Card className="space-y-3 p-4 sm:p-5">
