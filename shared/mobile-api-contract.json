@@ -112,6 +112,7 @@
     "workspace.administration.setUserActive",
     "workspace.administration.setUserRole",
     "workspace.administration.updateOrganization",
+    "workspace.audit.list",
     "workspace.contacts.create",
     "workspace.contacts.delete",
     "workspace.contacts.list",
