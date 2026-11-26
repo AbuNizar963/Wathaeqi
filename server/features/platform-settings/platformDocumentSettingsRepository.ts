@@ -14,6 +14,12 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
+  DOCUMENT_FONT_FAMILIES,
+  DOCUMENT_FONT_WEIGHTS,
+  MIN_DOCUMENT_FONT_SIZE_PT,
+  MAX_DOCUMENT_FONT_SIZE_PT,
+  MIN_RECIPIENT_FONT_SIZE_PT,
+  MAX_RECIPIENT_FONT_SIZE_PT,
   isDocumentFrameStyle,
   type PlatformDocumentSettings,
   type DocumentTextRow,
@@ -183,6 +189,26 @@ function mapPlatformDocumentSettings(
       MAX_FRAME_WIDTH_PT,
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameWidthPt
     ),
+    documentFontFamily: DOCUMENT_FONT_FAMILIES.includes(row.documentFontFamily as (typeof DOCUMENT_FONT_FAMILIES)[number])
+      ? (row.documentFontFamily as PlatformDocumentSettings["documentFontFamily"])
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontFamily,
+    documentFontSizePt: boundedNumber(row.documentFontSizePt, MIN_DOCUMENT_FONT_SIZE_PT, MAX_DOCUMENT_FONT_SIZE_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontSizePt),
+    documentFontWeight: DOCUMENT_FONT_WEIGHTS.includes(Number(row.documentFontWeight) as (typeof DOCUMENT_FONT_WEIGHTS)[number])
+      ? (Number(row.documentFontWeight) as PlatformDocumentSettings["documentFontWeight"])
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontWeight,
+    documentFontColor: typeof row.documentFontColor === "string" && HEX_COLOR_PATTERN.test(row.documentFontColor)
+      ? row.documentFontColor
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontColor,
+    recipientFontFamily: DOCUMENT_FONT_FAMILIES.includes(row.recipientFontFamily as (typeof DOCUMENT_FONT_FAMILIES)[number])
+      ? (row.recipientFontFamily as PlatformDocumentSettings["recipientFontFamily"])
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontFamily,
+    recipientFontSizePt: boundedNumber(row.recipientFontSizePt, MIN_RECIPIENT_FONT_SIZE_PT, MAX_RECIPIENT_FONT_SIZE_PT, DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontSizePt),
+    recipientFontWeight: DOCUMENT_FONT_WEIGHTS.includes(Number(row.recipientFontWeight) as (typeof DOCUMENT_FONT_WEIGHTS)[number])
+      ? (Number(row.recipientFontWeight) as PlatformDocumentSettings["recipientFontWeight"])
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontWeight,
+    recipientFontColor: typeof row.recipientFontColor === "string" && HEX_COLOR_PATTERN.test(row.recipientFontColor)
+      ? row.recipientFontColor
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontColor,
     showVerificationQr:
       typeof row.showVerificationQr === "boolean"
         ? row.showVerificationQr
