@@ -4,39 +4,39 @@ import 'package:flutter/material.dart';
 /// docs/DESIGN_SYSTEM_WEB_MOBILE_AR.md. Keep platform layouts native while
 /// keeping the shared visual identity stable.
 abstract final class AppPalette {
-  static const navy = Color(0xFF102E3C);
-  static const brandBlue = Color(0xFF0F766E);
-  static const darkMint = Color(0xFF0F9F9A);
-  static const gold = Color(0xFFC9964D);
-  static const canvas = Color(0xFFF4F7F8);
+  static const navy = Color(0xFF0B1120);
+  static const brandBlue = Color(0xFF0284C7);
+  static const darkMint = Color(0xFF10B981);
+  static const gold = Color(0xFFD97706);
+  static const canvas = Color(0xFFF1F5F9);
   static const surface = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF172B36);
-  static const muted = Color(0xFFEEF2F6);
-  static const mutedInk = Color(0xFF5B6B7C);
-  static const border = Color(0xFFDBE5E8);
+  static const ink = Color(0xFF0F172A);
+  static const muted = Color(0xFFE2E8F0);
+  static const mutedInk = Color(0xFF475569);
+  static const border = Color(0xFFCBD5E1);
   static const danger = Color(0xFFC2414D);
-  static const success = Color(0xFF147A66);
-  static const warning = Color(0xFF8C570F);
-  static const info = Color(0xFF3978C5);
-  static const sidebarAccent = Color(0xFF1D4054);
+  static const success = Color(0xFF047857);
+  static const warning = Color(0xFF92400E);
+  static const info = Color(0xFF0369A1);
+  static const sidebarAccent = Color(0xFF172B45);
 
-  static const darkCanvas = Color(0xFF0C1722);
-  static const darkSurface = Color(0xFF142536);
-  static const darkInk = Color(0xFFECF3F8);
-  static const darkMuted = Color(0xFF1D3345);
-  static const darkMutedInk = Color(0xFFAFC0CE);
-  static const darkBorder = Color(0xFF294154);
-  static const darkOutline = Color(0xFF3A5368);
-  static const darkSidebarAccent = Color(0xFF1D4054);
-  static const darkSuccess = Color(0xFF54D5C9);
-  static const darkWarning = Color(0xFFF2C36B);
-  static const darkInfo = Color(0xFF72B6F2);
-  static const successContainer = Color(0xFFE7F6F1);
-  static const darkSuccessContainer = Color(0xFF123A35);
-  static const warningContainer = Color(0xFFFFF4E2);
-  static const darkWarningContainer = Color(0xFF40331B);
-  static const infoContainer = Color(0xFFEAF2FC);
-  static const darkInfoContainer = Color(0xFF172B45);
+  static const darkCanvas = Color(0xFF0B1120);
+  static const darkSurface = Color(0xFF131C31);
+  static const darkInk = Color(0xFFF8FAFC);
+  static const darkMuted = Color(0xFF192540);
+  static const darkMutedInk = Color(0xFFCBD5E1);
+  static const darkBorder = Color(0xFF334155);
+  static const darkOutline = Color(0xFF475569);
+  static const darkSidebarAccent = Color(0xFF1E293B);
+  static const darkSuccess = Color(0xFF6EE7B7);
+  static const darkWarning = Color(0xFFFBBF24);
+  static const darkInfo = Color(0xFF7DD3FC);
+  static const successContainer = Color(0xFFD1FAE5);
+  static const darkSuccessContainer = Color(0xFF123A2B);
+  static const warningContainer = Color(0xFFFEF3C7);
+  static const darkWarningContainer = Color(0xFF3B2E12);
+  static const infoContainer = Color(0xFFE0F2FE);
+  static const darkInfoContainer = Color(0xFF102D46);
 
   static const lightScheme = ColorScheme.light(
     primary: brandBlue,
