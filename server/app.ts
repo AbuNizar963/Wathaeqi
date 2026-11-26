@@ -319,7 +319,7 @@ export function createApp(
       }
       if (body.byteLength > MAX_ORGANIZATION_LOGO_BYTES) {
         res.status(413).json({
-          error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 5 ميغابايت",
+          error: "حجم الشعار بعد التجهيز يجب ألا يتجاوز 2.5 ميغابايت",
         });
         return;
       }

@@ -48,7 +48,7 @@ function validateSvgFile(file: File): void {
     throw new Error("صيغة الشعار يجب أن تكون SVG أو PNG أو JPG");
   }
   if (file.size > MAX_ORGANIZATION_LOGO_BYTES) {
-    throw new Error("حجم ملف SVG يجب ألا يتجاوز 5 ميغابايت");
+    throw new Error("حجم ملف SVG يجب ألا يتجاوز 2.5 ميغابايت");
   }
 }
 

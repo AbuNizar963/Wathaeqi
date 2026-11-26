@@ -224,7 +224,7 @@ describe("platform document settings UI normalization", () => {
       recipientFontColor: "#123456",
     });
 
-    expect(normalized.documentFontFamily).toBe("Cairo");
+    expect(normalized.documentFontFamily).toBe("Amiri");
     expect(normalized.documentFontSizePt).toBe(24);
     expect(normalized.documentFontWeight).toBe(400);
     expect(normalized.documentFontColor).toBe("#0f172a");

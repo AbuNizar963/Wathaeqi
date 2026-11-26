@@ -895,7 +895,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "string",
         size: 32,
         required: false,
-        default: "Cairo",
+        default: "Amiri",
       },
       {
         key: "documentFontSizePt",
@@ -923,7 +923,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "string",
         size: 32,
         required: false,
-        default: "Cairo",
+        default: "Amiri",
       },
       {
         key: "recipientFontSizePt",

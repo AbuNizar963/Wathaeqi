@@ -216,7 +216,7 @@ describe("Appwrite operational schema", () => {
           key: "documentFontFamily",
           type: "string",
           required: false,
-          default: "Cairo",
+          default: "Amiri",
         }),
         expect.objectContaining({
           key: "documentFontSizePt",

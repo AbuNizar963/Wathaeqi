@@ -73,11 +73,11 @@ describe("platform document settings nullable Appwrite columns", () => {
     });
 
     await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
-      documentFontFamily: "Cairo",
+      documentFontFamily: "Amiri",
       documentFontSizePt: 12,
       documentFontWeight: 400,
       documentFontColor: "#0f172a",
-      recipientFontFamily: "Cairo",
+      recipientFontFamily: "Amiri",
       recipientFontSizePt: 12,
       recipientFontWeight: 600,
       recipientFontColor: "#0f172a",

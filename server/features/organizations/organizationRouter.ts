@@ -190,7 +190,7 @@ export const organizationRouter = router({
       if (bytes.length === 0 || bytes.length > MAX_ORGANIZATION_LOGO_BYTES) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "حجم الشعار يجب أن يكون بين 1 بايت و5 ميغابايت.",
+          message: "حجم الشعار يجب أن يكون بين 1 بايت و2.5 ميغابايت.",
         });
       }
       const validationError = getOrganizationLogoValidationError(
