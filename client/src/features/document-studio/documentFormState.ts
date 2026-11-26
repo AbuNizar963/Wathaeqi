@@ -52,3 +52,17 @@ export function missingRequiredTemplateFields(
     field => field.required && !(values[field.key] ?? "").trim()
   );
 }
+
+export function normalizeTemplateFieldValues(
+  fields: readonly DocumentTemplateField[],
+  values: Readonly<Record<string, string>>
+): Record<string, string> {
+  const normalized = { ...values };
+  for (const field of fields) {
+    const value = normalized[field.key] ?? field.defaultValue ?? "";
+    if (field.type !== "select") continue;
+    normalized[field.key] =
+      field.options?.find(option => option.value === value)?.label ?? value;
+  }
+  return normalized;
+}

@@ -57,6 +57,7 @@ import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import {
   isDocumentFormDirty,
   missingRequiredTemplateFields,
+  normalizeTemplateFieldValues,
   parseDocumentDate,
 } from "./documentFormState";
 import { applyDocumentTemplateVariables } from "../../../../shared/documentTemplateVariables";
@@ -486,6 +487,10 @@ export default function DocumentStudioPage() {
       return;
     }
 
+    const normalizedFieldValues = normalizeTemplateFieldValues(
+      documentTemplateFields,
+      documentFieldValues
+    );
     const input = {
       title: documentTitle.trim(),
       category: documentCategory,
@@ -493,13 +498,13 @@ export default function DocumentStudioPage() {
       content: applyDocumentTemplateVariables(
         contentForSave(
           documentContent,
-          documentFieldValues,
+          normalizedFieldValues,
           Boolean(selectedTemplateId) && !templateValuesApplied
         ),
         getDocumentSystemVariables()
       ),
       fieldValues: {
-        ...documentFieldValues,
+        ...normalizedFieldValues,
         [DOCUMENT_RECIPIENT_LABEL_KEY]: documentRecipient.label,
         [DOCUMENT_RECIPIENT_VALUE_KEY]: documentRecipient.value,
       },
@@ -723,7 +728,13 @@ export default function DocumentStudioPage() {
         })
       : selectedTemplateId && !templateValuesApplied
         ? applyDocumentTemplateVariables(
-            applyFieldValues(documentContent, documentFieldValues),
+            applyFieldValues(
+              documentContent,
+              normalizeTemplateFieldValues(
+                documentTemplateFields,
+                documentFieldValues
+              )
+            ),
             getDocumentSystemVariables()
           )
         : documentContent;
@@ -1166,8 +1177,8 @@ export default function DocumentStudioPage() {
                       <div className="space-y-2">
                         {templateFields.map((field, index) => (
                           <div
-                            key={`${field.key}-${index}`}
-                            className="grid grid-cols-1 gap-2 rounded-lg border p-3 md:grid-cols-[1fr_1fr_150px_auto]"
+                            key={`template-field-${index}`}
+                            className="grid grid-cols-1 gap-3 rounded-[10px] border p-3 md:grid-cols-[1fr_1fr_150px_auto]"
                           >
                             <Input
                               value={field.label}
@@ -1178,18 +1189,29 @@ export default function DocumentStudioPage() {
                               }
                               placeholder="اسم الحقل"
                             />
-                            <Input
-                              value={field.key}
-                              onChange={event =>
-                                updateTemplateField(index, {
-                                  key: event.target.value
-                                    .toLowerCase()
-                                    .replace(/[^\p{L}\p{N}_]/gu, "_"),
-                                })
-                              }
-                              placeholder="اسم_الموظف أو employee_name"
-                              dir="auto"
-                            />
+                            <div className="space-y-1">
+                              <Input
+                                value={field.key}
+                                onChange={event =>
+                                  updateTemplateField(index, {
+                                    key: event.target.value
+                                      .toLowerCase()
+                                      .replace(/[^a-z0-9_]/g, "_"),
+                                  })
+                                }
+                                aria-label={`المفتاح البرمجي للحقل ${index + 1}`}
+                                aria-describedby={`template-field-key-hint-${index}`}
+                                placeholder="employee_name"
+                                dir="auto"
+                              />
+                              <p
+                                id={`template-field-key-hint-${index}`}
+                                className="text-xs text-muted-foreground"
+                              >
+                                المفتاح إنجليزي وتتحول المسافات فيه إلى _؛ أما
+                                التسمية والقيم والخيارات فتقبل المسافات.
+                              </p>
+                            </div>
                             <select
                               value={field.type}
                               onChange={event => {
@@ -1248,6 +1270,7 @@ export default function DocumentStudioPage() {
                             {field.type === "select" ? (
                               <Input
                                 className="md:col-span-2"
+                                aria-label={`خيارات الحقل ${index + 1}`}
                                 value={(field.options ?? [])
                                   .map(option => option.label)
                                   .join(", ")}
@@ -1628,7 +1651,7 @@ export default function DocumentStudioPage() {
                       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                         {documentTemplateFields.map(field => (
                           <div key={field.key} className="space-y-1">
-                            <label className="text-sm font-medium">
+                            <label className="text-[13px] font-extrabold">
                               {field.label}
                               {field.required ? " *" : ""}
                             </label>
@@ -1647,7 +1670,12 @@ export default function DocumentStudioPage() {
                               />
                             ) : field.type === "select" ? (
                               <select
-                                value={documentFieldValues[field.key] ?? ""}
+                                value={
+                                  normalizeTemplateFieldValues(
+                                    [field],
+                                    documentFieldValues
+                                  )[field.key] ?? ""
+                                }
                                 onChange={event => {
                                   setDocumentFieldValues(current => ({
                                     ...current,
@@ -1662,7 +1690,7 @@ export default function DocumentStudioPage() {
                                 {(field.options ?? []).map(option => (
                                   <option
                                     key={option.value}
-                                    value={option.value}
+                                    value={option.label}
                                   >
                                     {option.label}
                                   </option>
@@ -1750,14 +1778,12 @@ export default function DocumentStudioPage() {
                         date={formatArabicDate(makeDocumentDate(documentDate))}
                       />
                       <div className="pt-6">
-                        {documentRecipient.value ? (
-                          <p className="mb-4 text-right">
-                            <span className="font-semibold">
-                              {documentRecipient.label}:
-                            </span>{" "}
-                            {documentRecipient.value}
-                          </p>
-                        ) : null}
+                        <p className="mb-4 text-center text-base">
+                          <span className="text-[18px] font-bold">
+                            {documentRecipient.label}:
+                          </span>{" "}
+                          {documentRecipient.value}
+                        </p>
                         {documentSubject ? (
                           <p className="mb-4 text-right font-semibold">
                             الموضوع: {documentSubject}

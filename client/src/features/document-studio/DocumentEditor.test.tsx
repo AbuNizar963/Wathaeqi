@@ -19,4 +19,21 @@ describe("DocumentEditor", () => {
     expect(markup).not.toContain("تنسيق الفقرة");
     expect(markup).not.toContain("محاذاة يمين");
   });
+
+  it("uses the official 16px body size in the editor and print copy", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentEditor
+        content={{
+          type: "doc",
+          content: [{ type: "paragraph", content: [] }],
+        }}
+        onChange={() => undefined}
+      />
+    );
+
+    expect(markup).toMatch(/<textarea[^>]*class="[^"]*text-\[16px\]/);
+    expect(markup).toMatch(
+      /class="[^"]*document-editor-copy[^\"]*text-\[16px\]/
+    );
+  });
 });

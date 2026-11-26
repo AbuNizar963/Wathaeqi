@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isDocumentFormDirty,
   missingRequiredTemplateFields,
+  normalizeTemplateFieldValues,
   parseDocumentDate,
 } from "./documentFormState";
 
@@ -91,5 +92,33 @@ describe("guided template field validation", () => {
         date: "2026-11-25",
       })
     ).toEqual([]);
+  });
+
+  it("keeps spaces in entered values and resolves select IDs to readable labels", () => {
+    const fields = [
+      {
+        key: "employee",
+        label: "اسم الموظف",
+        type: "text" as const,
+        required: true,
+      },
+      {
+        key: "department",
+        label: "الجهة",
+        type: "select" as const,
+        required: false,
+        options: [{ value: "option_1", label: "الإدارة العامة" }],
+      },
+    ];
+
+    expect(
+      normalizeTemplateFieldValues(fields, {
+        employee: "أحمد محمد",
+        department: "option_1",
+      })
+    ).toEqual({
+      employee: "أحمد محمد",
+      department: "الإدارة العامة",
+    });
   });
 });

@@ -121,11 +121,11 @@ export default function DocumentEditor({
           }
           placeholder={placeholder}
           aria-label="نص الوثيقة"
-          className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent p-3 text-right text-[15px] leading-8 text-slate-900 shadow-none focus-visible:ring-0"
+          className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent p-3 text-right text-[16px] leading-8 text-slate-900 shadow-none focus-visible:ring-0"
         />
       ) : null}
       <div
-        className={`document-editor-copy text-right text-[15px] text-slate-900 ${canEditText ? "document-editor-print-copy" : ""}`}
+        className={`document-editor-copy text-right text-[16px] text-slate-900 ${canEditText ? "document-editor-print-copy" : ""}`}
         aria-hidden={canEditText ? true : undefined}
       >
         {content.type === "doc" ? previewParagraphs(content) : text}
