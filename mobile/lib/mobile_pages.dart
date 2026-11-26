@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import './features/auth_session/app_lock.dart';
 
@@ -13,7 +14,7 @@ import 'app_theme.dart';
 import './features/reports/audit_log_presentation.dart';
 import './features/notifications/toast.dart';
 
-const _gold = Color(0xFFD8C38E);
+const _gold = AppPalette.gold;
 
 String _errorMessage(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
@@ -37,6 +38,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   List<dynamic> notifications = const [];
   Timer? _refreshTimer;
 
+  int get _unreadCount => notifications
+      .where((item) => item is Map && item['readAt'] == null)
+      .length;
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +59,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> load({bool showLoading = true}) async {
-    if (showLoading) setState(() => loading = true);
+    if (showLoading && mounted) setState(() => loading = true);
     try {
       final result = await widget.api.call('workspace.notifications.list');
       if (!mounted) return;
@@ -69,19 +74,38 @@ class _NotificationsPageState extends State<NotificationsPage> {
     }
   }
 
+  String _formatDate(dynamic value) {
+    final date = DateTime.tryParse('$value');
+    if (date == null) return '—';
+    return DateFormat('yyyy/MM/dd HH:mm', 'en').format(date.toLocal());
+  }
+
   Future<void> markRead(String id) async {
     try {
       await widget.api.call(
         'workspace.notifications.markRead',
         mutation: true,
-        input: {'id': id.toString()},
+        input: {'id': id},
       );
       if (!mounted) return;
-      await load();
+      await load(showLoading: false);
     } catch (exception) {
-      if (mounted) {
-        Toast.error(context, _errorMessage(exception));
-      }
+      if (mounted) Toast.error(context, _errorMessage(exception));
+    }
+  }
+
+  Future<void> markAllRead() async {
+    if (_unreadCount == 0) return;
+    try {
+      await widget.api.call(
+        'workspace.notifications.markAllRead',
+        mutation: true,
+      );
+      if (!mounted) return;
+      await load(showLoading: false);
+      if (mounted) Toast.success(context, 'تم تعليم جميع الإشعارات كمقروءة');
+    } catch (exception) {
+      if (mounted) Toast.error(context, _errorMessage(exception));
     }
   }
 
@@ -94,12 +118,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
           'الإشعارات',
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'تعليم الكل كمقروء',
+            onPressed: loading || _unreadCount == 0 ? null : markAllRead,
+            icon: const Icon(Icons.done_all_rounded),
+          ),
+        ],
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: load,
               child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
                   if (error != null) _ErrorCard(message: error!),
@@ -119,12 +151,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ? Theme.of(context)
                                       .colorScheme
                                       .surfaceContainerHighest
-                                : _gold,
+                                : AppPalette.gold.withValues(alpha: 0.18),
                             child: Icon(
                               read
                                   ? Icons.notifications_none
                                   : Icons.notifications_active,
-                              color: Theme.of(context).colorScheme.onSecondary,
+                              color: read
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Theme.of(context).colorScheme.tertiary,
                             ),
                           ),
                           title: Text(
@@ -135,8 +169,29 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   : FontWeight.w900,
                             ),
                           ),
-                          subtitle: Text(
-                            '${_stringValue(notification['body'] ?? notification['content'])}\n${_stringValue(notification['createdAt'])}',
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _stringValue(
+                                  notification['body'] ??
+                                      notification['content'],
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatDate(notification['createdAt']),
+                                textDirection: TextDirection.ltr,
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
                           isThreeLine: true,
                           onTap: !read && id != null
@@ -157,6 +212,383 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
     ),
   );
+}
+
+class ContactsPage extends StatefulWidget {
+  const ContactsPage({super.key, required this.api});
+
+  final PoliceApi api;
+
+  @override
+  State<ContactsPage> createState() => _ContactsPageState();
+}
+
+class _ContactsPageState extends State<ContactsPage> {
+  final _searchController = TextEditingController();
+  List<Map<String, dynamic>> _contacts = const [];
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load({bool showLoading = true}) async {
+    if (showLoading && mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    try {
+      final result = await widget.api.call('workspace.contacts.list');
+      final rows = result is List
+          ? result
+          : result is Map && result['items'] is List
+          ? result['items'] as List
+          : const <dynamic>[];
+      if (!mounted) return;
+      setState(() {
+        _contacts = rows
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList();
+        _error = null;
+      });
+    } catch (exception) {
+      if (mounted) setState(() => _error = _errorMessage(exception));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredContacts {
+    final term = _searchController.text.trim().toLowerCase();
+    if (term.isEmpty) return _contacts;
+    return _contacts.where((contact) {
+      return [
+        contact['name'],
+        contact['email'],
+        contact['phone'],
+        contact['organization'],
+      ].whereType<Object>().any(
+        (value) => value.toString().toLowerCase().contains(term),
+      );
+    }).toList();
+  }
+
+  Future<void> _editOrCreate({Map<String, dynamic>? contact}) async {
+    final name = TextEditingController(
+      text: _stringValue(contact?['name'], ''),
+    );
+    final email = TextEditingController(
+      text: _stringValue(contact?['email'], ''),
+    );
+    final phone = TextEditingController(
+      text: _stringValue(contact?['phone'], ''),
+    );
+    final organization = TextEditingController(
+      text: _stringValue(contact?['organization'], ''),
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text(
+            contact == null ? 'إضافة جهة اتصال' : 'تعديل جهة الاتصال',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: name,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'الاسم'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: organization,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'الجهة'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: phone,
+                  textDirection: TextDirection.ltr,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(labelText: 'رقم الهاتف'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: email,
+                  textDirection: TextDirection.ltr,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'البريد الإلكتروني',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      name.dispose();
+      email.dispose();
+      phone.dispose();
+      organization.dispose();
+      return;
+    }
+
+    if (name.text.trim().isEmpty) {
+      Toast.error(context, 'أدخل اسم جهة الاتصال');
+      name.dispose();
+      email.dispose();
+      phone.dispose();
+      organization.dispose();
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final values = {
+        'name': name.text.trim(),
+        'email': email.text.trim(),
+        'phone': phone.text.trim(),
+        'organization': organization.text.trim(),
+      };
+      final id = contact?['id']?.toString();
+      if (id == null || id.isEmpty) {
+        await widget.api.call(
+          'workspace.contacts.create',
+          mutation: true,
+          input: values,
+        );
+      } else {
+        await widget.api.call(
+          'workspace.contacts.update',
+          mutation: true,
+          input: {'id': id, ...values},
+        );
+      }
+      if (!mounted) return;
+      await _load(showLoading: false);
+      if (mounted) {
+        Toast.success(
+          context,
+          id == null ? 'تمت إضافة جهة الاتصال' : 'تم تحديث جهة الاتصال',
+        );
+      }
+    } catch (exception) {
+      if (mounted) Toast.error(context, _errorMessage(exception));
+    } finally {
+      name.dispose();
+      email.dispose();
+      phone.dispose();
+      organization.dispose();
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _delete(Map<String, dynamic> contact) async {
+    final id = contact['id']?.toString();
+    if (id == null || id.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('حذف جهة الاتصال'),
+          content: Text(
+            'هل تريد حذف "${_stringValue(contact['name'])}" من الدليل؟',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              ),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('حذف'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _saving = true);
+    try {
+      await widget.api.call(
+        'workspace.contacts.delete',
+        mutation: true,
+        input: {'id': id},
+      );
+      if (!mounted) return;
+      await _load(showLoading: false);
+      if (mounted) Toast.success(context, 'تم حذف جهة الاتصال');
+    } catch (exception) {
+      if (mounted) Toast.error(context, _errorMessage(exception));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final contacts = _filteredContacts;
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'جهات الاتصال',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'تحديث الدليل',
+              onPressed: _loading || _saving ? null : _load,
+              icon: const Icon(Icons.refresh),
+            ),
+            IconButton(
+              tooltip: 'إضافة جهة اتصال',
+              onPressed: _saving ? null : () => _editOrCreate(),
+              icon: const Icon(Icons.person_add_alt_1_outlined),
+            ),
+          ],
+        ),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _load,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText: 'ابحث بالاسم أو الجهة أو الهاتف أو البريد',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'مسح البحث',
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.close),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_error != null) _ErrorCard(message: _error!),
+                    if (contacts.isEmpty && _error == null)
+                      const _EmptyCard(message: 'لا توجد جهات اتصال مطابقة')
+                    else
+                      ...contacts.map((contact) {
+                        final phone = _stringValue(contact['phone'], '');
+                        final email = _stringValue(contact['email'], '');
+                        final organization = _stringValue(
+                          contact['organization'],
+                          '',
+                        );
+                        return Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
+                              child: Icon(
+                                Icons.contact_page_outlined,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            title: Text(
+                              _stringValue(contact['name']),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (organization.isNotEmpty)
+                                  Text('الجهة: $organization'),
+                                if (phone.isNotEmpty)
+                                  Text(
+                                    phone,
+                                    textDirection: TextDirection.ltr,
+                                  ),
+                                if (email.isNotEmpty)
+                                  Text(
+                                    email,
+                                    textDirection: TextDirection.ltr,
+                                  ),
+                              ],
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              enabled: !_saving,
+                              tooltip: 'إجراءات جهة الاتصال',
+                              onSelected: (action) {
+                                if (action == 'edit') {
+                                  _editOrCreate(contact: contact);
+                                } else if (action == 'delete') {
+                                  _delete(contact);
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: Text('تعديل'),
+                                ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('حذف'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
 }
 
 class AuditLogPage extends StatefulWidget {

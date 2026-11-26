@@ -1544,6 +1544,14 @@ class _DashboardPageState extends State<DashboardPage>
                   },
                 ),
                 ListTile(
+                  leading: const Icon(Icons.contacts_outlined),
+                  title: const Text('جهات الاتصال'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(ContactsPage(api: widget.api));
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.notifications_none_outlined),
                   title: const Text('الإشعارات'),
                   onTap: () {
