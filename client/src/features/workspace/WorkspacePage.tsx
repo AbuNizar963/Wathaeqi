@@ -762,10 +762,7 @@ export default function WorkspacePage({
           </p>
         </Card>
       ) : null}
-      <Dialog
-        open={contactDialogOpen}
-        onOpenChange={setContactDialogOpen}
-      >
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
         <DialogContent
           className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto"
           dir="rtl"
