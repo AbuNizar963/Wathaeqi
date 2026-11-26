@@ -233,11 +233,9 @@ export default function DocumentStudioPage() {
 
     if (!uploadRequested) return;
 
-    if (uploadRequested) {
-      setActiveTab("documents");
-      setImportDialogOpen(true);
-      params.delete("upload");
-    }
+    setActiveTab("documents");
+    setImportDialogOpen(true);
+    params.delete("upload");
 
     const query = params.toString();
     setLocation(query ? `/documents?${query}` : "/documents");
