@@ -45,13 +45,6 @@ jobs:
             exit 1
           fi
 
-      # Temporary diagnostic; remove after applying the formatter output.
-      - name: Diagnose document studio formatting
-        run: |
-          cp client/src/features/document-studio/DocumentStudioPage.tsx /tmp/DocumentStudioPage.tsx
-          pnpm exec prettier --write client/src/features/document-studio/DocumentStudioPage.tsx
-          diff -u /tmp/DocumentStudioPage.tsx client/src/features/document-studio/DocumentStudioPage.tsx || true
-
       - name: Check document studio formatting
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
