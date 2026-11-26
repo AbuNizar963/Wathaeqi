@@ -190,11 +190,13 @@ export default function DocumentStudioPrintDialog({
   onOpenChange,
   title,
   pageElement,
+  onBeforePrint,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   pageElement: HTMLElement | null;
+  onBeforePrint?: () => Promise<void>;
 }) {
   const [layoutMode, setLayoutMode] = useState<PrintLayoutMode>("sequential");
   const [pagesPerSheet, setPagesPerSheet] = useState<PagesPerSheet>(1);
@@ -226,6 +228,7 @@ export default function DocumentStudioPrintDialog({
       }
       await operation.run(async progressOptions => {
         const pages = await renderA4Pages(pageElement, progressOptions);
+        await onBeforePrint?.();
         await openPrintWindow({
           ...progressOptions,
           title,
