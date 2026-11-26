@@ -787,12 +787,14 @@ export default function DocumentStudioPage() {
       })
     : false;
   const documentRecipientLine = getDocumentRecipientLine(documentFieldValues);
+  // prettier-ignore
   const documentFontStyle = {
     fontFamily: platformDocumentSettings.data?.documentFontFamily ?? "Cairo",
     fontSize: `${platformDocumentSettings.data?.documentFontSizePt ?? 12}pt`,
     fontWeight: platformDocumentSettings.data?.documentFontWeight ?? 400,
     color: platformDocumentSettings.data?.documentFontColor ?? "#0f172a",
   };
+  // prettier-ignore
   const recipientFontStyle = {
     fontFamily: platformDocumentSettings.data?.recipientFontFamily ?? "Cairo",
     fontSize: `${platformDocumentSettings.data?.recipientFontSizePt ?? 12}pt`,
