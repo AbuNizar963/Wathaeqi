@@ -676,6 +676,8 @@ class _DashboardPageState extends State<DashboardPage>
   final push = PushNotificationService();
   late final TelegramOutbox _outbox;
   final _documentWorkspaceKey = GlobalKey<DocumentStudioPageState>();
+  final _dashboardScaffoldKey = GlobalKey<ScaffoldState>();
+  int _selectedWorkspaceDestination = 0;
   late final DocumentStudioOutbox _documentStudioOutbox;
   bool _outboxSyncInProgress = false;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
@@ -821,6 +823,21 @@ class _DashboardPageState extends State<DashboardPage>
         _outboxSyncInProgress = false;
       }
     }
+  }
+
+  void _selectWorkspaceDestination(int index) {
+    if (index == 3) {
+      _dashboardScaffoldKey.currentState?.openDrawer();
+      return;
+    }
+    final tab = switch (index) {
+      0 => DocumentStudioTab.documents,
+      1 => DocumentStudioTab.templates,
+      2 => DocumentStudioTab.archive,
+      _ => DocumentStudioTab.documents,
+    };
+    setState(() => _selectedWorkspaceDestination = index);
+    _documentWorkspaceKey.currentState?.showTab(tab);
   }
 
   void _openOutbox() {
@@ -1192,6 +1209,7 @@ class _DashboardPageState extends State<DashboardPage>
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
+      key: _dashboardScaffoldKey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 0,
@@ -1534,6 +1552,34 @@ class _DashboardPageState extends State<DashboardPage>
                   onTap: () => Navigator.pop(context),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.dashboard_outlined),
+                  title: const Text('القوالب'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _selectWorkspaceDestination(1);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.archive_outlined),
+                  title: const Text('الأرشيف'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _selectWorkspaceDestination(2);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.folder_copy_outlined),
+                  title: const Text('الملفات الأصلية'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _documentWorkspaceKey.currentState?.showTab(
+                      DocumentStudioTab.files,
+                    );
+                    setState(() => _selectedWorkspaceDestination = 0);
+                  },
+                ),
+                const Divider(color: Color(0xFF29415E)),
+                ListTile(
                   leading: const Icon(Icons.sync_outlined),
                   title: const Text('المزامنة المحلية'),
                   subtitle: const Text('حفظ التغييرات وإعادة مزامنتها'),
@@ -1577,9 +1623,129 @@ class _DashboardPageState extends State<DashboardPage>
                       );
                     },
                   ),
+                if (_canManageOrganizationSettings)
+                  ListTile(
+                    leading: const Icon(Icons.settings_outlined),
+                    title: const Text('إعدادات الترويسة والطباعة'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pushPage(DepartmentSettingsPage(api: widget.api));
+                    },
+                  ),
+                if (_isPlatformOwner)
+                  ListTile(
+                    leading: const Icon(Icons.tune_rounded),
+                    title: const Text('إعدادات النظام والوثائق'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pushPage(PlatformDocumentSettingsPage(api: widget.api));
+                    },
+                  ),
+                const Divider(color: Color(0xFF29415E)),
+                ListTile(
+                  leading: const Icon(Icons.notifications_none_rounded),
+                  title: const Text('الإشعارات'),
+                  trailing: unreadNotificationCount > 0
+                      ? CircleAvatar(
+                          radius: 11,
+                          backgroundColor: const Color(0xFF10B981),
+                          child: Text(
+                            unreadNotificationCount > 99
+                                ? '99+'
+                                : '$unreadNotificationCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(NotificationsPage(api: widget.api));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.person_outline_rounded),
+                  title: const Text('الملف الشخصي'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(
+                      ProfileSettingsPage(
+                        api: widget.api,
+                        onLogout: _logout,
+                        onProfileUpdated: _updateAccountProfile,
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.gavel_outlined),
+                  title: const Text('الشروط والأحكام'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(const TermsPage());
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.account_tree_outlined),
+                  title: const Text('حول وثائقي وميزاته'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(const AboutPage());
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.phone_android_rounded),
+                  title: const Text('حول التطبيق والتحديثات'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(const AppUpdatePage());
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout_rounded),
+                  title: const Text('تسجيل الخروج'),
+                  textColor: const Color(0xFFFDA4AF),
+                  iconColor: const Color(0xFFFDA4AF),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _logout();
+                  },
+                ),
               ],
             ),
           ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: NavigationBar(
+          height: 66,
+          selectedIndex: _selectedWorkspaceDestination,
+          onDestinationSelected: _selectWorkspaceDestination,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.description_outlined),
+              selectedIcon: Icon(Icons.description_rounded),
+              label: 'الوثائق',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_customize_outlined),
+              selectedIcon: Icon(Icons.dashboard_customize_rounded),
+              label: 'القوالب',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.archive_outlined),
+              selectedIcon: Icon(Icons.archive_rounded),
+              label: 'الأرشيف',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.more_horiz_rounded),
+              label: 'المزيد',
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
