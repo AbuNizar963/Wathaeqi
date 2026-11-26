@@ -3540,23 +3540,6 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                               if (_tab == DocumentStudioTab.documents)
                                 if (_selectedDocument == null &&
                                     !_creatingDocument) ...[
-                                  Align(
-                                    alignment: AlignmentDirectional.centerEnd,
-                                    child: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        FilledButton.icon(
-                                          onPressed: _saving
-                                              ? null
-                                              : _showCreateDocumentOptions,
-                                          icon: const Icon(Icons.add),
-                                          label: const Text('إنشاء وثيقة'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
                                   _buildWorkspaceWelcome(),
                                   const SizedBox(height: 12),
                                   _buildDocumentList(archived: false),
