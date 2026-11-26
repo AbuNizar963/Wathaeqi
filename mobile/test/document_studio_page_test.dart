@@ -217,7 +217,7 @@ Uint8List _minimalPdfBytes() {
 
 void main() {
   testWidgets(
-    'one workspace has four Lucide tabs and retains file search across editors',
+    'one workspace has four content tabs and retains file search across editors',
     (tester) async {
       tester.view.physicalSize = const Size(390, 900);
       tester.view.devicePixelRatio = 1;
@@ -239,14 +239,26 @@ void main() {
       final tabs = tester.widget<SegmentedButton<DocumentStudioTab>>(
         find.byType(SegmentedButton<DocumentStudioTab>),
       );
-      expect(tabs.segments.map((s) => s.value), DocumentStudioTab.values);
+      expect(tabs.segments.map((s) => s.value), [
+        DocumentStudioTab.documents,
+        DocumentStudioTab.templates,
+        DocumentStudioTab.archive,
+        DocumentStudioTab.files,
+      ]);
       expect(tabs.segments.map((s) => (s.icon as Icon).icon), [
         LucideIcons.fileText,
         LucideIcons.layoutTemplate,
         LucideIcons.archive,
         LucideIcons.folderOpen,
       ]);
-      final workspaceState = tester.state(find.byType(DocumentStudioPage));
+      final workspaceState = tester.state<DocumentStudioPageState>(
+        find.byType(DocumentStudioPage),
+      );
+      workspaceState.showTab(DocumentStudioTab.home);
+      await tester.pumpAndSettle();
+      expect(find.text('لوحة العمل'), findsOneWidget);
+      workspaceState.showTab(DocumentStudioTab.documents);
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('الملفات').first);
       await tester.tap(find.text('الملفات').first);
       await tester.pumpAndSettle();
