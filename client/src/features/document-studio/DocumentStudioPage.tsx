@@ -156,7 +156,10 @@ export default function DocumentStudioPage() {
 
   const selectWorkspaceTab = (tab: StudioTab) => {
     setActiveTab(tab);
+    if (tab === "documents") setDocumentStatusFilter("all");
+    if (tab === "archive") setDocumentStatusFilter("archived");
     const params = new URLSearchParams(window.location.search);
+    params.delete("status");
     if (tab === "documents") params.delete("tab");
     else params.set("tab", tab);
     const query = params.toString();
@@ -1100,7 +1103,7 @@ export default function DocumentStudioPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="max-h-[70vh] space-y-2 overflow-y-auto">
+                    <div className="document-workspace-list max-h-[70vh] space-y-2 overflow-y-auto">
                       {visibleDocuments.map(document => (
                         <button
                           key={document.id}
