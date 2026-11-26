@@ -54,11 +54,11 @@ assert(
 
 assert(
   dashboardLayout.includes(
-    '<h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">'
+    '<h1 className="min-w-0 truncate text-sm font-semibold text-foreground">'
   ) &&
-    dashboardLayout.includes('className="h-11 w-11 rounded-lg"') &&
+    dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes('aria-label="الإشعارات"'),
-  "The mobile dashboard header must stay minimal and expose the page title and notifications."
+  "The mobile dashboard header must expose the page title, full navigation drawer, and notifications."
 );
 
 assert(
