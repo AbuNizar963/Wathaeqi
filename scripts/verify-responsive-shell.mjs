@@ -51,11 +51,10 @@ assert(
 );
 
 assert(
-  dashboardLayout.includes('<BrandMark size="sm" />') &&
-    dashboardLayout.includes(
-      'className="h-10 w-10 rounded-xl border bg-background shadow-sm"'
-    ),
-  "The mobile dashboard header must provide the primary brand mark."
+  dashboardLayout.includes('<h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">') &&
+    dashboardLayout.includes('className="h-11 w-11 rounded-lg"') &&
+    dashboardLayout.includes('aria-label="الإشعارات"'),
+  "The mobile dashboard header must stay minimal and expose the page title and notifications."
 );
 
 assert(
@@ -85,7 +84,7 @@ assert(
 
 assert(
   dashboardLayout.includes(
-    "flex h-16 shrink-0 items-center justify-between border-b"
+    "flex h-14 shrink-0 items-center justify-between border-b"
   ) &&
     dashboardLayout.includes('dir="rtl"') &&
     dashboardLayout.includes("<HeaderActions />") &&
@@ -108,19 +107,23 @@ assert(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
-    dashboardLayout.includes("إنشاء جديد"),
-  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing."
+    dashboardLayout.includes("إنشاء جديد") &&
+    dashboardLayout.includes("h-[52px]"),
+  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing and a 52px top bar."
 );
 
 assert(
   dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
-    dashboardLayout.includes("DEFAULT_WIDTH = 260"),
-  "The desktop navigation must use a 260px expanded rail and a compact icon-collapsed state."
+    dashboardLayout.includes("DEFAULT_WIDTH = 240"),
+  "The desktop navigation must use a 240px expanded rail and a 72px icon-collapsed state."
 );
 
 assert(
-  appRoutes.includes('ThemeProvider defaultTheme="dark" switchable'),
-  "The executive dark theme must be the initial preference while remaining switchable."
+  appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
+    (await readProjectFile("client/src/index.css")).includes("--background: #f9fafb") &&
+    (await readProjectFile("client/src/index.css")).includes("--card: #121215") &&
+    (await readProjectFile("client/src/index.css")).includes("--primary: #fafafa"),
+  "The crisp light theme must be the initial preference while remaining switchable."
 );
 
 assert(
@@ -157,7 +160,7 @@ assert(
 );
 
 assert(
-  ["مساحة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
+  ["إدارة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
     dashboardLayout.includes(`label: "${label}"`)
   ),
   "The sidebar must expose the unified document workspace and administrative navigation."
