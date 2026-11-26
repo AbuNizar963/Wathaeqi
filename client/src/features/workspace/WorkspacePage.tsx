@@ -647,67 +647,7 @@ export default function WorkspacePage({
           )}
           <p className="text-xs text-muted-foreground">لا تعرض هذه الصفحة كلمات المرور أو مفاتيح الجلسات.</p>
         </Card>
-      ) : null}
-                      </td>
-                      <td className="p-3">{item.username || "—"}</td>
-                      <td className="p-3" dir="ltr">
-                        {item.email || "—"}
-                      </td>
-                      <td className="p-3">{item.role}</td>
-                      <td className="p-3">
-                        <Badge
-                          variant={item.isActive ? "default" : "secondary"}
-                        >
-                          {item.isActive ? "نشط" : "موقوف"}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        {item.lastSignedIn
-                          ? new Date(item.lastSignedIn).toLocaleString("ar")
-                          : "—"}
-                      </td>
-                      <td className="p-3">
-                        {!item.isPlatformOwner ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={mutationPending}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  item.isActive
-                                    ? "إيقاف حساب هذا المستخدم؟"
-                                    : "إعادة تفعيل حساب هذا المستخدم؟"
-                                )
-                              ) {
-                                setUserActive.mutate({
-                                  id: Number(item.id),
-                                  isActive: !item.isActive,
-                                });
-                              }
-                            }}
-                          >
-                            {item.isActive ? "إيقاف" : "تفعيل"}
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            محمي
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            يعرض هذا القسم بيانات الحسابات من Appwrite دون إظهار كلمات المرور أو
-            مفاتيح الجلسات.
-          </p>
-        </Card>
-      ) : null}
-      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+      ) : null}      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
         <DialogContent className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>{editingId ? "تعديل جهة الاتصال" : "إضافة جهة اتصال"}</DialogTitle>
