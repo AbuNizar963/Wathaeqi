@@ -50,7 +50,6 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
-  DOCUMENT_FONT_WEIGHTS,
   MIN_DOCUMENT_FONT_SIZE_PT,
   MAX_DOCUMENT_FONT_SIZE_PT,
   MIN_RECIPIENT_FONT_SIZE_PT,
@@ -336,46 +335,58 @@ const ownerPlatformDocumentSettingsRouter = router({
           .number()
           .min(MIN_FRAME_WIDTH_PT)
           .max(MAX_FRAME_WIDTH_PT),
-        documentFontFamily: z.enum([
-          "Cairo",
-          "Arial",
-          "Tahoma",
-          "Traditional Arabic",
-          "Times New Roman",
-        ]),
+        documentFontFamily: z
+          .enum([
+            "Cairo",
+            "Arial",
+            "Tahoma",
+            "Traditional Arabic",
+            "Times New Roman",
+          ])
+          .default("Cairo"),
         documentFontSizePt: z
           .number()
           .int()
           .min(MIN_DOCUMENT_FONT_SIZE_PT)
-          .max(MAX_DOCUMENT_FONT_SIZE_PT),
+          .max(MAX_DOCUMENT_FONT_SIZE_PT)
+          .default(12),
         documentFontWeight: z.union([
           z.literal(400),
           z.literal(500),
           z.literal(600),
           z.literal(700),
           z.literal(800),
-        ]),
-        documentFontColor: z.string().regex(HEX_COLOR_PATTERN),
-        recipientFontFamily: z.enum([
-          "Cairo",
-          "Arial",
-          "Tahoma",
-          "Traditional Arabic",
-          "Times New Roman",
-        ]),
+        ]).default(400),
+        documentFontColor: z
+          .string()
+          .regex(HEX_COLOR_PATTERN)
+          .default("#1f2937"),
+        recipientFontFamily: z
+          .enum([
+            "Cairo",
+            "Arial",
+            "Tahoma",
+            "Traditional Arabic",
+            "Times New Roman",
+          ])
+          .default("Cairo"),
         recipientFontSizePt: z
           .number()
           .int()
           .min(MIN_RECIPIENT_FONT_SIZE_PT)
-          .max(MAX_RECIPIENT_FONT_SIZE_PT),
+          .max(MAX_RECIPIENT_FONT_SIZE_PT)
+          .default(14),
         recipientFontWeight: z.union([
           z.literal(400),
           z.literal(500),
           z.literal(600),
           z.literal(700),
           z.literal(800),
-        ]),
-        recipientFontColor: z.string().regex(HEX_COLOR_PATTERN),
+        ]).default(600),
+        recipientFontColor: z
+          .string()
+          .regex(HEX_COLOR_PATTERN)
+          .default("#111827"),
         showVerificationQr: z.boolean(),
       })
     )
