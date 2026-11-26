@@ -126,7 +126,9 @@ assert(
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
-    dashboardLayout.includes('height: "calc(52px + env(safe-area-inset-top))"') &&
+    dashboardLayout.includes(
+      'height: "calc(52px + env(safe-area-inset-top))"'
+    ) &&
     dashboardLayout.includes('paddingTop: "env(safe-area-inset-top)"') &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
     dashboardLayout.includes("إنشاء جديد") &&
