@@ -33,7 +33,13 @@ export const DOCUMENT_FONT_FAMILIES: readonly DocumentFontFamily[] = [
   "Times New Roman",
 ];
 
-export const DOCUMENT_FONT_WEIGHTS: readonly DocumentFontWeight[] = [400, 500, 600, 700, 800];
+export const DOCUMENT_FONT_WEIGHTS: readonly DocumentFontWeight[] = [
+  400,
+  500,
+  600,
+  700,
+  800,
+];
 
 export const REFERENCE_DOCUMENT_LOGO_SIZE = 120;
 export const DOCUMENT_DATE_FORMATS = [
