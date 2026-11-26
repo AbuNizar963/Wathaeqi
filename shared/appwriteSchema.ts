@@ -8,15 +8,22 @@
  */
 
 export type SchemaColumnType =
-  "varchar" | "text" | "longtext" | "integer" | "boolean" | "datetime";
+  | "varchar"
+  | "string"
+  | "text"
+  | "longtext"
+  | "integer"
+  | "double"
+  | "boolean"
+  | "datetime";
 
 export type SchemaColumn = {
   key: string;
   type: SchemaColumnType;
   required: boolean;
-  /** Varchar length; ignored for other types. */
+  /** String and varchar lengths; ignored for other types. */
   size?: number;
-  /** Integer bounds; ignored for other column types. */
+  /** Numeric bounds for integer and floating-point columns. */
   min?: number;
   max?: number;
   /** Default value applied to new rows. */
@@ -684,6 +691,8 @@ export const appwriteSchema: SchemaTable[] = [
         key: "watermarkOpacityPercent",
         type: "integer",
         required: false,
+        min: 0,
+        max: 60,
         default: 12,
       },
       {
@@ -704,16 +713,17 @@ export const appwriteSchema: SchemaTable[] = [
       {
         key: "headerDividerStyle",
         type: "varchar",
-        size: 7,
+        size: 32,
         required: false,
         default: "double",
       },
       {
         key: "headerDividerWidthPt",
-        type: "varchar",
-        size: 8,
+        type: "double",
         required: false,
-        default: "2.25",
+        min: 0.5,
+        max: 6,
+        default: 2.25,
       },
       {
         key: "showVerificationQr",
@@ -774,7 +784,7 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "documentDateFormat",
-        type: "varchar",
+        type: "string",
         size: 32,
         required: false,
         default: "yyyy/MM/dd",
@@ -783,59 +793,79 @@ export const appwriteSchema: SchemaTable[] = [
         key: "headerTopPaddingMm",
         type: "integer",
         required: false,
+        min: 0,
+        max: 30,
         default: 0,
       },
       {
         key: "headerHorizontalPaddingMm",
         type: "integer",
         required: false,
+        min: 0,
+        max: 30,
         default: 0,
       },
       {
         key: "headerBottomPaddingMm",
         type: "integer",
         required: false,
+        min: 0,
+        max: 30,
         default: 6,
       },
-      { key: "pageMarginTopMm", type: "integer", required: false, default: 10 },
+      {
+        key: "pageMarginTopMm",
+        type: "integer",
+        required: false,
+        min: 0,
+        max: 35,
+        default: 10,
+      },
       {
         key: "pageMarginRightMm",
         type: "integer",
         required: false,
+        min: 0,
+        max: 35,
         default: 10,
       },
       {
         key: "pageMarginBottomMm",
         type: "integer",
         required: false,
+        min: 0,
+        max: 35,
         default: 10,
       },
       {
         key: "pageMarginLeftMm",
         type: "integer",
         required: false,
+        min: 0,
+        max: 35,
         default: 10,
       },
       {
         key: "frameStyle",
         type: "varchar",
-        size: 7,
+        size: 32,
         required: false,
-        default: "single",
+        default: "box",
       },
       {
         key: "frameColor",
         type: "varchar",
         size: 7,
         required: false,
-        default: "#b49a55",
+        default: "#000000",
       },
       {
         key: "frameWidthPt",
-        type: "varchar",
-        size: 8,
+        type: "double",
         required: false,
-        default: "1",
+        min: 0.5,
+        max: 4,
+        default: 1,
       },
       {
         key: "headerAlignment",
@@ -846,19 +876,17 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "pageHeaderRows",
-        type: "longtext",
+        type: "text",
         required: false,
-        default: "[]",
       },
       {
         key: "pageFooterRows",
-        type: "longtext",
+        type: "text",
         required: false,
-        default: "[]",
       },
       {
         key: "documentFontFamily",
-        type: "varchar",
+        type: "string",
         size: 32,
         required: false,
         default: "Cairo",
@@ -879,14 +907,14 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "documentFontColor",
-        type: "varchar",
+        type: "string",
         size: 7,
         required: false,
         default: "#0f172a",
       },
       {
         key: "recipientFontFamily",
-        type: "varchar",
+        type: "string",
         size: 32,
         required: false,
         default: "Cairo",
@@ -907,7 +935,7 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "recipientFontColor",
-        type: "varchar",
+        type: "string",
         size: 7,
         required: false,
         default: "#0f172a",

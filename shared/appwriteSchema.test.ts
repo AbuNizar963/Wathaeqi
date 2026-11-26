@@ -199,7 +199,7 @@ describe("Appwrite operational schema", () => {
       expect.arrayContaining([
         expect.objectContaining({
           key: "documentFontFamily",
-          type: "varchar",
+          type: "string",
           required: false,
           default: "Cairo",
         }),
@@ -219,7 +219,7 @@ describe("Appwrite operational schema", () => {
         }),
         expect.objectContaining({
           key: "recipientFontColor",
-          type: "varchar",
+          type: "string",
           required: false,
           default: "#0f172a",
         }),
@@ -239,7 +239,72 @@ describe("Appwrite operational schema", () => {
       expect.objectContaining({ key: "headerLogoSize", min: 60, max: 240 })
     );
     expect(settings?.columns).toContainEqual(
-      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 7 })
+      expect.objectContaining({
+        key: "frameStyle",
+        type: "varchar",
+        size: 32,
+        default: "box",
+      })
     );
+  });
+
+  it("matches the live document settings column types and constraints", () => {
+    const settings = findSchemaTable("platform_document_settings");
+    const columns = settings?.columns ?? [];
+
+    expect(columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "watermarkOpacityPercent",
+          type: "integer",
+          min: 0,
+          max: 60,
+          default: 12,
+        }),
+        expect.objectContaining({
+          key: "headerDividerStyle",
+          type: "varchar",
+          size: 32,
+        }),
+        expect.objectContaining({
+          key: "headerDividerWidthPt",
+          type: "double",
+          min: 0.5,
+          max: 6,
+          default: 2.25,
+        }),
+        expect.objectContaining({
+          key: "frameColor",
+          type: "varchar",
+          size: 7,
+          default: "#000000",
+        }),
+        expect.objectContaining({
+          key: "headerTopPaddingMm",
+          type: "integer",
+          min: 0,
+          max: 30,
+        }),
+        expect.objectContaining({
+          key: "pageMarginTopMm",
+          type: "integer",
+          min: 0,
+          max: 35,
+        }),
+        expect.objectContaining({
+          key: "frameWidthPt",
+          type: "double",
+          min: 0.5,
+          max: 4,
+          default: 1,
+        }),
+      ])
+    );
+
+    for (const key of ["pageHeaderRows", "pageFooterRows"]) {
+      const column = columns.find(item => item.key === key);
+      expect(column).toMatchObject({ type: "text", required: false });
+      expect(column).not.toHaveProperty("default");
+    }
   });
 });
