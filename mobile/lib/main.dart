@@ -1586,7 +1586,10 @@ class _DashboardPageState extends State<DashboardPage>
                   title: const Text('القوالب'),
                   onTap: () {
                     Navigator.pop(context);
-                    _selectWorkspaceDestination(1);
+                    setState(() => _selectedWorkspaceDestination = 1);
+                    _documentWorkspaceKey.currentState?.showTab(
+                      DocumentStudioTab.templates,
+                    );
                   },
                 ),
                 ListTile(
@@ -1594,7 +1597,10 @@ class _DashboardPageState extends State<DashboardPage>
                   title: const Text('الأرشيف'),
                   onTap: () {
                     Navigator.pop(context);
-                    _selectWorkspaceDestination(2);
+                    setState(() => _selectedWorkspaceDestination = 1);
+                    _documentWorkspaceKey.currentState?.showTab(
+                      DocumentStudioTab.archive,
+                    );
                   },
                 ),
                 ListTile(
@@ -1605,7 +1611,7 @@ class _DashboardPageState extends State<DashboardPage>
                     _documentWorkspaceKey.currentState?.showTab(
                       DocumentStudioTab.files,
                     );
-                    setState(() => _selectedWorkspaceDestination = 0);
+                    setState(() => _selectedWorkspaceDestination = 1);
                   },
                 ),
                 const Divider(color: Color(0xFF29415E)),
