@@ -475,7 +475,10 @@ export default function WorkspacePage({
                           </span>
                           <span className="mt-1 block text-xs text-muted-foreground">
                             رقم الوثيقة:{" "}
-                            <bdi dir="ltr" className="tabular-nums font-semibold">
+                            <bdi
+                              dir="ltr"
+                              className="tabular-nums font-semibold"
+                            >
                               {item.serialCode || "غير مرقمة"}
                             </bdi>
                           </span>
