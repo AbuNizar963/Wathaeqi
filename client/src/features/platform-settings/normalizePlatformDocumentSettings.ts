@@ -14,7 +14,9 @@ function safeText(value: unknown, fallback: string, limit: number): string {
 }
 
 function safeNumber(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : fallback;
 }
 
 function safeBoolean(value: unknown, fallback: boolean): boolean {
@@ -182,9 +184,14 @@ export function normalizePlatformDocumentSettings(
       source.pageMarginLeftMm,
       defaults.pageMarginLeftMm
     ),
-    frameStyle: ["none", "single", "double", "ornate", "classic", "triple"].includes(
-      source.frameStyle ?? ""
-    )
+    frameStyle: [
+      "none",
+      "single",
+      "double",
+      "ornate",
+      "classic",
+      "triple",
+    ].includes(source.frameStyle ?? "")
       ? source.frameStyle!
       : defaults.frameStyle,
     frameColor: safeText(source.frameColor, defaults.frameColor, 7),
