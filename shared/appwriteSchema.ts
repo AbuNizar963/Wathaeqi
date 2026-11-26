@@ -768,7 +768,7 @@ export const appwriteSchema: SchemaTable[] = [
         key: "headerLogoSize",
         type: "integer",
         required: false,
-        min: 120,
+        min: 60,
         max: 240,
         default: 120,
       },

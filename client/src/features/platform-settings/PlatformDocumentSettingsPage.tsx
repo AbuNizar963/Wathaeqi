@@ -11,6 +11,7 @@ import {
 } from "@/features/organizations/organizationLogoUpload";
 import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import PlatformDocumentPreview from "./PlatformDocumentPreview";
+import DocumentFramePicker from "./DocumentFramePicker";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   DOCUMENT_DATE_FORMATS,
@@ -598,26 +599,20 @@ export default function PlatformDocumentSettingsPage() {
                 ))}
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1 text-sm">
-                  <span className="block">شكل الإطار</span>
-                  <select
+                <div className="sm:col-span-2">
+                  <DocumentFramePicker
                     value={values.frameStyle}
-                    onChange={event =>
-                      updateValue(
-                        "frameStyle",
-                        event.target.value as SettingsForm["frameStyle"]
-                      )
+                    frameColor={values.frameColor}
+                    frameWidthPt={values.frameWidthPt}
+                    onChange={(style, color) =>
+                      setValues(current => ({
+                        ...current,
+                        frameStyle: style,
+                        frameColor: color,
+                      }))
                     }
-                    className="w-full rounded-lg border bg-background px-3 py-2"
-                  >
-                    <option value="none">بدون إطار</option>
-                    <option value="single">إطار مفرد</option>
-                    <option value="double">إطار مزدوج</option>
-                    <option value="ornate">إطار زخرفي احترافي</option>
-                    <option value="classic">إطار كلاسيكي مزدوج</option>
-                    <option value="triple">إطار ثلاثي فاخر</option>
-                  </select>
-                </label>
+                  />
+                </div>
                 <div className="space-y-2 text-sm">
                   <label htmlFor="document-frame-color" className="block">
                     لون الإطار

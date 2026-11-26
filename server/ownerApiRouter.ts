@@ -54,6 +54,8 @@ import {
   MIN_WATERMARK_SCALE_PERCENT,
   MAX_WATERMARK_SCALE_PERCENT,
   MIN_HEADER_LOGO_SIZE,
+  isDocumentFrameStyle,
+  type DocumentFrameStyle,
 } from "../shared/features/platform-settings/platformDocumentSettings";
 
 async function authenticatePlatformUserForLogin(
@@ -321,14 +323,9 @@ const ownerPlatformDocumentSettingsRouter = router({
         pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
         pageMarginBottomMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
         pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
-        frameStyle: z.enum([
-          "none",
-          "single",
-          "double",
-          "ornate",
-          "classic",
-          "triple",
-        ]),
+        frameStyle: z.custom<DocumentFrameStyle>(isDocumentFrameStyle, {
+          message: "صيغة إطار الوثيقة غير صالحة",
+        }),
         frameColor: z.string().regex(HEX_COLOR_PATTERN),
         frameWidthPt: z
           .number()

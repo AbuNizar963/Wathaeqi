@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ResponsiveA4Preview from "./ResponsiveA4Preview";
+import DocumentFrameDecoration from "./DocumentFrameDecoration";
 import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "@shared/features/platform-settings/platformDocumentSettings";
 
 describe("ResponsiveA4Preview", () => {
@@ -17,9 +18,9 @@ describe("ResponsiveA4Preview", () => {
       </ResponsiveA4Preview>
     );
 
-    expect(markup).toContain("inset 0 0 0 3px #123456");
-    expect(markup).toContain("inset 0 0 0 7px #123456");
-    expect(markup).toContain("border:1pt double #123456");
+    expect(markup).toContain('data-document-frame="triple"');
+    expect(markup).toContain('stroke="#123456"');
+    expect(markup).toContain('viewBox="0 0 794 1123"');
   });
 
   it("renders the fitted A4 page without zoom controls", () => {
@@ -30,9 +31,26 @@ describe("ResponsiveA4Preview", () => {
     );
 
     expect(markup).toContain("document-a4-preview-page");
+    expect(markup).toContain('data-document-frame="single"');
     expect(markup).toContain("محتوى الوثيقة");
     expect(markup).not.toContain("تكبير معاينة الورقة");
     expect(markup).not.toContain("تصغير المعاينة");
     expect(markup).not.toContain("إعادة ضبط التكبير");
+  });
+
+  it("repeats the frame tile for every A4 sheet in a long document", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentFrameDecoration
+        frameStyle="f04g"
+        frameColor="#123456"
+        frameWidthPt={1}
+        pageHeightPx={2246}
+      />
+    );
+
+    expect(markup).toContain('viewBox="0 0 794 2246"');
+    expect(markup).toContain('patternUnits="userSpaceOnUse"');
+    expect(markup).toContain('width="794" height="1123"');
+    expect(markup).toContain('fill="url(#document-frame-');
   });
 });

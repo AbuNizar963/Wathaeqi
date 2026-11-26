@@ -14,6 +14,7 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
+  isDocumentFrameStyle,
   type PlatformDocumentSettings,
   type DocumentTextRow,
 } from "../../../shared/features/platform-settings/platformDocumentSettings";
@@ -168,15 +169,9 @@ function mapPlatformDocumentSettings(
       MAX_PAGE_MARGIN_MM,
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginLeftMm
     ),
-    frameStyle:
-      row.frameStyle === "none" ||
-      row.frameStyle === "single" ||
-      row.frameStyle === "double" ||
-      row.frameStyle === "ornate" ||
-      row.frameStyle === "classic" ||
-      row.frameStyle === "triple"
-        ? row.frameStyle
-        : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle,
+    frameStyle: isDocumentFrameStyle(row.frameStyle)
+      ? row.frameStyle
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle,
     frameColor:
       typeof row.frameColor === "string" &&
       HEX_COLOR_PATTERN.test(row.frameColor)

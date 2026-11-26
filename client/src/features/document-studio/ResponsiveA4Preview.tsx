@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
+import DocumentFrameDecoration from "./DocumentFrameDecoration";
 
 const A4_PREVIEW_WIDTH = 794;
 const A4_PREVIEW_MIN_HEIGHT = 1123;
@@ -25,6 +26,7 @@ export default function ResponsiveA4Preview({
   const [layout, setLayout] = useState({
     scale: 1,
     height: A4_PREVIEW_MIN_HEIGHT,
+    pageHeight: A4_PREVIEW_MIN_HEIGHT,
   });
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -38,13 +40,16 @@ export default function ResponsiveA4Preview({
       if (availableWidth <= 0) return;
 
       const scale = Math.min(1, availableWidth / A4_PREVIEW_WIDTH);
-      const pageHeight = Math.max(
+      const contentHeight = Math.max(
         A4_PREVIEW_MIN_HEIGHT,
         page.scrollHeight,
         page.offsetHeight
       );
+      const pageHeight =
+        Math.ceil(contentHeight / A4_PREVIEW_MIN_HEIGHT) *
+        A4_PREVIEW_MIN_HEIGHT;
 
-      setLayout({ scale, height: Math.ceil(pageHeight * scale) });
+      setLayout({ scale, height: Math.ceil(pageHeight * scale), pageHeight });
     };
 
     updateLayout();
@@ -64,19 +69,6 @@ export default function ResponsiveA4Preview({
     `${settings?.pageMarginBottomMm ?? 10}mm`,
     `${settings?.pageMarginLeftMm ?? 10}mm`,
   ].join(" ");
-  const pageBorder =
-    settings?.frameStyle === "none"
-      ? "none"
-      : [
-          `${settings?.frameWidthPt ?? 1}pt`,
-          ["double", "ornate", "classic", "triple"].includes(
-            settings?.frameStyle ?? ""
-          )
-            ? "double"
-            : "solid",
-          settings?.frameColor ?? "#b49a55",
-        ].join(" ");
-
   return (
     <div
       ref={viewportRef}
@@ -96,24 +88,23 @@ export default function ResponsiveA4Preview({
           width: A4_PREVIEW_WIDTH,
           minWidth: A4_PREVIEW_WIDTH,
           maxWidth: "none",
-          minHeight: A4_PREVIEW_MIN_HEIGHT,
+          minHeight: layout.pageHeight,
           position: "absolute",
           left: "50%",
           transform: `translateX(-50%) scale(${layout.scale})`,
           transformOrigin: "top center",
           padding: pagePadding,
           boxSizing: "border-box",
-          border: pageBorder,
-          boxShadow:
-            settings?.frameStyle === "ornate"
-              ? `inset 0 0 0 3px #fff, inset 0 0 0 4px ${settings.frameColor}`
-              : settings?.frameStyle === "classic"
-                ? `inset 0 0 0 1px ${settings.frameColor}, inset 0 0 0 4px #fff, inset 0 0 0 5px ${settings.frameColor}`
-                : settings?.frameStyle === "triple"
-                  ? `inset 0 0 0 2px #fff, inset 0 0 0 3px ${settings.frameColor}, inset 0 0 0 6px #fff, inset 0 0 0 7px ${settings.frameColor}`
-                  : undefined,
+          border: "none",
+          boxShadow: "none",
         }}
       >
+        <DocumentFrameDecoration
+          frameStyle={settings?.frameStyle ?? "single"}
+          frameColor={settings?.frameColor ?? "#b49a55"}
+          frameWidthPt={settings?.frameWidthPt ?? 1}
+          pageHeightPx={layout.pageHeight}
+        />
         {children}
       </div>
     </div>

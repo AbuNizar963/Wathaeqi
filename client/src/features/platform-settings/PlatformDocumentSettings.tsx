@@ -12,6 +12,8 @@ import {
   MAX_WATERMARK_OPACITY_PERCENT,
   MIN_WATERMARK_SCALE_PERCENT,
   MAX_WATERMARK_SCALE_PERCENT,
+  MIN_HEADER_LOGO_SIZE,
+  MAX_HEADER_LOGO_SIZE,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -290,18 +292,32 @@ export default function PlatformDocumentSettings() {
                 <div className="space-y-1 text-sm">
                   <span className="font-medium">تنسيق رأس الوثيقة</span>
                   <p className="text-xs text-muted-foreground">
-                    عمودان للنص، وشعار 120px في المنتصف وفق المرجع الرسمي.
+                    عمودان للنص، مع إمكانية ضبط حجم الشعار من 60 إلى 240 بكسل.
                   </p>
                 </div>
               </div>
               <div className="mt-4 rounded-lg border bg-muted/30 px-3 py-2 text-sm">
                 <span className="flex justify-between gap-3 font-medium">
                   حجم شعار الوثيقة
-                  <output dir="ltr">120px</output>
+                  <output dir="ltr">{values.headerLogoSize}px</output>
                 </span>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  حجم ثابت مطابق للمرجع الرسمي.
-                </p>
+                <input
+                  type="range"
+                  min={MIN_HEADER_LOGO_SIZE}
+                  max={MAX_HEADER_LOGO_SIZE}
+                  step={1}
+                  value={values.headerLogoSize}
+                  disabled={!values.headerShowLogo}
+                  onChange={event =>
+                    updateValue("headerLogoSize", Number(event.target.value))
+                  }
+                  aria-label="حجم شعار الوثيقة بالبكسل"
+                  className="mt-3 w-full accent-[#10233f] disabled:opacity-50"
+                />
+                <span className="mt-1 flex justify-between text-xs text-muted-foreground">
+                  <span>{MIN_HEADER_LOGO_SIZE}px</span>
+                  <span>{MAX_HEADER_LOGO_SIZE}px</span>
+                </span>
               </div>
               {(
                 [

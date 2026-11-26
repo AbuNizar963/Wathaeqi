@@ -26,6 +26,16 @@ describe("document settings for export", () => {
     expect(fetchSettings).toHaveBeenCalledOnce();
   });
 
+  it("accepts the smallest logo and a catalogued professional frame", async () => {
+    await expect(
+      loadDocumentSettingsForExport(async () => ({
+        ...ownerSettings,
+        headerLogoSize: 60,
+        frameStyle: "f01g",
+      }))
+    ).resolves.toMatchObject({ headerLogoSize: 60, frameStyle: "f01g" });
+  });
+
   it("defaults the watermark opacity to 12 percent", () => {
     expect(DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkOpacityPercent).toBe(12);
   });
@@ -56,7 +66,8 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
     { watermarkText: "   " },
-    { headerLogoSize: 119 },
+    { frameStyle: "unlisted-style" as never },
+    { headerLogoSize: 59 },
     { headerLogoSize: 241 },
     { documentDateFormat: "yyyy/MM/dd HH:mm" as never },
     { headerTopPaddingMm: -1 },
@@ -186,10 +197,13 @@ describe("platform document settings UI normalization", () => {
   it("clamps logo sizes to the supported adjustable range", () => {
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 32 }).headerLogoSize
-    ).toBe(120);
+    ).toBe(60);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 119 }).headerLogoSize
-    ).toBe(120);
+    ).toBe(119);
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 60 }).headerLogoSize
+    ).toBe(60);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 220 }).headerLogoSize
     ).toBe(220);
@@ -213,6 +227,9 @@ describe("platform document settings UI normalization", () => {
     expect(
       normalizePlatformDocumentSettings({ frameStyle: "triple" }).frameStyle
     ).toBe("triple");
+    expect(
+      normalizePlatformDocumentSettings({ frameStyle: "f10s" }).frameStyle
+    ).toBe("f10s");
   });
 
   it("returns complete defaults for missing settings", () => {

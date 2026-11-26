@@ -66,4 +66,25 @@ describe("platform document settings nullable Appwrite columns", () => {
 
     expect(settings[field as keyof typeof settings]).toBe(fallback);
   });
+
+  it("reads a catalogued frame preset and a 60px logo without clamping them", async () => {
+    mocks.listRows.mockResolvedValue({
+      rows: [
+        {
+          $id: "1",
+          data: {
+            ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+            frameStyle: "f10s",
+            headerLogoSize: 60,
+            updatedAt: null,
+          },
+        },
+      ],
+    });
+
+    await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+      frameStyle: "f10s",
+      headerLogoSize: 60,
+    });
+  });
 });

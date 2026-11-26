@@ -11,6 +11,7 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
+  isDocumentFrameStyle,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 import { isDocumentDateFormat } from "@/features/document-studio/formatDocumentDate";
@@ -42,9 +43,7 @@ export async function loadDocumentSettingsForExport(
       settings.headerDividerWidthPt < MIN_DIVIDER_WIDTH_PT ||
       settings.headerDividerWidthPt > MAX_DIVIDER_WIDTH_PT ||
       !HEX_COLOR_PATTERN.test(settings.frameColor) ||
-      !["none", "single", "double", "ornate", "classic", "triple"].includes(
-        settings.frameStyle
-      ) ||
+      !isDocumentFrameStyle(settings.frameStyle) ||
       settings.frameWidthPt < MIN_FRAME_WIDTH_PT ||
       settings.frameWidthPt > MAX_FRAME_WIDTH_PT ||
       ![

@@ -4,6 +4,7 @@ import {
   HEX_COLOR_PATTERN,
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
+  isDocumentFrameStyle,
   type DocumentTextRow,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
@@ -194,15 +195,8 @@ export function normalizePlatformDocumentSettings(
       source.pageMarginLeftMm,
       defaults.pageMarginLeftMm
     ),
-    frameStyle: [
-      "none",
-      "single",
-      "double",
-      "ornate",
-      "classic",
-      "triple",
-    ].includes(source.frameStyle ?? "")
-      ? source.frameStyle!
+    frameStyle: isDocumentFrameStyle(source.frameStyle)
+      ? source.frameStyle
       : defaults.frameStyle,
     frameColor: safeHexColor(source.frameColor, defaults.frameColor),
     frameWidthPt: safeNumber(source.frameWidthPt, defaults.frameWidthPt),

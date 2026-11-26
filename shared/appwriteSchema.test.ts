@@ -195,4 +195,15 @@ describe("Appwrite operational schema", () => {
     const ids = appwriteSchema.map(table => table.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("allows the 60px logo size and stores compact frame preset ids", () => {
+    const settings = findSchemaTable("platform_document_settings");
+
+    expect(settings?.columns).toContainEqual(
+      expect.objectContaining({ key: "headerLogoSize", min: 60, max: 240 })
+    );
+    expect(settings?.columns).toContainEqual(
+      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 7 })
+    );
+  });
 });
