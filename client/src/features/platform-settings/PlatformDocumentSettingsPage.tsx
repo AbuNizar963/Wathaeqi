@@ -204,7 +204,7 @@ export default function PlatformDocumentSettingsPage() {
           معاينة A4
         </Button>
         <Button
-          onClick={() => saveMutation.mutate(values)
+          onClick={() => saveMutation.mutate(values)}
           disabled={
             settingsQuery.isLoading ||
             !settingsQuery.data ||
