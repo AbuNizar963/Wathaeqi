@@ -612,7 +612,7 @@ export default function PlatformDocumentSettingsPage() {
                     <option value="single">إطار مفرد</option>
                     <option value="double">إطار مزدوج</option>
                     <option value="ornate">إطار زخرفي احترافي</option>
-                    <option value="classic">إطار كلاسيكي مزدوج الزوايا</option>
+                    <option value="classic">إطار كلاسيكي مزدوج</option>
                     <option value="triple">إطار ثلاثي فاخر</option>
                   </select>
                 </label>
@@ -839,13 +839,34 @@ export default function PlatformDocumentSettingsPage() {
                 />
               </label>
               <section className="space-y-3 rounded-lg border bg-muted/30 p-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <label htmlFor="document-header-logo-size" className="text-sm font-semibold">
                     حجم شعار الوثيقة
                   </label>
-                  <output htmlFor="document-header-logo-size" dir="ltr" className="font-semibold tabular-nums">
-                    {values.headerLogoSize}px
-                  </output>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_HEADER_LOGO_SIZE}
+                      max={MAX_HEADER_LOGO_SIZE}
+                      step={1}
+                      value={values.headerLogoSize}
+                      disabled={!values.headerShowLogo}
+                      onChange={event => {
+                        const size = Number(event.target.value);
+                        if (
+                          Number.isInteger(size) &&
+                          size >= MIN_HEADER_LOGO_SIZE &&
+                          size <= MAX_HEADER_LOGO_SIZE
+                        ) {
+                          updateValue("headerLogoSize", size);
+                        }
+                      }}
+                      aria-label="حجم الشعار بالبكسل"
+                      className="h-9 w-20 rounded-md border bg-background px-2 text-center font-mono text-sm disabled:opacity-50"
+                    />
+                    <span className="text-xs text-muted-foreground">px</span>
+                  </div>
                 </div>
                 <input
                   id="document-header-logo-size"
