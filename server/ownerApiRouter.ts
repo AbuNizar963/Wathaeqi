@@ -319,7 +319,14 @@ const ownerPlatformDocumentSettingsRouter = router({
         pageMarginRightMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
         pageMarginBottomMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
         pageMarginLeftMm: z.number().int().min(0).max(MAX_PAGE_MARGIN_MM),
-        frameStyle: z.enum(["none", "single", "double", "ornate"]),
+        frameStyle: z.enum([
+          "none",
+          "single",
+          "double",
+          "ornate",
+          "classic",
+          "triple",
+        ]),
         frameColor: z.string().regex(HEX_COLOR_PATTERN),
         frameWidthPt: z
           .number()

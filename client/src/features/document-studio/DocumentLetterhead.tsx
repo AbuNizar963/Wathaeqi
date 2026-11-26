@@ -9,8 +9,6 @@ export type DocumentLetterheadProps = {
   date?: string;
 };
 
-const REFERENCE_LOGO_SIZE = 120;
-
 /**
  * A4 document header shared by preview, printing and PNG export.
  * Side heading rows and the logo share one three-column line, matching the
@@ -28,6 +26,7 @@ export default function DocumentLetterhead({
     row => row.right.trim() || row.left.trim()
   );
   const showLogo = settings.headerShowLogo !== false;
+  const logoSize = settings.headerLogoSize;
 
   return (
     <header
@@ -46,6 +45,10 @@ export default function DocumentLetterhead({
       <div
         className="document-letterhead__row"
         data-testid="document-letterhead-row"
+        style={{
+          gridTemplateColumns: `minmax(0, 1fr) ${showLogo ? `${logoSize}px` : "0px"} minmax(0, 1fr)`,
+          minHeight: showLogo ? logoSize : 0,
+        }}
       >
         <div
           className="document-letterhead__cell document-letterhead__side document-letterhead__side--right"
@@ -67,18 +70,20 @@ export default function DocumentLetterhead({
         <div
           className="document-letterhead__cell document-letterhead__logo-cell"
           data-testid="document-letterhead-logo-cell"
+          style={{
+            display: showLogo ? "flex" : "none",
+            width: logoSize,
+            height: logoSize,
+          }}
         >
           {showLogo && logoUrl ? (
             <img
               src={logoUrl}
               alt="الشعار الرسمي"
               className="block object-contain"
-              width={REFERENCE_LOGO_SIZE}
-              height={REFERENCE_LOGO_SIZE}
-              style={{
-                width: REFERENCE_LOGO_SIZE,
-                height: REFERENCE_LOGO_SIZE,
-              }}
+              width={logoSize}
+              height={logoSize}
+              style={{ width: logoSize, height: logoSize }}
             />
           ) : null}
         </div>

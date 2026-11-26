@@ -854,6 +854,8 @@
 }
 .document-a4-page {
   box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
   position: relative;
   isolation: isolate;
   width: min(210mm, 100%);

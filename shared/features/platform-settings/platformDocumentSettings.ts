@@ -35,7 +35,8 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
 export type DocumentHeaderAlignment = "spread" | "center" | "right";
 export type DocumentDividerStyle =
   "solid" | "double" | "dashed" | "dotted" | "tricolor-stars";
-export type DocumentFrameStyle = "none" | "single" | "double" | "ornate";
+export type DocumentFrameStyle =
+  "none" | "single" | "double" | "ornate" | "classic" | "triple";
 
 export type PlatformDocumentSettings = {
   showMinistryWatermarkText: boolean;
@@ -72,8 +73,8 @@ export type PlatformDocumentSettings = {
 export const MAX_WATERMARK_OPACITY_PERCENT = 60;
 export const MIN_WATERMARK_SCALE_PERCENT = 40;
 export const MAX_WATERMARK_SCALE_PERCENT = 180;
-export const MAX_HEADER_LOGO_SIZE = REFERENCE_DOCUMENT_LOGO_SIZE;
-export const MIN_HEADER_LOGO_SIZE = REFERENCE_DOCUMENT_LOGO_SIZE;
+export const MIN_HEADER_LOGO_SIZE = 40;
+export const MAX_HEADER_LOGO_SIZE = 240;
 export const MAX_HEADER_PADDING_MM = 30;
 export const MAX_PAGE_MARGIN_MM = 35;
 export const MIN_DIVIDER_WIDTH_PT = 0.5;

@@ -56,7 +56,7 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
     { watermarkText: "   " },
-    { headerLogoSize: 221 },
+    { headerLogoSize: 241 },
     { headerTopPaddingMm: -1 },
     { headerAlignment: "invalid" },
   ])("blocks export with invalid effective settings: %o", async invalid => {
@@ -103,6 +103,20 @@ describe("platform document settings UI normalization", () => {
     );
   });
 
+  it("falls back to safe defaults for invalid HEX colors", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      headerDividerColor: "red; background:url(javascript:alert(1))",
+      frameColor: "#12345",
+    });
+
+    expect(normalized.headerDividerColor).toBe(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerDividerColor
+    );
+    expect(normalized.frameColor).toBe(
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameColor
+    );
+  });
+
   it("migrates the previous two-line defaults into the four editable values", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
@@ -136,10 +150,10 @@ describe("platform document settings UI normalization", () => {
   it("keeps the logo in the enlarged supported range", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-      headerLogoSize: 120,
+      headerLogoSize: 176,
     });
 
-    expect(normalized.headerLogoSize).toBe(120);
+    expect(normalized.headerLogoSize).toBe(176);
   });
 
   it("migrates older saved records when the added signatory fields are absent", () => {
@@ -167,16 +181,25 @@ describe("platform document settings UI normalization", () => {
     expect(normalized.headerChiefName).toBe("الشهباء");
   });
 
-  it("normalizes every legacy logo size to the reference size", () => {
+  it("clamps logo sizes to the supported adjustable range", () => {
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 32 }).headerLogoSize
-    ).toBe(120);
+    ).toBe(40);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 220 }).headerLogoSize
-    ).toBe(120);
+    ).toBe(220);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 999 }).headerLogoSize
-    ).toBe(120);
+    ).toBe(240);
+  });
+
+  it("preserves the additional professional frame styles", () => {
+    expect(
+      normalizePlatformDocumentSettings({ frameStyle: "classic" }).frameStyle
+    ).toBe("classic");
+    expect(
+      normalizePlatformDocumentSettings({ frameStyle: "triple" }).frameStyle
+    ).toBe("triple");
   });
 
   it("returns complete defaults for missing settings", () => {
