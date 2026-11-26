@@ -462,8 +462,7 @@ function DashboardLayoutContent({
     isPlatformOwner: isPlatformOwnerAccount,
   });
   const [location, setLocation] = useLocation();
-  const { state, openMobile, setOpenMobile, toggleSidebar } =
-    useSidebar();
+  const { state, openMobile, setOpenMobile, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
   // The offcanvas shell is initialized from the mobile breakpoint.
@@ -644,8 +643,8 @@ function DashboardLayoutContent({
               <BrandMark size="sm" />
               <div className="flex min-w-0 flex-col leading-tight">
                 <span className="text-[10px] font-medium text-muted-foreground">
-                  وثائقي{" "}
-                  <span className="px-1 text-brand-gold">/</span> مساحة العمل
+                  وثائقي <span className="px-1 text-brand-gold">/</span> مساحة
+                  العمل
                 </span>
                 <h1 className="truncate text-sm font-bold tracking-tight text-foreground">
                   {activeMenuItem?.label ?? "لوحة العمل"}
