@@ -61,17 +61,18 @@ function formatAuditDate(value: string): string {
 function metadataSummary(value: unknown): string | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const metadata = value as Record<string, unknown>;
-  const title =
-    typeof metadata.title === "string" ? metadata.title : null;
+  const title = typeof metadata.title === "string" ? metadata.title : null;
   const serial =
     typeof metadata.serialCode === "string" ? metadata.serialCode : null;
   const username =
     typeof metadata.username === "string" ? metadata.username : null;
   const role = typeof metadata.role === "string" ? metadata.role : null;
   const name = typeof metadata.name === "string" ? metadata.name : null;
-  return [title, serial, name, username ? `@${username}` : null, role]
-    .filter(Boolean)
-    .join(" · ") || null;
+  return (
+    [title, serial, name, username ? `@${username}` : null, role]
+      .filter(Boolean)
+      .join(" · ") || null
+  );
 }
 
 function deviceLabel(value: string): string {
@@ -154,7 +155,10 @@ export default function AuditLogPage() {
       </div>
 
       {query.isLoading ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground" role="status">
+        <Card
+          className="p-8 text-center text-sm text-muted-foreground"
+          role="status"
+        >
           جارٍ تحميل سجل الحركات...
         </Card>
       ) : query.isError ? (
@@ -223,7 +227,8 @@ export default function AuditLogPage() {
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        السجل متاح لمالك المنصة فقط، وتُحفظ تفاصيله في الخادم ولا يمكن تعديلها من الواجهة.
+        السجل متاح لمالك المنصة فقط، وتُحفظ تفاصيله في الخادم ولا يمكن تعديلها
+        من الواجهة.
       </p>
     </div>
   );
