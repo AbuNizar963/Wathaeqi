@@ -239,7 +239,12 @@ describe("Appwrite operational schema", () => {
       expect.objectContaining({ key: "headerLogoSize", min: 60, max: 240 })
     );
     expect(settings?.columns).toContainEqual(
-      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 16, default: "box" })
+      expect.objectContaining({
+        key: "frameStyle",
+        type: "varchar",
+        size: 16,
+        default: "box",
+      })
     );
   });
 
