@@ -1499,9 +1499,7 @@ export default function DocumentStudioPage() {
                     className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
                   >
                     <div className="space-y-1">
-                      <label className="text-sm font-medium">
-                        اسم الوثيقة
-                      </label>
+                      <label className="text-sm font-medium">اسم الوثيقة</label>
                       <Input
                         value={documentTitle}
                         onChange={event => setDocumentTitle(event.target.value)}
@@ -1738,9 +1736,7 @@ export default function DocumentStudioPage() {
                       />
                       <div className="pt-6">
                         {documentRecipientLine ? (
-                          <p
-                            className="mb-4 text-center text-base font-semibold"
-                          >
+                          <p className="mb-4 text-center text-base font-semibold">
                             {documentRecipientLine}
                           </p>
                         ) : null}
