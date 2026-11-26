@@ -49,6 +49,7 @@ import DocumentLetterhead from "./DocumentLetterhead";
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 import DocumentWatermark from "./DocumentWatermark";
 import {
+  DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER,
   DOCUMENT_RECIPIENT_LINE_KEY,
   getDocumentRecipientLine,
   withDocumentRecipientLine,
@@ -1566,7 +1567,7 @@ export default function DocumentStudioPage() {
                             [DOCUMENT_RECIPIENT_LINE_KEY]: event.target.value,
                           }))
                         }
-                        placeholder="إلى (يمكنك استبدالها بأي صياغة تريدها)"
+                        placeholder={`${DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER} (يمكنك استبدالها بأي صياغة تريدها)`}
                         disabled={!canEditDocument}
                       />
                     </div>
