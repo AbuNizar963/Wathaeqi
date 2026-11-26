@@ -49,9 +49,9 @@ import DocumentLetterhead from "./DocumentLetterhead";
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 import DocumentWatermark from "./DocumentWatermark";
 import {
-  DOCUMENT_RECIPIENT_LABEL_KEY,
-  DOCUMENT_RECIPIENT_VALUE_KEY,
-  getDocumentRecipientFields,
+  DOCUMENT_RECIPIENT_LINE_KEY,
+  getDocumentRecipientLine,
+  withDocumentRecipientLine,
 } from "./documentRecipient";
 import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import {
@@ -466,7 +466,7 @@ export default function DocumentStudioPage() {
 
   function saveDocument() {
     if (!documentTitle.trim()) {
-      toast.error("أدخل عنوان الوثيقة أولاً");
+      toast.error("أدخل اسم الوثيقة أولاً");
       return;
     }
     const validDate = parseDocumentDate(documentDate);
@@ -503,11 +503,10 @@ export default function DocumentStudioPage() {
         ),
         getDocumentSystemVariables()
       ),
-      fieldValues: {
-        ...normalizedFieldValues,
-        [DOCUMENT_RECIPIENT_LABEL_KEY]: documentRecipient.label,
-        [DOCUMENT_RECIPIENT_VALUE_KEY]: documentRecipient.value,
-      },
+      fieldValues: withDocumentRecipientLine(
+        normalizedFieldValues,
+        documentRecipientLine
+      ),
       documentDate: validDate,
       templateId: selectedTemplateId,
       templateRevision: selectedTemplateRevision,
@@ -714,6 +713,7 @@ export default function DocumentStudioPage() {
       organization: organizationName,
       date: formatArabicDate(makeDocumentDate(documentDate)),
       subject: documentSubject.trim(),
+      number: documentSubject.trim(),
     };
     if (selectedDocument?.serialCode) {
       values.number = selectedDocument.serialCode;
@@ -771,7 +771,7 @@ export default function DocumentStudioPage() {
         templateRevision: selectedTemplateRevision,
       })
     : false;
-  const documentRecipient = getDocumentRecipientFields(documentFieldValues);
+  const documentRecipientLine = getDocumentRecipientLine(documentFieldValues);
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1499,12 +1499,12 @@ export default function DocumentStudioPage() {
                   >
                     <div className="space-y-1">
                       <label className="text-sm font-medium">
-                        عنوان الوثيقة
+                        اسم الوثيقة
                       </label>
                       <Input
                         value={documentTitle}
                         onChange={event => setDocumentTitle(event.target.value)}
-                        placeholder="عنوان الوثيقة"
+                        placeholder="أدخل اسم الوثيقة"
                         disabled={!canEditDocument}
                       />
                     </div>
@@ -1526,13 +1526,13 @@ export default function DocumentStudioPage() {
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-sm font-medium">الموضوع</label>
+                      <label className="text-sm font-medium">رقم الوثيقة</label>
                       <Input
                         value={documentSubject}
                         onChange={event =>
                           setDocumentSubject(event.target.value)
                         }
-                        placeholder="موضوع الوثيقة"
+                        placeholder="أدخل رقم الوثيقة"
                         disabled={!canEditDocument}
                       />
                     </div>
@@ -1545,77 +1545,28 @@ export default function DocumentStudioPage() {
                         disabled={!canEditDocument}
                       />
                     </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <label className="text-sm font-medium">
-                        النموذج الأساسي
-                      </label>
-                      <select
-                        value={selectedTemplateId ?? ""}
-                        disabled={!canEditDocument}
-                        onChange={event => {
-                          const template = templates.find(
-                            item => item.id === event.target.value
-                          );
-                          if (template) useTemplate(template);
-                          else {
-                            setSelectedTemplateId(null);
-                            setSelectedTemplateRevision(null);
-                          }
-                        }}
-                        className="h-10 w-full rounded-md border bg-background px-3 text-sm disabled:opacity-60"
-                      >
-                        <option value="">بدون نموذج</option>
-                        {templates
-                          .filter(item => item.isActive)
-                          .map(template => (
-                            <option key={template.id} value={template.id}>
-                              {template.title}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
                   </div>
 
                   <div
-                    className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
+                    className={`grid grid-cols-1 gap-3 document-studio-no-print ${previewMode ? "hidden" : ""}`}
                   >
                     <div className="space-y-1">
                       <label
-                        htmlFor="document-recipient-label"
+                        htmlFor="document-recipient-line"
                         className="text-sm font-medium"
                       >
-                        تسمية جهة التوجيه
+                        الجهة المستلمة / التوجيه
                       </label>
                       <Input
-                        id="document-recipient-label"
-                        value={documentRecipient.label}
+                        id="document-recipient-line"
+                        value={documentRecipientLine}
                         onChange={event =>
                           setDocumentFieldValues(current => ({
                             ...current,
-                            [DOCUMENT_RECIPIENT_LABEL_KEY]: event.target.value,
+                            [DOCUMENT_RECIPIENT_LINE_KEY]: event.target.value,
                           }))
                         }
-                        placeholder="إلى"
-                        disabled={!canEditDocument}
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="document-recipient-value"
-                        className="text-sm font-medium"
-                      >
-                        الجهة المستلمة
-                      </label>
-                      <Input
-                        id="document-recipient-value"
-                        value={documentRecipient.value}
-                        onChange={event =>
-                          setDocumentFieldValues(current => ({
-                            ...current,
-                            [DOCUMENT_RECIPIENT_VALUE_KEY]: event.target.value,
-                          }))
-                        }
-                        placeholder="مثال: الإدارة العامة"
+                        placeholder="إلى (يمكنك استبدالها بأي صياغة تريدها)"
                         disabled={!canEditDocument}
                       />
                     </div>
@@ -1772,21 +1723,18 @@ export default function DocumentStudioPage() {
                         logoUrl={logoUrl}
                         dividerColor={dividerColor}
                         headerSettings={platformDocumentSettings.data}
-                        serial={
-                          selectedDocument?.serialCode || "يخصص عند الإصدار"
-                        }
+                        serial={selectedDocument?.serialCode || undefined}
                         date={formatArabicDate(makeDocumentDate(documentDate))}
                       />
                       <div className="pt-6">
-                        <p className="mb-4 text-center text-base">
-                          <span className="text-[18px] font-bold">
-                            {documentRecipient.label}:
-                          </span>{" "}
-                          {documentRecipient.value}
-                        </p>
+                        {documentRecipientLine ? (
+                          <p className="mb-4 text-center text-base font-semibold">
+                            {documentRecipientLine}
+                          </p>
+                        ) : null}
                         {documentSubject ? (
                           <p className="mb-4 text-right font-semibold">
-                            الموضوع: {documentSubject}
+                            رقم الوثيقة: {documentSubject}
                           </p>
                         ) : null}
                         {selectedTemplateId &&
@@ -1825,6 +1773,12 @@ export default function DocumentStudioPage() {
                             </Button>
                           </div>
                         ) : null}
+                        <div className="document-studio-no-print mb-2">
+                          <h3 className="text-sm font-semibold">نص الوثيقة</h3>
+                          <p className="text-xs text-muted-foreground">
+                            اكتب محتوى الكتاب؛ سيظهر أسفل جهة التوجيه في الوثيقة المطبوعة.
+                          </p>
+                        </div>
                         <DocumentEditor
                           content={documentPreviewContent}
                           onChange={handleDocumentContentChange}
