@@ -260,9 +260,9 @@ abstract final class AppTheme {
         ),
         navigationBarTheme: const NavigationBarThemeData(
           backgroundColor: AppPalette.surface,
-          indicatorColor: Color(0xFFE4EDF3),
+          indicatorColor: Color(0xFFE0F2FE),
           iconTheme: WidgetStateProperty<IconThemeData>.fromMap({
-            WidgetState.selected: IconThemeData(color: AppPalette.navy),
+            WidgetState.selected: IconThemeData(color: AppPalette.brandBlue),
             WidgetState.any: IconThemeData(color: AppPalette.mutedInk),
           }),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -367,7 +367,7 @@ abstract final class AppTheme {
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
-          toolbarHeight: 58,
+          toolbarHeight: 52,
           iconTheme: IconThemeData(color: AppPalette.darkInk, size: 22),
           actionsIconTheme: IconThemeData(color: AppPalette.darkInk, size: 21),
           titleTextStyle: TextStyle(
@@ -503,7 +503,7 @@ abstract final class AppTheme {
           ),
         ),
         drawerTheme: const DrawerThemeData(
-          backgroundColor: AppPalette.navy,
+          backgroundColor: AppPalette.darkSurface,
           width: 280,
         ),
         dividerTheme: const DividerThemeData(color: AppPalette.darkBorder),
