@@ -280,6 +280,18 @@ describe("Appwrite operational schema", () => {
           default: "#000000",
         }),
         expect.objectContaining({
+          key: "headerTopPaddingMm",
+          type: "integer",
+          min: 0,
+          max: 30,
+        }),
+        expect.objectContaining({
+          key: "pageMarginTopMm",
+          type: "integer",
+          min: 0,
+          max: 35,
+        }),
+        expect.objectContaining({
           key: "frameWidthPt",
           type: "double",
           min: 0.5,
