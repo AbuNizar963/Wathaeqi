@@ -1,8 +1,8 @@
 /**
  * Word-inspired page-border presets.
  *
- * The legacy values remain accepted only so previously saved settings can be
- * read safely. The settings UI exposes only WORD_DOCUMENT_FRAME_STYLES.
+ * Legacy frame values remain supported when reading saved settings. The
+ * settings interface exposes only WORD_DOCUMENT_FRAME_STYLES.
  */
 export const WORD_DOCUMENT_FRAME_STYLES = [
   "none",
@@ -16,6 +16,7 @@ export type WordDocumentFrameStyle =
   (typeof WORD_DOCUMENT_FRAME_STYLES)[number];
 
 export const LEGACY_DOCUMENT_FRAME_STYLES = [
+  "none",
   "single",
   "double",
   "ornate",
@@ -24,8 +25,7 @@ export const LEGACY_DOCUMENT_FRAME_STYLES = [
 ] as const;
 
 export type LegacyDocumentFrameStyle =
-  | (typeof LEGACY_DOCUMENT_FRAME_STYLES)[number]
-  | "none";
+  (typeof LEGACY_DOCUMENT_FRAME_STYLES)[number];
 
 type LegacyFrameFamilyCode =
   | "01"
@@ -39,7 +39,6 @@ type LegacyFrameFamilyCode =
   | "09"
   | "10";
 type LegacyFramePaletteCode = "g" | "n" | "e" | "b" | "s";
-
 export type LegacyDocumentFramePresetId =
   `f${LegacyFrameFamilyCode}${LegacyFramePaletteCode}`;
 
@@ -56,18 +55,13 @@ export const DOCUMENT_FRAME_STYLES: readonly DocumentFrameStyle[] = [
 export function isDocumentFrameStyle(
   value: unknown
 ): value is DocumentFrameStyle {
-  if (typeof value !== "string") return false;
-
   return (
-    DOCUMENT_FRAME_STYLES.includes(value as DocumentFrameStyle) ||
-    /^f(?:0[1-9]|10)[gnebs]$/.test(value)
+    typeof value === "string" &&
+    (DOCUMENT_FRAME_STYLES.includes(value as DocumentFrameStyle) ||
+      /^f(?:0[1-9]|10)[gnebs]$/.test(value))
   );
 }
 
-/**
- * Converts previously saved frame values to the closest Word-style preset.
- * This keeps old settings readable while ensuring new saves use the new model.
- */
 export function getWordDocumentFrameStyle(
   value: unknown
 ): WordDocumentFrameStyle {
