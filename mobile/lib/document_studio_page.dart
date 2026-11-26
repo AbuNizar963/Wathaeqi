@@ -770,6 +770,8 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             _platformDocumentSettings['headerDividerStyle'] ?? 'double',
         'headerDividerWidthPt':
             _platformDocumentSettings['headerDividerWidthPt'] ?? 2.25,
+        'documentDateFormat':
+            _platformDocumentSettings['documentDateFormat'] ?? 'yyyy/MM/dd',
         'pageMarginTopMm': _platformDocumentSettings['pageMarginTopMm'] ?? 10,
         'pageMarginRightMm':
             _platformDocumentSettings['pageMarginRightMm'] ?? 10,
