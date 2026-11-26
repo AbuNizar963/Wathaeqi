@@ -463,12 +463,12 @@ export const documentStudioRouter = router({
 
       let fileCleanupSucceeded = true;
       if (removed.file) {
-        const removeFile = getStorageProvider().remove;
-        if (!removeFile) {
+        const storage = getStorageProvider();
+        if (!storage.remove) {
           fileCleanupSucceeded = false;
         } else {
           try {
-            await removeFile(removed.file.storageKey);
+            await storage.remove(removed.file.storageKey);
           } catch (error) {
             fileCleanupSucceeded = false;
             console.error("Document attachment cleanup failed", error);
