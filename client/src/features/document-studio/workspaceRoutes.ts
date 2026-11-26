@@ -18,3 +18,11 @@ export function workspaceTabFromSearch(search: string): WorkspaceTab {
 export function legacyWorkspaceTarget(search: string): string {
   return `${DOCUMENT_WORKSPACE_PATH}${search}`;
 }
+
+export function documentUploadTarget(): string {
+  return `${DOCUMENT_WORKSPACE_PATH}?upload=1`;
+}
+
+export function templateImportTarget(): string {
+  return `${DOCUMENT_WORKSPACE_PATH}?tab=templates&importTemplate=1`;
+}
