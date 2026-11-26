@@ -579,6 +579,83 @@ const administrationRouter = router({
       });
       return { success: true as const };
     }),
+
+  setUserRole: platformOwnerProcedure
+    .input(
+      z.object({
+        id: z.coerce.number().int().positive(),
+        role: z.enum(["user", "admin"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
+      const tables = getAppwriteTablesDB();
+      const databaseId = getAppwriteDatabaseId();
+      const found = await tables.listRows({
+        databaseId,
+        tableId: "users",
+        queries: [Query.equal("id", input.id), Query.limit(2)],
+        total: false,
+      });
+      const row = found.rows[0] as unknown as AppwriteRow | undefined;
+      if (
+        !row ||
+        found.rows.length !== 1 ||
+        rowData(row).organizationId !== scope.organizationId
+      ) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "حساب المستخدم غير موجود ضمن الجهة الحالية",
+        });
+      }
+      const data = rowData(row);
+      if (
+        data.isPlatformOwner === true ||
+        data.authUserId === ctx.user.authUserId
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "لا يمكن تعديل صلاحيات مالك المنصة",
+        });
+      }
+
+      const now = new Date().toISOString();
+      await tables.updateRow({
+        databaseId,
+        tableId: "users",
+        rowId: row.$id,
+        data: { role: input.role, updatedAt: now },
+      });
+      const memberships = await tables.listRows({
+        databaseId,
+        tableId: "organization_memberships",
+        queries: [Query.equal("userId", input.id), Query.limit(100)],
+        total: false,
+      });
+      await Promise.all(
+        memberships.rows.map(item =>
+          tables.updateRow({
+            databaseId,
+            tableId: "organization_memberships",
+            rowId: (item as unknown as AppwriteRow).$id,
+            data: {
+              role:
+                input.role === "admin" ? "organization_admin" : "dispatcher",
+              updatedAt: now,
+            },
+          })
+        )
+      );
+      await writeAuditLog({
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        action: "user.role_changed",
+        entityType: "user",
+        entityId: String(input.id),
+        metadata: { role: input.role },
+      });
+      return { success: true as const };
+    }),
 });
 
 export const workspaceRouter = router({

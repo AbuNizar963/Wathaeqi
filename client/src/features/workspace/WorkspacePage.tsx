@@ -22,6 +22,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ownerTrpc as trpc } from "@/lib/ownerTrpc";
 import { trpc as appTrpc } from "@/lib/trpc";
 import { useAuth } from "@/features/auth-session/useAuth";
@@ -102,6 +110,8 @@ export default function WorkspacePage({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ContactForm>(emptyContact);
   const [userForm, setUserForm] = useState<UserForm>(emptyUser);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [userDialogOpen, setUserDialogOpen] = useState(false);
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery(undefined, {
     enabled: section === "dashboard",
   });
@@ -141,6 +151,7 @@ export default function WorkspacePage({
       await utils.workspace.contacts.list.invalidate();
       setForm(emptyContact);
       setEditingId(null);
+      setContactDialogOpen(false);
       toast.success("تمت إضافة جهة الاتصال");
     },
     onError: error => toast.error(error.message),
@@ -150,6 +161,7 @@ export default function WorkspacePage({
       await utils.workspace.contacts.list.invalidate();
       setForm(emptyContact);
       setEditingId(null);
+      setContactDialogOpen(false);
       toast.success("تم تحديث جهة الاتصال");
     },
     onError: error => toast.error(error.message),
@@ -165,6 +177,7 @@ export default function WorkspacePage({
     onSuccess: async () => {
       await utils.workspace.administration.overview.invalidate();
       setUserForm(emptyUser);
+      setUserDialogOpen(false);
       toast.success("تم إنشاء حساب المستخدم");
     },
     onError: error => toast.error(error.message),
@@ -178,6 +191,13 @@ export default function WorkspacePage({
       onError: error => toast.error(error.message),
     }
   );
+  const setUserRole = trpc.workspace.administration.setUserRole.useMutation({
+    onSuccess: async () => {
+      await utils.workspace.administration.overview.invalidate();
+      toast.success("تم تحديث صلاحية المستخدم");
+    },
+    onError: error => toast.error(error.message),
+  });
   const contacts = useMemo(() => {
     const rows = contactsQuery.data ?? [];
     const term = search.trim().toLocaleLowerCase("ar");
@@ -241,6 +261,7 @@ export default function WorkspacePage({
       phone: item.phone ?? "",
       organization: item.organization ?? "",
     });
+    setContactDialogOpen(true);
   };
 
   const saveContact = () => {
@@ -263,7 +284,8 @@ export default function WorkspacePage({
     updateContact.isPending ||
     deleteContact.isPending ||
     createUser.isPending ||
-    setUserActive.isPending;
+    setUserActive.isPending ||
+    setUserRole.isPending;
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5" dir="rtl">
@@ -453,68 +475,23 @@ export default function WorkspacePage({
       ) : section === "contacts" ? (
         <Card className="space-y-4 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-semibold">دليل جهات الاتصال</h2>
+            <div>
+              <h2 className="font-semibold">دليل جهات الاتصال</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                قائمة محلية للاختيار عند إعداد الوثيقة وطباعتها
+              </p>
+            </div>
             <Button
+              className="min-h-11"
               onClick={() => {
                 setEditingId(null);
                 setForm(emptyContact);
+                setContactDialogOpen(true);
               }}
-              variant="outline"
             >
               <Plus className="ml-2 h-4 w-4" />
               جهة اتصال جديدة
             </Button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field
-              label="الاسم"
-              value={form.name}
-              onChange={value =>
-                setForm(current => ({ ...current, name: value }))
-              }
-            />
-            <Field
-              label="البريد الإلكتروني"
-              value={form.email}
-              onChange={value =>
-                setForm(current => ({ ...current, email: value }))
-              }
-            />
-            <Field
-              label="الهاتف"
-              value={form.phone}
-              onChange={value =>
-                setForm(current => ({ ...current, phone: value }))
-              }
-            />
-            <Field
-              label="الجهة"
-              value={form.organization}
-              onChange={value =>
-                setForm(current => ({ ...current, organization: value }))
-              }
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={saveContact}
-              disabled={mutationPending || !form.name.trim()}
-            >
-              <Save className="ml-2 h-4 w-4" />
-              {editingId ? "حفظ التعديلات" : "إضافة جهة الاتصال"}
-            </Button>
-            {editingId || Object.values(form).some(Boolean) ? (
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm(emptyContact);
-                }}
-              >
-                <X className="ml-2 h-4 w-4" />
-                إلغاء
-              </Button>
-            ) : null}
           </div>
           <SearchField
             value={search}
@@ -528,57 +505,67 @@ export default function WorkspacePage({
           ) : contacts.length === 0 ? (
             <EmptyState text="لا توجد جهات اتصال مطابقة." />
           ) : (
-            <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[620px] text-sm">
-                <thead className="bg-muted/60 text-right">
-                  <tr>
-                    <th className="p-3">الاسم</th>
-                    <th className="p-3">الجهة</th>
-                    <th className="p-3">الهاتف</th>
-                    <th className="p-3">البريد</th>
-                    <th className="p-3">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contacts.map(item => (
-                    <tr key={item.id} className="border-t">
-                      <td className="p-3 font-medium">{item.name}</td>
-                      <td className="p-3">{item.organization || "—"}</td>
-                      <td className="p-3" dir="ltr">
-                        {item.phone || "—"}
-                      </td>
-                      <td className="p-3" dir="ltr">
-                        {item.email || "—"}
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => startEdit(item)}
-                            aria-label="تعديل"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive"
-                            disabled={mutationPending}
-                            onClick={() => {
-                              if (window.confirm("هل تريد حذف جهة الاتصال؟"))
-                                deleteContact.mutate({ id: item.id });
-                            }}
-                            aria-label="حذف"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {contacts.map(item => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-semibold">{item.name}</h3>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                        {item.organization || "جهة اتصال"}
+                      </p>
+                    </div>
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary">
+                      <Contact className="h-5 w-5" />
+                    </span>
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm">
+                    {item.phone ? (
+                      <p className="truncate text-muted-foreground" dir="ltr">
+                        {item.phone}
+                      </p>
+                    ) : null}
+                    {item.email ? (
+                      <p className="truncate text-muted-foreground" dir="ltr">
+                        {item.email}
+                      </p>
+                    ) : null}
+                    {!item.phone && !item.email ? (
+                      <p className="text-xs text-muted-foreground">
+                        لا توجد بيانات اتصال إضافية
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10 flex-1"
+                      onClick={() => startEdit(item)}
+                    >
+                      <Pencil className="ml-2 h-4 w-4" />
+                      تعديل
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="min-h-10 text-destructive hover:text-destructive"
+                      disabled={mutationPending}
+                      onClick={() => {
+                        if (window.confirm("هل تريد حذف جهة الاتصال؟")) {
+                          deleteContact.mutate({ id: item.id });
+                        }
+                      }}
+                      aria-label={`حذف ${item.name}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
         </Card>
@@ -648,54 +635,256 @@ export default function WorkspacePage({
         </Card>
       ) : section === "users" ? (
         <Card className="space-y-4 p-4 sm:p-5">
-          <div className="space-y-3 rounded-xl border p-4">
-            <h2 className="font-semibold">إضافة مستخدم جديد</h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Field
-                label="الاسم الكامل"
-                value={userForm.name}
-                onChange={value =>
-                  setUserForm(current => ({ ...current, name: value }))
-                }
-              />
-              <Field
-                label="اسم المستخدم"
-                value={userForm.username}
-                onChange={value =>
-                  setUserForm(current => ({ ...current, username: value }))
-                }
-              />
-              <Field
-                label="البريد الإلكتروني"
-                value={userForm.email}
-                onChange={value =>
-                  setUserForm(current => ({ ...current, email: value }))
-                }
-              />
-              <Field
-                label="كلمة مرور مؤقتة (12 محرفاً على الأقل)"
-                value={userForm.password}
-                onChange={value =>
-                  setUserForm(current => ({ ...current, password: value }))
-                }
-              />
-              <label className="grid gap-1.5 text-sm font-medium">
-                الصلاحية
-                <select
-                  className="h-10 rounded-md border bg-background px-3"
-                  value={userForm.role}
-                  onChange={event =>
-                    setUserForm(current => ({
-                      ...current,
-                      role: event.target.value as UserForm["role"],
-                    }))
-                  }
-                >
-                  <option value="user">مستخدم</option>
-                  <option value="admin">مدير جهة</option>
-                </select>
-              </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">حسابات المستخدمين</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                إدارة الحالة والدور من بطاقة كل مستخدم
+              </p>
             </div>
+            <Button
+              className="min-h-11"
+              onClick={() => {
+                setUserForm(emptyUser);
+                setUserDialogOpen(true);
+              }}
+            >
+              <Plus className="ml-2 h-4 w-4" />
+              مستخدم جديد
+            </Button>
+          </div>
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث باسم المستخدم أو البريد..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
+            <ErrorMessage message={errorMessage} onRetry={refresh} />
+          ) : users.length === 0 ? (
+            <EmptyState text="لا توجد حسابات مستخدمين." />
+          ) : (
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {users.map(item => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate font-semibold">{item.name}</h3>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        @{item.username || "—"}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={item.isActive ? "default" : "secondary"}
+                      className={
+                        item.isActive
+                          ? "border-emerald-500/30 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          : "border-border bg-muted text-muted-foreground"
+                      }
+                    >
+                      {item.isActive ? "نشط" : "موقوف"}
+                    </Badge>
+                  </div>
+                  {item.isPlatformOwner ? (
+                    <Badge className="mt-3">مالك المنصة — حساب محمي</Badge>
+                  ) : null}
+                  <div className="mt-4 space-y-2 text-sm">
+                    <p className="truncate text-muted-foreground" dir="ltr">
+                      {item.email || "لا يوجد بريد إلكتروني"}
+                    </p>
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      صلاحية الحساب
+                      <select
+                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground"
+                        value={item.role === "admin" ? "admin" : "user"}
+                        disabled={mutationPending || item.isPlatformOwner}
+                        onChange={event => {
+                          setUserRole.mutate({
+                            id: Number(item.id),
+                            role: event.target.value as "user" | "admin",
+                          });
+                        }}
+                      >
+                        <option value="user">مستخدم</option>
+                        <option value="admin">مدير جهة</option>
+                      </select>
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      آخر دخول:{" "}
+                      {item.lastSignedIn
+                        ? new Date(item.lastSignedIn).toLocaleString("ar")
+                        : "لم يسجل الدخول بعد"}
+                    </p>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3">
+                    <span className="text-xs text-muted-foreground">
+                      {item.isPlatformOwner ? "صلاحيات محمية" : "إدارة الحساب"}
+                    </span>
+                    {!item.isPlatformOwner ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10"
+                        disabled={mutationPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              item.isActive
+                                ? "إيقاف حساب هذا المستخدم؟"
+                                : "إعادة تفعيل حساب هذا المستخدم؟"
+                            )
+                          ) {
+                            setUserActive.mutate({
+                              id: Number(item.id),
+                              isActive: !item.isActive,
+                            });
+                          }
+                        }}
+                      >
+                        {item.isActive ? "إيقاف الحساب" : "تفعيل الحساب"}
+                      </Button>
+                    ) : (
+                      <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            لا تعرض هذه الصفحة كلمات المرور أو مفاتيح الجلسات.
+          </p>
+        </Card>
+      ) : null}
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <DialogContent
+          className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto"
+          dir="rtl"
+        >
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? "تعديل جهة الاتصال" : "إضافة جهة اتصال"}
+            </DialogTitle>
+            <DialogDescription>
+              احفظ بيانات الجهة لاستخدامها عند تحرير الوثائق وطباعتها.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="الاسم"
+              value={form.name}
+              onChange={value =>
+                setForm(current => ({ ...current, name: value }))
+              }
+            />
+            <Field
+              label="الجهة"
+              value={form.organization}
+              onChange={value =>
+                setForm(current => ({ ...current, organization: value }))
+              }
+            />
+            <Field
+              label="الهاتف"
+              value={form.phone}
+              onChange={value =>
+                setForm(current => ({ ...current, phone: value }))
+              }
+            />
+            <Field
+              label="البريد الإلكتروني"
+              value={form.email}
+              onChange={value =>
+                setForm(current => ({ ...current, email: value }))
+              }
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:justify-start">
+            <Button
+              onClick={saveContact}
+              disabled={mutationPending || !form.name.trim()}
+              className="min-h-11"
+            >
+              <Save className="ml-2 h-4 w-4" />
+              {editingId ? "حفظ التعديلات" : "إضافة جهة الاتصال"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setContactDialogOpen(false)}
+              className="min-h-11"
+            >
+              إلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
+        <DialogContent
+          className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto"
+          dir="rtl"
+        >
+          <DialogHeader>
+            <DialogTitle>إنشاء مستخدم جديد</DialogTitle>
+            <DialogDescription>
+              ينشأ الحساب في Appwrite Auth ويرتبط بالجهة الوحيدة في النظام.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field
+              label="الاسم الكامل"
+              value={userForm.name}
+              onChange={value =>
+                setUserForm(current => ({ ...current, name: value }))
+              }
+            />
+            <Field
+              label="اسم المستخدم"
+              value={userForm.username}
+              onChange={value =>
+                setUserForm(current => ({ ...current, username: value }))
+              }
+            />
+            <Field
+              label="البريد الإلكتروني"
+              value={userForm.email}
+              onChange={value =>
+                setUserForm(current => ({ ...current, email: value }))
+              }
+            />
+            <Field
+              label="كلمة مرور مؤقتة (12 محرفاً على الأقل)"
+              type="password"
+              value={userForm.password}
+              onChange={value =>
+                setUserForm(current => ({ ...current, password: value }))
+              }
+            />
+            <label className="grid gap-1.5 text-sm font-medium">
+              الصلاحية
+              <select
+                className="h-11 rounded-lg border bg-background px-3"
+                value={userForm.role}
+                onChange={event =>
+                  setUserForm(current => ({
+                    ...current,
+                    role: event.target.value as UserForm["role"],
+                  }))
+                }
+              >
+                <option value="user">مستخدم</option>
+                <option value="admin">مدير جهة</option>
+              </select>
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            لن يتم إنشاء مالك منصة جديد. سيُطلب من المستخدم تغيير كلمة المرور
+            المؤقتة عند أول دخول.
+          </p>
+          <DialogFooter className="gap-2 sm:justify-start">
             <Button
               onClick={() =>
                 createUser.mutate({
@@ -712,106 +901,22 @@ export default function WorkspacePage({
                 userForm.password.length < 12 ||
                 !organizationContext.data?.organizationId
               }
+              className="min-h-11"
             >
-              <Plus className="ml-2 h-4 w-4" /> إنشاء الحساب
+              <Plus className="ml-2 h-4 w-4" />
+              إنشاء الحساب
             </Button>
-            <p className="text-xs text-muted-foreground">
-              سيُنشأ الحساب في Appwrite Auth ويرتبط بملف المستخدم وعضوية الجهة.
-              لن يتم إنشاء مالك منصة جديد.
-            </p>
-          </div>
-          <SearchField
-            value={search}
-            onChange={setSearch}
-            placeholder="ابحث باسم المستخدم أو البريد..."
-          />
-          {isLoading ? (
-            <Loading />
-          ) : isError ? (
-            <ErrorMessage message={errorMessage} onRetry={refresh} />
-          ) : users.length === 0 ? (
-            <EmptyState text="لا توجد حسابات مستخدمين." />
-          ) : (
-            <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[680px] text-sm">
-                <thead className="bg-muted/60 text-right">
-                  <tr>
-                    <th className="p-3">المستخدم</th>
-                    <th className="p-3">اسم الدخول</th>
-                    <th className="p-3">البريد</th>
-                    <th className="p-3">الدور</th>
-                    <th className="p-3">الحالة</th>
-                    <th className="p-3">آخر دخول</th>
-                    <th className="p-3">الإجراء</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map(item => (
-                    <tr key={item.id} className="border-t">
-                      <td className="p-3 font-medium">
-                        {item.name}
-                        {item.isPlatformOwner ? (
-                          <Badge className="mr-2">مالك المنصة</Badge>
-                        ) : null}
-                      </td>
-                      <td className="p-3">{item.username || "—"}</td>
-                      <td className="p-3" dir="ltr">
-                        {item.email || "—"}
-                      </td>
-                      <td className="p-3">{item.role}</td>
-                      <td className="p-3">
-                        <Badge
-                          variant={item.isActive ? "default" : "secondary"}
-                        >
-                          {item.isActive ? "نشط" : "موقوف"}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        {item.lastSignedIn
-                          ? new Date(item.lastSignedIn).toLocaleString("ar")
-                          : "—"}
-                      </td>
-                      <td className="p-3">
-                        {!item.isPlatformOwner ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={mutationPending}
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  item.isActive
-                                    ? "إيقاف حساب هذا المستخدم؟"
-                                    : "إعادة تفعيل حساب هذا المستخدم؟"
-                                )
-                              ) {
-                                setUserActive.mutate({
-                                  id: Number(item.id),
-                                  isActive: !item.isActive,
-                                });
-                              }
-                            }}
-                          >
-                            {item.isActive ? "إيقاف" : "تفعيل"}
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            محمي
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            يعرض هذا القسم بيانات الحسابات من Appwrite دون إظهار كلمات المرور أو
-            مفاتيح الجلسات.
-          </p>
-        </Card>
-      ) : null}
+            <Button
+              variant="outline"
+              onClick={() => setUserDialogOpen(false)}
+              disabled={createUser.isPending}
+              className="min-h-11"
+            >
+              إلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -846,15 +951,22 @@ function Field({
   label,
   value,
   onChange,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  type?: "text" | "password" | "email" | "tel";
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-medium">
       {label}
-      <Input value={value} onChange={event => onChange(event.target.value)} />
+      <Input
+        type={type}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className="min-h-11"
+      />
     </label>
   );
 }

@@ -265,6 +265,20 @@ assert(
   "Document settings must provide a live desktop A4 preview, a mobile preview dialog, logo drop zone, and undo action."
 );
 
+assert(
+  workspacePage.includes("open={contactDialogOpen}") &&
+    workspacePage.includes("open={userDialogOpen}") &&
+    workspacePage.includes("xl:grid-cols-3") &&
+    workspacePage.includes("setUserRole.mutate") &&
+    !workspacePage.includes("min-w-[620px]") &&
+    !workspacePage.includes("min-w-[680px]") &&
+    workspaceRouter.includes("setUserRole: platformOwnerProcedure") &&
+    workspaceRouter.includes(
+      "rowData(row).organizationId !== scope.organizationId"
+    ),
+  "Contacts and users must use mobile-safe cards and dialogs, with organization-scoped role updates."
+);
+
 console.log(
   "Responsive shell and single-organization print-only checks passed."
 );

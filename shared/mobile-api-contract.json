@@ -110,6 +110,7 @@
     "workspace.administration.overview",
     "workspace.administration.setOrganizationActive",
     "workspace.administration.setUserActive",
+    "workspace.administration.setUserRole",
     "workspace.administration.updateOrganization",
     "workspace.contacts.create",
     "workspace.contacts.delete",
