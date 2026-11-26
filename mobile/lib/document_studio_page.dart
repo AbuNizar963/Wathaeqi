@@ -31,7 +31,7 @@ import 'app_theme.dart';
 
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-enum DocumentStudioTab { documents, templates, archive, files }
+enum DocumentStudioTab { home, documents, templates, archive, files }
 
 class DocumentStudioPage extends StatefulWidget {
   const DocumentStudioPage({
@@ -1703,6 +1703,272 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                 _tab = selection.first;
               });
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHomeDashboard() {
+    final documents = _documents
+        .where((document) => !document.isLegacyStarterDraft)
+        .toList()
+      ..sort((first, second) => second.updatedAt.compareTo(first.updatedAt));
+    final drafts = documents.where((document) => document.status == 'draft').length;
+    final issued = documents.where((document) => document.status == 'issued').length;
+    final archived = documents.where((document) => document.status == 'archived').length;
+    final files = documents.where((document) => document.file != null).length;
+    final recent = documents.take(5).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'مرحباً بك في وثائقي',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'مساحة موحدة لإنشاء الوثائق الرسمية وتنظيمها وطباعتها وحفظها.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _saving ? null : _chooseTemplateForNewDocument,
+                      icon: const Icon(LucideIcons.layoutTemplate, size: 17),
+                      label: const Text('ابدأ من قالب'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => showTab(DocumentStudioTab.files),
+                      icon: const Icon(LucideIcons.folderOpen, size: 17),
+                      label: const Text('الملفات الأصلية'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 2.35,
+          children: [
+            _homeMetric(
+              label: 'إجمالي الوثائق',
+              value: documents.length,
+              icon: LucideIcons.files,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            _homeMetric(
+              label: 'مسودات',
+              value: drafts,
+              icon: LucideIcons.filePenLine,
+              color: context.appWarning,
+            ),
+            _homeMetric(
+              label: 'وثائق صادرة',
+              value: issued,
+              icon: LucideIcons.fileCheck2,
+              color: context.appSuccess,
+            ),
+            _homeMetric(
+              label: 'مؤرشفة',
+              value: archived,
+              icon: LucideIcons.archive,
+              color: context.appInfo,
+            ),
+            _homeMetric(
+              label: 'القوالب',
+              value: _templates.length,
+              icon: LucideIcons.layoutTemplate,
+              color: AppPalette.gold,
+            ),
+            _homeMetric(
+              label: 'ملفات مرفقة',
+              value: files,
+              icon: LucideIcons.folderOpen,
+              color: Theme.of(context).colorScheme.tertiary,
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'أحدث الوثائق',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            TextButton(
+              onPressed: () => showTab(DocumentStudioTab.documents),
+              child: const Text('عرض الكل'),
+            ),
+          ],
+        ),
+        if (recent.isEmpty)
+          _emptyState('لا توجد وثائق بعد', Icons.description_outlined)
+        else
+          for (final document in recent) _homeRecentDocument(document),
+      ],
+    );
+  }
+
+  Widget _homeMetric({
+    required String label,
+    required int value,
+    required IconData icon,
+    required Color color,
+  }) => Card(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$value',
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    fontFeatures: const [ui.FontFeature.tabularFigures()],
+                  ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _homeRecentDocument(OfficialDocument document) {
+    final status = switch (document.status) {
+      'issued' => 'صادرة',
+      'archived' => 'مؤرشفة',
+      _ => 'مسودة',
+    };
+    final statusColor = switch (document.status) {
+      'issued' => context.appSuccess,
+      'archived' => context.appInfo,
+      _ => context.appWarning,
+    };
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => _selectDocument(document),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.description_outlined,
+                  color: statusColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      document.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      document.subject.isNotEmpty
+                          ? document.subject
+                          : document.category,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _formatDate(document.updatedAt),
+                    textDirection: ui.TextDirection.ltr,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontFeatures: const [ui.FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -3447,13 +3713,14 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             ),
           ),
         ),
-        _buildTabSelector(),
+        if (_tab != DocumentStudioTab.home) _buildTabSelector(),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           child: Row(
             children: [
               Expanded(
                 child: Text(switch (_tab) {
+                  DocumentStudioTab.home => 'لوحة العمل',
                   DocumentStudioTab.documents => 'إعداد الوثائق الرسمية',
                   DocumentStudioTab.templates => 'النماذج الإدارية',
                   DocumentStudioTab.archive => 'أرشيف الوثائق',
@@ -3527,6 +3794,16 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                                 ),
                               ],
                             ),
+                          ),
+                        ),
+                      )
+                    else if (_tab == DocumentStudioTab.home)
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _refresh,
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 28),
+                            children: [_buildHomeDashboard()],
                           ),
                         ),
                       )
