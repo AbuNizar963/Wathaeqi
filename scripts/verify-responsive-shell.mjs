@@ -255,8 +255,10 @@ assert(
 );
 
 assert(
-  settingsPage.includes('className="hidden lg:sticky lg:top-24 lg:block lg:self-start"') &&
-    settingsPage.includes('Dialog open={previewOpen}') &&
+  settingsPage.includes(
+    'className="hidden lg:sticky lg:top-24 lg:block lg:self-start"'
+  ) &&
+    settingsPage.includes("Dialog open={previewOpen}") &&
     settingsPage.includes("معاينة الوثيقة الرسمية A4") &&
     settingsPage.includes("منطقة إسقاط شعار الجهة") &&
     settingsPage.includes("تراجع عن التعديلات"),
