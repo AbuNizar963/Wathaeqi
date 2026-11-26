@@ -805,7 +805,7 @@ class _AuditLogPageState extends State<AuditLogPage> {
                           onSubmitted: (_) => _applyFilters(),
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.search),
-                            hintText: 'الموظف أو الإجراء أو رقم البرقية',
+                            hintText: 'الموظف أو الإجراء أو رقم الوثيقة',
                             suffixIcon: IconButton(
                               tooltip: 'تطبيق البحث',
                               onPressed: _applyFilters,
@@ -821,7 +821,7 @@ class _AuditLogPageState extends State<AuditLogPage> {
                                 onChanged: (value) => resourceId = value,
                                 onSubmitted: (_) => _applyFilters(),
                                 decoration: const InputDecoration(
-                                  labelText: 'معرّف المورد أو رقم البرقية',
+                                  labelText: 'معرّف المورد أو رقم الوثيقة',
                                   prefixIcon: Icon(Icons.tag_outlined),
                                 ),
                               ),
@@ -1893,7 +1893,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
     if (!prefixPattern.hasMatch(outgoingPrefix) ||
         !prefixPattern.hasMatch(incomingPrefix)) {
       setState(
-        () => _error = 'بادئتا الصادر والوارد يجب أن تكونا أحرفًا لاتينية كبيرة أو أرقامًا أو شرطة.',
+        () => _error = 'بادئة التسلسل يجب أن تتكون من أحرف لاتينية كبيرة أو أرقام أو شرطة.',
       );
       return;
     }
@@ -2138,7 +2138,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'هوية الجهة وترويسة البرقية',
+                          'هوية الجهة وترويسة الوثيقة',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                             fontSize: 17,
@@ -2230,23 +2230,12 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                   children: [
                     _input(
                       _serialPrefix,
-                      'بادئة البرقية الصادرة',
-                      maxLength: 24,
-                    ),
-                    _input(
-                      _incomingSerialPrefix,
-                      'بادئة البرقية الواردة',
+                      'بادئة رقم الوثيقة',
                       maxLength: 24,
                     ),
                     _input(
                       _serialStart,
-                      'رقم بداية تسلسل الصادر',
-                      numeric: true,
-                      maxLength: 9,
-                    ),
-                    _input(
-                      _incomingSerialStart,
-                      'رقم بداية تسلسل الوارد',
+                      'رقم بداية التسلسل',
                       numeric: true,
                       maxLength: 9,
                     ),
@@ -2290,12 +2279,11 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
                         }
                       },
                     ),
-                    if (_settings['nextOutgoingSerial'] != null ||
-                        _settings['nextIncomingSerial'] != null)
+                    if (_settings['nextOutgoingSerial'] != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Text(
-                          'الرقم التالي — صادر: ${_text(_settings['nextOutgoingSerial'], '—')}، وارد: ${_text(_settings['nextIncomingSerial'], '—')}',
+                          'الرقم التالي للوثيقة: ${_text(_settings['nextOutgoingSerial'], '—')}',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w700,
