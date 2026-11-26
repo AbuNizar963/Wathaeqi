@@ -658,8 +658,8 @@ class DocumentStudioPdf {
         }
         result.add(pw.SizedBox(height: 6));
       } else if (children.isNotEmpty) {
-        result.add(
-          ..._buildBlocks(
+        result.addAll(
+          _buildBlocks(
             children,
             regular: regular,
             bold: bold,
