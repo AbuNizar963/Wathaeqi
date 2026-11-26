@@ -1713,7 +1713,7 @@ export default function DocumentStudioPage() {
                             );
                             if (!contact) return;
                             const prefix =
-                              /^(إلى|الى)\\s*/.exec(documentRecipientLine)?.[0] ??
+                              /^(إلى|الى)\s*/.exec(documentRecipientLine)?.[0] ??
                               (documentRecipientLine.trim() ? "" : "إلى ");
                             const recipient =
                               contact.organization?.trim() || contact.name;
