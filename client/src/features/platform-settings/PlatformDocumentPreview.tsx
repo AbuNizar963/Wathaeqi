@@ -152,6 +152,12 @@ export default function PlatformDocumentPreview({
               onChange={() => undefined}
               editable={false}
               containerClassName="rounded-none border-0 shadow-none"
+              textStyle={{
+                fontFamily: settings.documentFontFamily,
+                fontSize: `${settings.documentFontSizePt}pt`,
+                fontWeight: settings.documentFontWeight,
+                color: settings.documentFontColor,
+              }}
             />
           ) : null}
           <DocumentSignatureBlock
