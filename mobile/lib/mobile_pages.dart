@@ -110,7 +110,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
+    textDirection: ui.TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -182,7 +182,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               const SizedBox(height: 4),
                               Text(
                                 _formatDate(notification['createdAt']),
-                                textDirection: TextDirection.ltr,
+                                textDirection: ui.TextDirection.ltr,
                                 style: TextStyle(
                                   color: Theme.of(context)
                                       .colorScheme
@@ -305,7 +305,7 @@ class _ContactsPageState extends State<ContactsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: ui.TextDirection.rtl,
         child: AlertDialog(
           title: Text(
             contact == null ? 'إضافة جهة اتصال' : 'تعديل جهة الاتصال',
@@ -328,7 +328,7 @@ class _ContactsPageState extends State<ContactsPage> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: phone,
-                  textDirection: TextDirection.ltr,
+                  textDirection: ui.TextDirection.ltr,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(labelText: 'رقم الهاتف'),
@@ -336,7 +336,7 @@ class _ContactsPageState extends State<ContactsPage> {
                 const SizedBox(height: 10),
                 TextField(
                   controller: email,
-                  textDirection: TextDirection.ltr,
+                  textDirection: ui.TextDirection.ltr,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'البريد الإلكتروني',
@@ -425,7 +425,7 @@ class _ContactsPageState extends State<ContactsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: ui.TextDirection.rtl,
         child: AlertDialog(
           title: const Text('حذف جهة الاتصال'),
           content: Text(
@@ -469,7 +469,7 @@ class _ContactsPageState extends State<ContactsPage> {
   Widget build(BuildContext context) {
     final contacts = _filteredContacts;
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: ui.TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -553,12 +553,12 @@ class _ContactsPageState extends State<ContactsPage> {
                                 if (phone.isNotEmpty)
                                   Text(
                                     phone,
-                                    textDirection: TextDirection.ltr,
+                                    textDirection: ui.TextDirection.ltr,
                                   ),
                                 if (email.isNotEmpty)
                                   Text(
                                     email,
-                                    textDirection: TextDirection.ltr,
+                                    textDirection: ui.TextDirection.ltr,
                                   ),
                               ],
                             ),
@@ -727,7 +727,7 @@ class _AuditLogPageState extends State<AuditLogPage> {
 
   @override
   Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
+    textDirection: ui.TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -976,7 +976,7 @@ class _AuditLogPageState extends State<AuditLogPage> {
                                       ),
                                       const SizedBox(height: 2),
                                       Directionality(
-                                        textDirection: TextDirection.ltr,
+                                        textDirection: ui.TextDirection.ltr,
                                         child: Text(
                                           _formatDate(entry['createdAt']),
                                           style: TextStyle(
@@ -1430,7 +1430,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
   @override
   Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
+    textDirection: ui.TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -2117,7 +2117,7 @@ class _DepartmentSettingsPageState extends State<DepartmentSettingsPage> {
 
   @override
   Widget build(BuildContext context) => Directionality(
-    textDirection: TextDirection.rtl,
+    textDirection: ui.TextDirection.rtl,
     child: Scaffold(
       appBar: AppBar(
         title: const Text(

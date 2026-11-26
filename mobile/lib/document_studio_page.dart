@@ -3569,6 +3569,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
   FontWeight _documentSettingWeight(String key, FontWeight fallback) {
     final value = _platformDocumentSettings[key];
     final weight = value is num ? value.toInt() : null;
+    if (weight == null) return fallback;
     return switch (weight) {
       >= 800 => FontWeight.w800,
       >= 700 => FontWeight.w700,
