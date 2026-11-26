@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { getAppwriteDatabaseId, getAppwriteTablesDB } from "../../_core/appwrite";
+import {
+  getAppwriteDatabaseId,
+  getAppwriteTablesDB,
+} from "../../_core/appwrite";
 
 const AUDIT_RECORD_TYPE = "audit_event";
 
