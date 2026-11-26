@@ -104,6 +104,10 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
 
   final _titleController = TextEditingController();
   final _subjectController = TextEditingController();
+  final _recipientLabelController = TextEditingController(
+    text: defaultDocumentRecipientLabel,
+  );
+  final _recipientValueController = TextEditingController();
   final _templateTitleController = TextEditingController();
   final _templateDescriptionController = TextEditingController();
 
@@ -134,6 +138,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
   };
   Map<String, String> _fieldValues = {};
   List<DocumentTemplateField> _templateFields = [];
+  final List<UniqueKey> _templateFieldKeys = [];
   final Map<String, TextEditingController> _fieldControllers = {};
   bool _templateContentDirty = false;
   bool _creatingTemplate = false;
@@ -192,6 +197,8 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     _templateEditor.dispose();
     _titleController.dispose();
     _subjectController.dispose();
+    _recipientLabelController.dispose();
+    _recipientValueController.dispose();
     _templateTitleController.dispose();
     _templateDescriptionController.dispose();
     for (final controller in _fieldControllers.values) {
@@ -770,6 +777,10 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         content: _documentContentForDisplay(document),
         title: document.title,
         subject: document.subject,
+        recipientLabel:
+            document.fieldValues[documentRecipientLabelFieldKey] ??
+            defaultDocumentRecipientLabel,
+        recipient: document.fieldValues[documentRecipientValueFieldKey] ?? '',
         serialCode: document.serialCode,
         documentDate: document.documentDate,
         letterhead: configuredLetterhead,
@@ -1010,13 +1021,18 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     }
     _fieldControllers.clear();
     for (final field in fields) {
-      _fieldControllers[field.key] = TextEditingController(
-        text: values[field.key] ?? field.defaultValue ?? '',
+      final value = normalizeDocumentTemplateFieldValue(
+        field,
+        values[field.key],
       );
+      _fieldControllers[field.key] = TextEditingController(text: value);
     }
     _fieldValues = {
       for (final field in fields)
-        field.key: values[field.key] ?? field.defaultValue ?? '',
+        field.key: normalizeDocumentTemplateFieldValue(
+          field,
+          values[field.key],
+        ),
     };
   }
 
@@ -1031,6 +1047,8 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = DateTime.now();
     _titleController.clear();
     _subjectController.clear();
+    _recipientLabelController.text = defaultDocumentRecipientLabel;
+    _recipientValueController.clear();
     _templateBaseContent = {
       'type': 'doc',
       'content': [
@@ -1052,6 +1070,14 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = document.documentDate;
     _titleController.text = document.title;
     _subjectController.text = document.subject;
+    final recipientLabel = document.fieldValues[documentRecipientLabelFieldKey]
+        ?.trim();
+    _recipientLabelController.text =
+        recipientLabel == null || recipientLabel.isEmpty
+        ? defaultDocumentRecipientLabel
+        : recipientLabel;
+    _recipientValueController.text =
+        document.fieldValues[documentRecipientValueFieldKey] ?? '';
     _templateBaseContent = DocumentStudioQuillCodec.normalizeLegacyText(
       document.content,
     );
@@ -1247,6 +1273,8 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     _documentDate = DateTime.now();
     _titleController.text = template.title;
     _subjectController.clear();
+    _recipientLabelController.text = defaultDocumentRecipientLabel;
+    _recipientValueController.clear();
     _templateBaseContent = DocumentStudioQuillCodec.normalizeLegacyText(
       template.content,
     );
@@ -1260,6 +1288,14 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
       _showMessage('أدخل عنوان الوثيقة أولاً');
       return;
     }
+    final recipientLabel = _recipientLabelController.text.trim();
+    final savedFieldValues = <String, String>{
+      ..._fieldValues,
+      documentRecipientLabelFieldKey: recipientLabel.isEmpty
+          ? defaultDocumentRecipientLabel
+          : recipientLabel,
+      documentRecipientValueFieldKey: _recipientValueController.text,
+    };
     final customFieldValues = Map<String, String>.from(_fieldValues)
       ..remove('organization')
       ..remove('date')
@@ -1309,7 +1345,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
       'category': _documentCategory,
       'subject': _subjectController.text.trim(),
       'content': content,
-      'fieldValues': _fieldValues,
+      'fieldValues': savedFieldValues,
       'documentDate': _documentDate.toUtc().toIso8601String(),
       'templateId': _selectedTemplateId,
       'templateRevision': _selectedTemplateRevision,
@@ -1444,6 +1480,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     _templateDescriptionController.clear();
     _templateCategory = 'general';
     _templateFields = [];
+    _templateFieldKeys.clear();
     _replaceTemplateEditor({
       'type': 'doc',
       'content': [
@@ -1462,6 +1499,11 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     _templateDescriptionController.text = template.description ?? '';
     _templateCategory = template.category;
     _templateFields = List<DocumentTemplateField>.from(template.fields);
+    _templateFieldKeys
+      ..clear()
+      ..addAll(
+        List<UniqueKey>.generate(template.fields.length, (_) => UniqueKey()),
+      );
     _replaceTemplateEditor(template.content);
     setState(() => _tab = DocumentStudioTab.templates);
   }
@@ -1503,6 +1545,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           required: false,
         ),
       ];
+      _templateFieldKeys.add(UniqueKey());
     });
   }
 
@@ -1851,6 +1894,34 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           decoration: const InputDecoration(
             labelText: 'الموضوع',
             border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _recipientLabelController,
+          enabled: canEdit,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            labelText: 'تسمية جهة التوجيه',
+            hintText: 'إلى',
+            labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _recipientValueController,
+          onChanged: (_) => setState(() {}),
+          enabled: canEdit,
+          decoration: const InputDecoration(
+            labelText: 'الجهة المستلمة',
+            hintText: 'مثال: الإدارة العامة',
+            labelStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -2264,7 +2335,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           items: field.options
               .map(
                 (option) => DropdownMenuItem(
-                  value: option.value,
+                  value: option.label,
                   child: Text(option.label),
                 ),
               )
@@ -2288,7 +2359,11 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           enabled: canEdit,
           decoration: InputDecoration(
             labelText: label,
-            border: const OutlineInputBorder(),
+            labelStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             suffixIcon: const Icon(Icons.calendar_today_outlined),
           ),
           onTap: canEdit
@@ -2321,7 +2396,11 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         maxLength: field.maxLength,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
         onChanged: (value) => _fieldValues[field.key] = value,
       ),
@@ -2493,13 +2572,14 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final field = _templateFields[index];
     final optionsText = field.options.map((option) => option.label).join(', ');
     return Card(
+      key: _templateFieldKeys[index],
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
           children: [
             TextFormField(
-              key: ValueKey('field-label-${field.key}'),
+              key: ValueKey('field-label-$index'),
               initialValue: field.label,
               decoration: const InputDecoration(
                 labelText: 'اسم الحقل',
@@ -2509,13 +2589,20 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             ),
             const SizedBox(height: 8),
             TextFormField(
-              key: ValueKey('field-key-${field.key}'),
+              key: ValueKey('field-key-$index'),
               initialValue: field.key,
               textAlign: TextAlign.left,
               decoration: const InputDecoration(
                 labelText: 'المفتاح البرمجي',
                 hintText: 'employee_name',
-                border: OutlineInputBorder(),
+                helperText: 'المفتاح إنجليزي؛ تتحول المسافات إلى _، وتبقى مسافات التسمية والقيم والخيارات مسموحة.',
+                labelStyle: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                ),
               ),
               onChanged: (value) => _updateTemplateField(
                 index,
@@ -2576,7 +2663,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             if (field.type == DocumentTemplateFieldType.select) ...[
               const SizedBox(height: 8),
               TextFormField(
-                key: ValueKey('field-options-${field.key}'),
+                key: ValueKey('field-options-$index'),
                 initialValue: optionsText,
                 decoration: const InputDecoration(
                   labelText: 'الخيارات مفصولة بفواصل',
@@ -2615,6 +2702,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                   onPressed: () {
                     setState(() {
                       _templateFields.removeAt(index);
+                      _templateFieldKeys.removeAt(index);
                     });
                   },
                   icon: const Icon(Icons.delete_outline),
@@ -3170,6 +3258,40 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Center(
+                      child: RichText(
+                        textDirection: ui.TextDirection.rtl,
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontFamily: 'Cairo',
+                          ),
+                          children: [
+                            TextSpan(
+                              text:
+                                  '${_recipientLabelController.text.trim().isEmpty ? defaultDocumentRecipientLabel : _recipientLabelController.text.trim()}: ',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                height: 1.5,
+                              ),
+                            ),
+                            TextSpan(
+                              text: _recipientValueController.text,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
+                                height: 1.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   Padding(

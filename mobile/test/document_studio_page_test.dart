@@ -656,7 +656,7 @@ void main() {
   );
 
   testWidgets(
-    'guided document creation fills required template fields without opening the editor',
+    'guided document creation preserves template fields and recipient formatting',
     (tester) async {
       final api = _DocumentStudioTestApi(
         templateContent: {
@@ -668,6 +668,12 @@ void main() {
                 {'type': 'text', 'text': 'اسم الموظف: {{employee_name}}'},
               ],
             },
+            {
+              'type': 'paragraph',
+              'content': [
+                {'type': 'text', 'text': 'الجهة: {{department}}'},
+              ],
+            },
           ],
         },
         templateFields: [
@@ -676,6 +682,15 @@ void main() {
             'label': 'اسم الموظف',
             'type': 'text',
             'required': true,
+          },
+          {
+            'key': 'department',
+            'label': 'الجهة',
+            'type': 'select',
+            'required': false,
+            'options': [
+              {'value': 'option_1', 'label': 'مديرية الشؤون العامة'},
+            ],
           },
         ],
       );
@@ -734,17 +749,60 @@ void main() {
       await tester.enterText(fieldInput, 'أحمد محمد');
       tester.testTextInput.hide();
       await tester.pumpAndSettle();
+      final recipientInput = find.byWidgetPredicate(
+        (widget) =>
+            widget is TextField &&
+            widget.decoration?.labelText == 'الجهة المستلمة',
+      );
+      await tester.ensureVisible(recipientInput);
+      await tester.enterText(recipientInput, 'الإدارة العامة للشؤون القانونية');
+      final departmentInput = find.byWidgetPredicate(
+        (widget) =>
+            widget is DropdownButtonFormField<String> &&
+            widget.decoration.labelText == 'الجهة',
+      );
+      await tester.ensureVisible(departmentInput);
+      await tester.tap(departmentInput);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('مديرية الشؤون العامة').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('تحرير النص يدوياً (اختياري)'));
+      await tester.tap(find.text('تحرير النص يدوياً (اختياري)'));
+      await tester.pumpAndSettle();
+      final recipientLineFinder = find.byWidgetPredicate(
+        (widget) =>
+            widget is RichText &&
+            widget.text.toPlainText().contains(
+              'الإدارة العامة للشؤون القانونية',
+            ),
+      );
+      expect(recipientLineFinder, findsOneWidget);
+      final recipientLine = tester.widget<RichText>(recipientLineFinder);
+      expect(recipientLine.textAlign, TextAlign.center);
+      final recipientSpans = (recipientLine.text as TextSpan).children!;
+      expect(recipientSpans.first.style?.fontSize, 18);
+      expect(recipientSpans.first.style?.fontWeight, FontWeight.bold);
+      expect(recipientSpans.last.style?.fontSize, 16);
       await tester.ensureVisible(find.text('حفظ الوثيقة'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('حفظ الوثيقة'));
       await tester.pumpAndSettle();
 
       expect(outbox.savedInput?['templateId'], 'template-test');
-      expect(outbox.savedInput?['fieldValues'], {'employee_name': 'أحمد محمد'});
+      expect(outbox.savedInput?['fieldValues'], {
+        'employee_name': 'أحمد محمد',
+        'department': 'مديرية الشؤون العامة',
+        'document_recipient_label': 'إلى',
+        'document_recipient': 'الإدارة العامة للشؤون القانونية',
+      });
       expect(outbox.savedInput?['content'].toString(), contains('أحمد محمد'));
       expect(
         outbox.savedInput?['content'].toString(),
         isNot(contains('{{employee_name}}')),
+      );
+      expect(
+        outbox.savedInput?['content'].toString(),
+        contains('مديرية الشؤون العامة'),
       );
     },
   );
@@ -800,6 +858,81 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('لا توجد وثائق مؤرشفة'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'template key normalization preserves field focus and saves the normalized key',
+    (tester) async {
+      tester.view.physicalSize = const Size(480, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final api = _DocumentStudioTestApi(
+        templateContent: {
+          'type': 'doc',
+          'content': [
+            {
+              'type': 'paragraph',
+              'content': [
+                {'type': 'text', 'text': 'اسم الموظف: {{employee_name}}'},
+              ],
+            },
+          ],
+        },
+        templateFields: [
+          {
+            'key': 'employee_name',
+            'label': 'اسم الموظف',
+            'type': 'text',
+            'required': false,
+          },
+        ],
+      );
+      final outbox = _RecordingDocumentOutbox(api: api);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            FlutterQuillLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('ar')],
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Scaffold(
+              body: DocumentStudioPage(api: api, outbox: outbox),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('القوالب'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('نموذج تجريبي'));
+      await tester.pumpAndSettle();
+
+      final keyField = find.byKey(const ValueKey('field-key-0'));
+      await tester.ensureVisible(keyField);
+      await tester.tap(keyField);
+      await tester.enterText(keyField, 'department office');
+      await tester.pump();
+
+      final editable = tester.widget<EditableText>(
+        find.descendant(of: keyField, matching: find.byType(EditableText)),
+      );
+      expect(editable.focusNode.hasFocus, isTrue);
+
+      tester.testTextInput.hide();
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('حفظ النموذج'));
+      await tester.tap(find.text('حفظ النموذج'));
+      await tester.pumpAndSettle();
+
+      final savedFields = outbox.savedInput?['fields'] as List<dynamic>;
+      expect(savedFields.single['key'], 'department_office');
     },
   );
 }

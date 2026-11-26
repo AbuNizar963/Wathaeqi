@@ -13,6 +13,8 @@ class DocumentStudioPdf {
     required Map<String, dynamic> content,
     required String title,
     required String subject,
+    String recipientLabel = 'إلى',
+    String recipient = '',
     required String serialCode,
     required DateTime documentDate,
     required Map<String, dynamic> letterhead,
@@ -295,11 +297,30 @@ class DocumentStudioPdf {
                   ),
                 ),
               pw.SizedBox(height: 12),
+              pw.Center(
+                child: pw.RichText(
+                  textDirection: pw.TextDirection.rtl,
+                  textAlign: pw.TextAlign.center,
+                  text: pw.TextSpan(
+                    children: [
+                      pw.TextSpan(
+                        text: '${_clean(recipientLabel) ?? 'إلى'}: ',
+                        style: pw.TextStyle(font: bold, fontSize: 18),
+                      ),
+                      if (_clean(recipient) case final recipientText?)
+                        pw.TextSpan(
+                          text: recipientText,
+                          style: pw.TextStyle(font: regular, fontSize: 16),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
               if (subject.trim().isNotEmpty) ...[
                 pw.Text(
                   'الموضوع: ${subject.trim()}',
                   textDirection: pw.TextDirection.rtl,
-                  style: pw.TextStyle(font: bold, fontSize: 11),
+                  style: pw.TextStyle(font: bold, fontSize: 16),
                 ),
                 pw.SizedBox(height: 12),
               ],
@@ -424,7 +445,7 @@ class DocumentStudioPdf {
                             : level == 2
                             ? 15
                             : 13)
-                      : 11,
+                      : 16,
                   lineSpacing: 3,
                 ),
               ),
@@ -445,7 +466,7 @@ class DocumentStudioPdf {
                     width: 18,
                     child: pw.Text(
                       type == 'orderedList' ? '$index.' : '•',
-                      style: pw.TextStyle(font: bold, fontSize: 11),
+                      style: pw.TextStyle(font: bold, fontSize: 16),
                     ),
                   ),
                   pw.Expanded(
@@ -453,7 +474,7 @@ class DocumentStudioPdf {
                       _plainText(item),
                       textDirection: pw.TextDirection.rtl,
                       textAlign: pw.TextAlign.right,
-                      style: pw.TextStyle(font: regular, fontSize: 11),
+                      style: pw.TextStyle(font: regular, fontSize: 16),
                     ),
                   ),
                 ],
@@ -477,7 +498,7 @@ class DocumentStudioPdf {
               _plainText(node),
               textDirection: pw.TextDirection.rtl,
               textAlign: pw.TextAlign.right,
-              style: pw.TextStyle(font: regular, fontSize: 10),
+              style: pw.TextStyle(font: regular, fontSize: 16),
             ),
           ),
         );
@@ -502,7 +523,7 @@ class DocumentStudioPdf {
                   cells.join('   |   '),
                   textDirection: pw.TextDirection.rtl,
                   textAlign: pw.TextAlign.right,
-                  style: pw.TextStyle(font: regular, fontSize: 10),
+                  style: pw.TextStyle(font: regular, fontSize: 16),
                 ),
               ),
             );
@@ -549,7 +570,7 @@ class DocumentStudioPdf {
             font: isBold ? bold : regular,
             fontStyle: isItalic ? pw.FontStyle.italic : pw.FontStyle.normal,
             decoration: isUnderline ? pw.TextDecoration.underline : null,
-            fontSize: 11,
+            fontSize: 16,
           ),
         ),
       );

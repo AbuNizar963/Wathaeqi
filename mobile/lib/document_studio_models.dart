@@ -5,6 +5,10 @@
 /// authoritative for owner scope and every persisted operation.
 library;
 
+const documentRecipientLabelFieldKey = 'document_recipient_label';
+const documentRecipientValueFieldKey = 'document_recipient';
+const defaultDocumentRecipientLabel = 'إلى';
+
 const _legacyStarterDraftHtml =
     '<h2>بسم الله الرحمن الرحيم</h2><p>العدد: ....................</p><p>التاريخ: .... / .... / ........</p><p><strong>إلى /</strong> ................................................</p><p><strong>الموضوع /</strong> ............................................</p><p>تحية طيبة...</p><p>يرجى التفضل بالاطلاع واتخاذ ما يلزم بشأن الموضوع أعلاه، مع التقدير.</p><p>وتفضلوا بقبول فائق الاحترام.</p><p><strong>التوقيع:</strong> ............................</p>';
 
@@ -84,6 +88,18 @@ class DocumentTemplateField {
       'options': options.map((item) => item.toJson()).toList(),
     if (defaultValue != null) 'defaultValue': defaultValue,
   };
+}
+
+String normalizeDocumentTemplateFieldValue(
+  DocumentTemplateField field,
+  String? value,
+) {
+  final currentValue = value ?? field.defaultValue ?? '';
+  if (field.type != DocumentTemplateFieldType.select) return currentValue;
+  for (final option in field.options) {
+    if (option.value == currentValue) return option.label;
+  }
+  return currentValue;
 }
 
 class DocumentTemplate {

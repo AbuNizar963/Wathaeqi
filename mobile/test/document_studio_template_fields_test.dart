@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:police_telegrams/document_studio_models.dart';
 import 'package:police_telegrams/document_studio_template_fields.dart';
 
 void main() {
@@ -162,5 +163,26 @@ void main() {
         withMetadata,
       );
     });
+  });
+
+  test('normalizes a legacy select ID to its spaced visible label', () {
+    const field = DocumentTemplateField(
+      key: 'department',
+      label: 'الجهة',
+      type: DocumentTemplateFieldType.select,
+      required: false,
+      options: [
+        DocumentTemplateFieldOption(
+          value: 'option_1',
+          label: 'مديرية الشؤون العامة',
+        ),
+      ],
+    );
+
+    expect(
+      normalizeDocumentTemplateFieldValue(field, 'option_1'),
+      'مديرية الشؤون العامة',
+    );
+    expect(normalizeDocumentTemplateFieldValue(field, 'جهة أخرى'), 'جهة أخرى');
   });
 }
