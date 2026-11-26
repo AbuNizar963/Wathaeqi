@@ -214,7 +214,7 @@ abstract final class AppTheme {
         ),
         chipTheme: ChipThemeData(
           backgroundColor: AppPalette.muted,
-          selectedColor: const Color(0xFFDDF4F1),
+          selectedColor: const Color(0xFFE0F2FE),
           secondarySelectedColor: AppPalette.muted,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           labelStyle: const TextStyle(
@@ -232,7 +232,7 @@ abstract final class AppTheme {
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFFDBE5E8)),
+            side: const BorderSide(color: Color(0xFFCBD5E1)),
           ),
           textStyle: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13),
         ),
@@ -247,7 +247,7 @@ abstract final class AppTheme {
           iconColor: AppPalette.mutedInk,
           textColor: AppPalette.ink,
           selectedColor: AppPalette.navy,
-          selectedTileColor: const Color(0xFFE4EDF3),
+          selectedTileColor: const Color(0xFFE0F2FE),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -260,7 +260,7 @@ abstract final class AppTheme {
         ),
         navigationBarTheme: const NavigationBarThemeData(
           backgroundColor: AppPalette.surface,
-          indicatorColor: Color(0xFFE4EDF3),
+          indicatorColor: Color(0xFFE0F2FE),
           iconTheme: WidgetStateProperty<IconThemeData>.fromMap({
             WidgetState.selected: IconThemeData(color: AppPalette.navy),
             WidgetState.any: IconThemeData(color: AppPalette.mutedInk),
@@ -303,7 +303,7 @@ abstract final class AppTheme {
         ),
         progressIndicatorTheme: const ProgressIndicatorThemeData(
           color: AppPalette.brandBlue,
-          linearTrackColor: Color(0xFFDDF4F1),
+          linearTrackColor: Color(0xFFE0F2FE),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: AppPalette.brandBlue,
@@ -314,7 +314,7 @@ abstract final class AppTheme {
           ),
         ),
         dividerTheme: const DividerThemeData(
-          color: Color(0xFFDBE5E8),
+          color: Color(0xFFCBD5E1),
           thickness: 1,
         ),
       ).copyWith(
@@ -323,7 +323,7 @@ abstract final class AppTheme {
         primaryIconTheme: const IconThemeData(color: AppPalette.navy, size: 20),
         textSelectionTheme: const TextSelectionThemeData(
           cursorColor: AppPalette.navy,
-          selectionColor: Color(0x330F9F9A),
+          selectionColor: Color(0x330EA5E9),
           selectionHandleColor: AppPalette.navy,
         ),
       );
