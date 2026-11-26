@@ -364,11 +364,11 @@ export default function WorkspacePage({
 
       {section === "dashboard" ? (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
             <SummaryCard
               label="إجمالي الوثائق"
               value={documentsQuery.data?.length}
-              icon={<FileClock className="h-4 w-4" />}
+              icon={<FileClock className="h-4 w-4" />}\n              tone="blue"
             />
             <SummaryCard
               label="مسودات"
@@ -377,6 +377,7 @@ export default function WorkspacePage({
                   .length
               }
               icon={<Pencil className="h-4 w-4" />}
+              tone="amber"
             />
             <SummaryCard
               label="وثائق صادرة"
@@ -385,6 +386,7 @@ export default function WorkspacePage({
                   .length
               }
               icon={<ShieldCheck className="h-4 w-4" />}
+              tone="emerald"
             />
             <SummaryCard
               label="وثائق مؤرشفة"
@@ -393,11 +395,13 @@ export default function WorkspacePage({
                   .length
               }
               icon={<FileClock className="h-4 w-4" />}
+              tone="indigo"
             />
             <SummaryCard
               label="القوالب والنماذج"
               value={templatesQuery.data?.filter(item => item.isActive).length}
               icon={<FileText className="h-4 w-4" />}
+              tone="violet"
             />
             <SummaryCard
               label="المستخدمون"
@@ -407,6 +411,7 @@ export default function WorkspacePage({
                   : undefined
               }
               icon={<Users className="h-4 w-4" />}
+              tone="cyan"
             />
           </div>
           <Card className="space-y-3 p-4 sm:p-5">
@@ -946,14 +951,24 @@ function SummaryCard({
   label,
   value,
   icon,
+  tone = "blue",
 }: {
   label: string;
   value?: number;
   icon: React.ReactNode;
+  tone?: "blue" | "emerald" | "amber" | "indigo" | "violet" | "cyan";
 }) {
+  const toneClasses = {
+    blue: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    indigo: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+    violet: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    cyan: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+  } satisfies Record<NonNullable<typeof tone>, string>;
   return (
     <Card className="group relative min-w-0 overflow-hidden rounded-2xl border-border/70 bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4">
-      <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <span className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses[tone]}`}>
         {icon}
       </span>
       <div className="min-w-0 pt-11">
