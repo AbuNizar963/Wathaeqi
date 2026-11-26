@@ -34,7 +34,11 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
 
 export type DocumentHeaderAlignment = "spread" | "center" | "right";
 export type DocumentDividerStyle =
-  "solid" | "double" | "dashed" | "dotted" | "tricolor-stars";
+  | "solid"
+  | "double"
+  | "dashed"
+  | "dotted"
+  | "tricolor-stars";
 export type DocumentFrameStyle =
   | "none"
   | "single"
