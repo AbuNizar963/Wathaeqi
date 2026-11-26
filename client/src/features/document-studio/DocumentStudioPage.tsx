@@ -1766,7 +1766,10 @@ export default function DocumentStudioPage() {
                               fontFamily:
                                 platformDocumentSettings.data?.recipientFontFamily ??
                                 "Cairo",
-                              fontSize: `${platformDocumentSettings.data?.recipientFontSizePt ?? 14}pt`,
+                              fontSize: `${
+                                platformDocumentSettings.data?.recipientFontSizePt ??
+                                14
+                              }pt`,
                               fontWeight:
                                 platformDocumentSettings.data?.recipientFontWeight ??
                                 600,
@@ -1827,7 +1830,10 @@ export default function DocumentStudioPage() {
                             fontFamily:
                               platformDocumentSettings.data?.documentFontFamily ??
                               "Cairo",
-                            fontSize: `${platformDocumentSettings.data?.documentFontSizePt ?? 12}pt`,
+                            fontSize: `${
+                              platformDocumentSettings.data?.documentFontSizePt ??
+                              12
+                            }pt`,
                             fontWeight:
                               platformDocumentSettings.data?.documentFontWeight ??
                               400,
