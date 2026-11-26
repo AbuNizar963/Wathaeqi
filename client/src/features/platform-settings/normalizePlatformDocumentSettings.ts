@@ -182,7 +182,7 @@ export function normalizePlatformDocumentSettings(
       source.pageMarginLeftMm,
       defaults.pageMarginLeftMm
     ),
-    frameStyle: ["none", "single", "double", "ornate"].includes(
+    frameStyle: ["none", "single", "double", "ornate", "classic", "triple"].includes(
       source.frameStyle ?? ""
     )
       ? source.frameStyle!
