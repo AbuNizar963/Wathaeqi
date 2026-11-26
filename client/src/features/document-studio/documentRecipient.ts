@@ -8,7 +8,7 @@ export const DOCUMENT_RECIPIENT_LABEL_KEY = "document_recipient_label";
 export const DOCUMENT_RECIPIENT_VALUE_KEY = "document_recipient";
 export const DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER = "إلى";
 
-/** @deprecated Use DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER for editable forms. */
+/** @deprecated Use the editable recipient placeholder. */
 export const DEFAULT_DOCUMENT_RECIPIENT_LABEL =
   DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER;
 
@@ -17,7 +17,7 @@ export type DocumentRecipientFields = {
   value: string;
 };
 
-/** @deprecated Read the unified recipient line with getDocumentRecipientLine. */
+/** @deprecated Use getDocumentRecipientLine instead. */
 export function getDocumentRecipientFields(
   fieldValues: Record<string, string>
 ): DocumentRecipientFields {
