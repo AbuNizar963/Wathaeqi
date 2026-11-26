@@ -130,6 +130,7 @@ assert(
       'height: "calc(52px + env(safe-area-inset-top))"'
     ) &&
     dashboardLayout.includes('paddingTop: "env(safe-area-inset-top)"') &&
+    dashboardLayout.includes("pt-[calc(1rem+env(safe-area-inset-top))]") &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
     dashboardLayout.includes("إنشاء جديد") &&
     dashboardLayout.includes("h-[52px]"),
