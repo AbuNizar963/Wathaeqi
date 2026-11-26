@@ -181,12 +181,30 @@ class _TestPoliceApi extends PoliceApi {
         'watermarkOpacityPercent': 16,
         'headerDividerColor': '#b49a55',
         'showVerificationQr': true,
+        'documentDateFormat': 'yyyy/MM/dd',
+        'documentFontFamily': 'Amiri',
+        'documentFontSizePt': 12,
+        'documentFontWeight': 400,
+        'documentFontColor': '#0f172a',
+        'recipientFontFamily': 'Amiri',
+        'recipientFontSizePt': 16,
+        'recipientFontWeight': 600,
+        'recipientFontColor': '#0f172a',
       },
       'platformDocumentSettings.update' => {
         'showMinistryWatermarkText': true,
         'watermarkOpacityPercent': 16,
         'headerDividerColor': '#b49a55',
         'showVerificationQr': true,
+        'documentDateFormat': 'yyyy/MM/dd',
+        'documentFontFamily': 'Amiri',
+        'documentFontSizePt': 12,
+        'documentFontWeight': 400,
+        'documentFontColor': '#0f172a',
+        'recipientFontFamily': 'Amiri',
+        'recipientFontSizePt': 16,
+        'recipientFontWeight': 600,
+        'recipientFontColor': '#0f172a',
       },
       'notifications.inbox' => <dynamic>[],
       _ => <String, dynamic>{},
@@ -670,6 +688,15 @@ void main() {
       'frameStyle': 'single',
       'frameColor': '#b49a55',
       'frameWidthPt': 1.0,
+      'documentDateFormat': 'yyyy/MM/dd',
+      'documentFontFamily': 'Amiri',
+      'documentFontSizePt': 12.0,
+      'documentFontWeight': 400,
+      'documentFontColor': '#0f172a',
+      'recipientFontFamily': 'Amiri',
+      'recipientFontSizePt': 16.0,
+      'recipientFontWeight': 600,
+      'recipientFontColor': '#0f172a',
       'showVerificationQr': true,
       'pageHeaderRows': [],
       'pageFooterRows': [],
@@ -924,7 +951,7 @@ void main() {
     },
   );
 
-  testWidgets('shows police telegram login screen with Cairo typography', (
+  testWidgets('shows police login screen with IBM Plex Sans Arabic typography', (
     tester,
   ) async {
     _setMobileViewport(tester);
@@ -939,7 +966,7 @@ void main() {
           .textTheme
           .bodyMedium
           ?.fontFamily,
-      'Cairo',
+      'IBM Plex Sans Arabic',
     );
   });
 }
