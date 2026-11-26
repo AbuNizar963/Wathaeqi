@@ -1555,9 +1555,9 @@ export default function DocumentStudioPage() {
                   </div>
 
                   <div
-                    className={`grid grid-cols-1 gap-3 document-studio-no-print ${previewMode ? "hidden" : ""}`}
+                    className={`grid grid-cols-1 gap-3 md:grid-cols-2 document-studio-no-print ${previewMode ? "hidden" : ""}`}
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-1 md:col-span-2">
                       <label
                         htmlFor="document-recipient-line"
                         className="text-sm font-medium"
