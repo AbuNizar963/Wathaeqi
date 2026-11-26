@@ -350,13 +350,15 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(MIN_DOCUMENT_FONT_SIZE_PT)
           .max(MAX_DOCUMENT_FONT_SIZE_PT)
           .default(12),
-        documentFontWeight: z.union([
-          z.literal(400),
-          z.literal(500),
-          z.literal(600),
-          z.literal(700),
-          z.literal(800),
-        ]).default(400),
+        documentFontWeight: z
+          .union([
+            z.literal(400),
+            z.literal(500),
+            z.literal(600),
+            z.literal(700),
+            z.literal(800),
+          ])
+          .default(400),
         documentFontColor: z
           .string()
           .regex(HEX_COLOR_PATTERN)
@@ -376,13 +378,15 @@ const ownerPlatformDocumentSettingsRouter = router({
           .min(MIN_RECIPIENT_FONT_SIZE_PT)
           .max(MAX_RECIPIENT_FONT_SIZE_PT)
           .default(12),
-        recipientFontWeight: z.union([
-          z.literal(400),
-          z.literal(500),
-          z.literal(600),
-          z.literal(700),
-          z.literal(800),
-        ]).default(600),
+        recipientFontWeight: z
+          .union([
+            z.literal(400),
+            z.literal(500),
+            z.literal(600),
+            z.literal(700),
+            z.literal(800),
+          ])
+          .default(600),
         recipientFontColor: z
           .string()
           .regex(HEX_COLOR_PATTERN)
