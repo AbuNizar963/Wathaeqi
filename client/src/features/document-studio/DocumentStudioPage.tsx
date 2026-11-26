@@ -259,6 +259,10 @@ export default function DocumentStudioPage() {
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const templatesQuery = trpc.documentStudio.listTemplates.useQuery();
+  const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
+    enabled: activeTab === "documents" && !previewMode,
+    staleTime: 30_000,
+  });
   const organizationContext = trpc.organizations.context.useQuery();
   const platformDocumentSettings = trpc.platformDocumentSettings.get.useQuery();
 
@@ -1681,20 +1685,66 @@ export default function DocumentStudioPage() {
                       >
                         الجهة المستلمة / التوجيه
                       </label>
-                      <Input
-                        id="document-recipient-line"
-                        value={documentRecipientLine}
-                        onChange={event =>
-                          setDocumentFieldValues(current => ({
-                            ...current,
-                            [DOCUMENT_RECIPIENT_LINE_KEY]: event.target.value,
-                          }))
-                        }
-                        placeholder={DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER}
-                        disabled={!canEditDocument}
-                      />
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.65fr)]">
+                        <Input
+                          id="document-recipient-line"
+                          value={documentRecipientLine}
+                          onChange={event =>
+                            setDocumentFieldValues(current => ({
+                              ...current,
+                              [DOCUMENT_RECIPIENT_LINE_KEY]: event.target.value,
+                            }))
+                          }
+                          placeholder={DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER}
+                          disabled={!canEditDocument}
+                        />
+                        <select
+                          aria-label="اختيار جهة مستلمة من جهات الاتصال"
+                          className="h-11 min-w-0 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                          value=""
+                          disabled={
+                            !canEditDocument ||
+                            contactsQuery.isLoading ||
+                            !(contactsQuery.data?.length ?? 0)
+                          }
+                          onChange={event => {
+                            const contact = contactsQuery.data?.find(
+                              item => item.id === event.target.value
+                            );
+                            if (!contact) return;
+                            const prefix =
+                              /^(إلى|الى)\s*/.exec(
+                                documentRecipientLine
+                              )?.[0] ??
+                              (documentRecipientLine.trim() ? "" : "إلى ");
+                            const recipient =
+                              contact.organization?.trim() || contact.name;
+                            setDocumentFieldValues(current => ({
+                              ...current,
+                              [DOCUMENT_RECIPIENT_LINE_KEY]: `${prefix}${recipient}`,
+                            }));
+                          }}
+                        >
+                          <option value="">
+                            {contactsQuery.isLoading
+                              ? "جارٍ تحميل جهات الاتصال..."
+                              : contactsQuery.data?.length
+                                ? "اختر جهة من جهات الاتصال"
+                                : "أضف جهات اتصال لاختيارها هنا"}
+                          </option>
+                          {(contactsQuery.data ?? []).map(contact => (
+                            <option key={contact.id} value={contact.id}>
+                              {contact.name}
+                              {contact.organization
+                                ? ` — ${contact.organization}`
+                                : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       <p className="text-xs text-muted-foreground">
-                        اكتب صياغتك؛ «إلى» مجرد اقتراح قابل للتعديل.
+                        اختر جهة محفوظة لإدراج اسمها فوراً، أو اكتب صياغة مخصصة؛
+                        «إلى» ليست إلزامية.
                       </p>
                     </div>
                   </div>
