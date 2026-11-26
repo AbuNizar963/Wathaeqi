@@ -773,7 +773,13 @@ function DashboardLayoutContent({
           </div>
         ) : null}
         {isMobile && (
-          <div className="app-header sticky top-0 z-40 flex h-[52px] items-center justify-between border-b border-border bg-card px-3">
+          <div
+            className="app-header sticky top-0 z-40 flex h-[52px] items-center justify-between border-b border-border bg-card px-3"
+            style={{
+              height: "calc(52px + env(safe-area-inset-top))",
+              paddingTop: "env(safe-area-inset-top)",
+            }}
+          >
             <div className="flex min-w-0 items-center gap-2">
               <Button
                 type="button"
