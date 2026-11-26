@@ -65,12 +65,18 @@ export function BrandMark({
       </div>
       {showLabel ? (
         <div className="brand-wordmark min-w-0 text-right">
-          <p className="truncate text-[1.05rem] font-bold leading-5 tracking-[-0.04em] text-current">
-            وثائقي
+          <p className="flex min-w-0 items-center gap-2 text-[1.05rem] font-bold leading-5 tracking-[-0.04em] text-current">
+            <span className="truncate">وثائقي</span>
+            <span
+              dir="ltr"
+              className="shrink-0 text-[9px] font-semibold tracking-[0.12em] text-emerald-500"
+            >
+              WATHIQI
+            </span>
           </p>
           {!compactLabel ? (
             <p className="truncate text-[10px] font-medium leading-4 text-current/60">
-              أرشيف موثوق · قرار أوضح
+              أرشيف موثوق - قرار أوضح
             </p>
           ) : null}
         </div>
