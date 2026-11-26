@@ -1,11 +1,43 @@
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 /// Builds a print-ready, multi-page A4 PDF from the saved TipTap document
 /// payload. It is generated locally and never writes back to the document.
+String _formatDocumentDate(DateTime date, Object? rawFormat) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  final arabicMonths = const [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+  final monthName = arabicMonths[date.month - 1];
+
+  return switch (rawFormat) {
+    'dd/MM/yyyy' => '$day/$month/$year',
+    'MM/dd/yyyy' => '$month/$day/$year',
+    'yyyy-MM-dd' => '$year-$month-$day',
+    'dd-MM-yyyy' => '$day-$month-$year',
+    'MM-dd-yyyy' => '$month-$day-$year',
+    'yyyy.MM.dd' => '$year.$month.$day',
+    'dd.MM.yyyy' => '$day.$month.$year',
+    'd MMMM yyyy' => '${date.day} $monthName $year',
+    'MMMM d, yyyy' => '$monthName ${date.day}, $year',
+    _ => '$year/$month/$day',
+  };
+}
 class DocumentStudioPdf {
   DocumentStudioPdf._();
 
@@ -90,7 +122,10 @@ class DocumentStudioPdf {
             .toDouble();
     final isTricolorStars =
         _clean(letterhead['headerDividerStyle']) == 'tricolor-stars';
-    final dateText = DateFormat('yyyy/MM/dd').format(documentDate.toLocal());
+    final dateText = _formatDocumentDate(
+      documentDate.toLocal(),
+      letterhead['documentDateFormat'],
+    );
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
     final headerShowLogo = letterhead['headerShowLogo'] != false;
