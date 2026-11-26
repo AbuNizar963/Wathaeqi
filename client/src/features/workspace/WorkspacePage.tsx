@@ -477,44 +477,90 @@ export default function WorkspacePage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold">دليل جهات الاتصال</h2>
-              <p className="mt-1 text-xs text-muted-foreground">قائمة محلية للاختيار عند إعداد الوثيقة وطباعتها</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                قائمة محلية للاختيار عند إعداد الوثيقة وطباعتها
+              </p>
             </div>
-            <Button className="min-h-11" onClick={() => {
-              setEditingId(null);
-              setForm(emptyContact);
-              setContactDialogOpen(true);
-            }}>
-              <Plus className="ml-2 h-4 w-4" /> جهة اتصال جديدة
+            <Button
+              className="min-h-11"
+              onClick={() => {
+                setEditingId(null);
+                setForm(emptyContact);
+                setContactDialogOpen(true);
+              }}
+            >
+              <Plus className="ml-2 h-4 w-4" />
+              جهة اتصال جديدة
             </Button>
           </div>
-          <SearchField value={search} onChange={setSearch} placeholder="ابحث بالاسم أو الجهة أو الهاتف..." />
-          {isLoading ? <Loading /> : isError ? (
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث بالاسم أو الجهة أو الهاتف..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
             <ErrorMessage message={errorMessage} onRetry={refresh} />
-          ) : contacts.length === 0 ? <EmptyState text="لا توجد جهات اتصال مطابقة." /> : (
+          ) : contacts.length === 0 ? (
+            <EmptyState text="لا توجد جهات اتصال مطابقة." />
+          ) : (
             <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {contacts.map(item => (
-                <article key={item.id} className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm"
+                >
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="truncate font-semibold">{item.name}</h3>
-                      <p className="mt-1 truncate text-sm text-muted-foreground">{item.organization || "جهة اتصال"}</p>
+                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                        {item.organization || "جهة اتصال"}
+                      </p>
                     </div>
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary">
                       <Contact className="h-5 w-5" />
                     </span>
                   </div>
                   <div className="mt-4 space-y-2 text-sm">
-                    {item.phone ? <p className="truncate text-muted-foreground" dir="ltr">{item.phone}</p> : null}
-                    {item.email ? <p className="truncate text-muted-foreground" dir="ltr">{item.email}</p> : null}
-                    {!item.phone && !item.email ? <p className="text-xs text-muted-foreground">لا توجد بيانات اتصال إضافية</p> : null}
+                    {item.phone ? (
+                      <p className="truncate text-muted-foreground" dir="ltr">
+                        {item.phone}
+                      </p>
+                    ) : null}
+                    {item.email ? (
+                      <p className="truncate text-muted-foreground" dir="ltr">
+                        {item.email}
+                      </p>
+                    ) : null}
+                    {!item.phone && !item.email ? (
+                      <p className="text-xs text-muted-foreground">
+                        لا توجد بيانات اتصال إضافية
+                      </p>
+                    ) : null}
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
-                    <Button size="sm" variant="outline" className="min-h-10 flex-1" onClick={() => startEdit(item)}>
-                      <Pencil className="ml-2 h-4 w-4" /> تعديل
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="min-h-10 flex-1"
+                      onClick={() => startEdit(item)}
+                    >
+                      <Pencil className="ml-2 h-4 w-4" />
+                      تعديل
                     </Button>
-                    <Button size="sm" variant="ghost" className="min-h-10 text-destructive hover:text-destructive" disabled={mutationPending} onClick={() => {
-                      if (window.confirm("هل تريد حذف جهة الاتصال؟")) deleteContact.mutate({ id: item.id });
-                    }} aria-label={`حذف ${item.name}`}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="min-h-10 text-destructive hover:text-destructive"
+                      disabled={mutationPending}
+                      onClick={() => {
+                        if (window.confirm("هل تريد حذف جهة الاتصال؟")) {
+                          deleteContact.mutate({ id: item.id });
+                        }
+                      }}
+                      aria-label={`حذف ${item.name}`}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -592,106 +638,286 @@ export default function WorkspacePage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold">حسابات المستخدمين</h2>
-              <p className="mt-1 text-xs text-muted-foreground">إدارة الحالة والدور من بطاقة كل مستخدم</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                إدارة الحالة والدور من بطاقة كل مستخدم
+              </p>
             </div>
-            <Button className="min-h-11" onClick={() => {
-              setUserForm(emptyUser);
-              setUserDialogOpen(true);
-            }}>
-              <Plus className="ml-2 h-4 w-4" /> مستخدم جديد
+            <Button
+              className="min-h-11"
+              onClick={() => {
+                setUserForm(emptyUser);
+                setUserDialogOpen(true);
+              }}
+            >
+              <Plus className="ml-2 h-4 w-4" />
+              مستخدم جديد
             </Button>
           </div>
-          <SearchField value={search} onChange={setSearch} placeholder="ابحث باسم المستخدم أو البريد..." />
-          {isLoading ? <Loading /> : isError ? (
+          <SearchField
+            value={search}
+            onChange={setSearch}
+            placeholder="ابحث باسم المستخدم أو البريد..."
+          />
+          {isLoading ? (
+            <Loading />
+          ) : isError ? (
             <ErrorMessage message={errorMessage} onRetry={refresh} />
-          ) : users.length === 0 ? <EmptyState text="لا توجد حسابات مستخدمين." /> : (
+          ) : users.length === 0 ? (
+            <EmptyState text="لا توجد حسابات مستخدمين." />
+          ) : (
             <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {users.map(item => (
-                <article key={item.id} className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm"
+                >
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="truncate font-semibold">{item.name}</h3>
-                      <p className="mt-1 truncate text-xs text-muted-foreground">@{item.username || "—"}</p>
+                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                        @{item.username || "—"}
+                      </p>
                     </div>
-                    <Badge variant={item.isActive ? "default" : "secondary"} className={item.isActive ? "border-emerald-500/30 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" : "border-border bg-muted text-muted-foreground"}>
+                    <Badge
+                      variant={item.isActive ? "default" : "secondary"}
+                      className={
+                        item.isActive
+                          ? "border-emerald-500/30 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          : "border-border bg-muted text-muted-foreground"
+                      }
+                    >
                       {item.isActive ? "نشط" : "موقوف"}
                     </Badge>
                   </div>
-                  {item.isPlatformOwner ? <Badge className="mt-3">مالك المنصة — حساب محمي</Badge> : null}
+                  {item.isPlatformOwner ? (
+                    <Badge className="mt-3">
+                      مالك المنصة — حساب محمي
+                    </Badge>
+                  ) : null}
                   <div className="mt-4 space-y-2 text-sm">
-                    <p className="truncate text-muted-foreground" dir="ltr">{item.email || "لا يوجد بريد إلكتروني"}</p>
+                    <p className="truncate text-muted-foreground" dir="ltr">
+                      {item.email || "لا يوجد بريد إلكتروني"}
+                    </p>
                     <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                       صلاحية الحساب
-                      <select className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground" value={item.role === "admin" ? "admin" : "user"} disabled={mutationPending || item.isPlatformOwner} onChange={event => setUserRole.mutate({ id: Number(item.id), role: event.target.value as "user" | "admin" })}>
+                      <select
+                        className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground"
+                        value={item.role === "admin" ? "admin" : "user"}
+                        disabled={mutationPending || item.isPlatformOwner}
+                        onChange={event => {
+                          setUserRole.mutate({
+                            id: Number(item.id),
+                            role: event.target.value as "user" | "admin",
+                          });
+                        }}
+                      >
                         <option value="user">مستخدم</option>
                         <option value="admin">مدير جهة</option>
                       </select>
                     </label>
-                    <p className="text-xs text-muted-foreground">آخر دخول: {item.lastSignedIn ? new Date(item.lastSignedIn).toLocaleString("ar") : "لم يسجل الدخول بعد"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      آخر دخول:{" "}
+                      {item.lastSignedIn
+                        ? new Date(item.lastSignedIn).toLocaleString("ar")
+                        : "لم يسجل الدخول بعد"}
+                    </p>
                   </div>
                   <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-3">
-                    <span className="text-xs text-muted-foreground">{item.isPlatformOwner ? "صلاحيات محمية" : "إدارة الحساب"}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {item.isPlatformOwner ? "صلاحيات محمية" : "إدارة الحساب"}
+                    </span>
                     {!item.isPlatformOwner ? (
-                      <Button size="sm" variant="outline" className="min-h-10" disabled={mutationPending} onClick={() => {
-                        if (window.confirm(item.isActive ? "إيقاف حساب هذا المستخدم؟" : "إعادة تفعيل حساب هذا المستخدم؟")) {
-                          setUserActive.mutate({ id: Number(item.id), isActive: !item.isActive });
-                        }
-                      }}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10"
+                        disabled={mutationPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              item.isActive
+                                ? "إيقاف حساب هذا المستخدم؟"
+                                : "إعادة تفعيل حساب هذا المستخدم؟"
+                            )
+                          ) {
+                            setUserActive.mutate({
+                              id: Number(item.id),
+                              isActive: !item.isActive,
+                            });
+                          }
+                        }}
+                      >
                         {item.isActive ? "إيقاف الحساب" : "تفعيل الحساب"}
                       </Button>
-                    ) : <ShieldCheck className="h-5 w-5 text-emerald-600" />}
+                    ) : (
+                      <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                    )}
                   </div>
                 </article>
               ))}
             </div>
           )}
-          <p className="text-xs text-muted-foreground">لا تعرض هذه الصفحة كلمات المرور أو مفاتيح الجلسات.</p>
+          <p className="text-xs text-muted-foreground">
+            لا تعرض هذه الصفحة كلمات المرور أو مفاتيح الجلسات.
+          </p>
         </Card>
-      ) : null}      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
-        <DialogContent className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto" dir="rtl">
+      ) : null}
+      <Dialog
+        open={contactDialogOpen}
+        onOpenChange={setContactDialogOpen}
+      >
+        <DialogContent
+          className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto"
+          dir="rtl"
+        >
           <DialogHeader>
-            <DialogTitle>{editingId ? "تعديل جهة الاتصال" : "إضافة جهة اتصال"}</DialogTitle>
-            <DialogDescription>احفظ بيانات الجهة لاستخدامها عند تحرير الوثائق وطباعتها.</DialogDescription>
+            <DialogTitle>
+              {editingId ? "تعديل جهة الاتصال" : "إضافة جهة اتصال"}
+            </DialogTitle>
+            <DialogDescription>
+              احفظ بيانات الجهة لاستخدامها عند تحرير الوثائق وطباعتها.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="الاسم" value={form.name} onChange={value => setForm(current => ({ ...current, name: value }))} />
-            <Field label="الجهة" value={form.organization} onChange={value => setForm(current => ({ ...current, organization: value }))} />
-            <Field label="الهاتف" value={form.phone} onChange={value => setForm(current => ({ ...current, phone: value }))} />
-            <Field label="البريد الإلكتروني" value={form.email} onChange={value => setForm(current => ({ ...current, email: value }))} />
+            <Field
+              label="الاسم"
+              value={form.name}
+              onChange={value =>
+                setForm(current => ({ ...current, name: value }))
+              }
+            />
+            <Field
+              label="الجهة"
+              value={form.organization}
+              onChange={value =>
+                setForm(current => ({ ...current, organization: value }))
+              }
+            />
+            <Field
+              label="الهاتف"
+              value={form.phone}
+              onChange={value =>
+                setForm(current => ({ ...current, phone: value }))
+              }
+            />
+            <Field
+              label="البريد الإلكتروني"
+              value={form.email}
+              onChange={value =>
+                setForm(current => ({ ...current, email: value }))
+              }
+            />
           </div>
           <DialogFooter className="gap-2 sm:justify-start">
-            <Button onClick={saveContact} disabled={mutationPending || !form.name.trim()} className="min-h-11">
-              <Save className="ml-2 h-4 w-4" /> {editingId ? "حفظ التعديلات" : "إضافة جهة الاتصال"}
+            <Button
+              onClick={saveContact}
+              disabled={mutationPending || !form.name.trim()}
+              className="min-h-11"
+            >
+              <Save className="ml-2 h-4 w-4" />
+              {editingId ? "حفظ التعديلات" : "إضافة جهة الاتصال"}
             </Button>
-            <Button variant="outline" onClick={() => setContactDialogOpen(false)} className="min-h-11">إلغاء</Button>
+            <Button
+              variant="outline"
+              onClick={() => setContactDialogOpen(false)}
+              className="min-h-11"
+            >
+              إلغاء
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
-        <DialogContent className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto" dir="rtl">
+        <DialogContent
+          className="max-h-[90dvh] w-[calc(100%-1rem)] max-w-xl overflow-y-auto"
+          dir="rtl"
+        >
           <DialogHeader>
             <DialogTitle>إنشاء مستخدم جديد</DialogTitle>
-            <DialogDescription>ينشأ الحساب في Appwrite Auth ويرتبط بالجهة الوحيدة في النظام.</DialogDescription>
+            <DialogDescription>
+              ينشأ الحساب في Appwrite Auth ويرتبط بالجهة الوحيدة في النظام.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="الاسم الكامل" value={userForm.name} onChange={value => setUserForm(current => ({ ...current, name: value }))} />
-            <Field label="اسم المستخدم" value={userForm.username} onChange={value => setUserForm(current => ({ ...current, username: value }))} />
-            <Field label="البريد الإلكتروني" value={userForm.email} onChange={value => setUserForm(current => ({ ...current, email: value }))} />
-            <Field label="كلمة مرور مؤقتة (12 محرفاً على الأقل)" type="password" value={userForm.password} onChange={value => setUserForm(current => ({ ...current, password: value }))} />
+            <Field
+              label="الاسم الكامل"
+              value={userForm.name}
+              onChange={value =>
+                setUserForm(current => ({ ...current, name: value }))
+              }
+            />
+            <Field
+              label="اسم المستخدم"
+              value={userForm.username}
+              onChange={value =>
+                setUserForm(current => ({ ...current, username: value }))
+              }
+            />
+            <Field
+              label="البريد الإلكتروني"
+              value={userForm.email}
+              onChange={value =>
+                setUserForm(current => ({ ...current, email: value }))
+              }
+            />
+            <Field
+              label="كلمة مرور مؤقتة (12 محرفاً على الأقل)"
+              type="password"
+              value={userForm.password}
+              onChange={value =>
+                setUserForm(current => ({ ...current, password: value }))
+              }
+            />
             <label className="grid gap-1.5 text-sm font-medium">
               الصلاحية
-              <select className="h-11 rounded-lg border bg-background px-3" value={userForm.role} onChange={event => setUserForm(current => ({ ...current, role: event.target.value as UserForm["role"] }))}>
+              <select
+                className="h-11 rounded-lg border bg-background px-3"
+                value={userForm.role}
+                onChange={event =>
+                  setUserForm(current => ({
+                    ...current,
+                    role: event.target.value as UserForm["role"],
+                  }))
+                }
+              >
                 <option value="user">مستخدم</option>
                 <option value="admin">مدير جهة</option>
               </select>
             </label>
           </div>
-          <p className="text-xs text-muted-foreground">لن يتم إنشاء مالك منصة جديد. سيُطلب من المستخدم تغيير كلمة المرور المؤقتة عند أول دخول.</p>
+          <p className="text-xs text-muted-foreground">
+            لن يتم إنشاء مالك منصة جديد. سيُطلب من المستخدم تغيير كلمة المرور
+            المؤقتة عند أول دخول.
+          </p>
           <DialogFooter className="gap-2 sm:justify-start">
-            <Button onClick={() => createUser.mutate({ ...userForm, organizationId: organizationContext.data?.organizationId ?? "" })} disabled={mutationPending || !userForm.name.trim() || !userForm.username.trim() || !userForm.email.trim() || userForm.password.length < 12 || !organizationContext.data?.organizationId} className="min-h-11">
-              <Plus className="ml-2 h-4 w-4" /> إنشاء الحساب
+            <Button
+              onClick={() =>
+                createUser.mutate({
+                  ...userForm,
+                  organizationId: organizationContext.data?.organizationId ?? "",
+                })
+              }
+              disabled={
+                mutationPending ||
+                !userForm.name.trim() ||
+                !userForm.username.trim() ||
+                !userForm.email.trim() ||
+                userForm.password.length < 12 ||
+                !organizationContext.data?.organizationId
+              }
+              className="min-h-11"
+            >
+              <Plus className="ml-2 h-4 w-4" />
+              إنشاء الحساب
             </Button>
-            <Button variant="outline" onClick={() => setUserDialogOpen(false)} disabled={createUser.isPending} className="min-h-11">إلغاء</Button>
+            <Button
+              variant="outline"
+              onClick={() => setUserDialogOpen(false)}
+              disabled={createUser.isPending}
+              className="min-h-11"
+            >
+              إلغاء
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -739,7 +965,12 @@ function Field({
   return (
     <label className="grid gap-1.5 text-sm font-medium">
       {label}
-      <Input type={type} value={value} onChange={event => onChange(event.target.value)} className="min-h-11" />
+      <Input
+        type={type}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        className="min-h-11"
+      />
     </label>
   );
 }
