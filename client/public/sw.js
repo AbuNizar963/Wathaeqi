@@ -1,4 +1,4 @@
-const CACHE_NAME = "wathaeqi-shell-v12";
+const CACHE_NAME = "wathaeqi-shell-v13";
 const SHELL = [
   "/",
   "/manifest.json",
@@ -6,6 +6,12 @@ const SHELL = [
   "/icon-512.png",
   "/notification-icon.png",
   "/notification-badge.png",
+  "/fonts/ibm-plex-sans-arabic-regular.ttf",
+  "/fonts/ibm-plex-sans-arabic-medium.ttf",
+  "/fonts/ibm-plex-sans-arabic-semibold.ttf",
+  "/fonts/ibm-plex-sans-arabic-bold.ttf",
+  "/fonts/amiri-regular.ttf",
+  "/fonts/amiri-bold.ttf",
 ];
 
 function getSameOriginTarget(value) {
