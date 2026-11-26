@@ -32,6 +32,26 @@ import {
 const TABLE_ID = "platform_document_settings";
 const ROW_ID = "1";
 
+function isDocumentFontFamily(
+  value: unknown
+): value is PlatformDocumentSettings["documentFontFamily"] {
+  return DOCUMENT_FONT_FAMILIES.includes(
+    value as (typeof DOCUMENT_FONT_FAMILIES)[number]
+  );
+}
+
+function safeDocumentFontWeight(
+  value: unknown,
+  fallback: PlatformDocumentSettings["documentFontWeight"]
+): PlatformDocumentSettings["documentFontWeight"] {
+  const weight = Number(value);
+  return DOCUMENT_FONT_WEIGHTS.includes(
+    weight as (typeof DOCUMENT_FONT_WEIGHTS)[number]
+  )
+    ? (weight as PlatformDocumentSettings["documentFontWeight"])
+    : fallback;
+}
+
 type AppwriteRow = Record<string, unknown> & {
   $id: string;
   data?: Record<string, unknown>;
@@ -189,11 +209,8 @@ function mapPlatformDocumentSettings(
       MAX_FRAME_WIDTH_PT,
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameWidthPt
     ),
-    documentFontFamily: DOCUMENT_FONT_FAMILIES.includes(
-      row.documentFontFamily as (typeof DOCUMENT_FONT_FAMILIES)[number]
-    )
-      ? (row.documentFontFamily as
-          PlatformDocumentSettings["documentFontFamily"])
+    documentFontFamily: isDocumentFontFamily(row.documentFontFamily)
+      ? row.documentFontFamily
       : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontFamily,
     documentFontSizePt: boundedNumber(
       row.documentFontSizePt,
@@ -201,22 +218,17 @@ function mapPlatformDocumentSettings(
       MAX_DOCUMENT_FONT_SIZE_PT,
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontSizePt
     ),
-    documentFontWeight: DOCUMENT_FONT_WEIGHTS.includes(
-      Number(row.documentFontWeight) as (typeof DOCUMENT_FONT_WEIGHTS)[number]
-    )
-      ? (Number(row.documentFontWeight) as
-          PlatformDocumentSettings["documentFontWeight"])
-      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontWeight,
+    documentFontWeight: safeDocumentFontWeight(
+      row.documentFontWeight,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontWeight
+    ),
     documentFontColor:
       typeof row.documentFontColor === "string" &&
       HEX_COLOR_PATTERN.test(row.documentFontColor)
         ? row.documentFontColor
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontColor,
-    recipientFontFamily: DOCUMENT_FONT_FAMILIES.includes(
-      row.recipientFontFamily as (typeof DOCUMENT_FONT_FAMILIES)[number]
-    )
-      ? (row.recipientFontFamily as
-          PlatformDocumentSettings["recipientFontFamily"])
+    recipientFontFamily: isDocumentFontFamily(row.recipientFontFamily)
+      ? row.recipientFontFamily
       : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontFamily,
     recipientFontSizePt: boundedNumber(
       row.recipientFontSizePt,
@@ -224,12 +236,10 @@ function mapPlatformDocumentSettings(
       MAX_RECIPIENT_FONT_SIZE_PT,
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontSizePt
     ),
-    recipientFontWeight: DOCUMENT_FONT_WEIGHTS.includes(
-      Number(row.recipientFontWeight) as (typeof DOCUMENT_FONT_WEIGHTS)[number]
-    )
-      ? (Number(row.recipientFontWeight) as
-          PlatformDocumentSettings["recipientFontWeight"])
-      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontWeight,
+    recipientFontWeight: safeDocumentFontWeight(
+      row.recipientFontWeight,
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontWeight
+    ),
     recipientFontColor:
       typeof row.recipientFontColor === "string" &&
       HEX_COLOR_PATTERN.test(row.recipientFontColor)
