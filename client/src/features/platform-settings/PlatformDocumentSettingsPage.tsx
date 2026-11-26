@@ -25,8 +25,6 @@ import {
   MAX_HEADER_LOGO_SIZE,
   MIN_DIVIDER_WIDTH_PT,
   MAX_DIVIDER_WIDTH_PT,
-  MIN_FRAME_WIDTH_PT,
-  MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -566,8 +564,7 @@ export default function PlatformDocumentSettingsPage() {
                   حجم الصفحة والهوامش والإطار
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  اضبط المساحات الآمنة حول المحتوى واختر إطارًا رسميًا واضحًا
-                  للطباعة والمعاينة.
+                  اضبط هوامش الصفحة واختر نمط حدود الصفحة للطباعة والمعاينة.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -598,73 +595,10 @@ export default function PlatformDocumentSettingsPage() {
                   </label>
                 ))}
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <DocumentFramePicker
-                    value={values.frameStyle}
-                    frameColor={values.frameColor}
-                    frameWidthPt={values.frameWidthPt}
-                    onChange={(style, color) =>
-                      setValues(current => ({
-                        ...current,
-                        frameStyle: style,
-                        frameColor: color,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2 text-sm">
-                  <label htmlFor="document-frame-color" className="block">
-                    لون الإطار
-                  </label>
-                  <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-2">
-                    <input
-                      type="color"
-                      aria-label="منتقي لون الإطار"
-                      value={values.frameColor}
-                      onChange={event =>
-                        updateValue("frameColor", event.target.value)
-                      }
-                      className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
-                    />
-                    <input
-                      id="document-frame-color"
-                      type="text"
-                      inputMode="text"
-                      autoCapitalize="characters"
-                      maxLength={7}
-                      spellCheck={false}
-                      value={values.frameColor}
-                      onChange={event =>
-                        updateValue("frameColor", event.target.value.trim())
-                      }
-                      placeholder="#B49A55"
-                      aria-describedby="document-frame-color-hint"
-                      className="h-10 w-full rounded-md border bg-background px-3 font-mono uppercase"
-                    />
-                  </div>
-                  <p id="document-frame-color-hint" className="text-xs text-muted-foreground">
-                    أدخل رمز اللون بصيغة HEX، مثال: #B49A55
-                  </p>
-                </div>
-              </div>
-              <label className="block space-y-1 text-sm">
-                <span className="flex justify-between">
-                  <span>سماكة الإطار</span>
-                  <output>{values.frameWidthPt} نقطة</output>
-                </span>
-                <input
-                  type="range"
-                  min={MIN_FRAME_WIDTH_PT}
-                  max={MAX_FRAME_WIDTH_PT}
-                  step={0.5}
-                  value={values.frameWidthPt}
-                  onChange={event =>
-                    updateValue("frameWidthPt", Number(event.target.value))
-                  }
-                  className="w-full accent-primary"
-                />
-              </label>
+              <DocumentFramePicker
+                value={values.frameStyle}
+                onChange={style => updateValue("frameStyle", style)}
+              />
             </section>
             <section
               id="header-divider-settings"

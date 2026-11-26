@@ -1,23 +1,17 @@
 import type { DocumentFrameStyle } from "./documentFrameCatalog";
 
 export {
-  DOCUMENT_FRAME_FAMILIES,
-  DOCUMENT_FRAME_PALETTES,
   DOCUMENT_FRAME_STYLES,
   LEGACY_DOCUMENT_FRAME_STYLES,
-  PROFESSIONAL_DOCUMENT_FRAME_PRESETS,
-  getDocumentFrameFamily,
-  getProfessionalDocumentFramePreset,
+  WORD_DOCUMENT_FRAME_STYLES,
+  getWordDocumentFrameStyle,
   isDocumentFrameStyle,
 } from "./documentFrameCatalog";
 export type {
-  DocumentFrameFamily,
-  DocumentFrameFamilyCode,
-  DocumentFrameMotif,
-  DocumentFramePaletteCode,
-  DocumentFramePresetId,
   DocumentFrameStyle,
-  ProfessionalDocumentFramePreset,
+  LegacyDocumentFramePresetId,
+  LegacyDocumentFrameStyle,
+  WordDocumentFrameStyle,
 } from "./documentFrameCatalog";
 
 export type DocumentTextRow = { right: string; left: string };
@@ -76,8 +70,8 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   pageMarginRightMm: 10,
   pageMarginBottomMm: 10,
   pageMarginLeftMm: 10,
-  frameStyle: "single" as const,
-  frameColor: "#b49a55",
+  frameStyle: "box" as const,
+  frameColor: "#000000",
   frameWidthPt: 1,
   showVerificationQr: true,
 } as const;
