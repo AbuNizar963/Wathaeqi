@@ -337,13 +337,15 @@ const ownerPlatformDocumentSettingsRouter = router({
           .max(MAX_FRAME_WIDTH_PT),
         documentFontFamily: z
           .enum([
+            "Amiri",
+            "IBM Plex Sans Arabic",
             "Cairo",
             "Arial",
             "Tahoma",
             "Traditional Arabic",
             "Times New Roman",
           ])
-          .default("Cairo"),
+          .default("Amiri"),
         documentFontSizePt: z
           .number()
           .int()
@@ -365,13 +367,15 @@ const ownerPlatformDocumentSettingsRouter = router({
           .default("#0f172a"),
         recipientFontFamily: z
           .enum([
+            "Amiri",
+            "IBM Plex Sans Arabic",
             "Cairo",
             "Arial",
             "Tahoma",
             "Traditional Arabic",
             "Times New Roman",
           ])
-          .default("Cairo"),
+          .default("Amiri"),
         recipientFontSizePt: z
           .number()
           .int()
