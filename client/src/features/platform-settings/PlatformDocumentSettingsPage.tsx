@@ -453,6 +453,9 @@ export default function PlatformDocumentSettingsPage() {
                             if (file) void handleLogoFile(file);
                           }}
                         />
+                        <p className="text-xs font-medium text-primary">
+                          اسحب ملف الشعار وأفلته هنا، أو اختره من الاستديو أو ملفاتك.
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           SVG أو PNG أو JPG، بحد أقصى 2.5 ميغابايت بعد التجهيز.
                           تُفحص ملفات SVG على الخادم قبل حفظها.
