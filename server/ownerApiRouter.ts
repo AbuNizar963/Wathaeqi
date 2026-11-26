@@ -50,7 +50,6 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
-  DOCUMENT_FONT_FAMILIES,
   DOCUMENT_FONT_WEIGHTS,
   MIN_DOCUMENT_FONT_SIZE_PT,
   MAX_DOCUMENT_FONT_SIZE_PT,
@@ -337,13 +336,45 @@ const ownerPlatformDocumentSettingsRouter = router({
           .number()
           .min(MIN_FRAME_WIDTH_PT)
           .max(MAX_FRAME_WIDTH_PT),
-        documentFontFamily: z.enum(DOCUMENT_FONT_FAMILIES),
-        documentFontSizePt: z.number().min(MIN_DOCUMENT_FONT_SIZE_PT).max(MAX_DOCUMENT_FONT_SIZE_PT),
-        documentFontWeight: z.union([z.literal(400), z.literal(500), z.literal(600), z.literal(700), z.literal(800)]),
+        documentFontFamily: z.enum([
+          "Cairo",
+          "Arial",
+          "Tahoma",
+          "Traditional Arabic",
+          "Times New Roman",
+        ]),
+        documentFontSizePt: z
+          .number()
+          .int()
+          .min(MIN_DOCUMENT_FONT_SIZE_PT)
+          .max(MAX_DOCUMENT_FONT_SIZE_PT),
+        documentFontWeight: z.union([
+          z.literal(400),
+          z.literal(500),
+          z.literal(600),
+          z.literal(700),
+          z.literal(800),
+        ]),
         documentFontColor: z.string().regex(HEX_COLOR_PATTERN),
-        recipientFontFamily: z.enum(DOCUMENT_FONT_FAMILIES),
-        recipientFontSizePt: z.number().min(MIN_RECIPIENT_FONT_SIZE_PT).max(MAX_RECIPIENT_FONT_SIZE_PT),
-        recipientFontWeight: z.union([z.literal(400), z.literal(500), z.literal(600), z.literal(700), z.literal(800)]),
+        recipientFontFamily: z.enum([
+          "Cairo",
+          "Arial",
+          "Tahoma",
+          "Traditional Arabic",
+          "Times New Roman",
+        ]),
+        recipientFontSizePt: z
+          .number()
+          .int()
+          .min(MIN_RECIPIENT_FONT_SIZE_PT)
+          .max(MAX_RECIPIENT_FONT_SIZE_PT),
+        recipientFontWeight: z.union([
+          z.literal(400),
+          z.literal(500),
+          z.literal(600),
+          z.literal(700),
+          z.literal(800),
+        ]),
         recipientFontColor: z.string().regex(HEX_COLOR_PATTERN),
         showVerificationQr: z.boolean(),
       })
