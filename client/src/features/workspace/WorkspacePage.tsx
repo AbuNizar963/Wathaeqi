@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -454,13 +455,19 @@ export default function WorkspacePage({
                   return (
                     <article
                       key={item.id}
-                      className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl p-3 transition-colors hover:bg-muted/40"
+                      className={cn(
+                        "flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl p-3",
+                        "transition-colors hover:bg-muted/40"
+                      )}
                     >
                       <button
                         type="button"
                         onClick={() => setLocation(documentUrl)}
                         aria-label={`معاينة الوثيقة ${item.title}`}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className={cn(
+                          "flex min-w-0 flex-1 items-center gap-3 text-right",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        )}
                       >
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                           <FileText className="h-5 w-5" />
