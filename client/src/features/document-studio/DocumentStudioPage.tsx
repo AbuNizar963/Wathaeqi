@@ -210,7 +210,6 @@ export default function DocumentStudioPage() {
   );
   const templateImportInputRef = useRef<HTMLInputElement>(null);
   const [importingTemplate, setImportingTemplate] = useState(false);
-  const [pendingTemplateImport, setPendingTemplateImport] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -231,9 +230,8 @@ export default function DocumentStudioPage() {
   useEffect(() => {
     const params = new URLSearchParams(routeSearch);
     const uploadRequested = params.get("upload") === "1";
-    const templateImportRequested = params.get("importTemplate") === "1";
 
-    if (!uploadRequested && !templateImportRequested) return;
+    if (!uploadRequested) return;
 
     if (uploadRequested) {
       setActiveTab("documents");
@@ -241,23 +239,9 @@ export default function DocumentStudioPage() {
       params.delete("upload");
     }
 
-    if (templateImportRequested) {
-      setActiveTab("templates");
-      setPendingTemplateImport(true);
-      params.delete("importTemplate");
-    }
-
     const query = params.toString();
     setLocation(query ? `/documents?${query}` : "/documents");
   }, [routeSearch, setLocation]);
-
-  useEffect(() => {
-    if (!pendingTemplateImport || activeTab !== "templates") return;
-    const input = templateImportInputRef.current;
-    if (!input) return;
-    setPendingTemplateImport(false);
-    input.click();
-  }, [pendingTemplateImport, activeTab]);
 
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
