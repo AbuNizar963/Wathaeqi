@@ -23,6 +23,7 @@ import {
   LockKeyhole,
   PanelLeft,
   Plus,
+  Search,
   ShieldCheck,
   Users,
   Bell,
@@ -34,6 +35,15 @@ import { CSSProperties, FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from "./ui/command";
 import { Input } from "./ui/input";
 import { trpc } from "@/lib/trpc";
 import { setSessionToken } from "@/lib/sessionToken";
@@ -48,14 +58,14 @@ const menuItems = [
   {
     key: "dashboard",
     icon: LayoutDashboard,
-    label: "لوحة العمل",
+    label: "لوحة التحكم",
     path: "/dashboard",
     group: "workspace",
   },
   {
     key: "library",
     icon: FileText,
-    label: "مساحة الوثائق",
+    label: "إدارة الوثائق",
     path: "/documents",
     group: "workspace",
   },
@@ -112,9 +122,9 @@ function isRouteActive(currentRoute: string, targetRoute: string) {
 }
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 260;
+const DEFAULT_WIDTH = 240;
 const MIN_WIDTH = 220;
-const MAX_WIDTH = 360;
+const MAX_WIDTH = 320;
 
 export default function DashboardLayout({
   children,
@@ -469,6 +479,7 @@ function DashboardLayoutContent({
   // Keep this expression explicit for the responsive-shell contract.
   const mobileSidebarInitialState = useState(() => !isMobile)[0];
   const showSidebarBrand = isMobile || !isCollapsed;
+  const [searchOpen, setSearchOpen] = useState(false);
   const [online, setOnline] = useState(
     () => typeof navigator === "undefined" || navigator.onLine
   );
@@ -494,6 +505,18 @@ function DashboardLayoutContent({
       setIsResizing(false);
     }
   }, [isCollapsed]);
+
+  useEffect(() => {
+    const handleSearchShortcut = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleSearchShortcut);
+    return () => window.removeEventListener("keydown", handleSearchShortcut);
+  }, []);
 
   useEffect(() => {
     const updateOnlineState = () => setOnline(navigator.onLine);
@@ -565,8 +588,12 @@ function DashboardLayoutContent({
               <button
                 onClick={toggleSidebar}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sidebar-border bg-sidebar-accent/40 text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="إغلاق القائمة الجانبية"
-                title="إغلاق القائمة"
+                aria-label={
+                  isCollapsed
+                    ? "توسيع القائمة الجانبية"
+                    : "طي القائمة إلى أيقونات"
+                }
+                title={isCollapsed ? "توسيع القائمة" : "طي القائمة"}
               >
                 <PanelLeft className="h-4 w-4" />
               </button>
@@ -614,6 +641,11 @@ function DashboardLayoutContent({
               );
             })}
           </SidebarContent>
+          {isMobile ? (
+            <div className="mt-auto border-t border-sidebar-border p-3">
+              <HeaderActions />
+            </div>
+          ) : null}
         </Sidebar>
         <div
           className={`absolute top-0 left-0 z-20 h-full w-1 cursor-col-resize transition-colors hover:bg-primary/20 ${isCollapsed ? "hidden" : ""}`}
@@ -624,11 +656,54 @@ function DashboardLayoutContent({
         />
       </div>
 
+      <CommandDialog
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        title="البحث السريع"
+        description="انتقل إلى صفحة أو ابدأ إجراءً في وثائقي"
+      >
+        <CommandInput placeholder="ابحث عن صفحة أو إجراء..." dir="rtl" />
+        <CommandList dir="rtl">
+          <CommandEmpty>لا توجد نتائج مطابقة.</CommandEmpty>
+          <CommandGroup heading="التنقل">
+            {menuItems
+              .filter(
+                item =>
+                  (!item.adminOnly || canManageUsers) &&
+                  (!item.ownerOnly || canManageDocumentSettings)
+              )
+              .map(item => (
+                <CommandItem
+                  key={item.key}
+                  value={`${item.label} ${item.path}`}
+                  onSelect={() => {
+                    setSearchOpen(false);
+                    navigateTo(item.path);
+                  }}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </CommandItem>
+              ))}
+            <CommandItem
+              value="إنشاء وثيقة جديدة"
+              onSelect={() => {
+                setSearchOpen(false);
+                setLocation("/documents?create=1");
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              <span>إنشاء وثيقة جديدة</span>
+              <CommandShortcut>↵</CommandShortcut>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
       <SidebarInset>
         {!isMobile ? (
           <div
             dir="rtl"
-            className="app-header flex h-16 shrink-0 items-center justify-between border-b border-border/70 bg-card/90 px-4 shadow-sm backdrop-blur supports-[backdrop-filter]:backdrop-blur"
+            className="app-header flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4"
           >
             <div className="flex items-center gap-3">
               <SidebarTrigger
@@ -661,36 +736,25 @@ function DashboardLayoutContent({
             </div>
             <div className="flex items-center gap-2">
               <Button
-                onClick={() => setLocation("/documents?create=1")}
-                className="h-10 rounded-xl px-4 shadow-sm"
+                type="button"
+                variant="outline"
+                className="hidden h-10 w-48 justify-between rounded-lg border-border bg-background px-3 text-sm text-muted-foreground lg:flex"
+                aria-label="البحث السريع، الاختصار Ctrl K"
+                onClick={() => setSearchOpen(true)}
               >
-                <Plus className="ml-2 h-4 w-4" />
-                إنشاء وثيقة
+                <span className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  بحث سريع
+                </span>
+                <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px]">
+                  Ctrl K
+                </kbd>
               </Button>
-              <HeaderActions />
-            </div>
-          </div>
-        ) : null}
-        {isMobile && (
-          <div className="app-header flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger
-                className="h-10 w-10 rounded-xl border bg-background shadow-sm"
-                aria-label={
-                  openMobile ? "إغلاق القائمة الجانبية" : "فتح القائمة الجانبية"
-                }
-              />
-              <BrandMark size="sm" />
-              <span className="max-w-[34vw] truncate text-sm font-bold">
-                {activeMenuItem?.label ?? "مساحة العمل"}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-xl"
+                className="h-11 w-11 rounded-lg"
                 aria-label="الإشعارات"
                 onClick={() => setLocation("/notifications")}
               >
@@ -698,6 +762,23 @@ function DashboardLayoutContent({
               </Button>
               <HeaderActions />
             </div>
+          </div>
+        ) : null}
+        {isMobile && (
+          <div className="app-header sticky top-0 z-40 flex h-[52px] items-center justify-between border-b border-border bg-card px-3">
+            <h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">
+              {activeMenuItem?.label ?? "مساحة العمل"}
+            </h1>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 rounded-lg"
+              aria-label="الإشعارات"
+              onClick={() => setLocation("/notifications")}
+            >
+              <Bell className="h-[18px] w-[18px]" />
+            </Button>
           </div>
         )}
         <main

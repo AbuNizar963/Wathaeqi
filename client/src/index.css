@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
@@ -32,93 +33,92 @@
 
 :root {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f9fafb;
+  --foreground: #111827;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #111827;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #047857;
+  --popover-foreground: #111827;
+  --primary: #0f172a;
   --primary-foreground: #ffffff;
-  --secondary: #ecfdf5;
-  --secondary-foreground: #065f46;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #d1fae5;
-  --accent-foreground: #065f46;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #374151;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #eff6ff;
+  --accent-foreground: #1e3a8a;
   --destructive: #dc2626;
   --destructive-tint: #fef2f2;
-  --border: #e2e8f0;
-  --input: #cbd5e1;
-  --ring: #10b981;
-  --brand-accent: #047857;
-  --brand-gold: #b7791f;
-  --success: #047857;
+  --border: #e5e7eb;
+  --input: #d1d5db;
+  --ring: #1e3a8a;
+  --brand-accent: #0f172a;
+  --brand-gold: #b45309;
+  --success: #065f46;
   --success-foreground: #ffffff;
   --success-tint: #ecfdf5;
-  --warning: #b45309;
+  --warning: #92400e;
   --warning-foreground: #ffffff;
   --warning-tint: #fffbeb;
-  --info: #2563eb;
+  --info: #1d4ed8;
   --info-foreground: #ffffff;
   --info-tint: #eff6ff;
-  --brand-wash: rgb(4 120 87 / 0.07);
-  --ambient-wash: rgb(183 121 31 / 0.055);
-  --shadow-color: rgb(15 23 42 / 0.07);
-  --radius: 1rem;
-  --sidebar-background: #0b1220;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #10b981;
-  --sidebar-primary-foreground: #052e25;
-  --sidebar-accent: #172235;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #263449;
-  --sidebar-ring: #10b981;
+  --brand-wash: rgb(15 23 42 / 0.035);
+  --ambient-wash: rgb(180 83 9 / 0.025);
+  --shadow-color: rgb(16 24 40 / 0.04);
+  --radius: 0.75rem;
+  --sidebar-background: #ffffff;
+  --sidebar-foreground: #111827;
+  --sidebar-primary: #0f172a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #1e3a8a;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #090d16;
-  --foreground: #f8fafc;
-  --card: #111827;
-  --card-foreground: #f8fafc;
-  --popover: #111827;
-  --popover-foreground: #f8fafc;
-  --primary: #10b981;
-  --primary-foreground: #052e25;
-  --secondary: #172b29;
-  --secondary-foreground: #d1fae5;
-  --muted: #1b2432;
-  --muted-foreground: #94a3b8;
-  --accent: #1d332f;
-  --accent-foreground: #d1fae5;
-  --destructive: #ef4444;
-  --destructive-tint: #351c25;
-  --border: rgb(148 163 184 / 0.16);
-  --input: rgb(148 163 184 / 0.22);
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #121215;
+  --card-foreground: #fafafa;
+  --popover: #121215;
+  --popover-foreground: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #09090b;
+  --secondary: #18181b;
+  --secondary-foreground: #e4e4e7;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+  --destructive: #f87171;
+  --destructive-tint: #2b171b;
+  --border: #27272a;
+  --input: #3f3f46;
   --ring: #10b981;
-  --brand-accent: #10b981;
-  --brand-gold: #d97706;
+  --brand-accent: #fafafa;
+  --brand-gold: #b45309;
   --success: #10b981;
   --success-foreground: #052e25;
-  --success-tint: #12352d;
+  --success-tint: #052e22;
   --warning: #f59e0b;
   --warning-foreground: #422006;
-  --warning-tint: #3a2a12;
+  --warning-tint: #33230d;
   --info: #60a5fa;
   --info-foreground: #10233f;
   --info-tint: #172a46;
-  --brand-wash: rgb(16 185 129 / 0.075);
-  --ambient-wash: rgb(217 119 6 / 0.06);
-  --shadow-color: rgb(0 0 0 / 0.34);
-  --radius: 1rem;
-  --sidebar-background: #090d16;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #10b981;
-  --sidebar-primary-foreground: #052e25;
-  --sidebar-accent: #172235;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: rgb(148 163 184 / 0.16);
+  --brand-wash: rgb(250 250 250 / 0.025);
+  --ambient-wash: rgb(180 83 9 / 0.025);
+  --shadow-color: rgb(0 0 0 / 0.2);
+  --sidebar-background: #09090b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #fafafa;
+  --sidebar-primary-foreground: #09090b;
+  --sidebar-accent: #18181b;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #27272a;
   --sidebar-ring: #10b981;
 }
 
@@ -153,7 +153,7 @@
   --radius-md: calc(var(--radius) - 0.2rem);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 0.35rem);
-  --font-sans: "Cairo", sans-serif;
+  --font-sans: "IBM Plex Sans Arabic", "Cairo", sans-serif;
   --color-sidebar: var(--sidebar-background);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -179,20 +179,9 @@
     min-width: 320px;
     min-height: 100%;
     overflow-x: clip;
-    font-family: "Cairo", sans-serif;
-    background-image:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--brand-accent) 2%, transparent) 1px,
-        transparent 1px
-      ),
-      radial-gradient(circle at 100% 0%, var(--brand-wash), transparent 30rem),
-      radial-gradient(circle at 0% 100%, var(--ambient-wash), transparent 34rem);
-    background-size:
-      28px 28px,
-      auto,
-      auto;
-    background-attachment: fixed;
+    font-family: "IBM Plex Sans Arabic", "Cairo", sans-serif;
+    line-height: 1.6;
+    background-image: none;
   }
   button,
   input,
@@ -232,6 +221,7 @@
 
   .auth-shell::before,
   .auth-shell::after {
+    display: none;
     position: absolute;
     z-index: -1;
     width: 22rem;
@@ -254,9 +244,8 @@
   }
 
   .auth-card {
-    box-shadow:
-      0 26px 80px color-mix(in srgb, var(--primary) 18%, transparent),
-      0 4px 16px var(--shadow-color);
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px var(--shadow-color);
   }
 
   .auth-eyebrow {
@@ -271,19 +260,7 @@
   }
 
   .app-header::after {
-    position: absolute;
-    right: 0;
-    bottom: -1px;
-    left: 0;
-    height: 2px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--brand-accent),
-      transparent
-    );
-    content: "";
-    opacity: 0.28;
+    display: none;
   }
 
   .document-page-header {
@@ -298,15 +275,9 @@
     align-items: center;
     padding: 1rem 1.125rem;
     border: 1px solid var(--border);
-    border-radius: 1.125rem;
-    background:
-      radial-gradient(
-        circle at 96% 0%,
-        color-mix(in srgb, var(--brand-accent) 8%, transparent),
-        transparent 40%
-      ),
-      var(--card);
-    box-shadow: 0 3px 14px var(--shadow-color);
+    border-radius: 0.75rem;
+    background: var(--card);
+    box-shadow: 0 1px 2px var(--shadow-color);
   }
 
   .document-admin-header h1 {
@@ -327,17 +298,15 @@
     flex-wrap: wrap;
     padding: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 1rem;
-    background: color-mix(in srgb, var(--card) 92%, var(--background));
-    box-shadow: 0 5px 20px var(--shadow-color);
-    backdrop-filter: blur(12px);
+    border-radius: 0.75rem;
+    background: var(--card);
   }
 
   .document-card {
     border: 1px solid var(--border);
-    border-radius: 1rem;
+    border-radius: 0.75rem;
     background: var(--card);
-    box-shadow: 0 2px 8px var(--shadow-color);
+    box-shadow: 0 1px 2px var(--shadow-color);
     transition:
       border-color 160ms ease,
       box-shadow 160ms ease,
@@ -346,35 +315,22 @@
 
   .document-card:hover {
     border-color: color-mix(in srgb, var(--brand-accent) 42%, var(--border));
-    box-shadow: 0 10px 28px var(--shadow-color);
-    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-color);
   }
 
   .document-page-header > div:first-child h1::after,
   .document-admin-header h1::after,
   .document-studio-header h1::after {
-    display: block;
-    width: 2.2rem;
-    height: 3px;
-    margin-top: 0.45rem;
-    border-radius: 999px;
-    background: var(--brand-gold);
-    content: "";
+    display: none;
   }
 
   .document-studio-header {
     align-items: center;
     padding: 1rem 1.125rem;
     border: 1px solid var(--border);
-    border-radius: 1.125rem;
-    background:
-      radial-gradient(
-        circle at 96% 0%,
-        color-mix(in srgb, var(--brand-accent) 9%, transparent),
-        transparent 38%
-      ),
-      var(--card);
-    box-shadow: 0 3px 14px var(--shadow-color);
+    border-radius: 0.75rem;
+    background: var(--card);
+    box-shadow: 0 1px 2px var(--shadow-color);
   }
 
   .document-studio-header h1 {
@@ -444,9 +400,46 @@
   }
 }
 
+@layer base {
+  time,
+  [data-numeric],
+  .tabular-nums {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .document-print-surface,
+  .document-a4-page,
+  [data-document-page] {
+    font-family: "Amiri", "Noto Naskh Arabic", serif;
+  }
+}
+
+@media (max-width: 767px) {
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"] {
+    min-height: 44px;
+  }
+
+  textarea {
+    min-height: 88px;
+  }
+
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
+
 /* Keep Sonner overrides outside Tailwind layers so they win over library defaults. */
 [data-sonner-toaster].toaster {
-  font-family: "Cairo", sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Cairo", sans-serif;
   --width: min(650px, calc(100vw - 32px));
   --border-radius: 16px;
 }
