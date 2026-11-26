@@ -76,8 +76,7 @@ export function ThemeProvider({
         'meta[name="theme-color"]'
       );
       if (themeColorMeta) {
-        themeColorMeta.content =
-          resolved === "dark" ? "#0B1120" : "#F1F5F9";
+        themeColorMeta.content = resolved === "dark" ? "#0B1120" : "#F1F5F9";
       }
     };
 
