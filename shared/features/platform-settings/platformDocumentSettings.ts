@@ -23,7 +23,12 @@ export type DocumentFontFamily =
   | "Traditional Arabic"
   | "Times New Roman";
 
-export type DocumentFontWeight = 400 | 500 | 600 | 700 | 800;
+export type DocumentFontWeight =
+  | 400
+  | 500
+  | 600
+  | 700
+  | 800;
 
 export const DOCUMENT_FONT_FAMILIES: readonly DocumentFontFamily[] = [
   "Cairo",
