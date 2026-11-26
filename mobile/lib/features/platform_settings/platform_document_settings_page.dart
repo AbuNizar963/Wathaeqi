@@ -102,7 +102,7 @@ class _PlatformDocumentSettingsPageState
   int _documentFontWeight = 400;
   String _documentFontColor = '#0f172a';
   String _recipientFontFamily = 'Amiri';
-  double _recipientFontSizePt = 12;
+  double _recipientFontSizePt = 16;
   int _recipientFontWeight = 600;
   String _recipientFontColor = '#0f172a';
   double _marginTopMm = 10;
@@ -334,7 +334,7 @@ class _PlatformDocumentSettingsPageState
         _recipientFontFamily =
             result['recipientFontFamily']?.toString() ?? 'Amiri';
         _recipientFontSizePt =
-            (result['recipientFontSizePt'] as num? ?? 12).toDouble();
+            (result['recipientFontSizePt'] as num? ?? 16).toDouble();
         _recipientFontWeight =
             (result['recipientFontWeight'] as num? ?? 600).toInt();
         _recipientFontColor =

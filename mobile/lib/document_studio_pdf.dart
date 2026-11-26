@@ -113,7 +113,7 @@ class DocumentStudioPdf {
             .clamp(9.0, 24.0)
             .toDouble();
     final recipientFontSize =
-        ((letterhead['recipientFontSizePt'] as num? ?? 12).toDouble())
+        ((letterhead['recipientFontSizePt'] as num? ?? 16).toDouble())
             .clamp(9.0, 24.0)
             .toDouble();
     final documentFontScale = documentFontSize / 12;
@@ -125,11 +125,10 @@ class DocumentStudioPdf {
         PdfColors.black;
     final datePattern =
         _clean(letterhead['documentDateFormat']) ?? 'yyyy/MM/dd';
-    final dateLocale = datePattern.contains('MMMM') ? 'ar' : 'en';
-    final dateText = DateFormat(
+    final dateText = _formatOfficialDate(
+      documentDate.toLocal(),
       datePattern,
-      dateLocale,
-    ).format(documentDate.toLocal());
+    );
     final department = _clean(letterhead['departmentName']) ?? 'وثائقي';
     final unit = _clean(letterhead['unitName']);
     final headerShowLogo = letterhead['headerShowLogo'] != false;
@@ -448,6 +447,30 @@ class DocumentStudioPdf {
     );
 
     return pdf.save();
+  }
+
+  static String _formatOfficialDate(DateTime date, String pattern) {
+    const arabicMonths = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    if (pattern == 'd MMMM yyyy') {
+      return '${date.day} ${arabicMonths[date.month - 1]} ${date.year}';
+    }
+    if (pattern == 'MMMM d, yyyy') {
+      return '${arabicMonths[date.month - 1]} ${date.day}, ${date.year}';
+    }
+    return DateFormat(pattern, 'en').format(date);
   }
 
   static String _fontAssetForFamily(String family, int weight) {

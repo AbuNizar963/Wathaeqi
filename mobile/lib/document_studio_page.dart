@@ -785,7 +785,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         'recipientFontFamily':
             _platformDocumentSettings['recipientFontFamily'] ?? 'Amiri',
         'recipientFontSizePt':
-            _platformDocumentSettings['recipientFontSizePt'] ?? 12,
+            _platformDocumentSettings['recipientFontSizePt'] ?? 16,
         'recipientFontWeight':
             _platformDocumentSettings['recipientFontWeight'] ?? 600,
         'recipientFontColor':
@@ -3368,7 +3368,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                                 fontSize:
                                     _documentSettingSize(
                                       'recipientFontSizePt',
-                                      12,
+                                      16,
                                     ) +
                                     2,
                                 fontWeight: _documentSettingWeight(
@@ -3552,8 +3552,28 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final pattern =
         _platformDocumentSettings['documentDateFormat']?.toString() ??
         'yyyy/MM/dd';
-    final locale = pattern.contains('MMMM') ? 'ar' : 'en';
-    return DateFormat(pattern, locale).format(value.toLocal());
+    final localDate = value.toLocal();
+    const arabicMonths = [
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
+    ];
+    if (pattern == 'd MMMM yyyy') {
+      return '${localDate.day} ${arabicMonths[localDate.month - 1]} ${localDate.year}';
+    }
+    if (pattern == 'MMMM d, yyyy') {
+      return '${arabicMonths[localDate.month - 1]} ${localDate.day}, ${localDate.year}';
+    }
+    return DateFormat(pattern, 'en').format(localDate);
   }
 
   String _documentSettingFamily(String key, String fallback) =>
