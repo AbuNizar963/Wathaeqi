@@ -3276,7 +3276,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                         text: TextSpan(
                           style: const TextStyle(
                             color: Colors.black,
-                            fontFamily: 'Cairo',
+                            fontFamily: 'Amiri',
                           ),
                           children: [
                             TextSpan(
