@@ -150,6 +150,9 @@ export default function DocumentStudioPage() {
   const [nativePrintOpen, setNativePrintOpen] = useState(false);
   const documentPageRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
+  const [documentStatusFilter, setDocumentStatusFilter] = useState<
+    "all" | "draft" | "issued" | "archived"
+  >("all");
 
   const selectWorkspaceTab = (tab: StudioTab) => {
     setActiveTab(tab);
@@ -171,7 +174,16 @@ export default function DocumentStudioPage() {
       setSelectedDocumentId(documentId);
       setPreviewMode(true);
     }
-    if (params.has("tab")) setActiveTab(workspaceTabFromSearch(routeSearch));
+    if (params.has("tab")) {
+      const nextTab = workspaceTabFromSearch(routeSearch);
+      setActiveTab(nextTab);
+      if (nextTab === "archive") setDocumentStatusFilter("archived");
+    }
+    const status = params.get("status");
+    if (status === "draft" || status === "issued" || status === "archived") {
+      setDocumentStatusFilter(status);
+      setActiveTab(status === "archived" ? "archive" : "documents");
+    }
   }, [routeSearch]);
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
@@ -291,10 +303,11 @@ export default function DocumentStudioPage() {
   );
 
   const visibleDocuments = useMemo(() => {
-    const source =
-      activeTab === "archive"
-        ? userDocuments.filter(item => item.status === "archived")
-        : userDocuments.filter(item => item.status !== "archived");
+    const source = userDocuments.filter(
+      item =>
+        documentStatusFilter === "all" ||
+        item.status === documentStatusFilter
+    );
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
     return source.filter(item =>
@@ -303,7 +316,7 @@ export default function DocumentStudioPage() {
         .toLocaleLowerCase()
         .includes(normalizedSearch)
     );
-  }, [activeTab, userDocuments, search]);
+  }, [documentStatusFilter, userDocuments, search]);
 
   const visibleTemplates = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase();
@@ -856,14 +869,6 @@ export default function DocumentStudioPage() {
             القوالب
           </Button>
           <Button
-            variant={activeTab === "archive" ? "default" : "outline"}
-            onClick={() => selectWorkspaceTab("archive")}
-            aria-pressed={activeTab === "archive"}
-          >
-            <Archive className="ml-2 h-4 w-4" />
-            الأرشيف
-          </Button>
-          <Button
             variant={activeTab === "files" ? "default" : "outline"}
             onClick={() => selectWorkspaceTab("files")}
             aria-pressed={activeTab === "files"}
@@ -941,7 +946,7 @@ export default function DocumentStudioPage() {
                       aria-expanded={creationDialogOpen}
                     >
                       <FilePlus2 className="ml-2 h-4 w-4" />
-                      إنشاء وثيقة
+                      + كتاب رسمي جديد
                     </Button>
                   )}
                 </>
@@ -960,11 +965,54 @@ export default function DocumentStudioPage() {
         <DocumentLibraryPage embedded />
       ) : (
         <>
+      {activeTab === "documents" || activeTab === "archive" ? (
+        <nav
+          aria-label="تصفية الوثائق حسب الحالة"
+          className="document-studio-no-print flex flex-wrap items-center gap-2"
+        >
+          {([
+            ["all", "الكل"],
+            ["draft", "مسودات"],
+            ["issued", "صادرة"],
+            ["archived", "مؤرشفة"],
+          ] as const).map(([status, label]) => {
+            const count = userDocuments.filter(document =>
+              status === "all" ? true : document.status === status
+            ).length;
+            const active = documentStatusFilter === status;
+            return (
+              <Button
+                key={status}
+                type="button"
+                size="sm"
+                variant={active ? "default" : "outline"}
+                aria-pressed={active}
+                onClick={() => {
+                  setDocumentStatusFilter(status);
+                  setActiveTab(status === "archived" ? "archive" : "documents");
+                  const params = new URLSearchParams(window.location.search);
+                  params.delete("tab");
+                  if (status === "all") params.delete("status");
+                  else params.set("status", status);
+                  const query = params.toString();
+                  setLocation(query ? `/documents?${query}` : "/documents");
+                }}
+              >
+                {label}
+                <span className="mr-2 rounded-full bg-background/15 px-1.5 text-[11px] tabular-nums">
+                  {count}
+                </span>
+              </Button>
+            );
+          })}
+        </nav>
+      ) : null}
+
           <div
             className={`grid grid-cols-1 gap-4 ${
               previewMode || isNewDocumentWorkspace
                 ? "xl:grid-cols-1"
-                : "xl:grid-cols-[300px_minmax(0,1fr)]"
+                : "xl:grid-cols-[360px_minmax(0,1fr)]"
             }`}
           >
             <aside
@@ -1063,7 +1111,9 @@ export default function DocumentStudioPage() {
                             // Selecting a document is the primary edit action. The
                             // explicit preview button remains available for read-only
                             // viewing and shared links still open in preview mode.
-                            setPreviewMode(false);
+                            setPreviewMode(
+                              window.matchMedia("(max-width: 767px)").matches
+                            );
                           }}
                           className={`w-full rounded-lg border p-3 text-right transition-colors ${selectedDocumentId === document.id ? "border-primary bg-primary/5" : "hover:bg-muted/50"}`}
                         >
@@ -1380,7 +1430,18 @@ export default function DocumentStudioPage() {
                   </ResponsiveA4Preview>
                 </Card>
               ) : selectedDocument || isCreatingDocument ? (
-                <Card className="space-y-4 p-3 sm:p-4">
+                <Card className="space-y-4 p-3 pb-24 sm:p-4 sm:pb-4">
+                  {previewMode && selectedDocument ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="document-studio-no-print h-11 md:hidden"
+                      onClick={() => setPreviewMode(false)}
+                    >
+                      <FolderOpen className="ml-2 h-4 w-4" />
+                      العودة إلى قائمة الوثائق
+                    </Button>
+                  ) : null}
                   <div className="flex flex-wrap items-center justify-between gap-2 document-studio-no-print">
                     <div>
                       <h2 className="text-lg font-semibold">
