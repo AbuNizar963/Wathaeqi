@@ -82,10 +82,7 @@ export function getWordDocumentFrameStyle(
   if (value === "double" || value === "ornate") return "double";
   if (value === "triple") return "three-dimensional";
 
-  if (
-    typeof value === "string" &&
-    /^f(?:0[1-9]|10)[gnebs]$/.test(value)
-  ) {
+  if (typeof value === "string" && /^f(?:0[1-9]|10)[gnebs]$/.test(value)) {
     const paletteCode = value.slice(-1);
     if (paletteCode === "e") return "three-dimensional";
     if (paletteCode === "n" || paletteCode === "b") return "double";
