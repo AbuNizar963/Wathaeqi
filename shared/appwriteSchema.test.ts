@@ -191,6 +191,43 @@ describe("Appwrite operational schema", () => {
     }
   });
 
+
+  it("declares backward-compatible typography columns for document settings", () => {
+    const settings = findSchemaTable("platform_document_settings");
+    const columns = settings?.columns ?? [];
+
+    expect(columns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "documentFontFamily",
+          type: "varchar",
+          required: false,
+          default: "Cairo",
+        }),
+        expect.objectContaining({
+          key: "documentFontSizePt",
+          type: "integer",
+          min: 9,
+          max: 24,
+          required: false,
+          default: 12,
+        }),
+        expect.objectContaining({
+          key: "recipientFontWeight",
+          type: "integer",
+          required: false,
+          default: 600,
+        }),
+        expect.objectContaining({
+          key: "recipientFontColor",
+          type: "varchar",
+          required: false,
+          default: "#111827",
+        }),
+      ])
+    );
+  });
+
   it("does not duplicate table identifiers in the provisioned schema", () => {
     const ids = appwriteSchema.map(table => table.id);
     expect(new Set(ids).size).toBe(ids.length);
