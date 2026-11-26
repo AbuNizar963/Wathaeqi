@@ -1,4 +1,4 @@
-import 'dart:ui' show FontFeature;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -343,11 +343,11 @@ class _HomeDashboardPageState extends State<HomeDashboardPage> {
                               _formatDate(
                                 document['documentDate'] ?? document['createdAt'],
                               ),
-                              textDirection: TextDirection.ltr,
+                              textDirection: ui.TextDirection.ltr,
                               style: Theme.of(context).textTheme.labelSmall
                                   ?.copyWith(
                                     fontFeatures: const [
-                                      FontFeature.tabularFigures(),
+                                      ui.FontFeature.tabularFigures(),
                                     ],
                                     color: Theme.of(context)
                                         .colorScheme
@@ -409,7 +409,7 @@ class _MetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w900,
-              fontFeatures: const [FontFeature.tabularFigures()],
+              fontFeatures: const [ui.FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 2),
