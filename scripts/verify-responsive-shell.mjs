@@ -51,11 +51,10 @@ assert(
 );
 
 assert(
-  dashboardLayout.includes('<BrandMark size="sm" />') &&
-    dashboardLayout.includes(
-      'className="h-10 w-10 rounded-xl border bg-background shadow-sm"'
-    ),
-  "The mobile dashboard header must provide the primary brand mark."
+  dashboardLayout.includes('<h1 className="max-w-[72vw] truncate text-sm font-semibold text-foreground">') &&
+    dashboardLayout.includes('className="h-11 w-11 rounded-lg"') &&
+    dashboardLayout.includes('aria-label="الإشعارات"'),
+  "The mobile dashboard header must stay minimal and expose the page title and notifications."
 );
 
 assert(
@@ -85,7 +84,7 @@ assert(
 
 assert(
   dashboardLayout.includes(
-    "flex h-16 shrink-0 items-center justify-between border-b"
+    "flex h-14 shrink-0 items-center justify-between border-b"
   ) &&
     dashboardLayout.includes('dir="rtl"') &&
     dashboardLayout.includes("<HeaderActions />") &&
@@ -161,7 +160,7 @@ assert(
 );
 
 assert(
-  ["مساحة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
+  ["إدارة الوثائق", "إدارة المستخدمين", "إعدادات الوثائق"].every(label =>
     dashboardLayout.includes(`label: "${label}"`)
   ),
   "The sidebar must expose the unified document workspace and administrative navigation."
