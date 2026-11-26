@@ -23,11 +23,9 @@ describe("unified document workspace routes", () => {
     expect(legacyWorkspaceTarget("?create=1")).toBe("/documents?create=1");
     expect(legacyWorkspaceTarget("")).toBe("/documents");
   });
-  it("builds safe deep links for upload and Word template import actions", () => {
+  it("builds safe deep links for upload and template library actions", () => {
     expect(documentUploadTarget()).toBe("/documents?upload=1");
-    expect(templateImportTarget()).toBe(
-      "/documents?tab=templates&importTemplate=1"
-    );
+    expect(templateImportTarget()).toBe("/documents?tab=templates");
   });
   it("opens each section from a deep link and defaults safely", () => {
     expect(workspaceTabFromSearch("?tab=templates")).toBe("templates");
