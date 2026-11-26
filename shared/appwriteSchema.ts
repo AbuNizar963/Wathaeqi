@@ -8,7 +8,7 @@
  */
 
 export type SchemaColumnType =
-  "varchar" | "text" | "longtext" | "integer" | "boolean" | "datetime";
+  "varchar" | "string" | "text" | "longtext" | "integer" | "double" | "boolean" | "datetime";
 
 export type SchemaColumn = {
   key: string;
@@ -704,16 +704,17 @@ export const appwriteSchema: SchemaTable[] = [
       {
         key: "headerDividerStyle",
         type: "varchar",
-        size: 7,
+        size: 32,
         required: false,
         default: "double",
       },
       {
         key: "headerDividerWidthPt",
-        type: "varchar",
-        size: 8,
+        type: "double",
         required: false,
-        default: "2.25",
+        min: 0.5,
+        max: 6,
+        default: 2.25,
       },
       {
         key: "showVerificationQr",
@@ -774,7 +775,7 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "documentDateFormat",
-        type: "varchar",
+        type: "string",
         size: 32,
         required: false,
         default: "yyyy/MM/dd",
@@ -819,7 +820,7 @@ export const appwriteSchema: SchemaTable[] = [
       {
         key: "frameStyle",
         type: "varchar",
-        size: 7,
+        size: 16,
         required: false,
         default: "single",
       },
@@ -832,10 +833,11 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "frameWidthPt",
-        type: "varchar",
-        size: 8,
+        type: "double",
         required: false,
-        default: "1",
+        min: 0.5,
+        max: 4,
+        default: 1,
       },
       {
         key: "headerAlignment",
@@ -846,19 +848,17 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "pageHeaderRows",
-        type: "longtext",
+        type: "text",
         required: false,
-        default: "[]",
       },
       {
         key: "pageFooterRows",
-        type: "longtext",
+        type: "text",
         required: false,
-        default: "[]",
       },
       {
         key: "documentFontFamily",
-        type: "varchar",
+        type: "string",
         size: 32,
         required: false,
         default: "Cairo",
@@ -879,14 +879,14 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "documentFontColor",
-        type: "varchar",
+        type: "string",
         size: 7,
         required: false,
         default: "#0f172a",
       },
       {
         key: "recipientFontFamily",
-        type: "varchar",
+        type: "string",
         size: 32,
         required: false,
         default: "Cairo",
@@ -907,7 +907,7 @@ export const appwriteSchema: SchemaTable[] = [
       },
       {
         key: "recipientFontColor",
-        type: "varchar",
+        type: "string",
         size: 7,
         required: false,
         default: "#0f172a",
