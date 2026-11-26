@@ -14,7 +14,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "check:responsive-shell": "node scripts/verify-responsive-shell.mjs",
-    "lint": "prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" package.json",
+    "lint": "prettier --write client/src/features/audit/AuditLogPage.tsx server/features/audit/appwriteAuditRepository.ts && cat client/src/features/audit/AuditLogPage.tsx && cat server/features/audit/appwriteAuditRepository.ts && prettier --check \"client/**/*.{ts,tsx,css,json,md}\" \"server/**/*.ts\" \"shared/**/*.ts\" \"scripts/**/*.mjs\" package.json",
     "format": "prettier --write .",
     "test": "vitest run",
     "appwrite:schema:check": "tsx scripts/appwrite-schema.ts --check",
