@@ -295,6 +295,47 @@ function boundedNumber(
     : fallback;
 }
 
+function unknownAttributeName(error: unknown): string | null {
+  const message = error instanceof Error ? error.message : String(error);
+  const match = message.match(
+    /(?:unknown|invalid) attribute\s*:?\s*["']?([A-Za-z0-9_]+)["']?/i
+  );
+  return match?.[1] ?? null;
+}
+
+async function writeSettingsRow(
+  write: (data: Record<string, unknown>) => Promise<AppwriteRow>,
+  data: Record<string, unknown>
+): Promise<AppwriteRow> {
+  let compatibleData = { ...data };
+  const skippedAttributes = new Set<string>();
+
+  // Appwrite environments can briefly have an older table schema than the
+  // checked-in contract. Retry only the specific attribute rejected by the
+  // server so a harmless schema lag cannot discard the complete settings save.
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      return await write(compatibleData);
+    } catch (error) {
+      const attribute = unknownAttributeName(error);
+      if (
+        !attribute ||
+        !(attribute in compatibleData) ||
+        skippedAttributes.has(attribute)
+      ) {
+        throw error;
+      }
+      skippedAttributes.add(attribute);
+      const { [attribute]: _omitted, ...remaining } = compatibleData;
+      compatibleData = remaining;
+    }
+  }
+
+  throw new Error(
+    "Failed to save platform document settings after schema compatibility retries"
+  );
+}
+
 export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSettings> {
   const row = await findSettingsRow();
   if (!row) {
@@ -322,22 +363,30 @@ export async function updatePlatformDocumentSettings(
   const existing = await findSettingsRow();
 
   if (existing) {
-    const updated = await tables.updateRow({
-      databaseId: getAppwriteDatabaseId(),
-      tableId: TABLE_ID,
-      rowId: existing.$id,
-      data,
-    });
+    const updated = await writeSettingsRow(
+      nextData =>
+        tables.updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: TABLE_ID,
+          rowId: existing.$id,
+          data: nextData,
+        }) as Promise<AppwriteRow>,
+      data
+    );
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
 
   try {
-    const created = await tables.createRow({
-      databaseId: getAppwriteDatabaseId(),
-      tableId: TABLE_ID,
-      rowId: ROW_ID,
-      data,
-    });
+    const created = await writeSettingsRow(
+      nextData =>
+        tables.createRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: TABLE_ID,
+          rowId: ROW_ID,
+          data: nextData,
+        }) as Promise<AppwriteRow>,
+      data
+    );
     return mapPlatformDocumentSettings(rowData(created as AppwriteRow));
   } catch (error) {
     // If two first-time saves race, the unique id index lets one win. Reload
@@ -355,12 +404,16 @@ export async function updatePlatformDocumentSettings(
     }
     const raced = await findSettingsRow();
     if (!raced) throw error;
-    const updated = await tables.updateRow({
-      databaseId: getAppwriteDatabaseId(),
-      tableId: TABLE_ID,
-      rowId: raced.$id,
-      data,
-    });
+    const updated = await writeSettingsRow(
+      nextData =>
+        tables.updateRow({
+          databaseId: getAppwriteDatabaseId(),
+          tableId: TABLE_ID,
+          rowId: raced.$id,
+          data: nextData,
+        }) as Promise<AppwriteRow>,
+      data
+    );
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
 }

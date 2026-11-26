@@ -3,6 +3,7 @@ import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "../../../shared/features/pla
 
 const mocks = vi.hoisted(() => ({
   listRows: vi.fn(),
+  updateRow: vi.fn(),
   getAppwriteTablesDB: vi.fn(),
   getAppwriteDatabaseId: vi.fn(() => "database-1"),
 }));
@@ -25,7 +26,10 @@ describe("platform document settings nullable Appwrite columns", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.getAppwriteDatabaseId.mockReturnValue("database-1");
-    mocks.getAppwriteTablesDB.mockReturnValue({ listRows: mocks.listRows });
+    mocks.getAppwriteTablesDB.mockReturnValue({
+      listRows: mocks.listRows,
+      updateRow: mocks.updateRow,
+    });
   });
 
   it("reads persisted typography and defaults missing legacy columns", async () => {
@@ -142,5 +146,33 @@ describe("platform document settings nullable Appwrite columns", () => {
       frameStyle: "f10s",
       headerLogoSize: 60,
     });
+  });
+
+  it("retries without an attribute missing from an older Appwrite table schema", async () => {
+    mocks.listRows.mockResolvedValue({
+      rows: [{ $id: "1", data: { ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS } }],
+    });
+    mocks.updateRow
+      .mockRejectedValueOnce(
+        new Error(
+          'Invalid document structure: Unknown attribute: "documentDateFormat"'
+        )
+      )
+      .mockImplementationOnce(({ data }: { data: Record<string, unknown> }) =>
+        Promise.resolve({ $id: "1", data })
+      );
+
+    const { updatePlatformDocumentSettings } =
+      await import("./platformDocumentSettingsRepository");
+    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 7);
+
+    expect(mocks.updateRow).toHaveBeenCalledTimes(2);
+    expect(mocks.updateRow.mock.calls[1][0].data).not.toHaveProperty(
+      "documentDateFormat"
+    );
+    expect(mocks.updateRow.mock.calls[1][0].data).toHaveProperty(
+      "watermarkText",
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkText
+    );
   });
 });
