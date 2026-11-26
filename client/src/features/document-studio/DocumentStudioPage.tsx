@@ -16,7 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearch } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -136,6 +136,7 @@ function newTemplateField(index: number): DocumentTemplateField {
 
 export default function DocumentStudioPage() {
   const routeSearch = useSearch();
+  const [, setLocation] = useLocation();
   const downloadOperation = useDocumentProgress();
   const [activeTab, setActiveTab] = useState<StudioTab>(() =>
     workspaceTabFromSearch(window.location.search)
@@ -148,6 +149,15 @@ export default function DocumentStudioPage() {
   const [nativePrintOpen, setNativePrintOpen] = useState(false);
   const documentPageRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState("");
+
+  const selectWorkspaceTab = (tab: StudioTab) => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(window.location.search);
+    if (tab === "documents") params.delete("tab");
+    else params.set("tab", tab);
+    const query = params.toString();
+    setLocation(query ? `/documents?${query}` : "/documents");
+  };
 
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
     null
@@ -799,28 +809,31 @@ export default function DocumentStudioPage() {
         <div className="document-studio-tabs grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
           <Button
             variant={activeTab === "documents" ? "default" : "outline"}
-            onClick={() => setActiveTab("documents")}
+            onClick={() => selectWorkspaceTab("documents")}
+            aria-pressed={activeTab === "documents"}
           >
             <FileText className="ml-2 h-4 w-4" />
             الوثائق
           </Button>
           <Button
             variant={activeTab === "templates" ? "default" : "outline"}
-            onClick={() => setActiveTab("templates")}
+            onClick={() => selectWorkspaceTab("templates")}
+            aria-pressed={activeTab === "templates"}
           >
             <LayoutTemplate className="ml-2 h-4 w-4" />
             القوالب
           </Button>
           <Button
             variant={activeTab === "archive" ? "default" : "outline"}
-            onClick={() => setActiveTab("archive")}
+            onClick={() => selectWorkspaceTab("archive")}
+            aria-pressed={activeTab === "archive"}
           >
             <Archive className="ml-2 h-4 w-4" />
             الأرشيف
           </Button>
           <Button
             variant={activeTab === "files" ? "default" : "outline"}
-            onClick={() => setActiveTab("files")}
+            onClick={() => selectWorkspaceTab("files")}
             aria-pressed={activeTab === "files"}
           >
             <FolderOpen className="ml-2 h-4 w-4" />
@@ -1884,8 +1897,8 @@ export default function DocumentStudioPage() {
                       .length
                   }
                   onCreate={() => setCreationDialogOpen(true)}
-                  onTemplates={() => setActiveTab("templates")}
-                  onFiles={() => setActiveTab("files")}
+                  onTemplates={() => selectWorkspaceTab("templates")}
+                  onFiles={() => selectWorkspaceTab("files")}
                 />
               )}
             </main>
