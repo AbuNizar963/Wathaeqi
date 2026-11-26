@@ -1,5 +1,5 @@
 /** Maximum encoded output accepted for a prepared organization logo. */
-export const MAX_ORGANIZATION_LOGO_BYTES = 5 * 1024 * 1024;
+export const MAX_ORGANIZATION_LOGO_BYTES = 2.5 * 1024 * 1024;
 /** Maximum input file size accepted by the browser-side preparation step. */
 export const MAX_ORGANIZATION_LOGO_SOURCE_BYTES = 25 * 1024 * 1024;
 /** Preferred largest edge of prepared raster logos. */
