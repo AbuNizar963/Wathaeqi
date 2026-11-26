@@ -12,6 +12,7 @@ import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
 import 'document_studio_page.dart';
+import 'document_library_page.dart';
 import 'document_studio_outbox.dart';
 import 'app_theme.dart';
 import 'app_update_page.dart';
@@ -666,6 +667,7 @@ class _DashboardPageState extends State<DashboardPage>
     with WidgetsBindingObserver {
   late final Map<String, dynamic> _account;
   bool loading = true;
+  int _selectedNavigationIndex = 0;
   String? error;
   Map<String, dynamic> stats = {};
   String? activeOrganizationName;
@@ -1446,13 +1448,13 @@ class _DashboardPageState extends State<DashboardPage>
               selectedTileColor: AppPalette.sidebarAccent,
               titleTextStyle: TextStyle(
                 color: Colors.white,
-                fontFamily: 'Cairo',
+                fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
               subtitleTextStyle: TextStyle(
                 color: Color(0xFFB8C5D6),
-                fontFamily: 'Cairo',
+                fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
@@ -1534,6 +1536,40 @@ class _DashboardPageState extends State<DashboardPage>
                   onTap: () => Navigator.pop(context),
                 ),
                 ListTile(
+                  leading: const Icon(Icons.folder_open_outlined),
+                  title: const Text('مكتبة الملفات والوثائق'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(DocumentLibraryPage(api: widget.api));
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notifications_none_outlined),
+                  title: const Text('الإشعارات'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(NotificationsPage(api: widget.api));
+                  },
+                ),
+                if (_canManageOrganizationSettings)
+                  ListTile(
+                    leading: const Icon(Icons.settings_outlined),
+                    title: const Text('إعدادات الترويسة والطباعة'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pushPage(DepartmentSettingsPage(api: widget.api));
+                    },
+                  ),
+                if (_isPlatformOwner)
+                  ListTile(
+                    leading: const Icon(Icons.tune_rounded),
+                    title: const Text('إعدادات النظام والوثائق'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pushPage(PlatformDocumentSettingsPage(api: widget.api));
+                    },
+                  ),
+                ListTile(
                   leading: const Icon(Icons.sync_outlined),
                   title: const Text('المزامنة المحلية'),
                   subtitle: const Text('حفظ التغييرات وإعادة مزامنتها'),
@@ -1582,16 +1618,62 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'create-document-fab',
-        tooltip: 'إنشاء وثيقة',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        elevation: 4,
-        onPressed: () => _documentWorkspaceKey.currentState?.createDocument(),
-        child: const Icon(LucideIcons.plus),
+      bottomNavigationBar: Builder(
+        builder: (navigationContext) => SafeArea(
+          top: false,
+          child: NavigationBar(
+            height: 72,
+            selectedIndex: _selectedNavigationIndex,
+            onDestinationSelected: (index) {
+              if (index == 0) {
+                setState(() => _selectedNavigationIndex = 0);
+                return;
+              }
+              if (index == 1) {
+                setState(() => _selectedNavigationIndex = 1);
+                Navigator.push<void>(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => DocumentLibraryPage(api: widget.api),
+                  ),
+                ).whenComplete(() {
+                  if (mounted) setState(() => _selectedNavigationIndex = 0);
+                });
+                return;
+              }
+              if (index == 2) {
+                setState(() => _selectedNavigationIndex = 0);
+                _documentWorkspaceKey.currentState?.createDocument();
+                return;
+              }
+              setState(() => _selectedNavigationIndex = 0);
+              Scaffold.of(navigationContext).openDrawer();
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'الرئيسية',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.description_outlined),
+                selectedIcon: Icon(Icons.description_rounded),
+                label: 'الوثائق',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.add_circle_outline_rounded),
+                selectedIcon: Icon(Icons.add_circle_rounded),
+                label: 'إنشاء جديد',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.menu_rounded),
+                selectedIcon: Icon(Icons.menu_rounded),
+                label: 'المزيد',
+              ),
+            ],
+          ),
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: DocumentStudioPage(
         key: _documentWorkspaceKey,
         api: widget.api,

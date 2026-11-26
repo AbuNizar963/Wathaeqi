@@ -16,22 +16,23 @@ double _contrastRatio(Color first, Color second) {
 
 void main() {
   group('AppTheme', () {
-    test('light theme uses the shared brand palette and Cairo typography', () {
+    test('light theme uses the shared brand palette and IBM Plex Sans Arabic typography', () {
       final theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
       expect(theme.colorScheme.primary, AppPalette.brandBlue);
-      expect(theme.colorScheme.secondary, AppPalette.brandBlue);
+      expect(theme.colorScheme.secondary, AppPalette.brandEmerald);
       expect(theme.scaffoldBackgroundColor, AppPalette.canvas);
       expect(theme.iconTheme.color, AppPalette.navy);
-      expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
+      expect(theme.textTheme.bodyMedium?.fontFamily, 'IBM Plex Sans Arabic');
       expect(theme.cardTheme.color, AppPalette.surface);
-      expect(AppPalette.brandBlue, const Color(0xFF0F766E));
-      expect(AppPalette.canvas, const Color(0xFFF4F7F8));
-      expect(AppPalette.navy, const Color(0xFF102E3C));
-      expect(AppPalette.ink, const Color(0xFF172B36));
-      expect(AppPalette.border, const Color(0xFFDBE5E8));
-      expect(AppPalette.gold, const Color(0xFFC9964D));
+      expect(AppPalette.brandBlue, const Color(0xFF0284C7));
+      expect(AppPalette.brandEmerald, const Color(0xFF059669));
+      expect(AppPalette.canvas, const Color(0xFFF1F5F9));
+      expect(AppPalette.navy, const Color(0xFF0B1120));
+      expect(AppPalette.ink, const Color(0xFF0F172A));
+      expect(AppPalette.border, const Color(0xFFCBD5E1));
+      expect(AppPalette.gold, const Color(0xFFD97706));
       expect(
         _contrastRatio(AppPalette.mutedInk, AppPalette.muted),
         greaterThanOrEqualTo(4.5),
@@ -46,16 +47,16 @@ void main() {
       );
     });
 
-    test('dark theme uses readable dark surfaces and Cairo typography', () {
+    test('dark theme uses readable dark surfaces and IBM Plex Sans Arabic typography', () {
       final theme = AppTheme.dark;
 
       expect(theme.useMaterial3, isTrue);
       expect(theme.brightness, Brightness.dark);
       expect(theme.colorScheme.primary, AppPalette.darkMint);
-      expect(theme.colorScheme.secondary, AppPalette.darkMint);
+      expect(theme.colorScheme.secondary, AppPalette.darkSuccess);
       expect(theme.scaffoldBackgroundColor, AppPalette.darkCanvas);
       expect(theme.iconTheme.color, AppPalette.darkInk);
-      expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
+      expect(theme.textTheme.bodyMedium?.fontFamily, 'IBM Plex Sans Arabic');
       expect(theme.cardTheme.color, AppPalette.darkSurface);
       expect(
         _contrastRatio(AppPalette.darkMutedInk, AppPalette.darkMuted),

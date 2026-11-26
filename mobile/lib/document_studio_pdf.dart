@@ -25,10 +25,10 @@ class DocumentStudioPdf {
     double watermarkScalePercent = 100,
   }) async {
     final regular = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/cairo-400.ttf'),
+      await rootBundle.load('assets/fonts/amiri-regular.ttf'),
     );
     final bold = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/cairo-700.ttf'),
+      await rootBundle.load('assets/fonts/amiri-bold.ttf'),
     );
     final watermarkFont = pw.Font.ttf(
       await rootBundle.load('assets/fonts/aref-ruqaa-regular.ttf'),
