@@ -308,8 +308,7 @@ export default function DocumentStudioPage() {
   const visibleDocuments = useMemo(() => {
     const source = userDocuments.filter(
       item =>
-        documentStatusFilter === "all" ||
-        item.status === documentStatusFilter
+        documentStatusFilter === "all" || item.status === documentStatusFilter
     );
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
@@ -948,8 +947,7 @@ export default function DocumentStudioPage() {
                       aria-haspopup="dialog"
                       aria-expanded={creationDialogOpen}
                     >
-                      <FilePlus2 className="ml-2 h-4 w-4" />
-                      + كتاب رسمي جديد
+                      <FilePlus2 className="ml-2 h-4 w-4" />+ كتاب رسمي جديد
                     </Button>
                   )}
                 </>
@@ -968,48 +966,54 @@ export default function DocumentStudioPage() {
         <DocumentLibraryPage embedded />
       ) : (
         <>
-      {activeTab === "documents" || activeTab === "archive" ? (
-        <nav
-          aria-label="تصفية الوثائق حسب الحالة"
-          className="document-studio-no-print flex flex-wrap items-center gap-2"
-        >
-          {([
-            ["all", "الكل"],
-            ["draft", "مسودات"],
-            ["issued", "صادرة"],
-            ["archived", "مؤرشفة"],
-          ] as const).map(([status, label]) => {
-            const count = userDocuments.filter(document =>
-              status === "all" ? true : document.status === status
-            ).length;
-            const active = documentStatusFilter === status;
-            return (
-              <Button
-                key={status}
-                type="button"
-                size="sm"
-                variant={active ? "default" : "outline"}
-                aria-pressed={active}
-                onClick={() => {
-                  setDocumentStatusFilter(status);
-                  setActiveTab(status === "archived" ? "archive" : "documents");
-                  const params = new URLSearchParams(window.location.search);
-                  params.delete("tab");
-                  if (status === "all") params.delete("status");
-                  else params.set("status", status);
-                  const query = params.toString();
-                  setLocation(query ? `/documents?${query}` : "/documents");
-                }}
-              >
-                {label}
-                <span className="mr-2 rounded-full bg-background/15 px-1.5 text-[11px] tabular-nums">
-                  {count}
-                </span>
-              </Button>
-            );
-          })}
-        </nav>
-      ) : null}
+          {activeTab === "documents" || activeTab === "archive" ? (
+            <nav
+              aria-label="تصفية الوثائق حسب الحالة"
+              className="document-studio-no-print flex flex-wrap items-center gap-2"
+            >
+              {(
+                [
+                  ["all", "الكل"],
+                  ["draft", "مسودات"],
+                  ["issued", "صادرة"],
+                  ["archived", "مؤرشفة"],
+                ] as const
+              ).map(([status, label]) => {
+                const count = userDocuments.filter(document =>
+                  status === "all" ? true : document.status === status
+                ).length;
+                const active = documentStatusFilter === status;
+                return (
+                  <Button
+                    key={status}
+                    type="button"
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    aria-pressed={active}
+                    onClick={() => {
+                      setDocumentStatusFilter(status);
+                      setActiveTab(
+                        status === "archived" ? "archive" : "documents"
+                      );
+                      const params = new URLSearchParams(
+                        window.location.search
+                      );
+                      params.delete("tab");
+                      if (status === "all") params.delete("status");
+                      else params.set("status", status);
+                      const query = params.toString();
+                      setLocation(query ? `/documents?${query}` : "/documents");
+                    }}
+                  >
+                    {label}
+                    <span className="mr-2 rounded-full bg-background/15 px-1.5 text-[11px] tabular-nums">
+                      {count}
+                    </span>
+                  </Button>
+                );
+              })}
+            </nav>
+          ) : null}
 
           <div
             className={`grid grid-cols-1 gap-4 ${

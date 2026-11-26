@@ -223,10 +223,13 @@ assert(
 
 assert(
   documentStudio.includes('aria-label="تصفية الوثائق حسب الحالة"') &&
-    ['["all", "الكل"]', '["draft", "مسودات"]', '["issued", "صادرة"]', '["archived", "مؤرشفة"]'].every(filter =>
-      documentStudio.includes(filter)
-    ) &&
-    documentStudio.includes('xl:grid-cols-[360px_minmax(0,1fr)]'),
+    [
+      '["all", "الكل"]',
+      '["draft", "مسودات"]',
+      '["issued", "صادرة"]',
+      '["archived", "مؤرشفة"]',
+    ].every(filter => documentStudio.includes(filter)) &&
+    documentStudio.includes("xl:grid-cols-[360px_minmax(0,1fr)]"),
   "The document workspace must expose the four status filters and a 360px desktop list."
 );
 
