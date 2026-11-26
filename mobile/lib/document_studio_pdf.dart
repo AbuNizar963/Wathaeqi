@@ -38,6 +38,7 @@ String _formatDocumentDate(DateTime date, Object? rawFormat) {
     _ => '$year/$month/$day',
   };
 }
+
 class DocumentStudioPdf {
   DocumentStudioPdf._();
 
