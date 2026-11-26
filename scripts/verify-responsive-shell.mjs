@@ -76,10 +76,10 @@ assert(
 assert(
   dashboardLayout.includes("const isMobile = useIsMobile();") &&
     dashboardLayout.includes("useState(() => !isMobile)") &&
-    dashboardLayout.includes('collapsible="offcanvas"') &&
-    dashboardLayout.includes("isMobile && !isCollapsed") &&
+    dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
+    dashboardLayout.includes("isMobile && openMobile") &&
     dashboardLayout.includes("fixed inset-0 z-20") &&
-    dashboardLayout.includes("setOpen(false)"),
+    dashboardLayout.includes("setOpenMobile(false)"),
   "The desktop sidebar must overlay the page and close through its backdrop."
 );
 
@@ -97,8 +97,28 @@ assert(
 
 assert(
   sidebarLayout.includes('collapsible === "offcanvas"') &&
-    sidebarLayout.includes('"w-0"'),
+    sidebarLayout.includes('"w-0"') &&
+    sidebarLayout.includes('const SIDEBAR_WIDTH_ICON = "4.5rem"'),
   "An offcanvas sidebar must not reserve layout width for the page content."
+);
+
+assert(
+  dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
+    dashboardLayout.includes('paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"') &&
+    dashboardLayout.includes('setLocation("/documents?create=1")') &&
+    dashboardLayout.includes('إنشاء جديد'),
+  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing."
+);
+
+assert(
+  dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
+    dashboardLayout.includes("DEFAULT_WIDTH = 260"),
+  "The desktop navigation must use a 260px expanded rail and a compact icon-collapsed state."
+);
+
+assert(
+  appRoutes.includes('ThemeProvider defaultTheme="dark" switchable'),
+  "The executive dark theme must be the initial preference while remaining switchable."
 );
 
 assert(
