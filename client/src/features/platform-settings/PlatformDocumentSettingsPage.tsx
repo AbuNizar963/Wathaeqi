@@ -3,6 +3,13 @@ import { FolderOpen, ImagePlus, Save, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { ownerTrpc } from "@/lib/ownerTrpc";
 import {
@@ -58,6 +65,10 @@ export default function PlatformDocumentSettingsPage() {
   const [values, setValues] = useState<SettingsForm>({
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
+  const [activeSettingsTab, setActiveSettingsTab] = useState<
+    "identity" | "format" | "security"
+  >("identity");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (settingsQuery.data) {
@@ -167,11 +178,15 @@ export default function PlatformDocumentSettingsPage() {
   const colorIsValid =
     HEX_COLOR_PATTERN.test(values.headerDividerColor) &&
     HEX_COLOR_PATTERN.test(values.frameColor);
+  const hasUnsavedChanges =
+    Boolean(settingsQuery.data) &&
+    JSON.stringify(values) !==
+      JSON.stringify(normalizePlatformDocumentSettings(settingsQuery.data));
 
   // prettier-ignore
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
-      <header className="document-page-header document-admin-header">
+      <header className="document-page-header document-admin-header sticky top-0 z-30 border-b border-border bg-background/95 py-3 backdrop-blur">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Settings2 className="h-6 w-6" />
@@ -183,6 +198,28 @@ export default function PlatformDocumentSettingsPage() {
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!hasUnsavedChanges || saveMutation.isPending}
+          onClick={() => {
+            if (settingsQuery.data) {
+              setValues(normalizePlatformDocumentSettings(settingsQuery.data));
+            }
+          }}
+          className="hidden sm:inline-flex"
+        >
+          تراجع عن التعديلات
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="lg:hidden"
+          onClick={() => setPreviewOpen(true)}
+        >
+          معاينة A4
+        </Button>
         <Button
           onClick={() => saveMutation.mutate(values)}
           disabled={
@@ -196,32 +233,29 @@ export default function PlatformDocumentSettingsPage() {
           <Save className="ml-2 h-4 w-4" />
           {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
         </Button>
+        </div>
       </header>
 
       <nav
         aria-label="أقسام إعدادات الوثائق"
-        className="flex flex-wrap gap-2"
+        className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-card p-1"
       >
-        {[
-          { id: "organization-identity-settings", label: "هوية الجهة" },
-          { id: "watermark-settings", label: "العلامة المائية" },
-          { id: "page-layout-settings", label: "الصفحة والإطار" },
-          {
-            id: "document-typography-settings",
-            label: "خط الوثيقة والجهة المستلمة",
-          },
-          { id: "header-divider-settings", label: "فاصل الترويسة" },
-          { id: "header-content-settings", label: "بيانات المسؤول" },
-          { id: "page-rows-settings", label: "سطور الصفحة" },
-          { id: "verification-settings", label: "رمز التحقق" },
-        ].map(({ id, label }) => (
-          <a
-            key={id}
-            href={`#${id}`}
-            className="rounded-lg border px-3 py-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        {([
+          ["identity", "الترويسة والهوية"],
+          ["format", "تنسيق الورقة والخط"],
+          ["security", "الأمان والتحقق"],
+        ] as const).map(([tab, label]) => (
+          <Button
+            key={tab}
+            type="button"
+            size="sm"
+            variant={activeSettingsTab === tab ? "default" : "ghost"}
+            aria-pressed={activeSettingsTab === tab}
+            onClick={() => setActiveSettingsTab(tab)}
+            className="min-h-11 px-2 text-xs sm:text-sm"
           >
             {label}
-          </a>
+          </Button>
         ))}
       </nav>
 
@@ -250,6 +284,7 @@ export default function PlatformDocumentSettingsPage() {
               <Card className="space-y-6 p-5">
             <section
               id="organization-identity-settings"
+              hidden={activeSettingsTab !== "identity"}
               aria-labelledby="organization-identity-title"
               className="space-y-3 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
             >
@@ -333,7 +368,16 @@ export default function PlatformDocumentSettingsPage() {
                       {organizationLogoQuery.error.message}
                     </p>
                   ) : (
-                    <div className="flex flex-wrap items-center gap-4">
+                    <div
+                      className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-border p-3 transition-colors hover:border-primary/50"
+                      onDragOver={event => event.preventDefault()}
+                      onDrop={event => {
+                        event.preventDefault();
+                        const file = event.dataTransfer.files?.[0];
+                        if (file) void handleLogoFile(file);
+                      }}
+                      aria-label="منطقة إسقاط شعار الجهة"
+                    >
                       <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border bg-background">
                         {logoUrl ? (
                           <img
@@ -409,6 +453,9 @@ export default function PlatformDocumentSettingsPage() {
                             if (file) void handleLogoFile(file);
                           }}
                         />
+                        <p className="text-xs font-medium text-primary">
+                          اسحب ملف الشعار وأفلته هنا، أو اختره من الاستديو أو ملفاتك.
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           SVG أو PNG أو JPG، بحد أقصى 2.5 ميغابايت بعد التجهيز.
                           تُفحص ملفات SVG على الخادم قبل حفظها.
@@ -424,10 +471,10 @@ export default function PlatformDocumentSettingsPage() {
               )}
             </section>
 
-            <div className="h-px bg-border" />
 
             <section
               id="watermark-settings"
+              hidden={activeSettingsTab !== "security"}
               aria-labelledby="watermark-settings-title"
               className="space-y-4 rounded-xl border p-4"
             >
@@ -486,8 +533,7 @@ export default function PlatformDocumentSettingsPage() {
                 </p>
               </section>
 
-              <div className="h-px bg-border" />
-              <section className="space-y-3">
+                <section className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <label htmlFor="watermark-opacity" className="font-semibold">
                     شفافية العلامة المائية
@@ -558,10 +604,10 @@ export default function PlatformDocumentSettingsPage() {
               ) : null}
             </section>
 
-            <div className="h-px bg-border" />
 
             <section
               id="page-layout-settings"
+              hidden={activeSettingsTab !== "format"}
               aria-labelledby="page-layout-title"
               className="space-y-4 rounded-xl border border-primary/20 bg-primary/[0.03] p-4"
             >
@@ -636,6 +682,7 @@ export default function PlatformDocumentSettingsPage() {
             </section>
             <section
               id="document-typography-settings"
+              hidden={activeSettingsTab !== "format"}
               aria-labelledby="document-typography-title"
               className="space-y-4 rounded-xl border p-4"
             >
@@ -803,6 +850,7 @@ export default function PlatformDocumentSettingsPage() {
             </section>
             <section
               id="header-divider-settings"
+              hidden={activeSettingsTab !== "identity"}
               aria-labelledby="header-divider-title"
               className="space-y-4 rounded-xl border p-4"
             >
@@ -900,6 +948,7 @@ export default function PlatformDocumentSettingsPage() {
 
             <section
               id="header-content-settings"
+              hidden={activeSettingsTab !== "identity"}
               aria-labelledby="header-content-title"
               className="space-y-4 rounded-xl border p-4"
             >
@@ -1107,10 +1156,10 @@ export default function PlatformDocumentSettingsPage() {
               </label>
             </section>
 
-            <div className="h-px bg-border" />
 
             <section
               id="page-rows-settings"
+              hidden={activeSettingsTab !== "security"}
               aria-labelledby="page-rows-title"
               className="space-y-4 rounded-xl border p-4"
             >
@@ -1181,10 +1230,10 @@ export default function PlatformDocumentSettingsPage() {
               ))}
             </section>
 
-            <div className="h-px bg-border" />
 
             <section
               id="verification-settings"
+              hidden={activeSettingsTab !== "security"}
               aria-labelledby="verification-title"
               className="space-y-3 rounded-xl border p-4"
             >
@@ -1212,6 +1261,25 @@ export default function PlatformDocumentSettingsPage() {
             </section>
           </Card>
 
+          <div className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
+            <PlatformDocumentPreview
+              settings={values}
+              logoUrl={logoUrl}
+              organizationId={organizationId}
+              organizationName={organizationContext.data?.organizationName}
+              updatedAt={settingsQuery.data?.updatedAt}
+            />
+          </div>
+        </div>
+      )}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-h-[92dvh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>معاينة الوثيقة الرسمية A4</DialogTitle>
+            <DialogDescription>
+              معاينة مباشرة للترويسة والخط والعلامة المائية قبل حفظ الإعدادات.
+            </DialogDescription>
+          </DialogHeader>
           <PlatformDocumentPreview
             settings={values}
             logoUrl={logoUrl}
@@ -1219,8 +1287,8 @@ export default function PlatformDocumentSettingsPage() {
             organizationName={organizationContext.data?.organizationName}
             updatedAt={settingsQuery.data?.updatedAt}
           />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
