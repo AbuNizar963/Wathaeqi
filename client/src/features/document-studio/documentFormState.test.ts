@@ -147,7 +147,7 @@ describe("document recipient line", () => {
     ).toBe("السيد مدير القسم المحترم");
   });
 
-  it("combines legacy label and recipient when reading older documents", () => {
+  it("combines legacy routing values when reading older documents", () => {
     expect(
       getDocumentRecipientLine({
         [DOCUMENT_RECIPIENT_LABEL_KEY]: "إلى",
