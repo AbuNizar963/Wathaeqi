@@ -148,29 +148,30 @@ describe("platform document settings nullable Appwrite columns", () => {
     });
   });
 
-  it("retries without an attribute missing from an older Appwrite table schema", async () => {
+  it("does not retry or discard settings when Appwrite rejects a schema attribute", async () => {
     mocks.listRows.mockResolvedValue({
       rows: [{ $id: "1", data: { ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS } }],
     });
-    mocks.updateRow
-      .mockRejectedValueOnce(
-        new Error(
-          'Invalid document structure: Unknown attribute: "documentDateFormat"'
-        )
-      )
-      .mockImplementationOnce(({ data }: { data: Record<string, unknown> }) =>
-        Promise.resolve({ $id: "1", data })
-      );
+    const schemaError = new Error(
+      'Invalid document structure: Unknown attribute: "documentDateFormat"'
+    );
+    mocks.updateRow.mockRejectedValueOnce(schemaError);
 
     const { updatePlatformDocumentSettings } =
       await import("./platformDocumentSettingsRepository");
-    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 7);
 
-    expect(mocks.updateRow).toHaveBeenCalledTimes(2);
-    expect(mocks.updateRow.mock.calls[1][0].data).not.toHaveProperty(
-      "documentDateFormat"
+    await expect(
+      updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 7)
+    ).rejects.toThrow(
+      'Invalid document structure: Unknown attribute: "documentDateFormat"'
     );
-    expect(mocks.updateRow.mock.calls[1][0].data).toHaveProperty(
+
+    expect(mocks.updateRow).toHaveBeenCalledTimes(1);
+    expect(mocks.updateRow.mock.calls[0][0].data).toHaveProperty(
+      "documentDateFormat",
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentDateFormat
+    );
+    expect(mocks.updateRow.mock.calls[0][0].data).toHaveProperty(
       "watermarkText",
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkText
     );
