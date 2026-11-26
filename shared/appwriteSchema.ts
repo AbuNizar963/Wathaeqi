@@ -813,7 +813,14 @@ export const appwriteSchema: SchemaTable[] = [
         max: 30,
         default: 6,
       },
-      { key: "pageMarginTopMm", type: "integer", required: false, default: 10 },
+      {
+        key: "pageMarginTopMm",
+        type: "integer",
+        required: false,
+        min: 0,
+        max: 35,
+        default: 10,
+      },
       {
         key: "pageMarginRightMm",
         type: "integer",
