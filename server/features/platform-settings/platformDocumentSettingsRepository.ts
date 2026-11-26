@@ -166,7 +166,9 @@ function mapPlatformDocumentSettings(
       row.frameStyle === "none" ||
       row.frameStyle === "single" ||
       row.frameStyle === "double" ||
-      row.frameStyle === "ornate"
+      row.frameStyle === "ornate" ||
+      row.frameStyle === "classic" ||
+      row.frameStyle === "triple"
         ? row.frameStyle
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle,
     frameColor:
