@@ -1637,7 +1637,9 @@ class _DashboardPageState extends State<DashboardPage>
                     builder: (_) => DocumentLibraryPage(api: widget.api),
                   ),
                 ).whenComplete(() {
-                  if (mounted) setState(() => _selectedNavigationIndex = 0);
+                  if (mounted) {
+                    setState(() => _selectedNavigationIndex = 0);
+                  }
                 });
                 return;
               }
