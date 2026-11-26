@@ -618,6 +618,11 @@ function DashboardLayoutContent({
               );
             })}
           </SidebarContent>
+          {isMobile ? (
+            <div className="mt-auto border-t border-sidebar-border p-3">
+              <HeaderActions />
+            </div>
+          ) : null}
         </Sidebar>
         <div
           className={`absolute top-0 left-0 z-20 h-full w-1 cursor-col-resize transition-colors hover:bg-primary/20 ${isCollapsed ? "hidden" : ""}`}
