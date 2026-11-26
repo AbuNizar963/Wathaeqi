@@ -16,9 +16,9 @@ abstract final class AppPalette {
   static const mutedInk = Color(0xFF475569);
   static const border = Color(0xFFCBD5E1);
   static const danger = Color(0xFFDC2626);
-  static const success = Color(0xFF059669);
-  static const warning = Color(0xFFD97706);
-  static const info = Color(0xFF0284C7);
+  static const success = Color(0xFF047857);
+  static const warning = Color(0xFFB45309);
+  static const info = Color(0xFF0369A1);
   static const sidebarAccent = Color(0xFFE0F2FE);
 
   static const darkCanvas = Color(0xFF0B1120);
