@@ -435,7 +435,7 @@
     padding-bottom: 6.5rem;
   }
 
-  .document-studio-shell > div > aside .max-h-\\[70vh\\] {
+  .document-workspace-list {
     max-height: min(58vh, 32rem);
   }
   button,
