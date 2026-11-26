@@ -447,7 +447,8 @@ export default function WorkspacePage({
             ) : (
               <div className="divide-y divide-border/70">
                 {(documentsQuery.data ?? []).slice(0, 8).map(item => {
-                  const documentUrl = `/documents?document=${encodeURIComponent(item.id)}`;
+                  const documentId = encodeURIComponent(item.id);
+                  const documentUrl = `/documents?document=${documentId}`;
                   const printUrl = `${documentUrl}&print=1`;
 
                   return (
@@ -502,7 +503,9 @@ export default function WorkspacePage({
                           className="text-xs font-medium tabular-nums text-muted-foreground"
                           dir="ltr"
                         >
-                          {formatDashboardDate(item.documentDate || item.updatedAt)}
+                          {formatDashboardDate(
+                            item.documentDate || item.updatedAt
+                          )}
                         </time>
                         <Button
                           type="button"
