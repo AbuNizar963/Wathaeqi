@@ -1,4 +1,5 @@
-Word-inspired page-border presets.
+/**
+ * Word-inspired page-border presets.
  *
  * Legacy frame values remain supported when reading saved settings. The
  * settings interface exposes only WORD_DOCUMENT_FRAME_STYLES.
