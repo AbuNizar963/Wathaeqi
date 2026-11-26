@@ -41,7 +41,14 @@ export async function loadDocumentSettingsForExport(
       settings.headerDividerWidthPt < MIN_DIVIDER_WIDTH_PT ||
       settings.headerDividerWidthPt > MAX_DIVIDER_WIDTH_PT ||
       !HEX_COLOR_PATTERN.test(settings.frameColor) ||
-      !["none", "single", "double", "ornate", "classic", "triple"].includes(settings.frameStyle) ||
+      ![
+        "none",
+        "single",
+        "double",
+        "ornate",
+        "classic",
+        "triple",
+      ].includes(settings.frameStyle) ||
       settings.frameWidthPt < MIN_FRAME_WIDTH_PT ||
       settings.frameWidthPt > MAX_FRAME_WIDTH_PT ||
       ![
