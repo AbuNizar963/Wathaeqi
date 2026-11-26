@@ -12,7 +12,8 @@ export const WORD_DOCUMENT_FRAME_STYLES = [
   "double",
 ] as const;
 
-export type WordDocumentFrameStyle = (typeof WORD_DOCUMENT_FRAME_STYLES)[number];
+export type WordDocumentFrameStyle =
+  (typeof WORD_DOCUMENT_FRAME_STYLES)[number];
 
 export const LEGACY_DOCUMENT_FRAME_STYLES = [
   "single",
