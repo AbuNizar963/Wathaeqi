@@ -149,6 +149,7 @@ export default function DocumentStudioPage() {
   const [importPrintOpen, setImportPrintOpen] = useState(false);
   const [nativePrintOpen, setNativePrintOpen] = useState(false);
   const documentPageRef = useRef<HTMLDivElement>(null);
+  const handledPrintIntentRef = useRef<string | null>(null);
   const [search, setSearch] = useState("");
   const [documentStatusFilter, setDocumentStatusFilter] = useState<
     "all" | "draft" | "issued" | "archived"
@@ -296,12 +297,17 @@ export default function DocumentStudioPage() {
   );
   useEffect(() => {
     const params = new URLSearchParams(routeSearch);
-    if (params.get("print") !== "1") return;
+    if (params.get("print") !== "1") {
+      handledPrintIntentRef.current = null;
+      return;
+    }
+    if (handledPrintIntentRef.current === routeSearch) return;
 
     const documentId = params.get("document");
     if (!documentId || documentsQuery.isLoading) return;
 
     if (!selectedDocument || selectedDocument.id !== documentId) {
+      handledPrintIntentRef.current = routeSearch;
       params.delete("print");
       const query = params.toString();
       window.history.replaceState(
@@ -318,6 +324,7 @@ export default function DocumentStudioPage() {
     if (selectedDocument.file && importedFileUrlQuery.isLoading) return;
     if (selectedDocument.file && !importedFileUrlQuery.data?.url) {
       if (importedFileUrlQuery.isError) {
+        handledPrintIntentRef.current = routeSearch;
         params.delete("print");
         const query = params.toString();
         window.history.replaceState(
@@ -332,6 +339,7 @@ export default function DocumentStudioPage() {
       return;
     }
 
+    handledPrintIntentRef.current = routeSearch;
     params.delete("print");
     const query = params.toString();
     window.history.replaceState(
