@@ -25,6 +25,7 @@ const [
   platformDocumentPreview,
   workspacePage,
   workspaceRouter,
+  globalStyles,
 ] = await Promise.all(
   [
     "client/index.html",
@@ -38,6 +39,7 @@ const [
     "client/src/features/platform-settings/PlatformDocumentPreview.tsx",
     "client/src/features/workspace/WorkspacePage.tsx",
     "server/features/workspace/workspaceRouter.ts",
+    "client/src/index.css",
   ].map(readProjectFile)
 );
 
@@ -217,6 +219,24 @@ assert(
     !workspaceRouter.includes('tableId: "audit_logs"') &&
     workspaceRouter.includes("ctx.user.authUserId"),
   "Workspace API reads and writes must use the existing Appwrite tables and scope data to the signed-in owner."
+);
+
+assert(
+  documentStudio.includes('aria-label="تصفية الوثائق حسب الحالة"') &&
+    ['["all", "الكل"]', '["draft", "مسودات"]', '["issued", "صادرة"]', '["archived", "مؤرشفة"]'].every(filter =>
+      documentStudio.includes(filter)
+    ) &&
+    documentStudio.includes('xl:grid-cols-[360px_minmax(0,1fr)]'),
+  "The document workspace must expose the four status filters and a 360px desktop list."
+);
+
+assert(
+  documentStudio.includes('window.matchMedia("(max-width: 767px)").matches') &&
+    documentStudio.includes("العودة إلى قائمة الوثائق") &&
+    documentStudio.includes("document-preview-actions") &&
+    globalStyles.includes(".document-preview-actions {") &&
+    globalStyles.includes("env(safe-area-inset-bottom)"),
+  "Mobile document selection must open a full preview with a safe-area action dock and a return path."
 );
 
 console.log(
