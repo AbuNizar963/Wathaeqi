@@ -15,6 +15,7 @@ import {
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
 import { resolveOrganizationScope } from "../organizations/organizationAccess";
+import { getRequestAuditContext } from "../../auditContext";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 
 type AppwriteRow = Record<string, unknown> & {
@@ -69,6 +70,7 @@ const contactsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
       const row = await getAppwriteTablesDB().createRow({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
@@ -82,6 +84,17 @@ const contactsRouter = router({
         },
       });
       const data = rowData(row as AppwriteRow);
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "contact.created",
+        entityType: "contact",
+        entityId: (row as AppwriteRow).$id,
+        metadata: { name: input.name, organization: input.organization },
+      });
       return {
         id: (row as AppwriteRow).$id,
         name: String(data.name ?? input.name),
@@ -102,6 +115,7 @@ const contactsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
       const tables = getAppwriteTablesDB();
       const existing = (await tables.getRow({
         databaseId: getAppwriteDatabaseId(),
@@ -127,6 +141,17 @@ const contactsRouter = router({
         },
       })) as unknown as AppwriteRow;
       const saved = rowData(row);
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "contact.updated",
+        entityType: "contact",
+        entityId: input.id,
+        metadata: { name: input.name, organization: input.organization },
+      });
       return {
         id: row.$id,
         name: String(saved.name ?? input.name),
@@ -139,6 +164,7 @@ const contactsRouter = router({
   delete: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
       const tables = getAppwriteTablesDB();
       const existing = (await tables.getRow({
         databaseId: getAppwriteDatabaseId(),
@@ -155,6 +181,17 @@ const contactsRouter = router({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
         rowId: input.id,
+      });
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "contact.deleted",
+        entityType: "contact",
+        entityId: input.id,
+        metadata: { name: rowData(existing).name },
       });
       return { success: true as const };
     }),
