@@ -70,7 +70,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   pageMarginRightMm: 10,
   pageMarginBottomMm: 10,
   pageMarginLeftMm: 10,
-  frameStyle: "single" as const,
+  frameStyle: "box" as const,
   frameColor: "#b49a55",
   frameWidthPt: 1,
   showVerificationQr: true,
