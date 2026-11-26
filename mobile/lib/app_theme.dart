@@ -42,7 +42,7 @@ abstract final class AppPalette {
   static const lightScheme = ColorScheme.light(
     primary: brandBlue,
     onPrimary: surface,
-    secondary: brandEmerald,
+    secondary: success,
     onSecondary: surface,
     surface: surface,
     onSurface: ink,
