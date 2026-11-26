@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   editablePlainText,
@@ -12,6 +12,7 @@ type DocumentEditorProps = {
   editable?: boolean;
   placeholder?: string;
   containerClassName?: string;
+  textStyle?: CSSProperties;
 };
 
 function collectText(value: unknown): string {
@@ -94,6 +95,7 @@ export default function DocumentEditor({
   editable = true,
   placeholder = "اكتب المحتوى هنا...",
   containerClassName = "",
+  textStyle,
 }: DocumentEditorProps) {
   const plainText = editablePlainText(content);
   const canEditText = editable && plainText !== null;
@@ -121,11 +123,13 @@ export default function DocumentEditor({
           }
           placeholder={placeholder}
           aria-label="نص الوثيقة"
-          className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent p-3 text-right text-[16px] leading-8 text-slate-900 shadow-none focus-visible:ring-0"
+          className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent p-3 text-right leading-8 shadow-none focus-visible:ring-0"
+          style={textStyle}
         />
       ) : null}
       <div
-        className={`document-editor-copy text-right text-[16px] text-slate-900 ${canEditText ? "document-editor-print-copy" : ""}`}
+        className={`document-editor-copy text-right ${canEditText ? "document-editor-print-copy" : ""}`}
+        style={textStyle}
         aria-hidden={canEditText ? true : undefined}
       >
         {content.type === "doc" ? previewParagraphs(content) : text}
