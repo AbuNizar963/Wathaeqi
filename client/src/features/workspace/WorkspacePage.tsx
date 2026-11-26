@@ -690,9 +690,7 @@ export default function WorkspacePage({
                     </Badge>
                   </div>
                   {item.isPlatformOwner ? (
-                    <Badge className="mt-3">
-                      مالك المنصة — حساب محمي
-                    </Badge>
+                    <Badge className="mt-3">مالك المنصة — حساب محمي</Badge>
                   ) : null}
                   <div className="mt-4 space-y-2 text-sm">
                     <p className="truncate text-muted-foreground" dir="ltr">
@@ -891,7 +889,8 @@ export default function WorkspacePage({
               onClick={() =>
                 createUser.mutate({
                   ...userForm,
-                  organizationId: organizationContext.data?.organizationId ?? "",
+                  organizationId:
+                    organizationContext.data?.organizationId ?? "",
                 })
               }
               disabled={
