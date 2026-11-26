@@ -23,7 +23,6 @@ import {
   LockKeyhole,
   PanelLeft,
   Plus,
-  Bell,
   ShieldCheck,
   Users,
   Bell,
@@ -124,7 +123,11 @@ export default function DashboardLayout({
 }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    if (!saved) return DEFAULT_WIDTH;
+    const parsed = Number.parseInt(saved, 10);
+    return Number.isFinite(parsed)
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, parsed))
+      : DEFAULT_WIDTH;
   });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { loading, user } = useAuth();
@@ -459,7 +462,7 @@ function DashboardLayoutContent({
     isPlatformOwner: isPlatformOwnerAccount,
   });
   const [location, setLocation] = useLocation();
-  const { state, setOpen, openMobile, setOpenMobile, toggleSidebar } =
+  const { state, openMobile, setOpenMobile, toggleSidebar } =
     useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
