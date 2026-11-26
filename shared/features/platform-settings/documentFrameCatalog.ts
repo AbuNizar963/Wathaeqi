@@ -27,8 +27,21 @@ export type LegacyDocumentFrameStyle =
   | (typeof LEGACY_DOCUMENT_FRAME_STYLES)[number]
   | "none";
 
+type LegacyFrameFamilyCode =
+  | "01"
+  | "02"
+  | "03"
+  | "04"
+  | "05"
+  | "06"
+  | "07"
+  | "08"
+  | "09"
+  | "10";
+type LegacyFramePaletteCode = "g" | "n" | "e" | "b" | "s";
+
 export type LegacyDocumentFramePresetId =
-  `f${"01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10"}${"g" | "n" | "e" | "b" | "s"}`;
+  `f${LegacyFrameFamilyCode}${LegacyFramePaletteCode}`;
 
 export type DocumentFrameStyle =
   | WordDocumentFrameStyle
