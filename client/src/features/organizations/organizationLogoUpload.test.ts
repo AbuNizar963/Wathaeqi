@@ -64,7 +64,7 @@ describe("prepared organization logo size and image safety", () => {
     ["image/png", pngHeader] as const,
     ["image/jpeg", jpegHeader] as const,
   ])(
-    "resizes %s and returns an output within the 5 MiB cap",
+    "resizes %s and returns an output within the 2.5 MiB cap",
     async (type, header) => {
       const canvas = stubRasterPreparation(type, [
         new Blob(["small"], { type }),
@@ -180,6 +180,17 @@ describe("prepared organization logo size and image safety", () => {
     const result = await prepareOrganizationLogoUpload(file);
     expect(result.blob).toBe(file);
     expect(result.contentType).toBe("image/svg+xml");
+  });
+
+  it("rejects SVG files above the 2.5 MiB limit before upload", async () => {
+    const file = new File(
+      [new Uint8Array(MAX_ORGANIZATION_LOGO_BYTES + 1)],
+      "oversized-logo.svg",
+      { type: "image/svg+xml" }
+    );
+    await expect(prepareOrganizationLogoUpload(file)).rejects.toThrow(
+      "2.5 ميغابايت"
+    );
   });
 });
 describe("direct organization logo upload", () => {
