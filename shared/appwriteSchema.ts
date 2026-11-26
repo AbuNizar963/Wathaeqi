@@ -882,7 +882,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 7,
         required: false,
-        default: "#1f2937",
+        default: "#0f172a",
       },
       {
         key: "recipientFontFamily",
@@ -897,7 +897,7 @@ export const appwriteSchema: SchemaTable[] = [
         required: false,
         min: 9,
         max: 24,
-        default: 14,
+        default: 12,
       },
       {
         key: "recipientFontWeight",
@@ -910,7 +910,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 7,
         required: false,
-        default: "#111827",
+        default: "#0f172a",
       },
     ],
     indexes: [
