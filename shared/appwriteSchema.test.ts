@@ -106,6 +106,21 @@ describe("Appwrite operational schema", () => {
     );
   });
 
+  it("indexes audit records for newest-first owner history queries", () => {
+    const records = findSchemaTable("app_records");
+
+    expect(records?.indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "record_type_created",
+          type: "key",
+          columns: ["recordType", "createdAt"],
+          orders: ["ASC", "DESC"],
+        }),
+      ])
+    );
+  });
+
   it("reuses live index keys and adds only missing uniqueness", () => {
     const users = findSchemaTable("users");
     const memberships = findSchemaTable("organization_memberships");

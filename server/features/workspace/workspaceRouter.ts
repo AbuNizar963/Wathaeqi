@@ -15,6 +15,7 @@ import {
 import { isPlatformOwner } from "../../ownerAccess";
 import { getUserOrganizationMembership } from "../organizations/appwriteOwnerOrganizationRepository";
 import { resolveOrganizationScope } from "../organizations/organizationAccess";
+import { getRequestAuditContext } from "../../auditContext";
 import { writeAuditLog } from "../audit/appwriteAuditRepository";
 
 type AppwriteRow = Record<string, unknown> & {
@@ -69,6 +70,7 @@ const contactsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
       const row = await getAppwriteTablesDB().createRow({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
@@ -82,6 +84,17 @@ const contactsRouter = router({
         },
       });
       const data = rowData(row as AppwriteRow);
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "contact.created",
+        entityType: "contact",
+        entityId: (row as AppwriteRow).$id,
+        metadata: { name: input.name, organization: input.organization },
+      });
       return {
         id: (row as AppwriteRow).$id,
         name: String(data.name ?? input.name),
@@ -102,6 +115,7 @@ const contactsRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
       const tables = getAppwriteTablesDB();
       const existing = (await tables.getRow({
         databaseId: getAppwriteDatabaseId(),
@@ -127,6 +141,17 @@ const contactsRouter = router({
         },
       })) as unknown as AppwriteRow;
       const saved = rowData(row);
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "contact.updated",
+        entityType: "contact",
+        entityId: input.id,
+        metadata: { name: input.name, organization: input.organization },
+      });
       return {
         id: row.$id,
         name: String(saved.name ?? input.name),
@@ -139,6 +164,7 @@ const contactsRouter = router({
   delete: authenticatedProcedure
     .input(z.object({ id: z.string().min(1).max(36) }))
     .mutation(async ({ ctx, input }) => {
+      const scope = await resolveOrganizationScope(ctx.user);
       const tables = getAppwriteTablesDB();
       const existing = (await tables.getRow({
         databaseId: getAppwriteDatabaseId(),
@@ -155,6 +181,17 @@ const contactsRouter = router({
         databaseId: getAppwriteDatabaseId(),
         tableId: "contacts",
         rowId: input.id,
+      });
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.username ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "contact.deleted",
+        entityType: "contact",
+        entityId: input.id,
+        metadata: { name: rowData(existing).name },
       });
       return { success: true as const };
     }),
@@ -235,6 +272,78 @@ const notificationsRouter = router({
     );
     return { updated: unread.length };
   }),
+});
+
+const auditRouter = router({
+  list: platformOwnerProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(100).default(100),
+        search: z.string().trim().max(120).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const result = await getAppwriteTablesDB().listRows({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "app_records",
+        queries: [
+          Query.equal("recordType", "audit_event"),
+          Query.orderDesc("createdAt"),
+          Query.limit(input.limit),
+        ],
+        total: true,
+      });
+
+      const events = result.rows.map(row => {
+        const data = rowData(row as AppwriteRow);
+        const payload = safeJson(data.payload);
+        const event =
+          payload && typeof payload === "object" && !Array.isArray(payload)
+            ? (payload as Record<string, unknown>)
+            : {};
+        return {
+          id: (row as AppwriteRow).$id,
+          actorUserId: Number(event.actorUserId ?? 0),
+          actorName: String(event.actorName ?? "مستخدم"),
+          actorRank: parseOptionalText(event.actorRank),
+          actorRole: parseOptionalText(event.actorRole),
+          action: String(event.action ?? "unknown"),
+          entityType: String(event.entityType ?? "system"),
+          entityId: parseOptionalText(event.entityId),
+          organizationId: parseOptionalText(event.organizationId),
+          metadata: event.metadata ?? null,
+          beforeState: event.beforeState ?? null,
+          afterState: event.afterState ?? null,
+          reason: parseOptionalText(event.reason),
+          ipAddress: parseOptionalText(event.ipAddress),
+          userAgent: parseOptionalText(event.userAgent),
+          deviceType: parseOptionalText(event.deviceType) ?? "unknown",
+          createdAt: String(data.createdAt ?? event.occurredAt ?? ""),
+        };
+      });
+
+      const search = input.search?.toLocaleLowerCase("ar");
+      const filtered = search
+        ? events.filter(event =>
+            [
+              event.actorName,
+              event.action,
+              event.entityType,
+              event.entityId ?? "",
+              JSON.stringify(event.metadata ?? ""),
+            ]
+              .join(" ")
+              .toLocaleLowerCase("ar")
+              .includes(search)
+          )
+        : events;
+
+      return {
+        events: filtered,
+        total: result.total,
+        returned: filtered.length,
+      };
+    }),
 });
 
 const administrationRouter = router({
@@ -483,8 +592,11 @@ const administrationRouter = router({
       }
 
       await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        actorRole: ctx.user.role,
+        organizationId: input.organizationId,
         action: "user.created",
         entityType: "user",
         entityId: String(profileId),
@@ -571,8 +683,11 @@ const administrationRouter = router({
         )
       );
       await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        actorRole: ctx.user.role,
+        organizationId: parseOptionalText(data.organizationId),
         action: input.isActive ? "user.activated" : "user.deactivated",
         entityType: "user",
         entityId: String(input.id),
@@ -647,8 +762,11 @@ const administrationRouter = router({
         )
       );
       await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        actorRole: ctx.user.role,
+        organizationId: parseOptionalText(data.organizationId),
         action: "user.role_changed",
         entityType: "user",
         entityId: String(input.id),
@@ -662,4 +780,5 @@ export const workspaceRouter = router({
   contacts: contactsRouter,
   notifications: notificationsRouter,
   administration: administrationRouter,
+  audit: auditRouter,
 });

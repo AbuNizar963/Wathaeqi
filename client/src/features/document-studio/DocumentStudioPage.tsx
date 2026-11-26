@@ -356,6 +356,11 @@ export default function DocumentStudioPage() {
     []
   );
 
+  const recordDocumentPrintMutation =
+    trpc.documentStudio.recordPrint.useMutation({
+      onError: error => toast.error(error.message),
+    });
+
   const createDocumentMutation = trpc.documentStudio.createDocument.useMutation(
     {
       onSuccess: async saved => {
@@ -2012,6 +2017,13 @@ export default function DocumentStudioPage() {
         onOpenChange={setNativePrintOpen}
         title={(selectedDocument?.title ?? documentTitle) || "وثيقة جديدة"}
         pageElement={documentPageRef.current}
+        onBeforePrint={async () => {
+          if (selectedDocument) {
+            await recordDocumentPrintMutation.mutateAsync({
+              id: selectedDocument.id,
+            });
+          }
+        }}
       />
       <Dialog open={creationDialogOpen} onOpenChange={setCreationDialogOpen}>
         <DialogContent

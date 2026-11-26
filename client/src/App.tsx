@@ -14,6 +14,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const DocumentStudioPage = lazy(
   () => import("./features/document-studio/DocumentStudioPage")
 );
+const AuditLogPage = lazy(() => import("./features/audit/AuditLogPage"));
 const Profile = lazy(() => import("./features/users/Profile"));
 const About = lazy(() => import("./pages/About"));
 const Terms = lazy(() => import("./pages/Terms"));
@@ -82,6 +83,11 @@ function Router() {
         <Route path="/users">
           <DashboardPage>
             <WorkspacePage section="users" />
+          </DashboardPage>
+        </Route>
+        <Route path="/audit-log">
+          <DashboardPage>
+            <AuditLogPage />
           </DashboardPage>
         </Route>
         <Route path="/about">

@@ -478,7 +478,7 @@ export const documentStudioRouter = router({
         input.fieldValues
       );
       const scope = await resolveOrganizationScope(ctx.user);
-      return createOfficialDocument(ctx.user.authUserId, {
+      const saved = await createOfficialDocument(ctx.user.authUserId, {
         title: input.title,
         category: input.category,
         subject: input.subject,
@@ -488,6 +488,19 @@ export const documentStudioRouter = router({
         organizationId: scope.organizationId,
         ...snapshot,
       });
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: scope.organizationId,
+        action: "document.created",
+        entityType: "document",
+        entityId: saved.id,
+        metadata: { title: saved.title, category: saved.category },
+        afterState: { status: saved.status, title: saved.title },
+      });
+      return toClientDocument(saved);
     }),
 
   updateDocument: authenticatedProcedure
@@ -551,10 +564,46 @@ export const documentStudioRouter = router({
           }
         );
         if (!saved) throwIfNotFound("الوثيقة غير موجودة");
+        await writeAuditLog({
+          ...getRequestAuditContext(ctx.req),
+          actorUserId: ctx.user.id,
+          actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+          actorRole: ctx.user.role,
+          organizationId: saved.organizationId ?? undefined,
+          action: "document.updated",
+          entityType: "document",
+          entityId: saved.id,
+          metadata: { title: saved.title, category: saved.category },
+          beforeState: { title: existing.title, category: existing.category },
+          afterState: { title: saved.title, category: saved.category },
+        });
         return toClientDocument(saved);
       } catch (error) {
         throwConflict(error);
       }
+    }),
+
+  recordPrint: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .mutation(async ({ ctx, input }) => {
+      const document = await getOfficialDocument(ctx.user.authUserId, input.id);
+      if (!document) throwIfNotFound("الوثيقة غير موجودة");
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: document.organizationId ?? undefined,
+        action: "document.print",
+        entityType: "document",
+        entityId: document.id,
+        metadata: {
+          title: document.title,
+          status: document.status,
+          serialCode: document.serialCode,
+        },
+      });
+      return { success: true as const };
     }),
 
   archiveDocument: authenticatedProcedure
