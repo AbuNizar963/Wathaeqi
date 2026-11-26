@@ -53,11 +53,13 @@ export async function loadDocumentSettingsForExport(
       settings.frameWidthPt < MIN_FRAME_WIDTH_PT ||
       settings.frameWidthPt > MAX_FRAME_WIDTH_PT ||
       !DOCUMENT_FONT_FAMILIES.includes(settings.documentFontFamily) ||
+      !Number.isInteger(settings.documentFontSizePt) ||
       settings.documentFontSizePt < MIN_DOCUMENT_FONT_SIZE_PT ||
       settings.documentFontSizePt > MAX_DOCUMENT_FONT_SIZE_PT ||
       !DOCUMENT_FONT_WEIGHTS.includes(settings.documentFontWeight) ||
       !HEX_COLOR_PATTERN.test(settings.documentFontColor) ||
       !DOCUMENT_FONT_FAMILIES.includes(settings.recipientFontFamily) ||
+      !Number.isInteger(settings.recipientFontSizePt) ||
       settings.recipientFontSizePt < MIN_RECIPIENT_FONT_SIZE_PT ||
       settings.recipientFontSizePt > MAX_RECIPIENT_FONT_SIZE_PT ||
       !DOCUMENT_FONT_WEIGHTS.includes(settings.recipientFontWeight) ||
