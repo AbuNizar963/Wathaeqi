@@ -830,12 +830,14 @@ class _DashboardPageState extends State<DashboardPage>
       _dashboardScaffoldKey.currentState?.openDrawer();
       return;
     }
-    final tab = switch (index) {
-      0 => DocumentStudioTab.documents,
-      1 => DocumentStudioTab.templates,
-      2 => DocumentStudioTab.archive,
-      _ => DocumentStudioTab.documents,
-    };
+    if (index == 2) {
+      setState(() => _selectedWorkspaceDestination = 0);
+      _documentWorkspaceKey.currentState?.createDocument();
+      return;
+    }
+    final tab = index == 0
+        ? DocumentStudioTab.documents
+        : DocumentStudioTab.archive;
     setState(() => _selectedWorkspaceDestination = index);
     _documentWorkspaceKey.currentState?.showTab(tab);
   }
@@ -1732,14 +1734,14 @@ class _DashboardPageState extends State<DashboardPage>
               label: 'الوثائق',
             ),
             NavigationDestination(
-              icon: Icon(Icons.dashboard_customize_outlined),
-              selectedIcon: Icon(Icons.dashboard_customize_rounded),
-              label: 'القوالب',
-            ),
-            NavigationDestination(
               icon: Icon(Icons.archive_outlined),
               selectedIcon: Icon(Icons.archive_rounded),
               label: 'الأرشيف',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.add_circle_outline_rounded),
+              selectedIcon: Icon(Icons.add_circle_rounded),
+              label: 'إنشاء جديد',
             ),
             NavigationDestination(
               icon: Icon(Icons.more_horiz_rounded),
@@ -1748,16 +1750,6 @@ class _DashboardPageState extends State<DashboardPage>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'create-document-fab',
-        tooltip: 'إنشاء وثيقة',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        elevation: 4,
-        onPressed: () => _documentWorkspaceKey.currentState?.createDocument(),
-        child: const Icon(LucideIcons.plus),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: DocumentStudioPage(
         key: _documentWorkspaceKey,
         api: widget.api,
