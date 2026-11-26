@@ -41,6 +41,7 @@ class DocumentStudioPage extends StatefulWidget {
     this.initialTab = DocumentStudioTab.documents,
     this.openCreationOptionsOnOpen = false,
     this.initialDocumentId,
+    this.showCreateAction = true,
   });
 
   final PoliceApi api;
@@ -48,6 +49,7 @@ class DocumentStudioPage extends StatefulWidget {
   final DocumentStudioTab initialTab;
   final bool openCreationOptionsOnOpen;
   final String? initialDocumentId;
+  final bool showCreateAction;
 
   @override
   State<DocumentStudioPage> createState() => DocumentStudioPageState();
@@ -63,6 +65,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     if (!mounted || _tab == tab) return;
     setState(() => _tab = tab);
   }
+
   late final DocumentStudioOutbox _outbox;
   late QuillController _documentEditor;
   late QuillController _templateEditor;
@@ -1686,7 +1689,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
               ButtonSegment(
                 value: DocumentStudioTab.templates,
                 label: Text('القوالب'),
-                icon: Icon(Icons.dashboard_customize_outlined),
+                icon: Icon(LucideIcons.layoutTemplate),
               ),
               ButtonSegment(
                 value: DocumentStudioTab.archive,
@@ -1696,7 +1699,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
               ButtonSegment(
                 value: DocumentStudioTab.files,
                 label: Text('الملفات'),
-                icon: Icon(Icons.folder_open_rounded),
+                icon: Icon(LucideIcons.folderOpen),
               ),
             ],
             selected: {_tab},
@@ -1712,10 +1715,11 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   Widget _buildHomeDashboard() {
-    final documents = _documents
-        .where((document) => !document.isLegacyStarterDraft)
-        .toList()
-      ..sort((first, second) => second.updatedAt.compareTo(first.updatedAt));
+    final documents =
+        _documents.where((document) => !document.isLegacyStarterDraft).toList()
+          ..sort(
+            (first, second) => second.updatedAt.compareTo(first.updatedAt),
+          );
     final drafts = documents
         .where((document) => document.status == 'draft')
         .length;
@@ -1777,7 +1781,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
-          childAspectRatio: 2.35,
+          childAspectRatio: 2.1,
           children: [
             _homeMetric(
               label: 'إجمالي الوثائق',
@@ -2029,6 +2033,12 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             spacing: 8,
             runSpacing: 8,
             children: [
+              if (widget.showCreateAction)
+                FilledButton.icon(
+                  onPressed: _saving ? null : _showCreateDocumentOptions,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('إنشاء وثيقة'),
+                ),
               OutlinedButton.icon(
                 onPressed: _saving ? null : _chooseTemplateForNewDocument,
                 icon: const Icon(Icons.dashboard_customize_outlined),
