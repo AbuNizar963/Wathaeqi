@@ -16,7 +16,9 @@ double _contrastRatio(Color first, Color second) {
 
 void main() {
   group('AppTheme', () {
-    test('light theme uses the shared brand palette and IBM Plex Sans Arabic typography', () {
+    test(
+      'light theme uses the shared brand palette and IBM Plex Sans Arabic typography',
+      () {
       final theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
@@ -46,7 +48,9 @@ void main() {
       );
     });
 
-    test('dark theme uses readable dark surfaces and IBM Plex Sans Arabic typography', () {
+    test(
+      'dark theme uses readable dark surfaces and IBM Plex Sans Arabic typography',
+      () {
       final theme = AppTheme.dark;
 
       expect(theme.useMaterial3, isTrue);
