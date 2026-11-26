@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   LockKeyhole,
   PanelLeft,
+  Plus,
   ShieldCheck,
   Users,
   Bell,
@@ -111,9 +112,9 @@ function isRouteActive(currentRoute: string, targetRoute: string) {
 }
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
-const DEFAULT_WIDTH = 280;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 480;
+const DEFAULT_WIDTH = 260;
+const MIN_WIDTH = 220;
+const MAX_WIDTH = 360;
 
 export default function DashboardLayout({
   children,
@@ -122,9 +123,13 @@ export default function DashboardLayout({
 }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    if (!saved) return DEFAULT_WIDTH;
+    const parsed = Number.parseInt(saved, 10);
+    return Number.isFinite(parsed)
+      ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, parsed))
+      : DEFAULT_WIDTH;
   });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { loading, user } = useAuth();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
@@ -457,8 +462,7 @@ function DashboardLayoutContent({
     isPlatformOwner: isPlatformOwnerAccount,
   });
   const [location, setLocation] = useLocation();
-  const { state, setOpen, openMobile, setOpenMobile, toggleSidebar } =
-    useSidebar();
+  const { state, openMobile, setOpenMobile, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const isMobile = useIsMobile();
   // The offcanvas shell is initialized from the mobile breakpoint.
@@ -538,18 +542,18 @@ function DashboardLayoutContent({
       >
         تجاوز إلى المحتوى الرئيسي
       </a>
-      {isMobile && !isCollapsed ? (
+      {isMobile && openMobile ? (
         <button
           type="button"
           aria-label="إغلاق القائمة الجانبية"
           className="fixed inset-0 z-20 bg-slate-950/35 backdrop-blur-[1px] transition-opacity"
-          onClick={() => setOpen(false)}
+          onClick={() => setOpenMobile(false)}
         />
       ) : null}
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           side="right"
-          collapsible="offcanvas"
+          collapsible={isMobile ? "offcanvas" : "icon"}
           className="z-30 border-l-0"
           disableTransition={isResizing}
         >
@@ -637,9 +641,15 @@ function DashboardLayoutContent({
                 title={isCollapsed ? "فتح القائمة" : "إغلاق القائمة"}
               />
               <BrandMark size="sm" />
-              <h1 className="text-lg font-bold tracking-tight text-foreground">
-                وثائقي
-              </h1>
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="text-[10px] font-medium text-muted-foreground">
+                  وثائقي <span className="px-1 text-brand-gold">/</span> مساحة
+                  العمل
+                </span>
+                <h1 className="truncate text-sm font-bold tracking-tight text-foreground">
+                  {activeMenuItem?.label ?? "لوحة العمل"}
+                </h1>
+              </div>
               <span
                 className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[10px] font-semibold ${online ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}
               >
@@ -649,7 +659,16 @@ function DashboardLayoutContent({
                 {online ? "النظام متصل" : "وضع عدم الاتصال"}
               </span>
             </div>
-            <HeaderActions />
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setLocation("/documents?create=1")}
+                className="h-10 rounded-xl px-4 shadow-sm"
+              >
+                <Plus className="ml-2 h-4 w-4" />
+                إنشاء وثيقة
+              </Button>
+              <HeaderActions />
+            </div>
           </div>
         ) : null}
         {isMobile && (
@@ -662,18 +681,29 @@ function DashboardLayoutContent({
                 }
               />
               <BrandMark size="sm" />
-              <span className="text-sm font-bold">وثائقي</span>
-              <span className="sr-only">
-                {activeMenuItem?.label ?? "القائمة"}
+              <span className="max-w-[34vw] truncate text-sm font-bold">
+                {activeMenuItem?.label ?? "مساحة العمل"}
               </span>
             </div>
-            <HeaderActions />
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-xl"
+                aria-label="الإشعارات"
+                onClick={() => setLocation("/notifications")}
+              >
+                <Bell className="h-[18px] w-[18px]" />
+              </Button>
+              <HeaderActions />
+            </div>
           </div>
         )}
         <main
           id="main-content"
           tabIndex={-1}
-          className="min-w-0 flex-1 p-3 sm:p-4 lg:p-8 xl:p-10 2xl:p-12"
+          className="min-w-0 flex-1 p-3 pb-24 sm:p-4 sm:pb-24 md:pb-8 lg:p-8 lg:pb-8 xl:p-10 xl:pb-10 2xl:p-12 2xl:pb-12"
         >
           {!online ? (
             <div
@@ -694,6 +724,65 @@ function DashboardLayoutContent({
           {children}
         </main>
       </SidebarInset>
+      {isMobile ? (
+        <nav
+          aria-label="التنقل الرئيسي"
+          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
+          style={{
+            paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => navigateTo("/dashboard")}
+            aria-current={
+              isRouteActive(location, "/dashboard") ? "page" : undefined
+            }
+            className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-colors ${
+              isRouteActive(location, "/dashboard")
+                ? "text-primary"
+                : "text-muted-foreground hover:bg-muted/70"
+            }`}
+          >
+            <LayoutDashboard className="h-5 w-5" />
+            <span>الرئيسية</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo("/documents")}
+            aria-current={
+              isRouteActive(location, "/documents") ? "page" : undefined
+            }
+            className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold transition-colors ${
+              isRouteActive(location, "/documents")
+                ? "text-primary"
+                : "text-muted-foreground hover:bg-muted/70"
+            }`}
+          >
+            <FileText className="h-5 w-5" />
+            <span>الوثائق</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocation("/documents?create=1")}
+            className="flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-primary"
+          >
+            <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-4 ring-background">
+              <Plus className="h-6 w-6" />
+            </span>
+            <span>إنشاء جديد</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenMobile(true)}
+            aria-expanded={openMobile}
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70"
+          >
+            <PanelLeft className="h-5 w-5" />
+            <span>المزيد</span>
+          </button>
+        </nav>
+      ) : null}
     </>
   );
 }

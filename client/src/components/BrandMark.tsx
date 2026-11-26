@@ -25,7 +25,7 @@ export function BrandMark({
     <div className={cn("flex items-center gap-3", className)}>
       <div
         className={cn(
-          "brand-mark shrink-0 overflow-hidden border border-white/15 bg-[#102e3c] shadow-[0_10px_26px_rgba(16,46,60,0.18)]",
+          "brand-mark shrink-0 overflow-hidden border border-white/15 bg-[#0b1220] shadow-[0_10px_26px_rgba(9,13,22,0.28)]",
           sizeClasses[size]
         )}
       >
@@ -38,7 +38,7 @@ export function BrandMark({
           <path
             d="M32 4 53 11v16c0 16-8.7 26.8-21 33C19.7 53.8 11 43 11 27V11L32 4Z"
             fill="none"
-            stroke="#41c6b2"
+            stroke="#10b981"
             strokeWidth="2.5"
             strokeLinejoin="round"
           />
@@ -46,7 +46,7 @@ export function BrandMark({
             d="M22 17.5a2.5 2.5 0 0 1 2.5-2.5h10l7 7v21H24.5a2.5 2.5 0 0 1-2.5-2.5v-23Z"
             fill="#fffaf0"
           />
-          <path d="M34.5 15v7h7" fill="#dfb56b" />
+          <path d="M34.5 15v7h7" fill="#d97706" />
           <path
             d="M26 28h11M26 33h9"
             stroke="#9aa7ab"
@@ -56,7 +56,7 @@ export function BrandMark({
           <path
             d="m28 39 3 3 7-8"
             fill="none"
-            stroke="#118b81"
+            stroke="#047857"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
