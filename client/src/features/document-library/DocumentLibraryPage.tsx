@@ -197,9 +197,22 @@ export default function DocumentLibraryPage({
   );
 
   const deleteDocument = trpc.documentStudio.deleteDocument.useMutation({
-    onSuccess: () => {
+    onSuccess: result => {
       setSelectedId(null);
       void utils.documentStudio.listDocuments.invalidate();
+      if (!result.fileCleanupSucceeded && !result.auditLogRecorded) {
+        toast.warning(
+          "حُذف سجل الوثيقة، لكن تعذر حذف الملف المرفق وتسجيل العملية في سجل الحركات."
+        );
+      } else if (!result.fileCleanupSucceeded) {
+        toast.warning(
+          "حُذف سجل الوثيقة، لكن تعذر حذف الملف المرفق من التخزين."
+        );
+      } else if (!result.auditLogRecorded) {
+        toast.warning(
+          "حُذفت الوثيقة، لكن تعذر تسجيل العملية في سجل الحركات."
+        );
+      }
     },
   });
 
