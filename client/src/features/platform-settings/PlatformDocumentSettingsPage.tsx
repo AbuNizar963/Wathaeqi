@@ -566,8 +566,7 @@ export default function PlatformDocumentSettingsPage() {
                   حجم الصفحة والهوامش والإطار
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  اضبط المساحات الآمنة حول المحتوى واختر إطارًا رسميًا واضحًا
-                  للطباعة والمعاينة.
+                  اضبط هوامش الصفحة واختر نمط حدود الصفحة للطباعة والمعاينة.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -602,15 +601,7 @@ export default function PlatformDocumentSettingsPage() {
                 <div className="sm:col-span-2">
                   <DocumentFramePicker
                     value={values.frameStyle}
-                    frameColor={values.frameColor}
-                    frameWidthPt={values.frameWidthPt}
-                    onChange={(style, color) =>
-                      setValues(current => ({
-                        ...current,
-                        frameStyle: style,
-                        frameColor: color,
-                      }))
-                    }
+                    onChange={style => updateValue("frameStyle", style)}
                   />
                 </div>
                 <div className="space-y-2 text-sm">
