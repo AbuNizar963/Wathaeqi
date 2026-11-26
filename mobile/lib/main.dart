@@ -1520,7 +1520,7 @@ class _DashboardPageState extends State<DashboardPage>
                       IconButton(
                         tooltip: 'إغلاق القائمة',
                         onPressed: () => Navigator.pop(context),
-                        icon: const Icon(
+                        icon: Icon(
                           LucideIcons.panelLeft,
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
