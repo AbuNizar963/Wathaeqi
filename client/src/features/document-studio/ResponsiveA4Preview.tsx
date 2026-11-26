@@ -69,7 +69,9 @@ export default function ResponsiveA4Preview({
       ? "none"
       : [
           `${settings?.frameWidthPt ?? 1}pt`,
-          settings?.frameStyle === "double" || settings?.frameStyle === "ornate"
+          ["double", "ornate", "classic", "triple"].includes(
+            settings?.frameStyle ?? ""
+          )
             ? "double"
             : "solid",
           settings?.frameColor ?? "#b49a55",
@@ -105,7 +107,11 @@ export default function ResponsiveA4Preview({
           boxShadow:
             settings?.frameStyle === "ornate"
               ? `inset 0 0 0 3px #fff, inset 0 0 0 4px ${settings.frameColor}`
-              : undefined,
+              : settings?.frameStyle === "classic"
+                ? `inset 0 0 0 1px ${settings.frameColor}, inset 0 0 0 4px #fff, inset 0 0 0 5px ${settings.frameColor}`
+                : settings?.frameStyle === "triple"
+                  ? `inset 0 0 0 2px #fff, inset 0 0 0 3px ${settings.frameColor}, inset 0 0 0 6px #fff, inset 0 0 0 7px ${settings.frameColor}`
+                  : undefined,
         }}
       >
         {children}

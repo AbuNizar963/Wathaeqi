@@ -18,6 +18,8 @@ import {
   MIN_WATERMARK_SCALE_PERCENT,
   MAX_WATERMARK_SCALE_PERCENT,
   MAX_PAGE_MARGIN_MM,
+  MIN_HEADER_LOGO_SIZE,
+  MAX_HEADER_LOGO_SIZE,
   MIN_DIVIDER_WIDTH_PT,
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
@@ -610,19 +612,44 @@ export default function PlatformDocumentSettingsPage() {
                     <option value="single">إطار مفرد</option>
                     <option value="double">إطار مزدوج</option>
                     <option value="ornate">إطار زخرفي احترافي</option>
+                    <option value="classic">إطار كلاسيكي مزدوج</option>
+                    <option value="triple">إطار ثلاثي فاخر</option>
                   </select>
                 </label>
-                <label className="space-y-1 text-sm">
-                  <span className="block">لون الإطار</span>
-                  <input
-                    type="color"
-                    value={values.frameColor}
-                    onChange={event =>
-                      updateValue("frameColor", event.target.value)
-                    }
-                    className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
-                  />
-                </label>
+                <div className="space-y-2 text-sm">
+                  <label htmlFor="document-frame-color" className="block">
+                    لون الإطار
+                  </label>
+                  <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-2">
+                    <input
+                      type="color"
+                      aria-label="منتقي لون الإطار"
+                      value={values.frameColor}
+                      onChange={event =>
+                        updateValue("frameColor", event.target.value)
+                      }
+                      className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
+                    />
+                    <input
+                      id="document-frame-color"
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      maxLength={7}
+                      spellCheck={false}
+                      value={values.frameColor}
+                      onChange={event =>
+                        updateValue("frameColor", event.target.value.trim())
+                      }
+                      placeholder="#B49A55"
+                      aria-describedby="document-frame-color-hint"
+                      className="h-10 w-full rounded-md border bg-background px-3 font-mono uppercase"
+                    />
+                  </div>
+                  <p id="document-frame-color-hint" className="text-xs text-muted-foreground">
+                    أدخل رمز اللون بصيغة HEX، مثال: #B49A55
+                  </p>
+                </div>
               </div>
               <label className="block space-y-1 text-sm">
                 <span className="flex justify-between">
@@ -677,17 +704,40 @@ export default function PlatformDocumentSettingsPage() {
                     </option>
                   </select>
                 </label>
-                <label className="space-y-1 text-sm">
-                  <span className="block">لون الفاصل</span>
-                  <input
-                    type="color"
-                    value={values.headerDividerColor}
-                    onChange={event =>
-                      updateValue("headerDividerColor", event.target.value)
-                    }
-                    className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
-                  />
-                </label>
+                <div className="space-y-2 text-sm">
+                  <label htmlFor="document-divider-color" className="block">
+                    لون الفاصل
+                  </label>
+                  <div className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-2">
+                    <input
+                      type="color"
+                      aria-label="منتقي لون الفاصل"
+                      value={values.headerDividerColor}
+                      onChange={event =>
+                        updateValue("headerDividerColor", event.target.value)
+                      }
+                      className="h-10 w-full cursor-pointer rounded-md border bg-background p-1"
+                    />
+                    <input
+                      id="document-divider-color"
+                      type="text"
+                      inputMode="text"
+                      autoCapitalize="characters"
+                      maxLength={7}
+                      spellCheck={false}
+                      value={values.headerDividerColor}
+                      onChange={event =>
+                        updateValue("headerDividerColor", event.target.value.trim())
+                      }
+                      placeholder="#B49A55"
+                      aria-describedby="document-divider-color-hint"
+                      className="h-10 w-full rounded-md border bg-background px-3 font-mono uppercase"
+                    />
+                  </div>
+                  <p id="document-divider-color-hint" className="text-xs text-muted-foreground">
+                    أدخل رمز اللون بصيغة HEX، مثال: #B49A55
+                  </p>
+                </div>
               </div>
               <label className="block space-y-1 text-sm">
                 <span className="flex justify-between">
@@ -788,15 +838,59 @@ export default function PlatformDocumentSettingsPage() {
                   className="h-5 w-5 accent-primary"
                 />
               </label>
-              <div className="rounded-lg border bg-muted/30 px-3 py-2">
-                <div className="flex justify-between gap-3 text-sm font-medium">
-                  <span>حجم شعار الوثيقة</span>
-                  <output dir="ltr">120px</output>
+              <section className="space-y-3 rounded-lg border bg-muted/30 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label htmlFor="document-header-logo-size" className="text-sm font-semibold">
+                    حجم شعار الوثيقة
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_HEADER_LOGO_SIZE}
+                      max={MAX_HEADER_LOGO_SIZE}
+                      step={1}
+                      value={values.headerLogoSize}
+                      disabled={!values.headerShowLogo}
+                      onChange={event => {
+                        const size = Number(event.target.value);
+                        if (
+                          Number.isInteger(size) &&
+                          size >= MIN_HEADER_LOGO_SIZE &&
+                          size <= MAX_HEADER_LOGO_SIZE
+                        ) {
+                          updateValue("headerLogoSize", size);
+                        }
+                      }}
+                      aria-label="حجم الشعار بالبكسل"
+                      className="h-9 w-20 rounded-md border bg-background px-2 text-center font-mono text-sm disabled:opacity-50"
+                    />
+                    <span className="text-xs text-muted-foreground">px</span>
+                  </div>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  حجم ثابت مطابق للمرجع الرسمي.
-                </p>
-              </div>
+                <input
+                  id="document-header-logo-size"
+                  type="range"
+                  min={MIN_HEADER_LOGO_SIZE}
+                  max={MAX_HEADER_LOGO_SIZE}
+                  step={4}
+                  value={values.headerLogoSize}
+                  disabled={!values.headerShowLogo}
+                  onChange={event =>
+                    updateValue("headerLogoSize", Number(event.target.value))
+                  }
+                  className="w-full accent-primary disabled:opacity-50"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{MIN_HEADER_LOGO_SIZE}px — صغير</span>
+                  <span>{MAX_HEADER_LOGO_SIZE}px — كبير</span>
+                </div>
+                {!values.headerShowLogo ? (
+                  <p className="text-xs text-muted-foreground">
+                    الشعار مخفي حالياً؛ فعّل خيار إظهار الشعار لتغيير حجمه.
+                  </p>
+                ) : null}
+              </section>
               <label className="block space-y-1">
                 <span className="flex justify-between text-sm font-medium">
                   <span>الهامش العلوي للرأس</span>

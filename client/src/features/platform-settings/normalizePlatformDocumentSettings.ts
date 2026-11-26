@@ -1,5 +1,6 @@
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  HEX_COLOR_PATTERN,
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
   type DocumentTextRow,
@@ -19,6 +20,12 @@ function safeNumber(value: unknown, fallback: number): number {
 
 function safeBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function safeHexColor(value: unknown, fallback: string): string {
+  return typeof value === "string" && HEX_COLOR_PATTERN.test(value.trim())
+    ? value.trim()
+    : fallback;
 }
 
 function isUnitRoleLine(value: string): boolean {
@@ -101,10 +108,9 @@ export function normalizePlatformDocumentSettings(
       source.watermarkScalePercent,
       defaults.watermarkScalePercent
     ),
-    headerDividerColor: safeText(
+    headerDividerColor: safeHexColor(
       source.headerDividerColor,
-      defaults.headerDividerColor,
-      7
+      defaults.headerDividerColor
     ),
     headerDividerStyle: [
       "solid",
@@ -182,12 +188,17 @@ export function normalizePlatformDocumentSettings(
       source.pageMarginLeftMm,
       defaults.pageMarginLeftMm
     ),
-    frameStyle: ["none", "single", "double", "ornate"].includes(
-      source.frameStyle ?? ""
-    )
+    frameStyle: [
+      "none",
+      "single",
+      "double",
+      "ornate",
+      "classic",
+      "triple",
+    ].includes(source.frameStyle ?? "")
       ? source.frameStyle!
       : defaults.frameStyle,
-    frameColor: safeText(source.frameColor, defaults.frameColor, 7),
+    frameColor: safeHexColor(source.frameColor, defaults.frameColor),
     frameWidthPt: safeNumber(source.frameWidthPt, defaults.frameWidthPt),
     showVerificationQr: safeBoolean(
       source.showVerificationQr,

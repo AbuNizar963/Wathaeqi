@@ -107,21 +107,39 @@ describe("DocumentLetterhead", () => {
     expect(markup).not.toContain("document-tricolor-stars-divider");
   });
 
-  it("renders the logo at the reference size even for a legacy small setting", () => {
+  it("renders the configured logo size in the document header", () => {
     const markup = renderToStaticMarkup(
       <DocumentLetterhead
         logoUrl="data:image/png;base64,AAAA"
         dividerColor="#000000"
         headerSettings={{
           ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-          headerLogoSize: 32,
+          headerLogoSize: 176,
         }}
       />
     );
-    expect(markup).toContain('width="120"');
-    expect(markup).toContain('height="120"');
-    expect(markup).toContain("width:120px");
-    expect(markup).toContain("height:120px");
+    expect(markup).toContain('width="176"');
+    expect(markup).toContain('height="176"');
+    expect(markup).toContain("width:176px");
+    expect(markup).toContain("height:176px");
     expect(markup).toContain('alt="الشعار الرسمي"');
+  });
+
+  it("hides the header logo and releases its layout column when disabled", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentLetterhead
+        logoUrl="data:image/png;base64,AAAA"
+        dividerColor="#000000"
+        headerSettings={{
+          ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+          headerShowLogo: false,
+        }}
+      />
+    );
+    expect(markup).toContain(
+      "grid-template-columns:minmax(0, 1fr) 0px minmax(0, 1fr)"
+    );
+    expect(markup).toContain("display:none");
+    expect(markup).not.toContain('alt="الشعار الرسمي"');
   });
 });
