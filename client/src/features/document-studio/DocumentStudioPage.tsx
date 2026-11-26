@@ -1738,7 +1738,9 @@ export default function DocumentStudioPage() {
                       />
                       <div className="pt-6">
                         {documentRecipientLine ? (
-                          <p className="mb-4 text-center text-base font-semibold">
+                          <p
+                            className="mb-4 text-center text-base font-semibold"
+                          >
                             {documentRecipientLine}
                           </p>
                         ) : null}
