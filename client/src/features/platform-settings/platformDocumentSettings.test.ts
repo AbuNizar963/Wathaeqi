@@ -227,7 +227,7 @@ describe("platform document settings UI normalization", () => {
     expect(normalized.documentFontFamily).toBe("Cairo");
     expect(normalized.documentFontSizePt).toBe(24);
     expect(normalized.documentFontWeight).toBe(400);
-    expect(normalized.documentFontColor).toBe("#1f2937");
+    expect(normalized.documentFontColor).toBe("#0f172a");
     expect(normalized.recipientFontFamily).toBe("Arial");
     expect(normalized.recipientFontSizePt).toBe(9);
     expect(normalized.recipientFontWeight).toBe(700);
