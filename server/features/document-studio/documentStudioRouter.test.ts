@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => {
     listOfficialDocuments: vi.fn(),
     getOfficialDocument: vi.fn(),
     createOfficialDocument: vi.fn(),
+    deleteOfficialDocument: vi.fn(),
     updateOfficialDocument: vi.fn(),
     archiveOfficialDocument: vi.fn(),
     issueOfficialDocument: vi.fn(),
