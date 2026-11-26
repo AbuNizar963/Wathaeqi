@@ -677,7 +677,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                   _letterhead['organizationName'] ??
                   'وثائقي')
               .toString(),
-      'date': DateFormat('yyyy/MM/dd').format(document.documentDate),
+      'date': DateFormat('yyyy/MM/dd', 'en').format(document.documentDate),
       'subject': document.subject,
       if (document.serialCode.isNotEmpty) 'number': document.serialCode,
     });
@@ -1258,7 +1258,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                     DateTime.tryParse(version['savedAt']?.toString() ?? '') ==
                             null
                         ? 'تاريخ غير متاح'
-                        : DateFormat('yyyy/MM/dd – HH:mm').format(
+                        : DateFormat('yyyy/MM/dd – HH:mm', 'en').format(
                             DateTime.parse(version['savedAt'].toString())
                                 .toLocal(),
                           ),
@@ -1353,7 +1353,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                   _letterhead['organizationName'] ??
                   'وثائقي')
               .toString(),
-      'date': DateFormat('yyyy/MM/dd').format(_documentDate),
+      'date': DateFormat('yyyy/MM/dd', 'en').format(_documentDate),
       'subject': _subjectController.text.trim(),
       if (_selectedDocument?.serialCode.isNotEmpty == true)
         'number': _selectedDocument!.serialCode,
@@ -1947,7 +1947,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           onPressed: canEdit ? _chooseDocumentDate : null,
           icon: const Icon(Icons.calendar_month_outlined),
           label: Text(
-            'التاريخ: ${DateFormat('yyyy/MM/dd').format(_documentDate)}',
+            'التاريخ: ${DateFormat('yyyy/MM/dd', 'en').format(_documentDate)}',
           ),
         ),
         const SizedBox(height: 10),
@@ -2394,7 +2394,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                     lastDate: DateTime(2100),
                   );
                   if (picked == null) return;
-                  final value = DateFormat('yyyy-MM-dd').format(picked);
+                  final value = DateFormat('yyyy-MM-dd', 'en').format(picked);
                   controller.text = value;
                   _fieldValues[field.key] = value;
                 }
@@ -3649,7 +3649,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
   }
 
   String _formatDate(DateTime value) =>
-      DateFormat('yyyy/MM/dd').format(value.toLocal());
+      DateFormat('yyyy/MM/dd', 'en').format(value.toLocal());
 
   @override
   Widget build(BuildContext context) {
