@@ -10,7 +10,7 @@ describe("ResponsiveA4Preview", () => {
       <ResponsiveA4Preview
         settings={{
           ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
-          frameStyle: "triple",
+          frameStyle: "three-dimensional",
           frameColor: "#123456",
         }}
       >
@@ -18,7 +18,7 @@ describe("ResponsiveA4Preview", () => {
       </ResponsiveA4Preview>
     );
 
-    expect(markup).toContain('data-document-frame="triple"');
+    expect(markup).toContain('data-document-frame="three-dimensional"');
     expect(markup).toContain('stroke="#123456"');
     expect(markup).toContain('viewBox="0 0 794 1123"');
   });
@@ -31,7 +31,7 @@ describe("ResponsiveA4Preview", () => {
     );
 
     expect(markup).toContain("document-a4-preview-page");
-    expect(markup).toContain('data-document-frame="single"');
+    expect(markup).toContain('data-document-frame="box"');
     expect(markup).toContain("محتوى الوثيقة");
     expect(markup).not.toContain("تكبير معاينة الورقة");
     expect(markup).not.toContain("تصغير المعاينة");
