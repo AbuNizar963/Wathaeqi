@@ -104,6 +104,19 @@ assert(
 );
 
 assert(
+  dashboardLayout.includes('event.key.toLowerCase() === "k"') &&
+    dashboardLayout.includes('aria-label="البحث السريع، الاختصار Ctrl K"') &&
+    dashboardLayout.includes("<CommandDialog"),
+  "The desktop shell must expose a searchable command palette with the Ctrl+K shortcut."
+);
+
+assert(
+  dashboardLayout.includes('<HeaderActions />') &&
+    dashboardLayout.includes('className="mt-auto border-t border-sidebar-border p-3"'),
+  "Mobile users must retain theme and account controls inside the drawer, not the top bar."
+);
+
+assert(
   dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
