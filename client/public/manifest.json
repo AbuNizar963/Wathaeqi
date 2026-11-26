@@ -1,19 +1,25 @@
 {
-  "name": "وثائقي",
+  "name": "وثائقي | WATHIQI",
   "short_name": "وثائقي",
-  "description": "أرشيف موثوق للوثائق الرسمية وقرارات أوضح",
+  "description": "أرشيف موثوق - قرار أوضح",
   "id": "/",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "any",
   "prefer_related_applications": false,
-  "background_color": "#14263f",
-  "theme_color": "#14263f",
-  "categories": ["business", "productivity"],
+  "background_color": "#0B1120",
+  "theme_color": "#0B1120",
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icon.svg",
