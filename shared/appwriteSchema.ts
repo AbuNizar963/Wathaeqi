@@ -829,7 +829,7 @@ export const appwriteSchema: SchemaTable[] = [
       {
         key: "frameStyle",
         type: "varchar",
-        size: 16,
+        size: 32,
         required: false,
         default: "box",
       },
