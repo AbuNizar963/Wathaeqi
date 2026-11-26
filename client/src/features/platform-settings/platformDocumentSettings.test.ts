@@ -212,7 +212,6 @@ describe("platform document settings UI normalization", () => {
     ).toBe(240);
   });
 
-
   it("normalizes document and recipient typography with safe bounds and allowlists", () => {
     const normalized = normalizePlatformDocumentSettings({
       documentFontFamily: "not-a-font" as never,
