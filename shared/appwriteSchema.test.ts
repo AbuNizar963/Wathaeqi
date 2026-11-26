@@ -286,17 +286,13 @@ describe("Appwrite operational schema", () => {
           max: 4,
           default: 1,
         }),
-        expect.objectContaining({
-          key: "pageHeaderRows",
-          type: "text",
-          default: undefined,
-        }),
-        expect.objectContaining({
-          key: "pageFooterRows",
-          type: "text",
-          default: undefined,
-        }),
       ])
     );
+
+    for (const key of ["pageHeaderRows", "pageFooterRows"]) {
+      const column = columns.find(item => item.key === key);
+      expect(column).toMatchObject({ type: "text", required: false });
+      expect(column).not.toHaveProperty("default");
+    }
   });
 });
