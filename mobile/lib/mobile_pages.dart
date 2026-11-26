@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -187,6 +188,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       .colorScheme
                                       .onSurfaceVariant,
                                   fontSize: 11,
+                                  fontFeatures: const [
+                                    ui.FontFeature.tabularFigures(),
+                                  ],
                                 ),
                               ),
                             ],
@@ -667,13 +671,8 @@ class _AuditLogPageState extends State<AuditLogPage> {
 
   String _formatDate(dynamic value) {
     final date = DateTime.tryParse('$value');
-    if (date == null) return 'تاريخ غير متاح';
-    final localDate = date.toLocal();
-    final formattedDate = MaterialLocalizations.of(context)
-        .formatFullDate(localDate);
-    final formattedTime = MaterialLocalizations.of(context)
-        .formatTimeOfDay(TimeOfDay.fromDateTime(localDate));
-    return '$formattedDate · $formattedTime';
+    if (date == null) return '—';
+    return DateFormat('yyyy/MM/dd HH:mm', 'en').format(date.toLocal());
   }
 
   List<Map<String, dynamic>> get _rows => entries
@@ -966,12 +965,28 @@ class _AuditLogPageState extends State<AuditLogPage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'وقت تسجيل الإجراء: ${_formatDate(entry['createdAt'])}',
+                                        'وقت تسجيل الإجراء:',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: Theme.of(context)
                                               .colorScheme
                                               .onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Directionality(
+                                        textDirection: TextDirection.ltr,
+                                        child: Text(
+                                          _formatDate(entry['createdAt']),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontFeatures: const [
+                                              ui.FontFeature.tabularFigures(),
+                                            ],
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
                                         ),
                                       ),
                                     ],
