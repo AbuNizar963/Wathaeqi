@@ -1,23 +1,17 @@
 import type { DocumentFrameStyle } from "./documentFrameCatalog";
 
 export {
-  DOCUMENT_FRAME_FAMILIES,
-  DOCUMENT_FRAME_PALETTES,
   DOCUMENT_FRAME_STYLES,
   LEGACY_DOCUMENT_FRAME_STYLES,
-  PROFESSIONAL_DOCUMENT_FRAME_PRESETS,
-  getDocumentFrameFamily,
-  getProfessionalDocumentFramePreset,
+  WORD_DOCUMENT_FRAME_STYLES,
+  getWordDocumentFrameStyle,
   isDocumentFrameStyle,
 } from "./documentFrameCatalog";
 export type {
-  DocumentFrameFamily,
-  DocumentFrameFamilyCode,
-  DocumentFrameMotif,
-  DocumentFramePaletteCode,
-  DocumentFramePresetId,
   DocumentFrameStyle,
-  ProfessionalDocumentFramePreset,
+  LegacyDocumentFramePresetId,
+  LegacyDocumentFrameStyle,
+  WordDocumentFrameStyle,
 } from "./documentFrameCatalog";
 
 export type DocumentTextRow = { right: string; left: string };
