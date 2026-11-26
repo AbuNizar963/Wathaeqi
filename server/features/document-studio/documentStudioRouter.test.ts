@@ -706,6 +706,91 @@ describe("document studio authorization and API", () => {
     });
   });
 
+  it("audits an owned document deletion and reports successful cleanup", async () => {
+    mocks.deleteOfficialDocument.mockResolvedValueOnce(document);
+    const caller = documentStudioRouter.createCaller(context());
+
+    const result = await caller.deleteDocument({ id: document.id });
+
+    expect(mocks.deleteOfficialDocument).toHaveBeenCalledWith(
+      ownerId,
+      document.id
+    );
+    expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: 7,
+        action: "document.deleted",
+        entityType: "document",
+        entityId: document.id,
+        metadata: expect.objectContaining({
+          title: document.title,
+          fileCleanupSucceeded: true,
+        }),
+      })
+    );
+    expect(result).toEqual({
+      success: true,
+      auditLogRecorded: true,
+      fileCleanupSucceeded: true,
+    });
+  });
+
+  it("reports failed attachment cleanup without hiding the deletion result", async () => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const documentWithFile = {
+      ...document,
+      file: {
+        storageKey: uploadedStorageKey,
+        fileName: uploadedFileName,
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        sizeBytes: uploadBytes.length,
+        pageCount: 1,
+      },
+    };
+    mocks.deleteOfficialDocument.mockResolvedValueOnce(documentWithFile);
+    storageMocks.remove.mockRejectedValueOnce(new Error("storage unavailable"));
+    const caller = documentStudioRouter.createCaller(context());
+
+    try {
+      const result = await caller.deleteDocument({ id: document.id });
+      expect(result).toEqual({
+        success: true,
+        auditLogRecorded: true,
+        fileCleanupSucceeded: false,
+      });
+      expect(storageMocks.remove).toHaveBeenCalledWith(uploadedStorageKey);
+      expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "document.deleted",
+          metadata: expect.objectContaining({
+            fileCleanupSucceeded: false,
+          }),
+        })
+      );
+    } finally {
+      logError.mockRestore();
+    }
+  });
+
+  it("reports an audit-log failure after a successful deletion", async () => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.deleteOfficialDocument.mockResolvedValueOnce(document);
+    dbMocks.writeAuditLog.mockRejectedValueOnce(new Error("audit unavailable"));
+    const caller = documentStudioRouter.createCaller(context());
+
+    try {
+      const result = await caller.deleteDocument({ id: document.id });
+      expect(result).toEqual({
+        success: true,
+        auditLogRecorded: false,
+        fileCleanupSucceeded: true,
+      });
+    } finally {
+      logError.mockRestore();
+    }
+  });
+
   it("archives without physically deleting the owned document", async () => {
     const caller = documentStudioRouter.createCaller(context());
 
