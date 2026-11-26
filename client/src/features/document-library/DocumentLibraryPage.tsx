@@ -201,17 +201,11 @@ export default function DocumentLibraryPage({
       setSelectedId(null);
       void utils.documentStudio.listDocuments.invalidate();
       if (!result.fileCleanupSucceeded && !result.auditLogRecorded) {
-        toast.warning(
-          "حُذف سجل الوثيقة، لكن تعذر حذف الملف المرفق وتسجيل العملية في سجل الحركات."
-        );
+        toast.warning("حُذف السجل، وتعذر حذف الملف وتسجيل العملية.");
       } else if (!result.fileCleanupSucceeded) {
-        toast.warning(
-          "حُذف سجل الوثيقة، لكن تعذر حذف الملف المرفق من التخزين."
-        );
+        toast.warning("حُذف السجل، لكن تعذر حذف الملف من التخزين.");
       } else if (!result.auditLogRecorded) {
-        toast.warning(
-          "حُذفت الوثيقة، لكن تعذر تسجيل العملية في سجل الحركات."
-        );
+        toast.warning("حُذفت الوثيقة، لكن تعذر تسجيل العملية.");
       }
     },
   });
