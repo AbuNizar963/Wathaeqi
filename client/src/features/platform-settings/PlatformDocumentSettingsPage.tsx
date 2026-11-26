@@ -644,7 +644,8 @@ export default function PlatformDocumentSettingsPage() {
                   تنسيق الخطوط في الوثيقة
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  تتحكم هذه الإعدادات في نص الوثيقة وسطر الجهة المستلمة، وتنعكس على المعاينة والطباعة.
+                  تتحكم هذه الإعدادات في نص الوثيقة وسطر الجهة المستلمة،
+                  وتنعكس على المعاينة والطباعة.
                 </p>
               </div>
               <div className="grid gap-5 lg:grid-cols-2">
@@ -662,12 +663,29 @@ export default function PlatformDocumentSettingsPage() {
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
                     >
-                      <option value="Cairo">Cairo</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Traditional Arabic">Traditional Arabic</option><option value="Times New Roman">Times New Roman</option>
+                      <option value="Cairo">Cairo</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Tahoma">Tahoma</option>
+                      <option value="Traditional Arabic">Traditional Arabic</option>
+                      <option value="Times New Roman">Times New Roman</option>
                     </select>
                   </label>
                   <label className="block space-y-1 text-sm">
-                    <span className="flex justify-between"><span>حجم الخط</span><output>{values.documentFontSizePt} نقطة</output></span>
-                    <input type="range" min={9} max={24} step={1} value={values.documentFontSizePt} onChange={event => updateValue("documentFontSizePt", Number(event.target.value))} className="w-full accent-primary" />
+                    <span className="flex justify-between">
+                      <span>حجم الخط</span>
+                      <output>{values.documentFontSizePt} نقطة</output>
+                    </span>
+                    <input
+                      type="range"
+                      min={9}
+                      max={24}
+                      step={1}
+                      value={values.documentFontSizePt}
+                      onChange={event =>
+                        updateValue("documentFontSizePt", Number(event.target.value))
+                      }
+                      className="w-full accent-primary"
+                    />
                   </label>
                   <label className="block space-y-1 text-sm">
                     <span>سماكة الخط</span>
@@ -681,7 +699,11 @@ export default function PlatformDocumentSettingsPage() {
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
                     >
-                      <option value={400}>عادي</option><option value={500}>متوسط</option><option value={600}>شبه عريض</option><option value={700}>عريض</option><option value={800}>عريض جداً</option>
+                      <option value={400}>عادي</option>
+                      <option value={500}>متوسط</option>
+                      <option value={600}>شبه عريض</option>
+                      <option value={700}>عريض</option>
+                      <option value={800}>عريض جداً</option>
                     </select>
                   </label>
                   <label className="flex items-center justify-between gap-3 text-sm">
@@ -711,12 +733,29 @@ export default function PlatformDocumentSettingsPage() {
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
                     >
-                      <option value="Cairo">Cairo</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Traditional Arabic">Traditional Arabic</option><option value="Times New Roman">Times New Roman</option>
+                      <option value="Cairo">Cairo</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Tahoma">Tahoma</option>
+                      <option value="Traditional Arabic">Traditional Arabic</option>
+                      <option value="Times New Roman">Times New Roman</option>
                     </select>
                   </label>
                   <label className="block space-y-1 text-sm">
-                    <span className="flex justify-between"><span>حجم الخط</span><output>{values.recipientFontSizePt} نقطة</output></span>
-                    <input type="range" min={9} max={24} step={1} value={values.recipientFontSizePt} onChange={event => updateValue("recipientFontSizePt", Number(event.target.value))} className="w-full accent-primary" />
+                    <span className="flex justify-between">
+                      <span>حجم الخط</span>
+                      <output>{values.recipientFontSizePt} نقطة</output>
+                    </span>
+                    <input
+                      type="range"
+                      min={9}
+                      max={24}
+                      step={1}
+                      value={values.recipientFontSizePt}
+                      onChange={event =>
+                        updateValue("recipientFontSizePt", Number(event.target.value))
+                      }
+                      className="w-full accent-primary"
+                    />
                   </label>
                   <label className="block space-y-1 text-sm">
                     <span>سماكة الخط</span>
@@ -730,7 +769,11 @@ export default function PlatformDocumentSettingsPage() {
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
                     >
-                      <option value={400}>عادي</option><option value={500}>متوسط</option><option value={600}>شبه عريض</option><option value={700}>عريض</option><option value={800}>عريض جداً</option>
+                      <option value={400}>عادي</option>
+                      <option value={500}>متوسط</option>
+                      <option value={600}>شبه عريض</option>
+                      <option value={700}>عريض</option>
+                      <option value={800}>عريض جداً</option>
                     </select>
                   </label>
                   <label className="flex items-center justify-between gap-3 text-sm">
