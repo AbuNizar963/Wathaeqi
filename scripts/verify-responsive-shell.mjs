@@ -108,19 +108,23 @@ assert(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
-    dashboardLayout.includes("إنشاء جديد"),
-  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing."
+    dashboardLayout.includes("إنشاء جديد") &&
+    dashboardLayout.includes("h-[52px]"),
+  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing and a 52px top bar."
 );
 
 assert(
   dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
-    dashboardLayout.includes("DEFAULT_WIDTH = 260"),
-  "The desktop navigation must use a 260px expanded rail and a compact icon-collapsed state."
+    dashboardLayout.includes("DEFAULT_WIDTH = 240"),
+  "The desktop navigation must use a 240px expanded rail and a 72px icon-collapsed state."
 );
 
 assert(
-  appRoutes.includes('ThemeProvider defaultTheme="dark" switchable'),
-  "The executive dark theme must be the initial preference while remaining switchable."
+  appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
+    (await readProjectFile("client/src/index.css")).includes("--background: #f9fafb") &&
+    (await readProjectFile("client/src/index.css")).includes("--card: #121215") &&
+    (await readProjectFile("client/src/index.css")).includes("--primary: #fafafa"),
+  "The crisp light theme must be the initial preference while remaining switchable."
 );
 
 assert(
