@@ -385,8 +385,9 @@ class _ContactsPageState extends State<ContactsPage> {
         'phone': phone.text.trim(),
         'organization': organization.text.trim(),
       };
+      final isNew = contact == null;
       final id = contact?['id']?.toString();
-      if (id == null || id.isEmpty) {
+      if (isNew || id == null || id.isEmpty) {
         await widget.api.call(
           'workspace.contacts.create',
           mutation: true,
@@ -404,7 +405,7 @@ class _ContactsPageState extends State<ContactsPage> {
       if (mounted) {
         Toast.success(
           context,
-          id == null ? 'تمت إضافة جهة الاتصال' : 'تم تحديث جهة الاتصال',
+          isNew ? 'تمت إضافة جهة الاتصال' : 'تم تحديث جهة الاتصال',
         );
       }
     } catch (exception) {
