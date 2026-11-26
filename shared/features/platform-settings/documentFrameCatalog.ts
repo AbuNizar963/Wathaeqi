@@ -1,5 +1,4 @@
-/**
- * Word-inspired page-border presets.
+Word-inspired page-border presets.
  *
  * Legacy frame values remain supported when reading saved settings. The
  * settings interface exposes only WORD_DOCUMENT_FRAME_STYLES.
@@ -28,16 +27,7 @@ export type LegacyDocumentFrameStyle =
   (typeof LEGACY_DOCUMENT_FRAME_STYLES)[number];
 
 type LegacyFrameFamilyCode =
-  | "01"
-  | "02"
-  | "03"
-  | "04"
-  | "05"
-  | "06"
-  | "07"
-  | "08"
-  | "09"
-  | "10";
+  "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09" | "10";
 type LegacyFramePaletteCode = "g" | "n" | "e" | "b" | "s";
 export type LegacyDocumentFramePresetId =
   `f${LegacyFrameFamilyCode}${LegacyFramePaletteCode}`;
