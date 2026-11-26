@@ -192,7 +192,8 @@ function mapPlatformDocumentSettings(
     documentFontFamily: DOCUMENT_FONT_FAMILIES.includes(
       row.documentFontFamily as (typeof DOCUMENT_FONT_FAMILIES)[number]
     )
-      ? (row.documentFontFamily as PlatformDocumentSettings["documentFontFamily"])
+      ? (row.documentFontFamily as
+          PlatformDocumentSettings["documentFontFamily"])
       : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontFamily,
     documentFontSizePt: boundedNumber(
       row.documentFontSizePt,
@@ -203,7 +204,8 @@ function mapPlatformDocumentSettings(
     documentFontWeight: DOCUMENT_FONT_WEIGHTS.includes(
       Number(row.documentFontWeight) as (typeof DOCUMENT_FONT_WEIGHTS)[number]
     )
-      ? (Number(row.documentFontWeight) as PlatformDocumentSettings["documentFontWeight"])
+      ? (Number(row.documentFontWeight) as
+          PlatformDocumentSettings["documentFontWeight"])
       : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentFontWeight,
     documentFontColor:
       typeof row.documentFontColor === "string" &&
@@ -213,7 +215,8 @@ function mapPlatformDocumentSettings(
     recipientFontFamily: DOCUMENT_FONT_FAMILIES.includes(
       row.recipientFontFamily as (typeof DOCUMENT_FONT_FAMILIES)[number]
     )
-      ? (row.recipientFontFamily as PlatformDocumentSettings["recipientFontFamily"])
+      ? (row.recipientFontFamily as
+          PlatformDocumentSettings["recipientFontFamily"])
       : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontFamily,
     recipientFontSizePt: boundedNumber(
       row.recipientFontSizePt,
@@ -224,7 +227,8 @@ function mapPlatformDocumentSettings(
     recipientFontWeight: DOCUMENT_FONT_WEIGHTS.includes(
       Number(row.recipientFontWeight) as (typeof DOCUMENT_FONT_WEIGHTS)[number]
     )
-      ? (Number(row.recipientFontWeight) as PlatformDocumentSettings["recipientFontWeight"])
+      ? (Number(row.recipientFontWeight) as
+          PlatformDocumentSettings["recipientFontWeight"])
       : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.recipientFontWeight,
     recipientFontColor:
       typeof row.recipientFontColor === "string" &&
