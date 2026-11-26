@@ -846,7 +846,7 @@ export default function DocumentStudioPage() {
       <div className="document-page-header document-studio-header flex flex-col items-stretch justify-between gap-3 document-studio-no-print sm:flex-row sm:items-start">
         <div>
           <p className="document-section-label mb-1">وثائقي · إدارة الوثائق</p>
-          <h1 className="text-2xl font-bold text-foreground">مساحة الوثائق</h1>
+          <h1 className="text-2xl font-bold text-foreground">إدارة الوثائق</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             أنشئ، نظّم، واطبع. وثائقك وقوالبك وملفاتك في مكان واحد.
           </p>
