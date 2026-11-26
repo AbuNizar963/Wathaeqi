@@ -126,6 +126,14 @@ async function createColumn(
     ...(column.description ? { description: column.description } : {}),
   };
   switch (column.type) {
+    case "string":
+      await tables.createStringColumn({
+        ...base,
+        size: column.size ?? 255,
+        xdefault:
+          typeof column.default === "string" ? column.default : undefined,
+      });
+      return;
     case "varchar":
       await tables.createVarcharColumn({
         ...base,
@@ -146,6 +154,15 @@ async function createColumn(
         ...base,
         xdefault:
           typeof column.default === "string" ? column.default : undefined,
+      });
+      return;
+    case "double":
+      await tables.createFloatColumn({
+        ...base,
+        min: column.min,
+        max: column.max,
+        xdefault:
+          typeof column.default === "number" ? column.default : undefined,
       });
       return;
     case "integer":
@@ -252,11 +269,14 @@ async function applyTable(
             key: column.key,
             type: column.type,
             required: column.required,
-            ...(column.type === "varchar" ? { size: column.size ?? 255 } : {}),
-            ...(column.type === "integer" && column.min !== undefined
+            ...(column.type === "varchar" || column.type === "string"
+              ? { size: column.size ?? 255 }
+              : {}),
+            ...(column.type === "double" ? { type: "float" } : {}),
+            ...((column.type === "integer" || column.type === "double") && column.min !== undefined
               ? { min: column.min }
               : {}),
-            ...(column.type === "integer" && column.max !== undefined
+            ...((column.type === "integer" || column.type === "double") && column.max !== undefined
               ? { max: column.max }
               : {}),
             ...(column.default !== undefined
