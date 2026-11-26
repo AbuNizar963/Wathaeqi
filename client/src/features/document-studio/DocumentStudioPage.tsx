@@ -787,6 +787,20 @@ export default function DocumentStudioPage() {
       })
     : false;
   const documentRecipientLine = getDocumentRecipientLine(documentFieldValues);
+  const documentFontStyle = {
+    fontFamily:
+      platformDocumentSettings.data?.documentFontFamily ?? "Cairo",
+    fontSize: `${platformDocumentSettings.data?.documentFontSizePt ?? 12}pt`,
+    fontWeight: platformDocumentSettings.data?.documentFontWeight ?? 400,
+    color: platformDocumentSettings.data?.documentFontColor ?? "#1f2937",
+  };
+  const recipientFontStyle = {
+    fontFamily:
+      platformDocumentSettings.data?.recipientFontFamily ?? "Cairo",
+    fontSize: `${platformDocumentSettings.data?.recipientFontSizePt ?? 14}pt`,
+    fontWeight: platformDocumentSettings.data?.recipientFontWeight ?? 600,
+    color: platformDocumentSettings.data?.recipientFontColor ?? "#111827",
+  };
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1762,21 +1776,7 @@ export default function DocumentStudioPage() {
                         {documentRecipientLine ? (
                           <p
                             className="mb-4 text-center"
-                            style={{
-                              fontFamily:
-                                platformDocumentSettings.data?.recipientFontFamily ??
-                                "Cairo",
-                              fontSize: `${
-                                platformDocumentSettings.data?.recipientFontSizePt ??
-                                14
-                              }pt`,
-                              fontWeight:
-                                platformDocumentSettings.data?.recipientFontWeight ??
-                                600,
-                              color:
-                                platformDocumentSettings.data?.recipientFontColor ??
-                                "#111827",
-                            }}
+                            style={recipientFontStyle}
                           >
                             {documentRecipientLine}
                           </p>
@@ -1826,21 +1826,7 @@ export default function DocumentStudioPage() {
                             (!selectedTemplateId || manualTemplateEditing)
                           }
                           containerClassName="rounded-none border-0 shadow-none"
-                          textStyle={{
-                            fontFamily:
-                              platformDocumentSettings.data?.documentFontFamily ??
-                              "Cairo",
-                            fontSize: `${
-                              platformDocumentSettings.data?.documentFontSizePt ??
-                              12
-                            }pt`,
-                            fontWeight:
-                              platformDocumentSettings.data?.documentFontWeight ??
-                              400,
-                            color:
-                              platformDocumentSettings.data?.documentFontColor ??
-                              "#1f2937",
-                          }}
+                          textStyle={documentFontStyle}
                         />
                         <DocumentSignatureBlock
                           organizationName={organizationName}
