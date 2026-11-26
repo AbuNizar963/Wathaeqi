@@ -16,7 +16,7 @@ double _contrastRatio(Color first, Color second) {
 
 void main() {
   group('AppTheme', () {
-    test('light theme uses the shared brand palette and Cairo typography', () {
+    test('light theme uses the shared brand palette and IBM Plex Sans Arabic typography', () {
       final theme = AppTheme.light;
 
       expect(theme.useMaterial3, isTrue);
@@ -24,7 +24,7 @@ void main() {
       expect(theme.colorScheme.secondary, AppPalette.brandBlue);
       expect(theme.scaffoldBackgroundColor, AppPalette.canvas);
       expect(theme.iconTheme.color, AppPalette.navy);
-      expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
+      expect(theme.textTheme.bodyMedium?.fontFamily, 'IBM Plex Sans Arabic');
       expect(theme.cardTheme.color, AppPalette.surface);
       expect(AppPalette.brandBlue, const Color(0xFF0284C7));
       expect(AppPalette.canvas, const Color(0xFFF1F5F9));
@@ -46,7 +46,7 @@ void main() {
       );
     });
 
-    test('dark theme uses readable dark surfaces and Cairo typography', () {
+    test('dark theme uses readable dark surfaces and IBM Plex Sans Arabic typography', () {
       final theme = AppTheme.dark;
 
       expect(theme.useMaterial3, isTrue);
@@ -55,7 +55,7 @@ void main() {
       expect(theme.colorScheme.secondary, AppPalette.darkMint);
       expect(theme.scaffoldBackgroundColor, AppPalette.darkCanvas);
       expect(theme.iconTheme.color, AppPalette.darkInk);
-      expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
+      expect(theme.textTheme.bodyMedium?.fontFamily, 'IBM Plex Sans Arabic');
       expect(theme.cardTheme.color, AppPalette.darkSurface);
       expect(
         _contrastRatio(AppPalette.darkMutedInk, AppPalette.darkMuted),
