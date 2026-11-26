@@ -28,7 +28,6 @@ describe("platform document settings nullable Appwrite columns", () => {
     mocks.getAppwriteTablesDB.mockReturnValue({ listRows: mocks.listRows });
   });
 
-
   it("reads persisted typography and defaults missing legacy columns", async () => {
     mocks.listRows.mockResolvedValue({
       rows: [
