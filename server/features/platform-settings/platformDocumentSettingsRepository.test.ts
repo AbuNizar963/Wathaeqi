@@ -28,6 +28,63 @@ describe("platform document settings nullable Appwrite columns", () => {
     mocks.getAppwriteTablesDB.mockReturnValue({ listRows: mocks.listRows });
   });
 
+
+  it("reads persisted typography and defaults missing legacy columns", async () => {
+    mocks.listRows.mockResolvedValue({
+      rows: [
+        {
+          $id: "1",
+          data: {
+            ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+            documentFontFamily: "Arial",
+            documentFontSizePt: 18,
+            documentFontWeight: 700,
+            documentFontColor: "#123456",
+            recipientFontFamily: "Tahoma",
+            recipientFontSizePt: 16,
+            recipientFontWeight: 800,
+            recipientFontColor: "#654321",
+            updatedAt: null,
+          },
+        },
+      ],
+    });
+
+    await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+      documentFontFamily: "Arial",
+      documentFontSizePt: 18,
+      documentFontWeight: 700,
+      documentFontColor: "#123456",
+      recipientFontFamily: "Tahoma",
+      recipientFontSizePt: 16,
+      recipientFontWeight: 800,
+      recipientFontColor: "#654321",
+    });
+
+    mocks.listRows.mockResolvedValue({
+      rows: [
+        {
+          $id: "1",
+          data: {
+            id: 1,
+            updatedAt: null,
+          },
+        },
+      ],
+    });
+
+    await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+      documentFontFamily: "Cairo",
+      documentFontSizePt: 12,
+      documentFontWeight: 400,
+      documentFontColor: "#1f2937",
+      recipientFontFamily: "Cairo",
+      recipientFontSizePt: 14,
+      recipientFontWeight: 600,
+      recipientFontColor: "#111827",
+    });
+  });
+
   it.each([
     ["pageMarginTopMm", DEFAULT_PLATFORM_DOCUMENT_SETTINGS.pageMarginTopMm],
     [
