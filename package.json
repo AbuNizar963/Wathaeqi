@@ -18,8 +18,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "appwrite:schema:check": "tsx scripts/appwrite-schema.ts --check",
-    "appwrite:schema:apply": "tsx scripts/appwrite-schema.ts --apply",
-    "postinstall": "prettier --write client/src/features/document-studio/DocumentStudioPage.tsx && cat client/src/features/document-studio/DocumentStudioPage.tsx"
+    "appwrite:schema:apply": "tsx scripts/appwrite-schema.ts --apply"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1153.0",
