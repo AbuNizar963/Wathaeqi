@@ -713,8 +713,6 @@ export default function PlatformDocumentSettingsPage() {
                     >
                       <option value="Amiri">Amiri — للوثائق الرسمية</option>
                       <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
-                      <option value="Amiri">Amiri — للوثائق الرسمية</option>
-                      <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
                       <option value="Cairo">Cairo</option>
                       <option value="Arial">Arial</option>
                       <option value="Tahoma">Tahoma</option>
@@ -790,6 +788,8 @@ export default function PlatformDocumentSettingsPage() {
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
                     >
+                      <option value="Amiri">Amiri — للوثائق الرسمية</option>
+                      <option value="IBM Plex Sans Arabic">IBM Plex Sans Arabic</option>
                       <option value="Cairo">Cairo</option>
                       <option value="Arial">Arial</option>
                       <option value="Tahoma">Tahoma</option>
