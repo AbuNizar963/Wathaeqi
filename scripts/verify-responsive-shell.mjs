@@ -132,6 +132,13 @@ assert(
 );
 
 assert(
+  dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
+    dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
+    dashboardLayout.includes("aria-expanded={openMobile}"),
+  "The mobile top bar must expose an explicit button for opening the full navigation drawer."
+);
+
+assert(
   dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
     dashboardLayout.includes("DEFAULT_WIDTH = 240"),
   "The desktop navigation must use a 240px expanded rail and a 72px icon-collapsed state."
