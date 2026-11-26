@@ -12,6 +12,7 @@ import './features/auth_session/app_lock.dart';
 
 import 'api.dart';
 import 'document_studio_page.dart';
+import 'home_dashboard_page.dart';
 import 'document_studio_outbox.dart';
 import 'app_theme.dart';
 import 'app_update_page.dart';
@@ -680,6 +681,8 @@ class _DashboardPageState extends State<DashboardPage>
   bool _outboxSyncInProgress = false;
   StreamSubscription<ApiMutationEvent>? _mutationSubscription;
   bool _updateCheckInProgress = false;
+  int _selectedTab = 0;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _forceUpdateCheckQueued = false;
   DateTime? _lastUpdateCheckAt;
 
@@ -1192,6 +1195,7 @@ class _DashboardPageState extends State<DashboardPage>
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 0,
@@ -1218,7 +1222,7 @@ class _DashboardPageState extends State<DashboardPage>
             const SizedBox(width: 8),
             const Flexible(
               child: Text(
-                'مساحة الوثائق',
+                _selectedTab == 0 ? 'الرئيسية' : 'مساحة الوثائق',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
@@ -1436,28 +1440,28 @@ class _DashboardPageState extends State<DashboardPage>
         ],
       ),
       drawer: Drawer(
-        backgroundColor: navy,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         child: SafeArea(
           child: ListTileTheme(
-            data: const ListTileThemeData(
-              textColor: Colors.white,
-              iconColor: Color(0xFFB8C5D6),
-              selectedColor: Colors.white,
-              selectedTileColor: AppPalette.sidebarAccent,
+            data: ListTileThemeData(
+              textColor: Theme.of(context).colorScheme.onSurface,
+              iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
+              selectedColor: Theme.of(context).colorScheme.primary,
+              selectedTileColor: Theme.of(context).colorScheme.primaryContainer,
               titleTextStyle: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontFamily: 'Cairo',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
               subtitleTextStyle: TextStyle(
-                color: Color(0xFFB8C5D6),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontFamily: 'Cairo',
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
-              visualDensity: VisualDensity(vertical: -1),
-              shape: RoundedRectangleBorder(
+              visualDensity: const VisualDensity(vertical: -1),
+              shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
             ),
@@ -1515,7 +1519,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ],
                   ),
                 ),
-                const Divider(color: Color(0xFF29415E)),
+                Divider(color: Theme.of(context).colorScheme.outlineVariant),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(12, 7, 12, 5),
                   child: Text(
@@ -1528,10 +1532,30 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 ListTile(
+                  leading: const Icon(LucideIcons.house),
+                  title: const Text('الرئيسية'),
+                  selected: _selectedTab == 0,
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => _selectedTab = 0);
+                  },
+                ),
+                ListTile(
                   leading: const Icon(LucideIcons.fileText),
                   title: const Text('مساحة الوثائق'),
-                  selected: true,
-                  onTap: () => Navigator.pop(context),
+                  selected: _selectedTab == 1,
+                  onTap: () {
+                    Navigator.pop(context);
+                    setState(() => _selectedTab = 1);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.bell),
+                  title: const Text('الإشعارات'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pushPage(NotificationsPage(api: widget.api));
+                  },
                 ),
                 ListTile(
                   leading: const Icon(Icons.sync_outlined),
@@ -1582,20 +1606,59 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'create-document-fab',
-        tooltip: 'إنشاء وثيقة',
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        elevation: 4,
-        onPressed: () => _documentWorkspaceKey.currentState?.createDocument(),
-        child: const Icon(LucideIcons.plus),
+      body: IndexedStack(
+        index: _selectedTab,
+        children: [
+          HomeDashboardPage(
+            api: widget.api,
+            isPlatformOwner: _isPlatformOwner,
+            onOpenDocuments: () => setState(() => _selectedTab = 1),
+          ),
+          DocumentStudioPage(
+            key: _documentWorkspaceKey,
+            api: widget.api,
+            outbox: _documentStudioOutbox,
+          ),
+        ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: DocumentStudioPage(
-        key: _documentWorkspaceKey,
-        api: widget.api,
-        outbox: _documentStudioOutbox,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: NavigationBar(
+          height: 64,
+          selectedIndex: _selectedTab,
+          onDestinationSelected: (index) {
+            if (index == 3) {
+              _scaffoldKey.currentState?.openDrawer();
+              return;
+            }
+            if (index == 2) {
+              setState(() => _selectedTab = 1);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _documentWorkspaceKey.currentState?.createDocument();
+              });
+              return;
+            }
+            setState(() => _selectedTab = index);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(LucideIcons.house),
+              label: 'الرئيسية',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.fileText),
+              label: 'الوثائق',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.plusCircle),
+              label: 'إنشاء جديد',
+            ),
+            NavigationDestination(
+              icon: Icon(LucideIcons.ellipsis),
+              label: 'المزيد',
+            ),
+          ],
+        ),
       ),
     ),
   );
