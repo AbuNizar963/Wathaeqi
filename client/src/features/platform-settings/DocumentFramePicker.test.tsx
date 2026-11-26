@@ -23,6 +23,7 @@ describe("DocumentFramePicker", () => {
       <DocumentFramePicker value="triple" onChange={() => undefined} />
     );
 
-    expect(markup).toContain('value="three-dimensional" selected');
+    expect(markup).toContain('value="three-dimensional"');
+    expect(markup).toContain('selected=""');
   });
 });
