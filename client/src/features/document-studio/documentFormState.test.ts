@@ -132,7 +132,7 @@ describe("guided template field validation", () => {
 });
 
 describe("document recipient line", () => {
-  it("provides an editable default suggestion without forcing its value", () => {
+  it("shows an editable default suggestion without storing it", () => {
     expect(DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER).toBe("إلى");
     expect(getDocumentRecipientLine({})).toBe("");
   });
@@ -156,7 +156,7 @@ describe("document recipient line", () => {
     ).toBe("إلى الإدارة العامة");
   });
 
-  it("preserves other fields and removes obsolete split keys when saving", () => {
+  it("preserves other fields and replaces legacy keys", () => {
     expect(
       withDocumentRecipientLine(
         {
