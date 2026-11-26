@@ -237,6 +237,78 @@ const notificationsRouter = router({
   }),
 });
 
+const auditRouter = router({
+  list: platformOwnerProcedure
+    .input(
+      z.object({
+        limit: z.number().int().min(1).max(100).default(100),
+        search: z.string().trim().max(120).optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      const result = await getAppwriteTablesDB().listRows({
+        databaseId: getAppwriteDatabaseId(),
+        tableId: "app_records",
+        queries: [
+          Query.equal("recordType", "audit_event"),
+          Query.orderDesc("createdAt"),
+          Query.limit(input.limit),
+        ],
+        total: true,
+      });
+
+      const events = result.rows.map(row => {
+        const data = rowData(row as AppwriteRow);
+        const payload = safeJson(data.payload);
+        const event =
+          payload && typeof payload === "object" && !Array.isArray(payload)
+            ? (payload as Record<string, unknown>)
+            : {};
+        return {
+          id: (row as AppwriteRow).$id,
+          actorUserId: Number(event.actorUserId ?? 0),
+          actorName: String(event.actorName ?? "مستخدم"),
+          actorRank: parseOptionalText(event.actorRank),
+          actorRole: parseOptionalText(event.actorRole),
+          action: String(event.action ?? "unknown"),
+          entityType: String(event.entityType ?? "system"),
+          entityId: parseOptionalText(event.entityId),
+          organizationId: parseOptionalText(event.organizationId),
+          metadata: event.metadata ?? null,
+          beforeState: event.beforeState ?? null,
+          afterState: event.afterState ?? null,
+          reason: parseOptionalText(event.reason),
+          ipAddress: parseOptionalText(event.ipAddress),
+          userAgent: parseOptionalText(event.userAgent),
+          deviceType: parseOptionalText(event.deviceType) ?? "unknown",
+          createdAt: String(data.createdAt ?? event.occurredAt ?? ""),
+        };
+      });
+
+      const search = input.search?.toLocaleLowerCase("ar");
+      const filtered = search
+        ? events.filter(event =>
+            [
+              event.actorName,
+              event.action,
+              event.entityType,
+              event.entityId ?? "",
+              JSON.stringify(event.metadata ?? ""),
+            ]
+              .join(" ")
+              .toLocaleLowerCase("ar")
+              .includes(search)
+          )
+        : events;
+
+      return {
+        events: filtered,
+        total: result.total,
+        returned: filtered.length,
+      };
+    }),
+});
+
 const administrationRouter = router({
   overview: platformOwnerProcedure.query(async ({ ctx }) => {
     const scope = await resolveOrganizationScope(ctx.user);
@@ -662,4 +734,5 @@ export const workspaceRouter = router({
   contacts: contactsRouter,
   notifications: notificationsRouter,
   administration: administrationRouter,
+  audit: auditRouter,
 });
