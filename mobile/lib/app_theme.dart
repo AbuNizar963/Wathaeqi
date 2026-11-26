@@ -233,7 +233,10 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(12),
             side: const BorderSide(color: Color(0xFFDBE5E8)),
           ),
-          textStyle: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13),
+          textStyle: const TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 13,
+          ),
         ),
         drawerTheme: const DrawerThemeData(
           backgroundColor: AppPalette.navy,
