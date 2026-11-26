@@ -658,7 +658,8 @@ export default function PlatformDocumentSettingsPage() {
                       onChange={event =>
                         updateValue(
                           "documentFontFamily",
-                          event.target.value as SettingsForm["documentFontFamily"]
+                          event.target.value as
+                            SettingsForm["documentFontFamily"]
                         )
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
@@ -682,7 +683,10 @@ export default function PlatformDocumentSettingsPage() {
                       step={1}
                       value={values.documentFontSizePt}
                       onChange={event =>
-                        updateValue("documentFontSizePt", Number(event.target.value))
+                        updateValue(
+                          "documentFontSizePt",
+                          Number(event.target.value)
+                        )
                       }
                       className="w-full accent-primary"
                     />
@@ -694,7 +698,8 @@ export default function PlatformDocumentSettingsPage() {
                       onChange={event =>
                         updateValue(
                           "documentFontWeight",
-                          Number(event.target.value) as SettingsForm["documentFontWeight"]
+                          Number(event.target.value) as
+                            SettingsForm["documentFontWeight"]
                         )
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
@@ -728,7 +733,8 @@ export default function PlatformDocumentSettingsPage() {
                       onChange={event =>
                         updateValue(
                           "recipientFontFamily",
-                          event.target.value as SettingsForm["recipientFontFamily"]
+                          event.target.value as
+                            SettingsForm["recipientFontFamily"]
                         )
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
@@ -752,7 +758,10 @@ export default function PlatformDocumentSettingsPage() {
                       step={1}
                       value={values.recipientFontSizePt}
                       onChange={event =>
-                        updateValue("recipientFontSizePt", Number(event.target.value))
+                        updateValue(
+                          "recipientFontSizePt",
+                          Number(event.target.value)
+                        )
                       }
                       className="w-full accent-primary"
                     />
@@ -764,7 +773,8 @@ export default function PlatformDocumentSettingsPage() {
                       onChange={event =>
                         updateValue(
                           "recipientFontWeight",
-                          Number(event.target.value) as SettingsForm["recipientFontWeight"]
+                          Number(event.target.value) as
+                            SettingsForm["recipientFontWeight"]
                         )
                       }
                       className="w-full rounded-lg border bg-background px-3 py-2"
