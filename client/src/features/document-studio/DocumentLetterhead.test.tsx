@@ -136,7 +136,9 @@ describe("DocumentLetterhead", () => {
         }}
       />
     );
-    expect(markup).toContain("grid-template-columns:minmax(0, 1fr) 0px minmax(0, 1fr)");
+    expect(markup).toContain(
+      "grid-template-columns:minmax(0, 1fr) 0px minmax(0, 1fr)"
+    );
     expect(markup).toContain("display:none");
     expect(markup).not.toContain('alt="الشعار الرسمي"');
   });
