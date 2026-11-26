@@ -1511,13 +1511,24 @@ class _DashboardPageState extends State<DashboardPage>
                               ),
                             ),
                             const SizedBox(height: 2),
+                            const Text(
+                              'أرشيف موثوق - قرار أوضح',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Color(0xFFCBD5E1),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
                             Text(
                               _currentOrganizationLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: AppPalette.gold,
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
