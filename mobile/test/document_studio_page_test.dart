@@ -780,7 +780,7 @@ void main() {
       final recipientLine = tester.widget<RichText>(recipientLineFinder);
       expect(recipientLine.textAlign, TextAlign.center);
       final recipientSpans = (recipientLine.text as TextSpan).children!;
-      expect(recipientSpans.first.style?.fontSize, 18);
+      expect(recipientSpans.first.style?.fontSize, 14);
       expect(recipientSpans.first.style?.fontWeight, FontWeight.bold);
       expect(recipientSpans.last.style?.fontSize, 16);
       await tester.ensureVisible(find.text('حفظ الوثيقة'));

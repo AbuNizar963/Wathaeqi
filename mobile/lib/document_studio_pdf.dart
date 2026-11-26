@@ -113,7 +113,7 @@ class DocumentStudioPdf {
             .clamp(9.0, 24.0)
             .toDouble();
     final recipientFontSize =
-        ((letterhead['recipientFontSizePt'] as num? ?? 16).toDouble())
+        ((letterhead['recipientFontSizePt'] as num? ?? 12).toDouble())
             .clamp(9.0, 24.0)
             .toDouble();
     final documentFontScale = documentFontSize / 12;

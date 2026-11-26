@@ -785,7 +785,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         'recipientFontFamily':
             _platformDocumentSettings['recipientFontFamily'] ?? 'Amiri',
         'recipientFontSizePt':
-            _platformDocumentSettings['recipientFontSizePt'] ?? 16,
+            _platformDocumentSettings['recipientFontSizePt'] ?? 12,
         'recipientFontWeight':
             _platformDocumentSettings['recipientFontWeight'] ?? 600,
         'recipientFontColor':
@@ -3368,7 +3368,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                                 fontSize:
                                     _documentSettingSize(
                                       'recipientFontSizePt',
-                                      16,
+                                      12,
                                     ) +
                                     2,
                                 fontWeight: _documentSettingWeight(
