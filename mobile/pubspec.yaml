@@ -46,8 +46,6 @@ flutter:
     - assets/fonts/aref-ruqaa-regular.ttf
     - assets/licenses/ArefRuqaa-OFL.txt
     - assets/licenses/IBMPlexSansArabic-OFL.txt
-    - assets/fonts/amiri-regular.ttf
-    - assets/fonts/amiri-bold.ttf
     - assets/licenses/Amiri-OFL.txt
   fonts:
     - family: Aref Ruqaa
