@@ -1786,7 +1786,7 @@ export default function DocumentStudioPage() {
                           </div>
                         ) : null}
                         <div className="document-studio-no-print mb-2">
-                          <h3 className="text-sm font-semibold">نص الوثيقة</h3>
+                          <h3 className="font-semibold">نص الوثيقة</h3>
                           <p className="text-xs text-muted-foreground">
                             اكتب محتوى الكتاب ليظهر أسفل جهة التوجيه.
                           </p>
