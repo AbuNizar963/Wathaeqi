@@ -45,7 +45,25 @@ flutter:
     - assets/wathaeqi-app-icon.png
     - assets/fonts/aref-ruqaa-regular.ttf
     - assets/licenses/ArefRuqaa-OFL.txt
+    - assets/licenses/OFL-IBM-Plex-Sans-Arabic.txt
+    - assets/licenses/OFL-Amiri.txt
   fonts:
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: assets/fonts/ibm-plex-sans-arabic-regular.ttf
+          weight: 400
+        - asset: assets/fonts/ibm-plex-sans-arabic-medium.ttf
+          weight: 500
+        - asset: assets/fonts/ibm-plex-sans-arabic-semibold.ttf
+          weight: 600
+        - asset: assets/fonts/ibm-plex-sans-arabic-bold.ttf
+          weight: 700
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/amiri-regular.ttf
+          weight: 400
+        - asset: assets/fonts/amiri-bold.ttf
+          weight: 700
     - family: Aref Ruqaa
       fonts:
         - asset: assets/fonts/aref-ruqaa-regular.ttf
