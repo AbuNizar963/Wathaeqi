@@ -65,6 +65,7 @@
     "documentStudio.listDocumentVersions",
     "documentStudio.listDocuments",
     "documentStudio.listTemplates",
+    "documentStudio.recordPrint",
     "documentStudio.restoreDocumentVersion",
     "documentStudio.updateDocument",
     "documentStudio.updateTemplate",
