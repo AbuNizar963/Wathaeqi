@@ -4,54 +4,55 @@ import 'package:flutter/material.dart';
 /// docs/DESIGN_SYSTEM_WEB_MOBILE_AR.md. Keep platform layouts native while
 /// keeping the shared visual identity stable.
 abstract final class AppPalette {
-  static const navy = Color(0xFF102E3C);
-  static const brandBlue = Color(0xFF0F766E);
-  static const darkMint = Color(0xFF0F9F9A);
-  static const gold = Color(0xFFC9964D);
-  static const canvas = Color(0xFFF4F7F8);
+  static const navy = Color(0xFF0B1120);
+  static const brandBlue = Color(0xFF0284C7);
+  static const darkMint = Color(0xFF10B981);
+  static const gold = Color(0xFFD97706);
+  static const darkGold = Color(0xFFF59E0B);
+  static const canvas = Color(0xFFF1F5F9);
   static const surface = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF172B36);
-  static const muted = Color(0xFFEEF2F6);
-  static const mutedInk = Color(0xFF5B6B7C);
-  static const border = Color(0xFFDBE5E8);
-  static const danger = Color(0xFFC2414D);
-  static const success = Color(0xFF147A66);
-  static const warning = Color(0xFF8C570F);
-  static const info = Color(0xFF3978C5);
-  static const sidebarAccent = Color(0xFF1D4054);
+  static const ink = Color(0xFF0F172A);
+  static const muted = Color(0xFFE2E8F0);
+  static const mutedInk = Color(0xFF475569);
+  static const border = Color(0xFFCBD5E1);
+  static const danger = Color(0xFFDC2626);
+  static const success = Color(0xFF059669);
+  static const warning = Color(0xFFD97706);
+  static const info = Color(0xFF0284C7);
+  static const sidebarAccent = Color(0xFFE0F2FE);
 
-  static const darkCanvas = Color(0xFF0C1722);
-  static const darkSurface = Color(0xFF142536);
-  static const darkInk = Color(0xFFECF3F8);
-  static const darkMuted = Color(0xFF1D3345);
-  static const darkMutedInk = Color(0xFFAFC0CE);
-  static const darkBorder = Color(0xFF294154);
-  static const darkOutline = Color(0xFF3A5368);
-  static const darkSidebarAccent = Color(0xFF1D4054);
-  static const darkSuccess = Color(0xFF54D5C9);
-  static const darkWarning = Color(0xFFF2C36B);
-  static const darkInfo = Color(0xFF72B6F2);
-  static const successContainer = Color(0xFFE7F6F1);
-  static const darkSuccessContainer = Color(0xFF123A35);
-  static const warningContainer = Color(0xFFFFF4E2);
-  static const darkWarningContainer = Color(0xFF40331B);
-  static const infoContainer = Color(0xFFEAF2FC);
-  static const darkInfoContainer = Color(0xFF172B45);
+  static const darkCanvas = Color(0xFF0B1120);
+  static const darkSurface = Color(0xFF131C31);
+  static const darkInk = Color(0xFFF8FAFC);
+  static const darkMuted = Color(0xFF192540);
+  static const darkMutedInk = Color(0xFFCBD5E1);
+  static const darkBorder = Color(0x2E94A3B8);
+  static const darkOutline = Color(0x4D94A3B8);
+  static const darkSidebarAccent = Color(0xFF192540);
+  static const darkSuccess = Color(0xFF10B981);
+  static const darkWarning = Color(0xFFF59E0B);
+  static const darkInfo = Color(0xFF38BDF8);
+  static const successContainer = Color(0xFFD1FAE5);
+  static const darkSuccessContainer = Color(0xFF0D3B33);
+  static const warningContainer = Color(0xFFFEF3C7);
+  static const darkWarningContainer = Color(0xFF3B2A12);
+  static const infoContainer = Color(0xFFE0F2FE);
+  static const darkInfoContainer = Color(0xFF0F2A42);
 
   static const lightScheme = ColorScheme.light(
     primary: brandBlue,
     onPrimary: surface,
-    secondary: brandBlue,
+    secondary: success,
     onSecondary: surface,
     surface: surface,
     onSurface: ink,
     onSurfaceVariant: mutedInk,
     tertiary: info,
     onTertiary: surface,
-    primaryContainer: Color(0xFFDDF4F1),
-    onPrimaryContainer: navy,
-    secondaryContainer: Color(0xFFDDF4F1),
-    onSecondaryContainer: navy,
+    primaryContainer: Color(0xFFE0F2FE),
+    onPrimaryContainer: Color(0xFF075985),
+    secondaryContainer: Color(0xFFD1FAE5),
+    onSecondaryContainer: Color(0xFF065F46),
     surfaceTint: brandBlue,
     error: danger,
     onError: surface,
@@ -65,16 +66,16 @@ abstract final class AppPalette {
   );
 
   static const darkScheme = ColorScheme.dark(
-    primary: darkMint,
-    onPrimary: navy,
+    primary: Color(0xFF0EA5E9),
+    onPrimary: Color(0xFF031526),
     secondary: darkMint,
-    onSecondary: navy,
+    onSecondary: Color(0xFF03251C),
     surface: darkSurface,
     onSurface: darkInk,
     onSurfaceVariant: darkMutedInk,
-    tertiary: Color(0xFF72B6F2),
-    onTertiary: Color(0xFF102E3C),
-    primaryContainer: Color(0xFF1D4054),
+    tertiary: darkInfo,
+    onTertiary: Color(0xFF06263A),
+    primaryContainer: Color(0xFF192540),
     onPrimaryContainer: darkInk,
     secondaryContainer: darkMuted,
     onSecondaryContainer: Color(0xFFDDF4F1),
@@ -115,22 +116,22 @@ abstract final class AppTheme {
               displayColor: AppPalette.ink,
             ),
         appBarTheme: AppBarTheme(
-          backgroundColor: AppPalette.navy,
-          foregroundColor: AppPalette.surface,
+          backgroundColor: AppPalette.surface,
+          foregroundColor: AppPalette.ink,
           elevation: 0,
           scrolledUnderElevation: 0,
           surfaceTintColor: Colors.transparent,
           centerTitle: false,
-          toolbarHeight: 58,
+          toolbarHeight: 52,
           titleSpacing: 8,
-          iconTheme: const IconThemeData(color: AppPalette.surface, size: 22),
+          iconTheme: const IconThemeData(color: AppPalette.ink, size: 22),
           actionsIconTheme: const IconThemeData(
-            color: AppPalette.surface,
+            color: AppPalette.ink,
             size: 21,
           ),
           shape: const Border(bottom: BorderSide(color: AppPalette.border)),
           titleTextStyle: const TextStyle(
-            color: AppPalette.surface,
+            color: AppPalette.ink,
             fontFamily: 'Cairo',
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -236,7 +237,7 @@ abstract final class AppTheme {
           textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
         ),
         drawerTheme: const DrawerThemeData(
-          backgroundColor: AppPalette.navy,
+          backgroundColor: AppPalette.surface,
           width: 280,
           elevation: 8,
         ),
@@ -361,7 +362,7 @@ abstract final class AppTheme {
           color: AppPalette.darkMint,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: AppPalette.darkCanvas,
+          backgroundColor: AppPalette.darkSurface,
           foregroundColor: AppPalette.darkInk,
           elevation: 0,
           scrolledUnderElevation: 0,
