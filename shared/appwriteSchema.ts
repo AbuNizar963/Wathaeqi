@@ -684,6 +684,8 @@ export const appwriteSchema: SchemaTable[] = [
         key: "watermarkOpacityPercent",
         type: "integer",
         required: false,
+        min: 0,
+        max: 60,
         default: 12,
       },
       {
@@ -822,14 +824,14 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 16,
         required: false,
-        default: "single",
+        default: "box",
       },
       {
         key: "frameColor",
         type: "varchar",
         size: 7,
         required: false,
-        default: "#b49a55",
+        default: "#000000",
       },
       {
         key: "frameWidthPt",
