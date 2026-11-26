@@ -7,6 +7,8 @@ import { ownerTrpc } from "@/lib/ownerTrpc";
 import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSettings";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  DOCUMENT_DATE_FORMATS,
+  DOCUMENT_DATE_FORMAT_LABELS,
   MAX_WATERMARK_OPACITY_PERCENT,
   MIN_WATERMARK_SCALE_PERCENT,
   MAX_WATERMARK_SCALE_PERCENT,
@@ -205,10 +207,29 @@ export default function PlatformDocumentSettings() {
             </label>
 
             <div className="rounded-xl border p-4">
-              <h3 className="font-bold">بيانات أسفل الوثيقة</h3>
+              <h3 className="font-bold">بيانات الترويسة وتاريخ الوثيقة</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                التوقيع أسفل الوثيقة في الوسط، والشعار بمنتصف رأس الصفحة.
+                نسّق التاريخ الظاهر في الترويسة، واضبط بيانات المسؤول والشعار.
               </p>
+              <label className="mt-3 block space-y-1 text-sm">
+                <span className="font-medium">صيغة تاريخ الوثيقة</span>
+                <select
+                  value={values.documentDateFormat}
+                  onChange={event =>
+                    updateValue(
+                      "documentDateFormat",
+                      event.target.value as SettingsForm["documentDateFormat"]
+                    )
+                  }
+                  className="w-full rounded-lg border bg-background px-3 py-2"
+                >
+                  {DOCUMENT_DATE_FORMATS.map(format => (
+                    <option key={format} value={format}>
+                      {DOCUMENT_DATE_FORMAT_LABELS[format]}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
                   رتبة رئيس الوحدة

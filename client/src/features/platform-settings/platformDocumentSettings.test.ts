@@ -56,7 +56,9 @@ describe("document settings for export", () => {
     { watermarkOpacityPercent: 1.5 },
     { headerDividerColor: "red; background:url(javascript:alert(1))" },
     { watermarkText: "   " },
+    { headerLogoSize: 119 },
     { headerLogoSize: 241 },
+    { documentDateFormat: "yyyy/MM/dd HH:mm" as never },
     { headerTopPaddingMm: -1 },
     { headerAlignment: "invalid" },
   ])("blocks export with invalid effective settings: %o", async invalid => {
@@ -184,13 +186,24 @@ describe("platform document settings UI normalization", () => {
   it("clamps logo sizes to the supported adjustable range", () => {
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 32 }).headerLogoSize
-    ).toBe(40);
+    ).toBe(120);
+    expect(
+      normalizePlatformDocumentSettings({ headerLogoSize: 119 }).headerLogoSize
+    ).toBe(120);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 220 }).headerLogoSize
     ).toBe(220);
     expect(
       normalizePlatformDocumentSettings({ headerLogoSize: 999 }).headerLogoSize
     ).toBe(240);
+  });
+
+  it("uses the default date format when a saved value is unsupported", () => {
+    expect(
+      normalizePlatformDocumentSettings({
+        documentDateFormat: "yyyy/MM/dd HH:mm" as never,
+      }).documentDateFormat
+    ).toBe(DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentDateFormat);
   });
 
   it("preserves the additional professional frame styles", () => {

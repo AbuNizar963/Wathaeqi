@@ -32,8 +32,10 @@ export function getDocumentRecipientFields(
 export function getDocumentRecipientLine(
   fieldValues: Readonly<Record<string, string>>
 ): string {
-  const currentLine = fieldValues[DOCUMENT_RECIPIENT_LINE_KEY]?.trim();
-  if (currentLine) return currentLine;
+  const currentLine = fieldValues[DOCUMENT_RECIPIENT_LINE_KEY];
+  // Do not trim while the controlled input is being edited: removing a
+  // trailing space on every keystroke makes it impossible to type the next word.
+  if (typeof currentLine === "string") return currentLine;
 
   const legacyLabel = fieldValues[DOCUMENT_RECIPIENT_LABEL_KEY]?.trim() ?? "";
   const legacyValue = fieldValues[DOCUMENT_RECIPIENT_VALUE_KEY]?.trim() ?? "";

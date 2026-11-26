@@ -8,6 +8,7 @@ import DocumentLetterhead from "@/features/document-studio/DocumentLetterhead";
 import DocumentSignatureBlock from "@/features/document-studio/DocumentSignatureBlock";
 import DocumentWatermark from "@/features/document-studio/DocumentWatermark";
 import ResponsiveA4Preview from "@/features/document-studio/ResponsiveA4Preview";
+import { formatDocumentDate } from "@/features/document-studio/formatDocumentDate";
 
 type PreviewSettings = Omit<PlatformDocumentSettings, "updatedAt">;
 
@@ -67,7 +68,7 @@ export default function PlatformDocumentPreview({
   );
 
   const previewDate = previewDocument
-    ? formatArabicDate(previewDocument.documentDate)
+    ? formatDocumentDate(previewDocument.documentDate, settings.documentDateFormat)
     : undefined;
   const previewLogoUrl =
     letterheadSettings.data?.logoUrl ?? (logoUrl || null);
@@ -75,17 +76,6 @@ export default function PlatformDocumentPreview({
     letterheadSettings.data?.departmentName ??
     organizationName ??
     "وثائقي";
-
-  function formatArabicDate(value: string): string {
-    const date = new Date(value);
-    if (!Number.isFinite(date.getTime())) return value;
-    return new Intl.DateTimeFormat("ar", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      numberingSystem: "latn",
-    }).format(date);
-  }
 
   // prettier-ignore
   return (

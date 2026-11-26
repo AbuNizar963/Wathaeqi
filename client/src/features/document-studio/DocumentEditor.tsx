@@ -92,7 +92,7 @@ export default function DocumentEditor({
   content,
   onChange,
   editable = true,
-  placeholder = "اكتب نص الوثيقة هنا...",
+  placeholder = "اكتب المحتوى هنا...",
   containerClassName = "",
 }: DocumentEditorProps) {
   const plainText = editablePlainText(content);

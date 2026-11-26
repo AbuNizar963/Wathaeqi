@@ -132,7 +132,7 @@ export default function DocumentLetterhead({
         >
           {serial ? (
             <p className="whitespace-nowrap">
-              <strong>الرقم:</strong> {serial}
+              <strong>رقم الوثيقة:</strong> {serial}
             </p>
           ) : null}
           {date ? (

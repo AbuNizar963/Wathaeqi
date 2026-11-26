@@ -1,6 +1,7 @@
 import { Query } from "node-appwrite";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  DOCUMENT_DATE_FORMATS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
   MIN_WATERMARK_SCALE_PERCENT,
@@ -119,6 +120,11 @@ function mapPlatformDocumentSettings(
       Number(row.headerLogoSize) <= MAX_HEADER_LOGO_SIZE
         ? Number(row.headerLogoSize)
         : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerLogoSize,
+    documentDateFormat: DOCUMENT_DATE_FORMATS.includes(
+      row.documentDateFormat as (typeof DOCUMENT_DATE_FORMATS)[number]
+    )
+      ? (row.documentDateFormat as (typeof DOCUMENT_DATE_FORMATS)[number])
+      : DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentDateFormat,
     headerTopPaddingMm:
       Number.isInteger(Number(row.headerTopPaddingMm)) &&
       Number(row.headerTopPaddingMm) >= 0 &&

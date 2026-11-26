@@ -41,6 +41,7 @@ import {
   getUserOrganizationMembership,
 } from "./features/organizations/appwriteOwnerOrganizationRepository";
 import {
+  DOCUMENT_DATE_FORMATS,
   HEX_COLOR_PATTERN,
   MAX_HEADER_LOGO_SIZE,
   MAX_HEADER_PADDING_MM,
@@ -287,6 +288,7 @@ const ownerPlatformDocumentSettingsRouter = router({
           .int()
           .min(MIN_HEADER_LOGO_SIZE)
           .max(MAX_HEADER_LOGO_SIZE),
+        documentDateFormat: z.enum(DOCUMENT_DATE_FORMATS),
         headerTopPaddingMm: z.number().int().min(0).max(MAX_HEADER_PADDING_MM),
         headerHorizontalPaddingMm: z
           .number()

@@ -13,6 +13,7 @@ import {
   MAX_FRAME_WIDTH_PT,
   type PlatformDocumentSettings,
 } from "@shared/features/platform-settings/platformDocumentSettings";
+import { isDocumentDateFormat } from "@/features/document-studio/formatDocumentDate";
 
 export const DOCUMENT_SETTINGS_LOAD_ERROR =
   "تعذر تحميل إعدادات وثائق النظام. أعد المحاولة قبل الطباعة أو التصدير.";
@@ -65,6 +66,7 @@ export async function loadDocumentSettingsForExport(
       !Number.isInteger(settings.headerLogoSize) ||
       settings.headerLogoSize < MIN_HEADER_LOGO_SIZE ||
       settings.headerLogoSize > MAX_HEADER_LOGO_SIZE ||
+      !isDocumentDateFormat(settings.documentDateFormat) ||
       !Number.isInteger(settings.headerTopPaddingMm) ||
       settings.headerTopPaddingMm < 0 ||
       settings.headerTopPaddingMm > MAX_HEADER_PADDING_MM ||

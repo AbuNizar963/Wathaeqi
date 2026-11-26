@@ -48,6 +48,7 @@ import DocumentEditor from "./DocumentEditor";
 import DocumentLetterhead from "./DocumentLetterhead";
 import DocumentSignatureBlock from "./DocumentSignatureBlock";
 import DocumentWatermark from "./DocumentWatermark";
+import { formatDocumentDate } from "./formatDocumentDate";
 import {
   DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER,
   DOCUMENT_RECIPIENT_LINE_KEY,
@@ -722,7 +723,10 @@ export default function DocumentStudioPage() {
   function getDocumentSystemVariables(): Record<string, string> {
     const values: Record<string, string> = {
       organization: organizationName,
-      date: formatArabicDate(makeDocumentDate(documentDate)),
+      date: formatDocumentDate(
+        makeDocumentDate(documentDate),
+        platformDocumentSettings.data?.documentDateFormat
+      ),
       subject: documentSubject.trim(),
       number: documentSubject.trim(),
     };
@@ -1744,18 +1748,20 @@ export default function DocumentStudioPage() {
                         logoUrl={logoUrl}
                         dividerColor={dividerColor}
                         headerSettings={platformDocumentSettings.data}
-                        serial={selectedDocument?.serialCode || undefined}
-                        date={formatArabicDate(makeDocumentDate(documentDate))}
+                        serial={
+                          selectedDocument?.serialCode ||
+                          documentSubject.trim() ||
+                          undefined
+                        }
+                        date={formatDocumentDate(
+                          makeDocumentDate(documentDate),
+                          platformDocumentSettings.data?.documentDateFormat
+                        )}
                       />
                       <div className="pt-6">
                         {documentRecipientLine ? (
                           <p className="mb-4 text-center text-base font-semibold">
                             {documentRecipientLine}
-                          </p>
-                        ) : null}
-                        {documentSubject ? (
-                          <p className="mb-4 text-right font-semibold">
-                            رقم الوثيقة: {documentSubject}
                           </p>
                         ) : null}
                         {selectedTemplateId &&
@@ -1794,12 +1800,6 @@ export default function DocumentStudioPage() {
                             </Button>
                           </div>
                         ) : null}
-                        <div className="document-studio-no-print mb-2">
-                          <h3 className="font-semibold">نص الوثيقة</h3>
-                          <p className="text-xs text-muted-foreground">
-                            اكتب محتوى الكتاب ليظهر أسفل جهة التوجيه.
-                          </p>
-                        </div>
                         <DocumentEditor
                           content={documentPreviewContent}
                           onChange={handleDocumentContentChange}

@@ -39,6 +39,14 @@ describe("document recipient line", () => {
     ).toBe("السيد مدير القسم المحترم");
   });
 
+  it("preserves a trailing space while the recipient input is being edited", () => {
+    expect(
+      getDocumentRecipientLine({
+        [DOCUMENT_RECIPIENT_LINE_KEY]: "السيد مدير ",
+      })
+    ).toBe("السيد مدير ");
+  });
+
   it("keeps older documents readable by combining their split values", () => {
     expect(
       getDocumentRecipientLine({

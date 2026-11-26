@@ -768,7 +768,16 @@ export const appwriteSchema: SchemaTable[] = [
         key: "headerLogoSize",
         type: "integer",
         required: false,
+        min: 120,
+        max: 240,
         default: 120,
+      },
+      {
+        key: "documentDateFormat",
+        type: "varchar",
+        size: 32,
+        required: false,
+        default: "yyyy/MM/dd",
       },
       {
         key: "headerTopPaddingMm",

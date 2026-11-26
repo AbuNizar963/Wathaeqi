@@ -1,6 +1,33 @@
 export type DocumentTextRow = { right: string; left: string };
 
 export const REFERENCE_DOCUMENT_LOGO_SIZE = 120;
+export const DOCUMENT_DATE_FORMATS = [
+  "yyyy/MM/dd",
+  "dd/MM/yyyy",
+  "MM/dd/yyyy",
+  "yyyy-MM-dd",
+  "dd-MM-yyyy",
+  "MM-dd-yyyy",
+  "yyyy.MM.dd",
+  "dd.MM.yyyy",
+  "d MMMM yyyy",
+  "MMMM d, yyyy",
+] as const;
+
+export type DocumentDateFormat = (typeof DOCUMENT_DATE_FORMATS)[number];
+
+export const DOCUMENT_DATE_FORMAT_LABELS: Record<DocumentDateFormat, string> = {
+  "yyyy/MM/dd": "2026/11/25 — سنة/شهر/يوم",
+  "dd/MM/yyyy": "25/11/2026 — يوم/شهر/سنة",
+  "MM/dd/yyyy": "11/25/2026 — شهر/يوم/سنة",
+  "yyyy-MM-dd": "2026-11-25 — سنة-شهر-يوم",
+  "dd-MM-yyyy": "25-11-2026 — يوم-شهر-سنة",
+  "MM-dd-yyyy": "11-25-2026 — شهر-يوم-سنة",
+  "yyyy.MM.dd": "2026.11.25 — سنة.شهر.يوم",
+  "dd.MM.yyyy": "25.11.2026 — يوم.شهر.سنة",
+  "d MMMM yyyy": "25 نوفمبر 2026 — شهر مكتوب",
+  "MMMM d, yyyy": "نوفمبر 25, 2026 — شهر مكتوب أولاً",
+};
 
 export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   showMinistryWatermarkText: true,
@@ -16,6 +43,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   headerChiefName: "الشهباء",
   headerShowLogo: true,
   headerLogoSize: REFERENCE_DOCUMENT_LOGO_SIZE,
+  documentDateFormat: "yyyy/MM/dd" as const,
   headerTopPaddingMm: 0,
   headerHorizontalPaddingMm: 0,
   headerBottomPaddingMm: 6,
@@ -53,6 +81,7 @@ export type PlatformDocumentSettings = {
   headerChiefName: string;
   headerShowLogo: boolean;
   headerLogoSize: number;
+  documentDateFormat: DocumentDateFormat;
   headerTopPaddingMm: number;
   headerHorizontalPaddingMm: number;
   headerBottomPaddingMm: number;
@@ -73,7 +102,7 @@ export type PlatformDocumentSettings = {
 export const MAX_WATERMARK_OPACITY_PERCENT = 60;
 export const MIN_WATERMARK_SCALE_PERCENT = 40;
 export const MAX_WATERMARK_SCALE_PERCENT = 180;
-export const MIN_HEADER_LOGO_SIZE = 40;
+export const MIN_HEADER_LOGO_SIZE = REFERENCE_DOCUMENT_LOGO_SIZE;
 export const MAX_HEADER_LOGO_SIZE = 240;
 export const MAX_HEADER_PADDING_MM = 30;
 export const MAX_PAGE_MARGIN_MM = 35;

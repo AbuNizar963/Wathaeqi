@@ -44,6 +44,10 @@ describe("platform document settings nullable Appwrite columns", () => {
       "headerBottomPaddingMm",
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.headerBottomPaddingMm,
     ],
+    [
+      "documentDateFormat",
+      DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentDateFormat,
+    ],
   ])("uses the configured default when %s is null", async (field, fallback) => {
     mocks.listRows.mockResolvedValue({
       rows: [

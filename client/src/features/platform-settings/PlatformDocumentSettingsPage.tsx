@@ -13,6 +13,8 @@ import { normalizePlatformDocumentSettings } from "./normalizePlatformDocumentSe
 import PlatformDocumentPreview from "./PlatformDocumentPreview";
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  DOCUMENT_DATE_FORMATS,
+  DOCUMENT_DATE_FORMAT_LABELS,
   HEX_COLOR_PATTERN,
   MAX_WATERMARK_OPACITY_PERCENT,
   MIN_WATERMARK_SCALE_PERCENT,
@@ -772,13 +774,35 @@ export default function PlatformDocumentSettingsPage() {
               className="space-y-4 rounded-xl border p-4"
             >
               <h2 id="header-content-title" className="font-semibold">
-                بيانات المسؤول أسفل الوثيقة
+                بيانات الترويسة وتاريخ الوثيقة
               </h2>
               <p className="text-xs text-muted-foreground">
-                هذه البيانات تظهر أسفل متن الوثيقة بمحاذاة اليسار في سطرين؛
-                السطر الأول لرتبة واسم رئيس الوحدة، والثاني لصفة المسؤول واسم
-                الوحدة. يظهر الشعار أعلى الوثيقة وفوق النص.
+                اختر طريقة عرض التاريخ، ثم اضبط بيانات المسؤول والشعار والهوامش
+                المرتبطة بالترويسة.
               </p>
+              <label htmlFor="document-date-format" className="block space-y-1">
+                <span className="text-sm font-medium">صيغة تاريخ الوثيقة</span>
+                <select
+                  id="document-date-format"
+                  value={values.documentDateFormat}
+                  onChange={event =>
+                    updateValue(
+                      "documentDateFormat",
+                      event.target.value as SettingsForm["documentDateFormat"]
+                    )
+                  }
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                >
+                  {DOCUMENT_DATE_FORMATS.map(format => (
+                    <option key={format} value={format}>
+                      {DOCUMENT_DATE_FORMAT_LABELS[format]}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-muted-foreground">
+                  يطبّق على تاريخ الترويسة والتاريخ التلقائي داخل القوالب.
+                </span>
+              </label>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1">
                   <span className="text-sm font-medium">رتبة رئيس الوحدة</span>

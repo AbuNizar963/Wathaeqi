@@ -15,6 +15,7 @@ describe("DocumentEditor", () => {
     );
 
     expect(markup).toContain("<textarea");
+    expect(markup).toContain('placeholder="اكتب المحتوى هنا..."');
     expect(markup).not.toContain('role="toolbar"');
     expect(markup).not.toContain("تنسيق الفقرة");
     expect(markup).not.toContain("محاذاة يمين");

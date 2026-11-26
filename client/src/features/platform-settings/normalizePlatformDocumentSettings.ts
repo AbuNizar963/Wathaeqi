@@ -1,5 +1,6 @@
 import {
   DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+  DOCUMENT_DATE_FORMATS,
   HEX_COLOR_PATTERN,
   MAX_HEADER_LOGO_SIZE,
   MIN_HEADER_LOGO_SIZE,
@@ -153,6 +154,11 @@ export function normalizePlatformDocumentSettings(
         Math.round(safeNumber(source.headerLogoSize, defaults.headerLogoSize))
       )
     ),
+    documentDateFormat: DOCUMENT_DATE_FORMATS.includes(
+      source.documentDateFormat as (typeof DOCUMENT_DATE_FORMATS)[number]
+    )
+      ? (source.documentDateFormat as (typeof DOCUMENT_DATE_FORMATS)[number])
+      : defaults.documentDateFormat,
     headerTopPaddingMm: safeNumber(
       source.headerTopPaddingMm,
       defaults.headerTopPaddingMm
