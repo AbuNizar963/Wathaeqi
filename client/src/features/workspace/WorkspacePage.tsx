@@ -368,7 +368,8 @@ export default function WorkspacePage({
             <SummaryCard
               label="إجمالي الوثائق"
               value={documentsQuery.data?.length}
-              icon={<FileClock className="h-4 w-4" />}\n              tone="blue"
+              icon={<FileClock className="h-4 w-4" />}
+              tone="blue"
             />
             <SummaryCard
               label="مسودات"
@@ -968,7 +969,9 @@ function SummaryCard({
   } satisfies Record<NonNullable<typeof tone>, string>;
   return (
     <Card className="group relative min-w-0 overflow-hidden rounded-2xl border-border/70 bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4">
-      <span\n        className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses[tone]}`}\n      >
+      <span
+        className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses[tone]}`}
+      >
         {icon}
       </span>
       <div className="min-w-0 pt-11">
