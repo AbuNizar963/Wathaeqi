@@ -1684,7 +1684,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
               ButtonSegment(
                 value: DocumentStudioTab.templates,
                 label: Text('القوالب'),
-                icon: Icon(LucideIcons.layoutTemplate),
+                icon: Icon(Icons.dashboard_customize_outlined),
               ),
               ButtonSegment(
                 value: DocumentStudioTab.archive,
@@ -1694,7 +1694,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
               ButtonSegment(
                 value: DocumentStudioTab.files,
                 label: Text('الملفات'),
-                icon: Icon(LucideIcons.folderOpen),
+                icon: Icon(Icons.folder_open_rounded),
               ),
             ],
             selected: {_tab},
@@ -1745,12 +1745,12 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                   children: [
                     OutlinedButton.icon(
                       onPressed: _saving ? null : _chooseTemplateForNewDocument,
-                      icon: const Icon(LucideIcons.layoutTemplate, size: 17),
+                      icon: const Icon(Icons.dashboard_customize_outlined, size: 17),
                       label: const Text('ابدأ من قالب'),
                     ),
                     OutlinedButton.icon(
                       onPressed: () => showTab(DocumentStudioTab.files),
-                      icon: const Icon(LucideIcons.folderOpen, size: 17),
+                      icon: const Icon(Icons.folder_open_rounded, size: 17),
                       label: const Text('الملفات الأصلية'),
                     ),
                   ],
@@ -1771,37 +1771,37 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             _homeMetric(
               label: 'إجمالي الوثائق',
               value: documents.length,
-              icon: LucideIcons.files,
+              icon: Icons.description_outlined,
               color: Theme.of(context).colorScheme.primary,
             ),
             _homeMetric(
               label: 'مسودات',
               value: drafts,
-              icon: LucideIcons.filePenLine,
+              icon: Icons.edit_note_rounded,
               color: context.appWarning,
             ),
             _homeMetric(
               label: 'وثائق صادرة',
               value: issued,
-              icon: LucideIcons.fileCheck2,
+              icon: Icons.task_alt_rounded,
               color: context.appSuccess,
             ),
             _homeMetric(
               label: 'مؤرشفة',
               value: archived,
-              icon: LucideIcons.archive,
+              icon: Icons.archive_outlined,
               color: context.appInfo,
             ),
             _homeMetric(
               label: 'القوالب',
               value: _templates.length,
-              icon: LucideIcons.layoutTemplate,
+              icon: Icons.dashboard_customize_outlined,
               color: AppPalette.gold,
             ),
             _homeMetric(
               label: 'ملفات مرفقة',
               value: files,
-              icon: LucideIcons.folderOpen,
+              icon: Icons.folder_open_rounded,
               color: Theme.of(context).colorScheme.tertiary,
             ),
           ],
@@ -2020,12 +2020,12 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             children: [
               OutlinedButton.icon(
                 onPressed: _saving ? null : _chooseTemplateForNewDocument,
-                icon: const Icon(LucideIcons.layoutTemplate),
+                icon: const Icon(Icons.dashboard_customize_outlined),
                 label: const Text('استخدام قالب'),
               ),
               OutlinedButton.icon(
                 onPressed: () => setState(() => _tab = DocumentStudioTab.files),
-                icon: const Icon(LucideIcons.folderOpen),
+                icon: const Icon(Icons.folder_open_rounded),
                 label: const Text('إدارة الملفات'),
               ),
             ],
