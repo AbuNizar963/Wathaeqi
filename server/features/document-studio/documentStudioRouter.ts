@@ -583,6 +583,29 @@ export const documentStudioRouter = router({
       }
     }),
 
+  recordPrint: authenticatedProcedure
+    .input(z.object({ id: z.string().min(1).max(36) }))
+    .mutation(async ({ ctx, input }) => {
+      const document = await getOfficialDocument(ctx.user.authUserId, input.id);
+      if (!document) throwIfNotFound("الوثيقة غير موجودة");
+      await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
+        actorUserId: ctx.user.id,
+        actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+        actorRole: ctx.user.role,
+        organizationId: document.organizationId ?? undefined,
+        action: "document.print",
+        entityType: "document",
+        entityId: document.id,
+        metadata: {
+          title: document.title,
+          status: document.status,
+          serialCode: document.serialCode,
+        },
+      });
+      return { success: true as const };
+    }),
+
   archiveDocument: authenticatedProcedure
     .input(
       z.object({
