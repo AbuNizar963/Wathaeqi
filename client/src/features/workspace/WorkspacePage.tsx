@@ -130,7 +130,9 @@ export default function WorkspacePage({
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
     {
-      enabled: section === "users" || (section === "dashboard" && canOpenAdvancedManagement),
+      enabled:
+        section === "users" ||
+        (section === "dashboard" && canOpenAdvancedManagement),
     }
   );
   const utils = trpc.useUtils();
