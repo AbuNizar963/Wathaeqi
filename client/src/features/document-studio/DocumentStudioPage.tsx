@@ -227,6 +227,20 @@ export default function DocumentStudioPage() {
     setActiveTab("documents");
   }, [routeSearch]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(routeSearch);
+    const uploadRequested = params.get("upload") === "1";
+
+    if (!uploadRequested) return;
+
+    setActiveTab("documents");
+    setImportDialogOpen(true);
+    params.delete("upload");
+
+    const query = params.toString();
+    setLocation(query ? `/documents?${query}` : "/documents");
+  }, [routeSearch, setLocation]);
+
   const utils = trpc.useUtils();
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery();
   const templatesQuery = trpc.documentStudio.listTemplates.useQuery();

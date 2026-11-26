@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
   Bell,
   Contact,
   FileClock,
+  FilePlus2,
+  FileText,
   LayoutDashboard,
   Pencil,
   Plus,
@@ -56,6 +59,20 @@ const emptyContact: ContactForm = {
   organization: "",
 };
 
+function formatDashboardDate(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    numberingSystem: "latn",
+    timeZone: "UTC",
+  })
+    .format(date)
+    .replaceAll("-", "/");
+}
+
 const sectionTitles: Record<WorkspaceSection, string> = {
   dashboard: "لوحة التحكم",
   contacts: "جهات الاتصال",
@@ -69,6 +86,7 @@ export default function WorkspacePage({
   section: WorkspaceSection;
 }) {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const organizationContext = appTrpc.organizations.context.useQuery(
     undefined,
     { enabled: Boolean(user), staleTime: 30_000 }
@@ -87,9 +105,6 @@ export default function WorkspacePage({
   const documentsQuery = trpc.documentStudio.listDocuments.useQuery(undefined, {
     enabled: section === "dashboard",
   });
-  const templatesQuery = trpc.documentStudio.listTemplates.useQuery(undefined, {
-    enabled: section === "dashboard",
-  });
   const contactsQuery = trpc.workspace.contacts.list.useQuery(undefined, {
     enabled: section === "contacts",
   });
@@ -102,7 +117,7 @@ export default function WorkspacePage({
   const administrationQuery = trpc.workspace.administration.overview.useQuery(
     undefined,
     {
-      enabled: section === "dashboard" || section === "users",
+      enabled: section === "users",
     }
   );
   const utils = trpc.useUtils();
@@ -187,9 +202,7 @@ export default function WorkspacePage({
 
   const isLoading =
     section === "dashboard"
-      ? documentsQuery.isLoading ||
-        templatesQuery.isLoading ||
-        administrationQuery.isLoading
+      ? documentsQuery.isLoading
       : section === "contacts"
         ? contactsQuery.isLoading
         : section === "notifications"
@@ -197,9 +210,7 @@ export default function WorkspacePage({
           : administrationQuery.isLoading;
   const isError =
     section === "dashboard"
-      ? documentsQuery.isError ||
-        templatesQuery.isError ||
-        administrationQuery.isError
+      ? documentsQuery.isError
       : section === "contacts"
         ? contactsQuery.isError
         : section === "notifications"
@@ -207,9 +218,7 @@ export default function WorkspacePage({
           : administrationQuery.isError;
   const errorMessage =
     section === "dashboard"
-      ? (documentsQuery.error?.message ??
-        templatesQuery.error?.message ??
-        administrationQuery.error?.message)
+      ? documentsQuery.error?.message
       : section === "contacts"
         ? contactsQuery.error?.message
         : section === "notifications"
@@ -219,8 +228,6 @@ export default function WorkspacePage({
   const refresh = () => {
     if (section === "dashboard") {
       void documentsQuery.refetch();
-      void templatesQuery.refetch();
-      void administrationQuery.refetch();
     } else if (section === "contacts") void contactsQuery.refetch();
     else if (section === "notifications") void notificationsQuery.refetch();
     else void administrationQuery.refetch();
@@ -279,9 +286,9 @@ export default function WorkspacePage({
             <h1 className="text-2xl font-bold">{sectionTitles[section]}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {section === "dashboard"
-                ? "ملخص الوثائق والنماذج وحالة المنصة"
+                ? "مؤشرات الوثائق وآخر الوثائق المحفوظة"
                 : section === "contacts"
-                  ? "إدارة دليل الجهات والأشخاص المرتبطين بمراسلاتك ووثائقك"
+                  ? "إدارة دليل الجهات والأشخاص المرتبطين بالوثائق المطبوعة"
                   : section === "notifications"
                     ? "عرض التنبيهات المرتبطة بحسابك وإدارة حالة قراءتها"
                     : section === "users"
@@ -312,7 +319,7 @@ export default function WorkspacePage({
       </header>
 
       {section === "users" ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <SummaryCard
             label="المستخدمون"
             value={administrationQuery.data?.totals.users}
@@ -327,8 +334,8 @@ export default function WorkspacePage({
       ) : null}
 
       {section === "dashboard" ? (
-        <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryCard
               label="إجمالي الوثائق"
               value={documentsQuery.data?.length}
@@ -358,16 +365,6 @@ export default function WorkspacePage({
               }
               icon={<FileClock className="h-4 w-4" />}
             />
-            <SummaryCard
-              label="النماذج النشطة"
-              value={templatesQuery.data?.length}
-              icon={<Contact className="h-4 w-4" />}
-            />
-            <SummaryCard
-              label="المستخدمون"
-              value={administrationQuery.data?.totals.users}
-              icon={<Users className="h-4 w-4" />}
-            />
           </div>
           <Card className="space-y-3 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
@@ -381,24 +378,57 @@ export default function WorkspacePage({
             ) : isError ? (
               <ErrorMessage message={errorMessage} onRetry={refresh} />
             ) : (documentsQuery.data ?? []).length === 0 ? (
-              <EmptyState text="لم تُنشأ وثائق بعد. ابدأ بإنشاء وثيقتك الأولى." />
+              <div className="rounded-2xl border border-dashed border-border/80 p-8 text-center">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <FilePlus2 className="h-6 w-6" />
+                </span>
+                <p className="mt-3 font-semibold">مساحة الوثائق جاهزة للبدء</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  أنشئ أول وثيقة رسمية أو ابدأ من قالب معتمد.
+                </p>
+                <Button
+                  type="button"
+                  className="mt-4 rounded-xl"
+                  onClick={() => setLocation("/documents?create=1")}
+                >
+                  إنشاء الوثيقة الأولى
+                </Button>
+              </div>
             ) : (
-              <div className="divide-y rounded-xl border">
+              <div className="divide-y divide-border/70">
                 {(documentsQuery.data ?? []).slice(0, 8).map(item => (
-                  <div
+                  <button
                     key={item.id}
-                    className="flex flex-wrap items-center justify-between gap-3 p-3"
+                    type="button"
+                    onClick={() =>
+                      setLocation(
+                        `/documents?document=${encodeURIComponent(item.id)}`
+                      )
+                    }
+                    className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl p-3 text-right transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{item.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {item.subject || item.category}
-                      </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        <FileText className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">{item.title}</p>
+                        <p className="mt-1 truncate text-xs text-muted-foreground">
+                          {item.subject || item.category}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-3">
                       <Badge
                         variant={
                           item.status === "issued" ? "default" : "secondary"
+                        }
+                        className={
+                          item.status === "issued"
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                            : item.status === "archived"
+                              ? "border-indigo-500/20 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+                              : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                         }
                       >
                         {item.status === "issued"
@@ -407,11 +437,14 @@ export default function WorkspacePage({
                             ? "مؤرشفة"
                             : "مسودة"}
                       </Badge>
-                      <time className="text-xs text-muted-foreground" dir="ltr">
-                        {new Date(item.updatedAt).toLocaleDateString("ar")}
+                      <time
+                        className="text-xs font-medium tabular-nums text-muted-foreground"
+                        dir="ltr"
+                      >
+                        {formatDashboardDate(item.updatedAt)}
                       </time>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -793,11 +826,17 @@ function SummaryCard({
   icon: React.ReactNode;
 }) {
   return (
-    <Card className="flex items-center gap-3 p-4">
-      <span className="rounded-xl bg-primary/10 p-2 text-primary">{icon}</span>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-xl font-bold tabular-nums">{value ?? "—"}</p>
+    <Card className="group relative min-w-0 overflow-hidden rounded-2xl border-border/70 bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4">
+      <span className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <div className="min-w-0 pt-11">
+        <p className="truncate text-[11px] font-medium text-muted-foreground sm:text-xs">
+          {label}
+        </p>
+        <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums sm:text-3xl">
+          {value?.toLocaleString("ar", { numberingSystem: "latn" }) ?? "—"}
+        </p>
       </div>
     </Card>
   );
