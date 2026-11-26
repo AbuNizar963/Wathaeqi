@@ -56,6 +56,13 @@ class DocumentStudioPage extends StatefulWidget {
 class DocumentStudioPageState extends State<DocumentStudioPage> {
   void createDocument() => _showCreateDocumentOptions();
   void selectDocument(OfficialDocument document) => _selectDocument(document);
+
+  /// Switches the visible workspace section from the persistent mobile bar.
+  /// Existing editor state is preserved while changing sections.
+  void showTab(DocumentStudioTab tab) {
+    if (!mounted || _tab == tab) return;
+    setState(() => _tab = tab);
+  }
   late final DocumentStudioOutbox _outbox;
   late QuillController _documentEditor;
   late QuillController _templateEditor;
