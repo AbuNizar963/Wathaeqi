@@ -588,7 +588,7 @@ function DashboardLayoutContent({
           className={`z-30 border-l-0 ${isMobile && openMobile ? "z-[60]" : ""}`}
           disableTransition={isResizing}
         >
-          <SidebarHeader className="border-b border-sidebar-border bg-sidebar/95 px-3 pb-4 pt-[calc(1rem+env(safe-area-inset-top))]">
+          <SidebarHeader className="border-b border-sidebar-border bg-sidebar/95 px-3 pb-4 pt-[calc(1rem_+_env(safe-area-inset-top))]">
             <div className="flex w-full items-center justify-between gap-3">
               {showSidebarBrand ? (
                 <BrandMark size="sm" showLabel className="min-w-0" />
