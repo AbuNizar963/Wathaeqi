@@ -1352,6 +1352,7 @@ export default function DocumentStudioPage() {
                         onChange={handleTemplateContentChange}
                         editable={!previewMode}
                         containerClassName="rounded-none border-0 shadow-none"
+                        textStyle={documentFontStyle}
                         placeholder="اكتب نص النموذج واستخدم {{employee_name}} للحقول المخصصة أو {{organization}} و{{date}} و{{number}} و{{subject}} للبيانات التلقائية."
                       />
                     </div>
