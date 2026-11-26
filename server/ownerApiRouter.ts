@@ -50,6 +50,12 @@ import {
   MAX_DIVIDER_WIDTH_PT,
   MIN_FRAME_WIDTH_PT,
   MAX_FRAME_WIDTH_PT,
+  DOCUMENT_FONT_FAMILIES,
+  DOCUMENT_FONT_WEIGHTS,
+  MIN_DOCUMENT_FONT_SIZE_PT,
+  MAX_DOCUMENT_FONT_SIZE_PT,
+  MIN_RECIPIENT_FONT_SIZE_PT,
+  MAX_RECIPIENT_FONT_SIZE_PT,
   MAX_WATERMARK_OPACITY_PERCENT,
   MIN_WATERMARK_SCALE_PERCENT,
   MAX_WATERMARK_SCALE_PERCENT,
@@ -331,6 +337,14 @@ const ownerPlatformDocumentSettingsRouter = router({
           .number()
           .min(MIN_FRAME_WIDTH_PT)
           .max(MAX_FRAME_WIDTH_PT),
+        documentFontFamily: z.enum(DOCUMENT_FONT_FAMILIES),
+        documentFontSizePt: z.number().min(MIN_DOCUMENT_FONT_SIZE_PT).max(MAX_DOCUMENT_FONT_SIZE_PT),
+        documentFontWeight: z.union([z.literal(400), z.literal(500), z.literal(600), z.literal(700), z.literal(800)]),
+        documentFontColor: z.string().regex(HEX_COLOR_PATTERN),
+        recipientFontFamily: z.enum(DOCUMENT_FONT_FAMILIES),
+        recipientFontSizePt: z.number().min(MIN_RECIPIENT_FONT_SIZE_PT).max(MAX_RECIPIENT_FONT_SIZE_PT),
+        recipientFontWeight: z.union([z.literal(400), z.literal(500), z.literal(600), z.literal(700), z.literal(800)]),
+        recipientFontColor: z.string().regex(HEX_COLOR_PATTERN),
         showVerificationQr: z.boolean(),
       })
     )
