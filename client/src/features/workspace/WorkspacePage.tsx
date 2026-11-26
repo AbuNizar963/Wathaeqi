@@ -3,10 +3,15 @@ import { useLocation } from "wouter";
 import {
   Bell,
   Contact,
+  Copy,
   FileClock,
   FilePlus2,
   FileText,
+  FolderOpen,
   LayoutDashboard,
+  LayoutTemplate,
+  Mail,
+  Phone,
   Pencil,
   Plus,
   RefreshCw,
@@ -286,6 +291,20 @@ export default function WorkspacePage({
     else createContact.mutate(values);
   };
 
+  const copyContactEmail = async (email: string) => {
+    if (!navigator.clipboard?.writeText) {
+      toast.error("النسخ غير متاح في هذا المتصفح");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(email);
+      toast.success("تم نسخ البريد الإلكتروني");
+    } catch {
+      toast.error("تعذر نسخ البريد الإلكتروني");
+    }
+  };
+
+
   const mutationPending =
     createContact.isPending ||
     updateContact.isPending ||
@@ -415,6 +434,51 @@ export default function WorkspacePage({
               tone="cyan"
             />
           </div>
+          <Card className="space-y-3 p-4 sm:p-5">
+            <div>
+              <h2 className="font-semibold">إجراءات سريعة</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                الوصول المباشر إلى أكثر المهام استخداماً
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Button
+                className="min-h-12 justify-start"
+                onClick={() => setLocation("/documents?create=1")}
+              >
+                <FilePlus2 className="ml-2 h-4 w-4" />
+                إنشاء وثيقة
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-12 justify-start"
+                onClick={() => setLocation("/documents?tab=files")}
+              >
+                <FolderOpen className="ml-2 h-4 w-4" />
+                رفع ملف
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-12 justify-start"
+                onClick={() => setLocation("/documents?tab=templates")}
+              >
+                <LayoutTemplate className="ml-2 h-4 w-4" />
+                استيراد قالب
+              </Button>
+              <Button
+                variant="outline"
+                className="min-h-12 justify-start"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm(emptyContact);
+                  setContactDialogOpen(true);
+                }}
+              >
+                <Contact className="ml-2 h-4 w-4" />
+                إضافة جهة اتصال
+              </Button>
+            </div>
+          </Card>
           <Card className="space-y-3 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">أحدث الوثائق</h2>
@@ -567,6 +631,35 @@ export default function WorkspacePage({
                     ) : null}
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-3">
+                    {item.phone ? (
+                      <a
+                        href={`tel:${item.phone}`}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium transition-colors hover:bg-muted"
+                      >
+                        <Phone className="h-4 w-4" />
+                        اتصال
+                      </a>
+                    ) : null}
+                    {item.email ? (
+                      <a
+                        href={`mailto:${item.email}`}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 text-xs font-medium transition-colors hover:bg-muted"
+                      >
+                        <Mail className="h-4 w-4" />
+                        بريد
+                      </a>
+                    ) : null}
+                    {item.email ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="min-h-10"
+                        onClick={() => void copyContactEmail(item.email)}
+                      >
+                        <Copy className="ml-2 h-4 w-4" />
+                        نسخ البريد
+                      </Button>
+                    ) : null}
                     <Button
                       size="sm"
                       variant="outline"
@@ -618,43 +711,57 @@ export default function WorkspacePage({
           ) : (notificationsQuery.data ?? []).length === 0 ? (
             <EmptyState text="لا توجد إشعارات جديدة." />
           ) : (
-            <div className="space-y-2">
-              {(notificationsQuery.data ?? []).map(item => (
+            <div className="space-y-0">
+              {(notificationsQuery.data ?? []).map((item, index, items) => (
                 <div
                   key={item.id}
-                  className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3 ${item.readAt ? "opacity-70" : "border-primary/40 bg-primary/5"}`}
+                  className="relative pb-4 pr-8 last:pb-0"
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold">{item.title}</p>
-                      {!item.readAt ? <Badge>جديد</Badge> : null}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute right-1.5 top-4 z-10 h-3 w-3 rounded-full ring-4 ring-background ${item.readAt ? "bg-muted-foreground/30" : "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.45)]"}`}
+                  />
+                  {index < items.length - 1 ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-0 right-[11px] top-8 border-r border-border"
+                    />
+                  ) : null}
+                  <div
+                    className={`flex flex-wrap items-start justify-between gap-3 rounded-xl border p-3 ${item.readAt ? "opacity-70" : "border-emerald-500/30 bg-emerald-500/5"}`}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">{item.title}</p>
+                        {!item.readAt ? <Badge>جديد</Badge> : null}
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {item.body}
+                      </p>
+                      <time
+                        className="mt-2 block text-xs font-medium tabular-nums text-muted-foreground"
+                        dir="ltr"
+                      >
+                        {item.createdAt
+                          ? formatDashboardDate(item.createdAt)
+                          : "—"}
+                      </time>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {item.body}
-                    </p>
-                    <time
-                      className="mt-2 block text-xs text-muted-foreground"
-                      dir="ltr"
-                    >
-                      {item.createdAt
-                        ? new Date(item.createdAt).toLocaleString("ar")
-                        : "—"}
-                    </time>
+                    {!item.readAt ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={markNotificationRead.isPending}
+                        onClick={() =>
+                          markNotificationRead.mutate({ id: item.id })
+                        }
+                      >
+                        تعليم كمقروء
+                      </Button>
+                    ) : (
+                      <Badge variant="secondary">مقروء</Badge>
+                    )}
                   </div>
-                  {!item.readAt ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={markNotificationRead.isPending}
-                      onClick={() =>
-                        markNotificationRead.mutate({ id: item.id })
-                      }
-                    >
-                      تعليم كمقروء
-                    </Button>
-                  ) : (
-                    <Badge variant="secondary">مقروء</Badge>
-                  )}
                 </div>
               ))}
             </div>

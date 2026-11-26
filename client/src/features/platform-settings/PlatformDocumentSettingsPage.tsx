@@ -66,7 +66,7 @@ export default function PlatformDocumentSettingsPage() {
     ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
   });
   const [activeSettingsTab, setActiveSettingsTab] = useState<
-    "identity" | "format" | "security"
+    "identity" | "format" | "security" | "recipient"
   >("identity");
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -238,12 +238,13 @@ export default function PlatformDocumentSettingsPage() {
 
       <nav
         aria-label="أقسام إعدادات الوثائق"
-        className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-card p-1"
+        className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-1 sm:grid-cols-4"
       >
         {([
           ["identity", "الترويسة والهوية"],
           ["format", "تنسيق الورقة والخط"],
           ["security", "الأمان والتحقق"],
+          ["recipient", "الجهة المستلمة والقوالب"],
         ] as const).map(([tab, label]) => (
           <Button
             key={tab}
@@ -695,7 +696,7 @@ export default function PlatformDocumentSettingsPage() {
                   وتنعكس على المعاينة والطباعة.
                 </p>
               </div>
-              <div className="grid gap-5 lg:grid-cols-2">
+              <div className="grid max-w-2xl gap-5">
                 <section className="space-y-3 rounded-lg bg-muted/30 p-3">
                   <h3 className="font-medium">نص الوثيقة</h3>
                   <label className="block space-y-1 text-sm">
@@ -773,6 +774,24 @@ export default function PlatformDocumentSettingsPage() {
                     />
                   </label>
                 </section>
+
+              </div>
+            </section>
+            <section
+              id="recipient-defaults-settings"
+              hidden={activeSettingsTab !== "recipient"}
+              aria-labelledby="recipient-defaults-title"
+              className="space-y-4 rounded-xl border p-4"
+            >
+              <div>
+                <h2 id="recipient-defaults-title" className="font-semibold">
+                  الجهة المستلمة والقوالب الافتراضية
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  اضبط تنسيق سطر الجهة المستلمة، وانتقل مباشرة إلى مكتبة القوالب لإدارة النماذج الافتراضية.
+                </p>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-2">
                 <section className="space-y-3 rounded-lg bg-muted/30 p-3">
                   <h3 className="font-medium">الجهة المستلمة</h3>
                   <label className="block space-y-1 text-sm">
@@ -849,6 +868,23 @@ export default function PlatformDocumentSettingsPage() {
                       className="h-10 w-16 cursor-pointer rounded border bg-background p-1"
                     />
                   </label>
+                </section>
+                <section className="flex flex-col items-start justify-between gap-4 rounded-lg border border-dashed bg-muted/20 p-4">
+                  <div>
+                    <h3 className="font-medium">القوالب الافتراضية</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      تُدار القوالب ومراجعاتها من مساحة الوثائق، ويمكن بدء وثيقة جديدة من أي قالب معتمد.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-11"
+                    onClick={() => window.location.assign("/documents?tab=templates")}
+                  >
+                    <FolderOpen className="ml-2 h-4 w-4" />
+                    فتح مكتبة القوالب
+                  </Button>
                 </section>
               </div>
             </section>

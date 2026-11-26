@@ -553,8 +553,166 @@ export default function UsersPage() {
                   : "لا توجد حسابات مطابقة لبحثك."}
               </p>
             ) : (
-              <div className="overflow-x-auto rounded-xl border">
-                <table className="w-full min-w-[1080px] text-sm">
+              <>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:hidden">
+                  {filteredUsers.map(user => (
+                    <article
+                      key={user.id}
+                      className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm"
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary"
+                        >
+                          {(user.name?.trim().charAt(0) ||
+                            user.username?.trim().charAt(0) ||
+                            "؟").toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="min-w-0 break-words font-semibold">
+                              {user.name ?? "بدون اسم"}
+                            </h3>
+                            {user.isPlatformOwner ? (
+                              <Badge variant="outline">مالك المنصة</Badge>
+                            ) : null}
+                            {user.mustChangePassword ? (
+                              <Badge variant="secondary">
+                                تغيير كلمة المرور
+                              </Badge>
+                            ) : null}
+                          </div>
+                          <p
+                            className="mt-1 break-all text-xs text-muted-foreground"
+                            dir="ltr"
+                          >
+                            @{user.username ?? "—"}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={user.isActive ? "default" : "secondary"}
+                          className={
+                            user.isActive
+                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                              : "border-border bg-muted text-muted-foreground"
+                          }
+                        >
+                          {user.isActive ? "نشط" : "موقوف"}
+                        </Badge>
+                      </div>
+                      <dl className="mt-4 grid min-w-0 grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                        <div className="min-w-0">
+                          <dt className="text-xs text-muted-foreground">البريد الإلكتروني</dt>
+                          <dd className="mt-1 break-all" dir="ltr">
+                            {user.email ?? "—"}
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-xs text-muted-foreground">الجهة</dt>
+                          <dd className="mt-1 break-words">
+                            {user.organizationName ??
+                              organizationNames.get(user.organizationId) ??
+                              "—"}
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-xs text-muted-foreground">الدور</dt>
+                          <dd className="mt-1 flex flex-wrap items-center gap-2">
+                            <Badge
+                              variant={user.role === "admin" ? "default" : "secondary"}
+                            >
+                              {ACCOUNT_ROLE_LABELS[user.role]}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {membershipRoleLabel(user.membershipRole)}
+                            </span>
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-xs text-muted-foreground">الرتبة / الوحدة</dt>
+                          <dd className="mt-1 break-words">
+                            {[user.rank, user.unit].filter(Boolean).join(" · ") || "—"}
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-xs text-muted-foreground">الرقم العسكري</dt>
+                          <dd className="mt-1 font-mono text-xs" dir="ltr">
+                            {user.badgeNumber ?? "—"}
+                          </dd>
+                        </div>
+                        <div className="min-w-0">
+                          <dt className="text-xs text-muted-foreground">آخر دخول</dt>
+                          <dd className="mt-1 tabular-nums" dir="ltr">
+                            {formatDateTime(user.lastSignedIn)}
+                          </dd>
+                        </div>
+                      </dl>
+                      <div className="mt-4 grid grid-cols-1 gap-2 border-t border-border pt-3 sm:grid-cols-2">
+                        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                          صلاحية الحساب
+                          <Select
+                            value={user.role}
+                            disabled={mutationPending || user.isPlatformOwner}
+                            onValueChange={value =>
+                              setUserRole.mutate({
+                                id: user.id,
+                                role: value as "user" | "admin",
+                              })
+                            }
+                          >
+                            <SelectTrigger className="h-10 w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">مستخدم</SelectItem>
+                              <SelectItem value="admin">مدير</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </label>
+                        <div className="flex flex-wrap items-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-10 flex-1"
+                            disabled={mutationPending}
+                            onClick={() => openEditDialog(user)}
+                          >
+                            <Pencil className="ml-1 h-4 w-4" />
+                            تعديل
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-10 flex-1"
+                            disabled={mutationPending || user.isPlatformOwner}
+                            onClick={() =>
+                              setUserActive.mutate({
+                                id: user.id,
+                                isActive: !user.isActive,
+                              })
+                            }
+                          >
+                            <Power className="ml-1 h-4 w-4" />
+                            {user.isActive ? "تعطيل" : "تفعيل"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="min-h-10 text-destructive hover:text-destructive"
+                            disabled={mutationPending || user.isPlatformOwner}
+                            onClick={() => setDeleteTarget(user)}
+                            aria-label={`حذف ${user.name ?? "المستخدم"}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <div className="hidden overflow-x-auto rounded-xl border 2xl:block">
+                  <table className="w-full min-w-[1080px] text-sm">
                   <thead className="bg-muted/60 text-right">
                     <tr>
                       <th className="p-3">الاسم</th>
@@ -678,8 +836,9 @@ export default function UsersPage() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
-              </div>
+                  </table>
+                </div>
+              </>
             )}
 
             <p className="text-xs text-muted-foreground">
