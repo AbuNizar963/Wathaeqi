@@ -924,7 +924,7 @@ void main() {
     },
   );
 
-  testWidgets('shows police telegram login screen with Cairo typography', (
+  testWidgets('shows police telegram login screen with IBM Plex Arabic typography', (
     tester,
   ) async {
     _setMobileViewport(tester);
@@ -939,7 +939,7 @@ void main() {
           .textTheme
           .bodyMedium
           ?.fontFamily,
-      'Cairo',
+      'IBM Plex Sans Arabic',
     );
   });
 }
