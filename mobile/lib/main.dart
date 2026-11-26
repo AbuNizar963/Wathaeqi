@@ -1466,13 +1466,13 @@ class _DashboardPageState extends State<DashboardPage>
               selectedTileColor: AppPalette.sidebarAccent,
               titleTextStyle: TextStyle(
                 color: Colors.white,
-                fontFamily: 'Cairo',
+                fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
               subtitleTextStyle: TextStyle(
                 color: Color(0xFFB8C5D6),
-                fontFamily: 'Cairo',
+                fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
               ),
