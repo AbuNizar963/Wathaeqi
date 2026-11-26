@@ -111,8 +111,10 @@ assert(
 );
 
 assert(
-  dashboardLayout.includes('<HeaderActions />') &&
-    dashboardLayout.includes('className="mt-auto border-t border-sidebar-border p-3"'),
+  dashboardLayout.includes("<HeaderActions />") &&
+    dashboardLayout.includes(
+      'className="mt-auto border-t border-sidebar-border p-3"'
+    ),
   "Mobile users must retain theme and account controls inside the drawer, not the top bar."
 );
 

@@ -508,10 +508,7 @@ function DashboardLayoutContent({
 
   useEffect(() => {
     const handleSearchShortcut = (event: KeyboardEvent) => {
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        event.key.toLowerCase() === "k"
-      ) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setSearchOpen(true);
       }
@@ -665,10 +662,7 @@ function DashboardLayoutContent({
         title="البحث السريع"
         description="انتقل إلى صفحة أو ابدأ إجراءً في وثائقي"
       >
-        <CommandInput
-          placeholder="ابحث عن صفحة أو إجراء..."
-          dir="rtl"
-        />
+        <CommandInput placeholder="ابحث عن صفحة أو إجراء..." dir="rtl" />
         <CommandList dir="rtl">
           <CommandEmpty>لا توجد نتائج مطابقة.</CommandEmpty>
           <CommandGroup heading="التنقل">
