@@ -140,13 +140,13 @@ assert(
 assert(
   appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--background: #f9fafb"
+      "--background: #f1f5f9"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--card: #121215"
+      "--card: #131c31"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--primary: #fafafa"
+      "--primary: #0ea5e9"
     ),
   "The crisp light theme must be the initial preference while remaining switchable."
 );
