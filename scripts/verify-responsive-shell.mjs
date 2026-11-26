@@ -108,7 +108,7 @@ assert(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
-    dashboardLayout.includes('إنشاء جديد'),
+    dashboardLayout.includes("إنشاء جديد"),
   "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing."
 );
 
