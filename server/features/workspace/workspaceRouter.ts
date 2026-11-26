@@ -592,8 +592,11 @@ const administrationRouter = router({
       }
 
       await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        actorRole: ctx.user.role,
+        organizationId: input.organizationId,
         action: "user.created",
         entityType: "user",
         entityId: String(profileId),
@@ -680,8 +683,11 @@ const administrationRouter = router({
         )
       );
       await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        actorRole: ctx.user.role,
+        organizationId: parseOptionalText(data.organizationId),
         action: input.isActive ? "user.activated" : "user.deactivated",
         entityType: "user",
         entityId: String(input.id),
@@ -756,8 +762,11 @@ const administrationRouter = router({
         )
       );
       await writeAuditLog({
+        ...getRequestAuditContext(ctx.req),
         actorUserId: ctx.user.id,
         actorName: ctx.user.name ?? ctx.user.username ?? "مالك المنصة",
+        actorRole: ctx.user.role,
+        organizationId: parseOptionalText(data.organizationId),
         action: "user.role_changed",
         entityType: "user",
         entityId: String(input.id),
