@@ -1714,9 +1714,15 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         .where((document) => !document.isLegacyStarterDraft)
         .toList()
       ..sort((first, second) => second.updatedAt.compareTo(first.updatedAt));
-    final drafts = documents.where((document) => document.status == 'draft').length;
-    final issued = documents.where((document) => document.status == 'issued').length;
-    final archived = documents.where((document) => document.status == 'archived').length;
+    final drafts = documents
+        .where((document) => document.status == 'draft')
+        .length;
+    final issued = documents
+        .where((document) => document.status == 'issued')
+        .length;
+    final archived = documents
+        .where((document) => document.status == 'archived')
+        .length;
     final files = documents.where((document) => document.file != null).length;
     final recent = documents.take(5).toList();
 
@@ -1745,7 +1751,10 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                   children: [
                     OutlinedButton.icon(
                       onPressed: _saving ? null : _chooseTemplateForNewDocument,
-                      icon: const Icon(Icons.dashboard_customize_outlined, size: 17),
+                      icon: const Icon(
+                        Icons.dashboard_customize_outlined,
+                        size: 17,
+                      ),
                       label: const Text('ابدأ من قالب'),
                     ),
                     OutlinedButton.icon(
