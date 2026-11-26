@@ -585,7 +585,7 @@ function DashboardLayoutContent({
         <Sidebar
           side="right"
           collapsible={isMobile ? "offcanvas" : "icon"}
-          className="z-30 border-l-0"
+          className={`z-30 border-l-0 ${isMobile && openMobile ? "z-[60]" : ""}`}
           disableTransition={isResizing}
         >
           <SidebarHeader className="border-b border-sidebar-border bg-sidebar/95 px-3 py-4">
