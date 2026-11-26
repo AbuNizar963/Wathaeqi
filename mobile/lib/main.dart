@@ -1220,7 +1220,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ),
             const SizedBox(width: 8),
-            const Flexible(
+            Flexible(
               child: Text(
                 _selectedTab == 0 ? 'الرئيسية' : 'مساحة الوثائق',
                 maxLines: 1,
@@ -1486,12 +1486,21 @@ class _DashboardPageState extends State<DashboardPage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'وثائقي',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'أرشيف موثوق · قرار أوضح',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -1499,8 +1508,8 @@ class _DashboardPageState extends State<DashboardPage>
                               _currentOrganizationLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppPalette.gold,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1513,19 +1522,19 @@ class _DashboardPageState extends State<DashboardPage>
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(
                           LucideIcons.panelLeft,
-                          color: Colors.white70,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
                 ),
                 Divider(color: Theme.of(context).colorScheme.outlineVariant),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(12, 7, 12, 5),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 7, 12, 5),
                   child: Text(
                     'التنقل الرئيسي',
                     style: TextStyle(
-                      color: Color(0xFF8FA4BD),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
