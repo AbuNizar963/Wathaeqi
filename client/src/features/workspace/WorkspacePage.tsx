@@ -968,9 +968,12 @@ function SummaryCard({
     cyan: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
   } satisfies Record<NonNullable<typeof tone>, string>;
   return (
-    <Card className="group relative min-w-0 overflow-hidden rounded-2xl border-border/70 bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4">
+    <Card
+      data-tone={tone}
+      className="workspace-summary-card group relative min-w-0 overflow-hidden rounded-2xl border-border/70 bg-card p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-4"
+    >
       <span
-        className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses[tone]}`}
+        className={`workspace-summary-icon absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-xl ${toneClasses[tone]}`}
       >
         {icon}
       </span>
