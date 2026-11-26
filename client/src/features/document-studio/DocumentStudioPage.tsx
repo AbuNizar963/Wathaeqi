@@ -1571,7 +1571,7 @@ export default function DocumentStudioPage() {
                         disabled={!canEditDocument}
                       />
                       <p className="text-xs text-muted-foreground">
-                        يمكنك كتابة أي صياغة؛ كلمة «إلى» مجرد اقتراح قابل للتغيير.
+                        اكتب صياغتك؛ «إلى» مجرد اقتراح قابل للتعديل.
                       </p>
                     </div>
                   </div>
