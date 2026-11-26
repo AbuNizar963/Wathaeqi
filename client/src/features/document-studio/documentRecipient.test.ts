@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_DOCUMENT_RECIPIENT_LABEL,
   DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER,
   DOCUMENT_RECIPIENT_LABEL_KEY,
   DOCUMENT_RECIPIENT_LINE_KEY,
   DOCUMENT_RECIPIENT_VALUE_KEY,
+  getDocumentRecipientFields,
   getDocumentRecipientLine,
   withDocumentRecipientLine,
 } from "./documentRecipient";
@@ -12,6 +14,19 @@ describe("document recipient line", () => {
   it("shows an editable default suggestion without storing it", () => {
     expect(DEFAULT_DOCUMENT_RECIPIENT_PLACEHOLDER).toBe("إلى");
     expect(getDocumentRecipientLine({})).toBe("");
+  });
+
+  it("keeps the legacy split-field helper compatible", () => {
+    expect(getDocumentRecipientFields({})).toEqual({
+      label: DEFAULT_DOCUMENT_RECIPIENT_LABEL,
+      value: "",
+    });
+    expect(
+      getDocumentRecipientFields({
+        [DOCUMENT_RECIPIENT_LABEL_KEY]: "  نسخة إلى  ",
+        [DOCUMENT_RECIPIENT_VALUE_KEY]: "  الإدارة العامة  ",
+      })
+    ).toEqual({ label: "نسخة إلى", value: "الإدارة العامة" });
   });
 
   it("prefers the unified line when both new and legacy values exist", () => {
