@@ -1760,7 +1760,15 @@ export default function DocumentStudioPage() {
                       />
                       <div className="pt-6">
                         {documentRecipientLine ? (
-                          <p className="mb-4 text-center text-base font-semibold">
+                          <p
+                            className="mb-4 text-center"
+                            style={{
+                              fontFamily: platformDocumentSettings.data?.recipientFontFamily ?? "Cairo",
+                              fontSize: `${platformDocumentSettings.data?.recipientFontSizePt ?? 14}pt`,
+                              fontWeight: platformDocumentSettings.data?.recipientFontWeight ?? 600,
+                              color: platformDocumentSettings.data?.recipientFontColor ?? "#111827",
+                            }}
+                          >
                             {documentRecipientLine}
                           </p>
                         ) : null}
@@ -1809,6 +1817,12 @@ export default function DocumentStudioPage() {
                             (!selectedTemplateId || manualTemplateEditing)
                           }
                           containerClassName="rounded-none border-0 shadow-none"
+                          textStyle={{
+                            fontFamily: platformDocumentSettings.data?.documentFontFamily ?? "Cairo",
+                            fontSize: `${platformDocumentSettings.data?.documentFontSizePt ?? 12}pt`,
+                            fontWeight: platformDocumentSettings.data?.documentFontWeight ?? 400,
+                            color: platformDocumentSettings.data?.documentFontColor ?? "#1f2937",
+                          }}
                         />
                         <DocumentSignatureBlock
                           organizationName={organizationName}
