@@ -239,7 +239,7 @@ describe("Appwrite operational schema", () => {
       expect.objectContaining({ key: "headerLogoSize", min: 60, max: 240 })
     );
     expect(settings?.columns).toContainEqual(
-      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 16 })
+      expect.objectContaining({ key: "frameStyle", type: "varchar", size: 16, default: "box" })
     );
   });
 
@@ -249,6 +249,13 @@ describe("Appwrite operational schema", () => {
 
     expect(columns).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          key: "watermarkOpacityPercent",
+          type: "integer",
+          min: 0,
+          max: 60,
+          default: 12,
+        }),
         expect.objectContaining({
           key: "headerDividerStyle",
           type: "varchar",
@@ -260,6 +267,12 @@ describe("Appwrite operational schema", () => {
           min: 0.5,
           max: 6,
           default: 2.25,
+        }),
+        expect.objectContaining({
+          key: "frameColor",
+          type: "varchar",
+          size: 7,
+          default: "#000000",
         }),
         expect.objectContaining({
           key: "frameWidthPt",
