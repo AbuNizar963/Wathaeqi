@@ -294,6 +294,64 @@ export default function DocumentStudioPage() {
       ...signedFileQueryOptions,
     }
   );
+  useEffect(() => {
+    const params = new URLSearchParams(routeSearch);
+    if (params.get("print") !== "1") return;
+
+    const documentId = params.get("document");
+    if (!documentId || documentsQuery.isLoading) return;
+
+    if (!selectedDocument || selectedDocument.id !== documentId) {
+      params.delete("print");
+      const query = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        query
+          ? `${window.location.pathname}?${query}${window.location.hash}`
+          : `${window.location.pathname}${window.location.hash}`
+      );
+      toast.error("لم يتم العثور على الوثيقة المطلوب طباعتها");
+      return;
+    }
+
+    if (selectedDocument.file && importedFileUrlQuery.isLoading) return;
+    if (selectedDocument.file && !importedFileUrlQuery.data?.url) {
+      if (importedFileUrlQuery.isError) {
+        params.delete("print");
+        const query = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          query
+            ? `${window.location.pathname}?${query}${window.location.hash}`
+            : `${window.location.pathname}${window.location.hash}`
+        );
+        toast.error("تعذر تجهيز الملف للطباعة. أعد فتح الوثيقة وحاول مجدداً.");
+      }
+      return;
+    }
+
+    params.delete("print");
+    const query = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      query
+        ? `${window.location.pathname}?${query}${window.location.hash}`
+        : `${window.location.pathname}${window.location.hash}`
+    );
+    setPreviewMode(false);
+    if (selectedDocument.file) setImportPrintOpen(true);
+    else setNativePrintOpen(true);
+  }, [
+    routeSearch,
+    documentsQuery.isLoading,
+    selectedDocument,
+    importedFileUrlQuery.isLoading,
+    importedFileUrlQuery.data?.url,
+    importedFileUrlQuery.isError,
+  ]);
   const documentOrganizationId =
     selectedDocument?.organizationId ??
     organizationContext.data?.organizationId;
