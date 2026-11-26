@@ -1763,10 +1763,16 @@ export default function DocumentStudioPage() {
                           <p
                             className="mb-4 text-center"
                             style={{
-                              fontFamily: platformDocumentSettings.data?.recipientFontFamily ?? "Cairo",
+                              fontFamily:
+                                platformDocumentSettings.data?.recipientFontFamily ??
+                                "Cairo",
                               fontSize: `${platformDocumentSettings.data?.recipientFontSizePt ?? 14}pt`,
-                              fontWeight: platformDocumentSettings.data?.recipientFontWeight ?? 600,
-                              color: platformDocumentSettings.data?.recipientFontColor ?? "#111827",
+                              fontWeight:
+                                platformDocumentSettings.data?.recipientFontWeight ??
+                                600,
+                              color:
+                                platformDocumentSettings.data?.recipientFontColor ??
+                                "#111827",
                             }}
                           >
                             {documentRecipientLine}
@@ -1818,10 +1824,16 @@ export default function DocumentStudioPage() {
                           }
                           containerClassName="rounded-none border-0 shadow-none"
                           textStyle={{
-                            fontFamily: platformDocumentSettings.data?.documentFontFamily ?? "Cairo",
+                            fontFamily:
+                              platformDocumentSettings.data?.documentFontFamily ??
+                              "Cairo",
                             fontSize: `${platformDocumentSettings.data?.documentFontSizePt ?? 12}pt`,
-                            fontWeight: platformDocumentSettings.data?.documentFontWeight ?? 400,
-                            color: platformDocumentSettings.data?.documentFontColor ?? "#1f2937",
+                            fontWeight:
+                              platformDocumentSettings.data?.documentFontWeight ??
+                              400,
+                            color:
+                              platformDocumentSettings.data?.documentFontColor ??
+                              "#1f2937",
                           }}
                         />
                         <DocumentSignatureBlock
