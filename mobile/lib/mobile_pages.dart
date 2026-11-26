@@ -14,8 +14,6 @@ import 'app_theme.dart';
 import './features/reports/audit_log_presentation.dart';
 import './features/notifications/toast.dart';
 
-const _gold = AppPalette.gold;
-
 String _errorMessage(Object error) =>
     error.toString().replaceFirst('Exception: ', '');
 
