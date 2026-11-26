@@ -71,6 +71,14 @@ export function ThemeProvider({
       setTheme(resolved);
       root.classList.toggle("dark", resolved === "dark");
       root.style.colorScheme = resolved;
+
+      const themeColorMeta = document.querySelector<HTMLMetaElement>(
+        'meta[name="theme-color"]'
+      );
+      if (themeColorMeta) {
+        themeColorMeta.content =
+          resolved === "dark" ? "#0B1120" : "#F1F5F9";
+      }
     };
 
     applyTheme();
