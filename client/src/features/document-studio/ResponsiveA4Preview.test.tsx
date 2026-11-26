@@ -51,6 +51,6 @@ describe("ResponsiveA4Preview", () => {
     expect(markup).toContain('viewBox="0 0 794 2246"');
     expect(markup).toContain('patternUnits="userSpaceOnUse"');
     expect(markup).toContain('width="794" height="1123"');
-    expect(markup).toContain('fill="url(#document-frame-');
+    expect(markup).toContain('fill="url(#document-page-border-');
   });
 });
