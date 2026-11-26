@@ -273,10 +273,12 @@ async function applyTable(
               ? { size: column.size ?? 255 }
               : {}),
             ...(column.type === "double" ? { type: "float" } : {}),
-            ...((column.type === "integer" || column.type === "double") && column.min !== undefined
+            ...((column.type === "integer" || column.type === "double") &&
+            column.min !== undefined
               ? { min: column.min }
               : {}),
-            ...((column.type === "integer" || column.type === "double") && column.max !== undefined
+            ...((column.type === "integer" || column.type === "double") &&
+            column.max !== undefined
               ? { max: column.max }
               : {}),
             ...(column.default !== undefined
