@@ -245,6 +245,24 @@ describe("single-organization mode", () => {
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
+  it("blocks editing the single organization's hierarchy fields", async () => {
+    await expect(
+      caller().update({
+        id: "org-current",
+        name: "قسم شرطة الشهباء",
+        code: "ALSHAHBAA",
+        type: "department",
+        parentOrganizationId: null,
+      })
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  it("blocks deactivating the single organization", async () => {
+    await expect(
+      caller().setActive({ id: "org-current", isActive: false })
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
   it("does not let platform owners read organizations outside their fixed scope", async () => {
     mocks.resolveOrganizationScope.mockResolvedValue({
       ...adminScope,
