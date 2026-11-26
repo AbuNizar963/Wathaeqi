@@ -862,19 +862,37 @@ export default function DocumentStudioPage() {
             أنشئ، نظّم، واطبع. وثائقك وقوالبك وملفاتك في مكان واحد.
           </p>
         </div>
-        <div className="document-studio-tabs grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+        <div
+          className="document-studio-tabs grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end"
+          aria-label="مساحات الوثائق"
+          role="tablist"
+        >
           <Button
             variant={activeTab === "documents" ? "default" : "outline"}
             onClick={() => selectWorkspaceTab("documents")}
             aria-pressed={activeTab === "documents"}
+            role="tab"
+            aria-selected={activeTab === "documents"}
           >
             <FileText className="ml-2 h-4 w-4" />
             الوثائق
           </Button>
           <Button
+            variant={activeTab === "archive" ? "default" : "outline"}
+            onClick={() => selectWorkspaceTab("archive")}
+            aria-pressed={activeTab === "archive"}
+            role="tab"
+            aria-selected={activeTab === "archive"}
+          >
+            <Archive className="ml-2 h-4 w-4" />
+            الأرشيف
+          </Button>
+          <Button
             variant={activeTab === "templates" ? "default" : "outline"}
             onClick={() => selectWorkspaceTab("templates")}
             aria-pressed={activeTab === "templates"}
+            role="tab"
+            aria-selected={activeTab === "templates"}
           >
             <LayoutTemplate className="ml-2 h-4 w-4" />
             القوالب
@@ -883,6 +901,8 @@ export default function DocumentStudioPage() {
             variant={activeTab === "files" ? "default" : "outline"}
             onClick={() => selectWorkspaceTab("files")}
             aria-pressed={activeTab === "files"}
+            role="tab"
+            aria-selected={activeTab === "files"}
           >
             <FolderOpen className="ml-2 h-4 w-4" />
             الملفات
