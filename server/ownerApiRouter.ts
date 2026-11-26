@@ -360,7 +360,7 @@ const ownerPlatformDocumentSettingsRouter = router({
         documentFontColor: z
           .string()
           .regex(HEX_COLOR_PATTERN)
-          .default("#1f2937"),
+          .default("#0f172a"),
         recipientFontFamily: z
           .enum([
             "Cairo",
@@ -375,7 +375,7 @@ const ownerPlatformDocumentSettingsRouter = router({
           .int()
           .min(MIN_RECIPIENT_FONT_SIZE_PT)
           .max(MAX_RECIPIENT_FONT_SIZE_PT)
-          .default(14),
+          .default(12),
         recipientFontWeight: z.union([
           z.literal(400),
           z.literal(500),
@@ -386,7 +386,7 @@ const ownerPlatformDocumentSettingsRouter = router({
         recipientFontColor: z
           .string()
           .regex(HEX_COLOR_PATTERN)
-          .default("#111827"),
+          .default("#0f172a"),
         showVerificationQr: z.boolean(),
       })
     )
