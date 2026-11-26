@@ -8,15 +8,22 @@
  */
 
 export type SchemaColumnType =
-  "varchar" | "string" | "text" | "longtext" | "integer" | "double" | "boolean" | "datetime";
+  | "varchar"
+  | "string"
+  | "text"
+  | "longtext"
+  | "integer"
+  | "double"
+  | "boolean"
+  | "datetime";
 
 export type SchemaColumn = {
   key: string;
   type: SchemaColumnType;
   required: boolean;
-  /** Varchar length; ignored for other types. */
+  /** String and varchar lengths; ignored for other types. */
   size?: number;
-  /** Integer bounds; ignored for other column types. */
+  /** Numeric bounds for integer and floating-point columns. */
   min?: number;
   max?: number;
   /** Default value applied to new rows. */
