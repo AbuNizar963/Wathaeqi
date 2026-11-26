@@ -212,6 +212,29 @@ describe("platform document settings UI normalization", () => {
     ).toBe(240);
   });
 
+
+  it("normalizes document and recipient typography with safe bounds and allowlists", () => {
+    const normalized = normalizePlatformDocumentSettings({
+      documentFontFamily: "not-a-font" as never,
+      documentFontSizePt: 40,
+      documentFontWeight: 950 as never,
+      documentFontColor: "red" as never,
+      recipientFontFamily: "Arial",
+      recipientFontSizePt: 8,
+      recipientFontWeight: 700,
+      recipientFontColor: "#123456",
+    });
+
+    expect(normalized.documentFontFamily).toBe("Cairo");
+    expect(normalized.documentFontSizePt).toBe(24);
+    expect(normalized.documentFontWeight).toBe(400);
+    expect(normalized.documentFontColor).toBe("#1f2937");
+    expect(normalized.recipientFontFamily).toBe("Arial");
+    expect(normalized.recipientFontSizePt).toBe(9);
+    expect(normalized.recipientFontWeight).toBe(700);
+    expect(normalized.recipientFontColor).toBe("#123456");
+  });
+
   it("uses the default date format when a saved value is unsupported", () => {
     expect(
       normalizePlatformDocumentSettings({
