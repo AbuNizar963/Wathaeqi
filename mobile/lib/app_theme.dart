@@ -99,7 +99,7 @@ abstract final class AppTheme {
   static ThemeData get light =>
       ThemeData(
         useMaterial3: true,
-        fontFamily: 'Cairo',
+        fontFamily: 'IBM Plex Sans Arabic',
         scaffoldBackgroundColor: AppPalette.canvas,
         colorScheme: AppPalette.lightScheme,
         textTheme:
@@ -110,7 +110,7 @@ abstract final class AppTheme {
               titleMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               labelLarge: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
             ).apply(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               bodyColor: AppPalette.ink,
               displayColor: AppPalette.ink,
             ),
@@ -131,7 +131,7 @@ abstract final class AppTheme {
           shape: const Border(bottom: BorderSide(color: AppPalette.border)),
           titleTextStyle: const TextStyle(
             color: AppPalette.surface,
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -179,7 +179,7 @@ abstract final class AppTheme {
               borderRadius: BorderRadius.circular(12),
             ),
             textStyle: const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -195,7 +195,7 @@ abstract final class AppTheme {
               borderRadius: BorderRadius.circular(10),
             ),
             textStyle: const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -205,7 +205,7 @@ abstract final class AppTheme {
           style: TextButton.styleFrom(
             foregroundColor: AppPalette.navy,
             textStyle: const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -217,7 +217,7 @@ abstract final class AppTheme {
           secondarySelectedColor: AppPalette.muted,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           labelStyle: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
@@ -233,7 +233,7 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(12),
             side: const BorderSide(color: Color(0xFFDBE5E8)),
           ),
-          textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
+          textStyle: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13),
         ),
         drawerTheme: const DrawerThemeData(
           backgroundColor: AppPalette.navy,
@@ -251,7 +251,7 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           titleTextStyle: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppPalette.ink,
@@ -267,7 +267,7 @@ abstract final class AppTheme {
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           labelTextStyle: WidgetStatePropertyAll(
             TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppPalette.mutedInk,
@@ -293,7 +293,7 @@ abstract final class AppTheme {
           backgroundColor: AppPalette.navy,
           contentTextStyle: TextStyle(
             color: Colors.white,
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontWeight: FontWeight.w600,
           ),
           shape: RoundedRectangleBorder(
@@ -330,7 +330,7 @@ abstract final class AppTheme {
   static ThemeData get dark => ThemeData.dark(useMaterial3: true)
       .copyWith(
         textTheme: ThemeData.dark().textTheme.apply(
-          fontFamily: 'Cairo',
+          fontFamily: 'IBM Plex Sans Arabic',
           bodyColor: AppPalette.darkInk,
           displayColor: AppPalette.darkInk,
         ),
@@ -354,7 +354,7 @@ abstract final class AppTheme {
           backgroundColor: AppPalette.darkSurface,
           contentTextStyle: TextStyle(
             color: AppPalette.darkInk,
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
           ),
         ),
         progressIndicatorTheme: const ProgressIndicatorThemeData(
@@ -371,7 +371,7 @@ abstract final class AppTheme {
           actionsIconTheme: IconThemeData(color: AppPalette.darkInk, size: 21),
           titleTextStyle: TextStyle(
             color: AppPalette.darkInk,
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -388,7 +388,7 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           titleTextStyle: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppPalette.darkInk,
@@ -400,7 +400,7 @@ abstract final class AppTheme {
             foregroundColor: AppPalette.navy,
             minimumSize: const Size(48, 46),
             textStyle: const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -412,7 +412,7 @@ abstract final class AppTheme {
             side: const BorderSide(color: AppPalette.darkOutline),
             minimumSize: const Size(44, 44),
             textStyle: const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -422,7 +422,7 @@ abstract final class AppTheme {
           style: TextButton.styleFrom(
             foregroundColor: AppPalette.darkMint,
             textStyle: const TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -432,7 +432,7 @@ abstract final class AppTheme {
           backgroundColor: AppPalette.darkMuted,
           selectedColor: AppPalette.darkOutline,
           labelStyle: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
@@ -447,7 +447,7 @@ abstract final class AppTheme {
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           labelTextStyle: WidgetStatePropertyAll(
             TextStyle(
-              fontFamily: 'Cairo',
+              fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppPalette.darkMutedInk,
@@ -496,7 +496,7 @@ abstract final class AppTheme {
             side: const BorderSide(color: AppPalette.darkBorder),
           ),
           textStyle: const TextStyle(
-            fontFamily: 'Cairo',
+            fontFamily: 'IBM Plex Sans Arabic',
             fontSize: 13,
             color: AppPalette.darkInk,
           ),
