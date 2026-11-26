@@ -1,4 +1,4 @@
-const CACHE_NAME = "wathaeqi-shell-v13";
+const CACHE_NAME = "wathaeqi-shell-v14";
 const SHELL = [
   "/",
   "/manifest.json",
