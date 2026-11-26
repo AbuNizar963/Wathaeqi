@@ -1,0 +1,27 @@
+name: Temporary frame catalog formatter
+on:
+  push:
+    branches:
+      - feat/word-style-document-borders
+    paths:
+      - shared/features/platform-settings/documentFrameCatalog.ts
+      - .github/workflows/temp-format-frame-catalog.yml
+permissions:
+  contents: read
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Print Prettier output
+        run: |
+          pnpm exec prettier --write shared/features/platform-settings/documentFrameCatalog.ts
+          cat shared/features/platform-settings/documentFrameCatalog.ts
