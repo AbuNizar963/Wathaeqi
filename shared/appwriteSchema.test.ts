@@ -191,7 +191,6 @@ describe("Appwrite operational schema", () => {
     }
   });
 
-
   it("declares backward-compatible typography columns for document settings", () => {
     const settings = findSchemaTable("platform_document_settings");
     const columns = settings?.columns ?? [];
