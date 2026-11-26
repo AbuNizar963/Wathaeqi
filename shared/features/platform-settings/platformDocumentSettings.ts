@@ -17,6 +17,8 @@ export type {
 export type DocumentTextRow = { right: string; left: string };
 
 export const DOCUMENT_FONT_FAMILIES = [
+  "Amiri",
+  "IBM Plex Sans Arabic",
   "Cairo",
   "Arial",
   "Tahoma",
@@ -87,11 +89,11 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   frameStyle: "box" as const,
   frameColor: "#000000",
   frameWidthPt: 1,
-  documentFontFamily: "Cairo" as const,
+  documentFontFamily: "Amiri" as const,
   documentFontSizePt: 12,
   documentFontWeight: 400 as const,
   documentFontColor: "#0f172a",
-  recipientFontFamily: "Cairo" as const,
+  recipientFontFamily: "Amiri" as const,
   recipientFontSizePt: 12,
   recipientFontWeight: 600 as const,
   recipientFontColor: "#0f172a",
