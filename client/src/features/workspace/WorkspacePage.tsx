@@ -794,7 +794,7 @@ function Field({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  type?: string;
+  type?: "text" | "password" | "email" | "tel";
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-medium">
