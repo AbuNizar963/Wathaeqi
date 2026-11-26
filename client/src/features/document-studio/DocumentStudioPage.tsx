@@ -1685,7 +1685,9 @@ export default function DocumentStudioPage() {
                       >
                         الجهة المستلمة / التوجيه
                       </label>
-                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.65fr)]">
+                      <div
+                        className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.65fr)]"
+                      >
                         <Input
                           id="document-recipient-line"
                           value={documentRecipientLine}
@@ -1741,7 +1743,8 @@ export default function DocumentStudioPage() {
                         </select>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        اختر جهة محفوظة لإدراج اسمها فوراً، أو اكتب صياغة مخصصة؛ «إلى» ليست إلزامية.
+                        اختر جهة محفوظة لإدراج اسمها فوراً، أو اكتب صياغة مخصصة؛
+                        «إلى» ليست إلزامية.
                       </p>
                     </div>
                   </div>
