@@ -202,8 +202,10 @@ assert(
 assert(
   dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
-    dashboardLayout.includes("aria-expanded={openMobile}"),
-  "The mobile top bar must expose an explicit button for opening the full navigation drawer."
+    dashboardLayout.includes("aria-expanded={openMobile}") &&
+    dashboardLayout.includes('variant="outline"') &&
+    dashboardLayout.includes("border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"),
+  "The mobile top hamburger must use the same outlined 40px action-button treatment as notifications and theme controls."
 );
 
 assert(
