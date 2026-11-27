@@ -1693,7 +1693,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                     child: ChoiceChip(
                       selected: selected,
                       showCheckmark: false,
-                      avatar: segment.icon,
+                      avatar: segment.icon ?? const SizedBox.shrink(),
                       label: segment.label,
                       onSelected: _saving
                           ? null
