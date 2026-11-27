@@ -1,13 +1,8 @@
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../api.dart';
 import '../admin/admin_page_intro.dart';
 import '../../app_theme.dart';
-import '../organizations/organization_logo_upload.dart';
-import '../organizations/organization_logo_preview.dart';
 import '../notifications/toast.dart';
 
 String _settingsErrorMessage(Object error) =>
@@ -79,13 +74,6 @@ class _PlatformDocumentSettingsPageState
   double _marginBottomMm = 10;
   double _marginLeftMm = 10;
   String? _error;
-  String? _organizationError;
-  List<Map<String, dynamic>> _organizations = [];
-  String? _selectedOrganizationId;
-  String _organizationLogoUrl = '';
-  Uint8List? _organizationLogoPreviewBytes;
-  bool _loadingOrganizationSettings = true;
-  bool _uploadingOrganizationLogo = false;
   final TextEditingController _colorController = TextEditingController(
     text: _defaultColor,
   );
@@ -97,7 +85,6 @@ class _PlatformDocumentSettingsPageState
   void initState() {
     super.initState();
     _load();
-    _loadOrganizationLogoSettings();
   }
 
   @override
@@ -278,147 +265,6 @@ class _PlatformDocumentSettingsPageState
     }
   }
 
-  Future<void> _loadOrganizationLogoSettings() async {
-    setState(() {
-      _loadingOrganizationSettings = true;
-      _organizationError = null;
-    });
-    try {
-      final results = await Future.wait([
-        widget.api.call('organizations.all', allowOfflineCache: false),
-        widget.api.call('organizations.context', allowOfflineCache: false),
-      ]);
-      final organizations = (results[0] is List ? results[0] as List : const [])
-          .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-      final contextData = results[1];
-      final currentId = contextData is Map
-          ? contextData['organizationId']?.toString()
-          : null;
-      final selected =
-          organizations.where((item) {
-            return item['id']?.toString() == currentId;
-          }).firstOrNull ??
-          (organizations.isNotEmpty ? organizations.first : null);
-      if (!mounted) return;
-      setState(() {
-        _organizations = organizations;
-        _selectedOrganizationId = selected?['id']?.toString();
-      });
-      if (_selectedOrganizationId != null) {
-        await _loadSelectedOrganizationSettings(_selectedOrganizationId!);
-      } else {
-        setState(() {
-          _loadingOrganizationSettings = false;
-          _organizationError = 'لا توجد جهة متاحة لربط شعار الوثيقة بها.';
-        });
-      }
-    } catch (exception) {
-      if (mounted) {
-        setState(() {
-          _loadingOrganizationSettings = false;
-          _organizationError = _settingsErrorMessage(exception);
-        });
-      }
-    }
-  }
-
-  Future<void> _loadSelectedOrganizationSettings(String organizationId) async {
-    setState(() {
-      _loadingOrganizationSettings = true;
-      _organizationError = null;
-    });
-    try {
-      final result = await widget.api.call(
-        'organizations.logo',
-        input: {'id': organizationId, 'includeDataUrl': false},
-        allowOfflineCache: false,
-      );
-      if (result is! Map) {
-        throw Exception('تعذر قراءة شعار الجهة.');
-      }
-      final logoUrl = result['logoUrl']?.toString() ?? '';
-      if (!mounted) return;
-      setState(() {
-        _organizationLogoUrl = logoUrl;
-        _organizationLogoPreviewBytes = null;
-        _loadingOrganizationSettings = false;
-      });
-      if (logoUrl.isNotEmpty) {
-        final bytes = await widget.api.fetchOrganizationLogo(
-          organizationId: organizationId,
-          source: logoUrl,
-        );
-        if (!mounted || _selectedOrganizationId != organizationId) return;
-        setState(() => _organizationLogoPreviewBytes = bytes);
-      }
-    } catch (exception) {
-      if (mounted) {
-        setState(() {
-          _loadingOrganizationSettings = false;
-          _organizationError = _settingsErrorMessage(exception);
-        });
-      }
-    }
-  }
-
-  Future<void> _selectOrganization(String? organizationId) async {
-    if (organizationId == null || organizationId == _selectedOrganizationId) {
-      return;
-    }
-    setState(() => _selectedOrganizationId = organizationId);
-    await _loadSelectedOrganizationSettings(organizationId);
-  }
-
-  Future<void> _pickAndUploadOrganizationLogo() async {
-    final organizationId = _selectedOrganizationId;
-    if (organizationId == null || _uploadingOrganizationLogo) return;
-    try {
-      final selection = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['svg', 'png', 'jpg', 'jpeg'],
-        withData: true,
-        allowMultiple: false,
-      );
-      if (selection == null || selection.files.isEmpty) return;
-      final file = selection.files.single;
-      final sourceBytes = file.bytes;
-      if (sourceBytes == null || sourceBytes.isEmpty) {
-        throw Exception('تعذر قراءة الصورة المختارة من الجهاز.');
-      }
-      setState(() => _uploadingOrganizationLogo = true);
-      final prepared = await prepareOrganizationLogo(
-        source: sourceBytes,
-        fileName: file.name,
-      );
-      final uploaded = await widget.api.uploadOrganizationLogo(
-        organizationId: organizationId,
-        fileName: prepared.fileName,
-        contentType: prepared.contentType,
-        bytes: prepared.bytes,
-      );
-      if (!mounted) return;
-      final logoUrl = uploaded['url']?.toString() ?? '';
-      setState(() {
-        _organizationLogoUrl = logoUrl;
-        _organizationLogoPreviewBytes = prepared.bytes;
-      });
-      Toast.success(
-        context,
-        logoUrl.isEmpty
-            ? 'تم حفظ الشعار؛ المعاينة عن بُعد غير متاحة مؤقتاً.'
-            : 'تم حفظ شعار الجهة وربطه بترويسة الوثائق',
-      );
-    } catch (exception) {
-      if (mounted) {
-        setState(() => _organizationError = _settingsErrorMessage(exception));
-      }
-    } finally {
-      if (mounted) setState(() => _uploadingOrganizationLogo = false);
-    }
-  }
-
   Future<void> _save() async {
     if (!_settingsConfirmed) {
       setState(() => _error = 'حمّل إعدادات النظام من الخادم أولاً.');
@@ -515,156 +361,6 @@ class _PlatformDocumentSettingsPageState
       ),
     ],
   );
-  Widget _buildOrganizationLogoCard() {
-    final colors = Theme.of(context).colorScheme;
-    final selectedOrganization = _organizations.where((organization) {
-      return organization['id']?.toString() == _selectedOrganizationId;
-    }).firstOrNull;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'شعار الجهة في ترويسة الوثيقة',
-              style: TextStyle(
-                color: colors.onSurface,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'اختر الجهة ثم ارفع شعارها ليظهر في منتصف رأس الوثيقة الرسمية.',
-              style: TextStyle(color: colors.onSurfaceVariant, height: 1.5),
-            ),
-            const SizedBox(height: 12),
-            if (_loadingOrganizationSettings)
-              const Center(child: CircularProgressIndicator())
-            else if (_organizations.isEmpty)
-              const Text('لا توجد جهات متاحة.')
-            else ...[
-              DropdownButtonFormField<String>(
-                initialValue: _selectedOrganizationId,
-                decoration: const InputDecoration(
-                  labelText: 'الجهة',
-                  border: OutlineInputBorder(),
-                ),
-                items: _organizations.map((organization) {
-                  return DropdownMenuItem(
-                    value: organization['id']?.toString(),
-                    child: Text(
-                      organization['name']?.toString() ?? 'جهة بدون اسم',
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  );
-                }).toList(),
-                onChanged: _uploadingOrganizationLogo
-                    ? null
-                    : _selectOrganization,
-              ),
-              const SizedBox(height: 14),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 92,
-                    height: 92,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: colors.outlineVariant),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: _organizationLogoPreviewBytes == null
-                        ? Icon(
-                            _organizationLogoUrl.isEmpty
-                                ? Icons.image_outlined
-                                : Icons.broken_image_outlined,
-                            color: colors.onSurfaceVariant,
-                          )
-                        : OrganizationLogoPreview(
-                            bytes: _organizationLogoPreviewBytes!,
-                            width: 76,
-                            height: 76,
-                            fallback: Icon(
-                              Icons.broken_image_outlined,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        FilledButton.icon(
-                          onPressed:
-                              _uploadingOrganizationLogo ||
-                                  _selectedOrganizationId == null
-                              ? null
-                              : _pickAndUploadOrganizationLogo,
-                          icon: _uploadingOrganizationLogo
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.upload_outlined),
-                          label: Text(
-                            _uploadingOrganizationLogo
-                                ? 'جارٍ رفع الشعار...'
-                                : 'اختيار ورفع الشعار',
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'SVG أو PNG أو JPG/JPEG، حتى 25 ميغابايت للمصدر و5 ميغابايت للناتج. يتم حفظ الملف في مساحة ملفات الجهة.',
-                          style: TextStyle(
-                            color: colors.onSurfaceVariant,
-                            fontSize: 12,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            if (_organizationError != null) ...[
-              const SizedBox(height: 10),
-              _ErrorCard(message: _organizationError!),
-              TextButton.icon(
-                onPressed: _loadingOrganizationSettings
-                    ? null
-                    : () {
-                        final id = _selectedOrganizationId;
-                        if (id != null) _loadSelectedOrganizationSettings(id);
-                      },
-                icon: const Icon(Icons.refresh),
-                label: const Text('إعادة تحميل إعدادات الجهة'),
-              ),
-            ],
-            if (selectedOrganization != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  'الشعار مرتبط بجهة: ${selectedOrganization['name'] ?? '—'}',
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
@@ -702,10 +398,40 @@ class _PlatformDocumentSettingsPageState
                 if (_error != null) _ErrorCard(message: _error!),
                 const AdminPageIntro(
                   title: 'إعدادات الوثائق',
-                  description: 'ضبط الهوية الرسمية والترويسة والعلامة المائية',
+                  description: 'ضبط الترويسة والعلامة المائية وتنسيق الصفحة',
                   icon: Icons.tune_outlined,
                 ),
-                _buildOrganizationLogoCard(),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.business_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'شعار الجهة',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'يُدار شعار الجهة من إعدادات الجهة فقط، ويُستخدم تلقائيًا في معاينة الوثائق وطباعتها. لن تجد إعدادًا مكررًا للشعار هنا.',
+                                style: TextStyle(height: 1.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
