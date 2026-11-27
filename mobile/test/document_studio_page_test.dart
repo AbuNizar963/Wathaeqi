@@ -612,9 +612,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('وثيقة تجريبية'), findsOneWidget);
       await tester.tap(find.text('وثيقة تجريبية').first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.tap(find.text('تعديل').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(seconds: 2));
 
       expect(find.byType(PdfPreview), findsOneWidget);
