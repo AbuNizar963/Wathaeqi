@@ -159,6 +159,7 @@ assert(
   dashboardLayout.includes('event.key.toLowerCase() === "k"') &&
     dashboardLayout.includes('aria-label="البحث السريع، الاختصار Ctrl K"') &&
     dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
+    dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes("<CommandDialog"),
   "The desktop shell must expose a searchable command palette with the Ctrl+K shortcut."
 );
@@ -166,12 +167,12 @@ assert(
 // prettier-ignore
 assert(
   dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />") &&
-    dashboardLayout.includes("grid grid-cols-4") &&
+    dashboardLayout.includes("grid grid-cols-5") &&
     dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
     !dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
     !dashboardLayout.includes("<span>المزيد</span>") &&
     !dashboardLayout.includes("mobile-bottom-nav-account"),
-  "Mobile navigation must keep theme and notifications in the top bar and place search beside create without a bottom drawer control."
+  "Mobile navigation must keep theme and notifications in the top bar and expose the hamburger drawer control in the bottom bar."
 );
 
 // prettier-ignore
@@ -180,10 +181,12 @@ assert(
     dashboardLayout.includes(
       'aria-label="التنقل الرئيسي"\n          dir="rtl"'
     ) &&
-    dashboardLayout.includes("grid grid-cols-4") &&
+    dashboardLayout.includes("grid grid-cols-5") &&
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
+    dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
+    dashboardLayout.includes('PanelLeft className="h-5 w-5"') &&
     dashboardLayout.includes(
       'height: "calc(52px + env(safe-area-inset-top))"'
     ) &&
@@ -199,8 +202,12 @@ assert(
 assert(
   dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
-    dashboardLayout.includes("aria-expanded={openMobile}"),
-  "The mobile top bar must expose an explicit button for opening the full navigation drawer."
+    dashboardLayout.includes("aria-expanded={openMobile}") &&
+    dashboardLayout.includes('variant="outline"') &&
+    dashboardLayout.includes(
+      "border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
+    ),
+  "The mobile top hamburger must use the same outlined 40px action-button treatment as notifications and theme controls."
 );
 
 assert(
