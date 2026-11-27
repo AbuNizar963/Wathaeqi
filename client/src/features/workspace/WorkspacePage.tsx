@@ -388,10 +388,10 @@ export default function WorkspacePage({
                   من مساحة عمل واحدة.
                 </p>
               </div>
-              <div className="flex shrink-0 flex-col gap-2 sm:min-w-44">
+              <div className="hidden shrink-0 flex-col gap-2 md:flex md:min-w-44">
                 <Button
                   type="button"
-                  className="hidden min-h-12 rounded-xl bg-[#c49a5b] px-5 font-bold text-[#10262d] shadow-lg shadow-black/20 hover:bg-[#d2aa70] md:inline-flex"
+                  className="min-h-12 rounded-xl bg-[#c49a5b] px-5 font-bold text-[#10262d] shadow-lg shadow-black/20 hover:bg-[#d2aa70]"
                   onClick={() => setLocation("/documents?create=1")}
                 >
                   <Plus className="ml-2 h-4 w-4" />
@@ -400,7 +400,7 @@ export default function WorkspacePage({
                 <Button
                   type="button"
                   variant="outline"
-                  className="hidden min-h-11 rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white md:inline-flex"
+                  className="min-h-11 rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                   onClick={() => setLocation("/documents")}
                 >
                   <FileText className="ml-2 h-4 w-4" />
