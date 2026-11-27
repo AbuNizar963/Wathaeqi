@@ -148,7 +148,6 @@ export default function PrintSettingsPanel({
 
   const handleModeChange = (value: PrintLayoutMode) => {
     onModeChange(value);
-    onOrientationChange(count === 2 ? "landscape" : "portrait");
   };
 
   const { columns, rows } = getPrintGridDimensions(count, orientation);

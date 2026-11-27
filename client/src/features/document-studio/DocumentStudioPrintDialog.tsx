@@ -217,6 +217,15 @@ export default function DocumentStudioPrintDialog({
   const [error, setError] = useState<string | null>(null);
   const operation = useDocumentProgress();
 
+  const handleLayoutModeChange = (value: PrintLayoutMode) => {
+    setLayoutMode(value);
+    setOrientation(
+      (value === "repeat" ? copiesPerSheet : pagesPerSheet) === 2
+        ? "landscape"
+        : "portrait"
+    );
+  };
+
   useEffect(() => {
     if (!open) {
       setShowDocumentHeader(true);
@@ -309,7 +318,7 @@ export default function DocumentStudioPrintDialog({
         </DialogHeader>
         <PrintSettingsPanel
           mode={layoutMode}
-          onModeChange={setLayoutMode}
+          onModeChange={handleLayoutModeChange}
           count={layoutMode === "repeat" ? copiesPerSheet : pagesPerSheet}
           onCountChange={
             layoutMode === "repeat" ? setCopiesPerSheet : setPagesPerSheet

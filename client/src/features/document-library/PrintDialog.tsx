@@ -65,6 +65,15 @@ export default function PrintDialog({
   const printButtonLabel =
     kind === "image" ? "طباعة الصورة" : "متابعة إلى الطباعة";
 
+  const handleLayoutModeChange = (value: PrintLayoutMode) => {
+    setLayoutMode(value);
+    setOrientation(
+      (value === "repeat" ? copiesPerSheet : pagesPerSheet) === 2
+        ? "landscape"
+        : "portrait"
+    );
+  };
+
   useEffect(() => {
     if (!open) return;
     setError(null);
@@ -273,7 +282,7 @@ export default function PrintDialog({
               ) : (
                 <PrintSettingsPanel
                   mode={layoutMode}
-                  onModeChange={setLayoutMode}
+                  onModeChange={handleLayoutModeChange}
                   count={
                     layoutMode === "repeat" ? copiesPerSheet : pagesPerSheet
                   }
