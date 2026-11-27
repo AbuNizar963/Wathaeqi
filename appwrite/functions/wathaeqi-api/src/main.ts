@@ -53,6 +53,17 @@ type LambdaResponse = {
 
 let expressHandler: ReturnType<typeof serverless> | undefined;
 
+export function getRequestHeader(
+  headers: Record<string, string>,
+  name: string
+): string | undefined {
+  const target = name.toLowerCase();
+  const entry = Object.entries(headers).find(
+    ([headerName]) => headerName.toLowerCase() === target
+  );
+  return entry?.[1];
+}
+
 function getMultiValueQueryParameters(
   searchParams: URLSearchParams
 ): Record<string, string[]> {
@@ -101,9 +112,11 @@ function getRequestBody(req: AppwriteFunctionRequest): {
 function toLambdaEvent(req: AppwriteFunctionRequest): LambdaEvent {
   const url = new URL(req.url);
   const headers = Object.fromEntries(
-    Object.entries(req.headers).filter(
-      ([name]) => !["origin", "referer"].includes(name.toLowerCase())
-    )
+    Object.entries(req.headers)
+      .filter(
+        ([name]) => !["origin", "referer"].includes(name.toLowerCase())
+      )
+      .map(([name, value]) => [name.toLowerCase(), value])
   );
   const multiValueQueryStringParameters = getMultiValueQueryParameters(
     url.searchParams
@@ -116,8 +129,8 @@ function toLambdaEvent(req: AppwriteFunctionRequest): LambdaEvent {
   );
   const requestBody = getRequestBody(req);
   const sourceIp =
-    req.headers["x-appwrite-client-ip"] ??
-    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
+    getRequestHeader(req.headers, "x-appwrite-client-ip") ??
+    getRequestHeader(req.headers, "x-forwarded-for")?.split(",")[0]?.trim() ??
     "127.0.0.1";
 
   return {
@@ -185,11 +198,12 @@ function getAllowedOrigins(): Set<string> {
   );
 }
 
-function createCorsHeaders(origin: string | undefined): Headers {
+export function createCorsHeaders(origin: string | undefined): Headers {
   const headers = new Headers({
     "Cache-Control": "no-store",
     Vary: "Origin",
     "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers": [
       "Content-Type",
       "X-TRPC-Source",
@@ -204,7 +218,19 @@ function createCorsHeaders(origin: string | undefined): Headers {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
   });
-  if (origin) headers.set("Access-Control-Allow-Origin", origin);
+  // Appwrite's function gateway can omit Origin on forwarded preflight
+  // requests. When it does, use the first explicitly configured production
+  // origin so the browser receives a valid CORS response. A supplied but
+  // unapproved origin is never reflected here (and is rejected by main()).
+  const allowedOrigins = getAllowedOrigins();
+  const responseOrigin = origin
+    ? allowedOrigins.has(origin)
+      ? origin
+      : undefined
+    : allowedOrigins.values().next().value;
+  if (responseOrigin) {
+    headers.set("Access-Control-Allow-Origin", responseOrigin);
+  }
   return headers;
 }
 
@@ -238,11 +264,12 @@ export default async function main({
   log,
   error,
 }: AppwriteFunctionContext): Promise<Response | unknown> {
-  if (!process.env.APPWRITE_API_KEY && req.headers["x-appwrite-key"]) {
-    ENV.appwriteApiKey = req.headers["x-appwrite-key"];
+  const appwriteApiKey = getRequestHeader(req.headers, "x-appwrite-key");
+  if (!process.env.APPWRITE_API_KEY && appwriteApiKey) {
+    ENV.appwriteApiKey = appwriteApiKey;
   }
 
-  const origin = req.headers.origin;
+  const origin = getRequestHeader(req.headers, "origin");
   const allowedOrigins = getAllowedOrigins();
   const corsHeaders = createCorsHeaders(
     origin && allowedOrigins.has(origin) ? origin : undefined

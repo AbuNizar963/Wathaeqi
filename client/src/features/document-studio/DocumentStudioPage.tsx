@@ -569,6 +569,25 @@ export default function DocumentStudioPage() {
       onError: error => toast.error(error.message),
     });
 
+  const deleteDocumentMutation = trpc.documentStudio.deleteDocument.useMutation(
+    {
+      onSuccess: async result => {
+        await utils.documentStudio.listDocuments.invalidate();
+        setSelectedDocumentId(null);
+        setIsCreatingDocument(false);
+        setPreviewMode(false);
+        toast.success("تم حذف الوثيقة");
+        if (!result.fileCleanupSucceeded) {
+          toast.warning("حُذف سجل الوثيقة، لكن تعذر حذف الملف من التخزين.");
+        }
+        if (!result.auditLogRecorded) {
+          toast.warning("تم الحذف، لكن تعذر تسجيل العملية في سجل الحركات.");
+        }
+      },
+      onError: error => toast.error(error.message),
+    }
+  );
+
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
       onSuccess: async result => {
@@ -1780,6 +1799,29 @@ export default function DocumentStudioPage() {
                         >
                           <Archive className="ml-2 h-4 w-4" />
                           أرشفة
+                        </Button>
+                      ) : null}
+                      {selectedDocument ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          disabled={deleteDocumentMutation.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                "حذف الوثيقة نهائيًا؟ ستُفقد التعديلات غير المحفوظة."
+                              )
+                            ) {
+                              deleteDocumentMutation.mutate({
+                                id: selectedDocument.id,
+                              });
+                            }
+                          }}
+                        >
+                          <Trash2 className="ml-2 h-4 w-4" />
+                          {deleteDocumentMutation.isPending
+                            ? "جارٍ الحذف…"
+                            : "حذف الوثيقة"}
                         </Button>
                       ) : null}
                       <Button
