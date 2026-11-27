@@ -187,6 +187,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
         builder: (context, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
+            scrollable: true,
             title: closableDialogTitle(
               dialogContext,
               const Text('معاينة تصدير سجل البرقيات'),
@@ -281,6 +282,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
+            scrollable: true,
           title: closableDialogTitle(
             dialogContext,
             const Text('الملف محمي بكلمة مرور'),
@@ -442,6 +444,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
+            scrollable: true,
           title: closableDialogTitle(
             dialogContext,
             const Text('تأكيد استيراد سجل Excel'),
@@ -531,6 +534,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
+            scrollable: true,
             title: closableDialogTitle(
               dialogContext,
               Text('تعديل صف ${index + 1} قبل الاستيراد'),
