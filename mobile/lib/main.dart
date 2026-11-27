@@ -875,9 +875,19 @@ class _DashboardPageState extends State<DashboardPage>
           _pushPage(DepartmentSettingsPage(api: widget.api));
         }
         break;
+      case 'owner_dashboard':
+        if (_isPlatformOwner) {
+          _pushPage(NativeOwnerDashboardPage(api: widget.api));
+        }
+        break;
       case 'platform_document_settings':
         if (_isPlatformOwner) {
           _pushPage(PlatformDocumentSettingsPage(api: widget.api));
+        }
+        break;
+      case 'users':
+        if (_canManageUsers) {
+          _pushPage(NativeUserManagementPage(api: widget.api));
         }
         break;
       case 'regions':
@@ -1314,7 +1324,7 @@ class _DashboardPageState extends State<DashboardPage>
           PopupMenuButton<String>(
             tooltip: 'إعدادات الحساب',
             onSelected: _handleAccountAction,
-            icon: const Icon(LucideIcons.ellipsis),
+            icon: const Icon(LucideIcons.menu),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'profile',
@@ -1344,13 +1354,15 @@ class _DashboardPageState extends State<DashboardPage>
                     title: 'إعدادات الترويسة والطباعة',
                   ),
                 ),
-              if (_isPlatformOwner) ...[
-                const PopupMenuDivider(),
-                const PopupMenuItem<String>(
+              if (_canManageUsers) ...[
+                PopupMenuItem<String>(
                   enabled: false,
                   height: 34,
                   child: Text(
-                    'إعدادات النظام',
+                    getMobileManagementMenuHeading(
+                      accountRole: _account['role']?.toString(),
+                      isPlatformOwner: _isPlatformOwner,
+                    ),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -1358,11 +1370,27 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                 ),
+                if (_isPlatformOwner) ...[
+                  const PopupMenuItem(
+                    value: 'owner_dashboard',
+                    child: _AccountMenuItem(
+                      icon: Icons.dashboard_customize_outlined,
+                      title: 'لوحة قيادة المالك',
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'platform_document_settings',
+                    child: _AccountMenuItem(
+                      icon: Icons.tune_rounded,
+                      title: 'إعدادات النظام والوثائق',
+                    ),
+                  ),
+                ],
                 const PopupMenuItem(
-                  value: 'platform_document_settings',
+                  value: 'users',
                   child: _AccountMenuItem(
-                    icon: Icons.tune_rounded,
-                    title: 'إعدادات النظام والوثائق',
+                    icon: Icons.manage_accounts_outlined,
+                    title: 'إدارة المستخدمين',
                   ),
                 ),
               ],
