@@ -17,14 +17,17 @@ const solidSettings: PlatformDocumentSettings = {
   headerDividerColor: "#123456",
 };
 
-function render(settings: PlatformDocumentSettings): string {
+function render(
+  settings: PlatformDocumentSettings,
+  metadata: { serial?: string; date?: string } = {}
+): string {
   return renderToStaticMarkup(
     <DocumentLetterhead
       logoUrl={null}
       dividerColor="#14532d"
       headerSettings={settings}
-      serial="يخصص عند الإصدار"
-      date="24 نوفمبر 2026"
+      serial={metadata.serial ?? "يخصص عند الإصدار"}
+      date={metadata.date ?? "24 نوفمبر 2026"}
     />
   );
 }
@@ -96,10 +99,24 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain(
       'class="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"'
     );
-    expect(markup).toContain("رقم الوثيقة:");
-    expect(markup.indexOf("رقم الوثيقة:")).toBeLessThan(dateIndex);
+    expect(markup).toContain("الرقم:");
+    expect(markup.indexOf("الرقم:")).toBeLessThan(dateIndex);
     expect(markup).toContain("يخصص عند الإصدار");
     expect(markup).toContain("24 نوفمبر 2026");
+  });
+
+  it("omits metadata entirely when serial and date are empty", () => {
+    const markup = render(tricolorSettings, { serial: "", date: "" });
+    expect(markup).not.toContain('data-testid="document-letterhead-metadata"');
+    expect(markup).not.toContain("التاريخ:");
+  });
+
+  it("keeps blank labels when a space is entered for handwriting", () => {
+    const markup = render(tricolorSettings, { serial: " ", date: " " });
+    expect(markup).toContain('data-testid="document-letterhead-metadata"');
+    expect(markup).toContain("الرقم:");
+    expect(markup).toContain("التاريخ:");
+    expect(markup).not.toContain("الرقم:</strong>  ");
   });
 
   it("keeps a plain border and no divider markup for solid dividers", () => {

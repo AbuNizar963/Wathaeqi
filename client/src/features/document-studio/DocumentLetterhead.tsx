@@ -22,6 +22,10 @@ export default function DocumentLetterhead({
   date,
 }: DocumentLetterheadProps) {
   const settings = normalizePlatformDocumentSettings(headerSettings);
+  const visibleSerial = serial?.trim() ?? "";
+  const visibleDate = date?.trim() ?? "";
+  const showSerial = serial !== undefined && serial !== "";
+  const showDate = date !== undefined && date !== "";
   const headerRows = settings.pageHeaderRows.filter(
     row => row.right.trim() || row.left.trim()
   );
@@ -125,20 +129,20 @@ export default function DocumentLetterhead({
           <span className="document-tricolor-stars-divider__line document-tricolor-stars-divider__line--green" />
         </div>
       ) : null}
-      {serial || date ? (
+      {showSerial || showDate ? (
         <div
           className="mt-1 text-right text-[12pt] font-semibold leading-[1.6]"
           dir="rtl"
           data-testid="document-letterhead-metadata"
         >
-          {serial ? (
+          {showSerial ? (
             <p className="whitespace-nowrap">
-              <strong>رقم الوثيقة:</strong> {serial}
+              <strong>الرقم:</strong> {visibleSerial}
             </p>
           ) : null}
-          {date ? (
+          {showDate ? (
             <p className="whitespace-nowrap">
-              <strong>التاريخ:</strong> {date}
+              <strong>التاريخ:</strong> {visibleDate}
             </p>
           ) : null}
         </div>

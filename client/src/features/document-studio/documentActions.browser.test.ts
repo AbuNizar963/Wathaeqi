@@ -80,8 +80,8 @@ describe.skipIf(
         };
       });
       expect(output.downloadedName).toBe("fixture.png");
-      expect(output.width).toBe(480);
-      expect(output.height).toBe(640);
+      expect(output.width).toBe(600);
+      expect(output.height).toBe(800);
       expect(output.pixel[1]).toBeGreaterThan(180);
       expect(output.background[0]).toBeGreaterThan(output.background[1]! * 2);
     } finally {
@@ -218,10 +218,16 @@ describe.skipIf(
         const context = canvas.getContext("2d")!;
         context.drawImage(bitmap, 0, 0);
         const referenceCanvas = document.createElement("canvas");
-        referenceCanvas.width = referenceBitmap.width;
-        referenceCanvas.height = referenceBitmap.height;
+        referenceCanvas.width = bitmap.width;
+        referenceCanvas.height = bitmap.height;
         const referenceContext = referenceCanvas.getContext("2d")!;
-        referenceContext.drawImage(referenceBitmap, 0, 0);
+        referenceContext.drawImage(
+          referenceBitmap,
+          0,
+          0,
+          referenceCanvas.width,
+          referenceCanvas.height
+        );
         const pixels = context.getImageData(
           0,
           0,
@@ -256,8 +262,8 @@ describe.skipIf(
         };
       }, reference.toString("base64"));
       expect(output.downloadedName).toBe("arabic.png");
-      expect(output.width).toBe(3176);
-      expect(output.height).toBe(1400);
+      expect(output.width).toBe(3970);
+      expect(output.height).toBe(1750);
       // Allow minor rasterizer antialiasing differences, not broken shaping.
       expect(output.differingRatio).toBeLessThan(0.008);
     } finally {
@@ -340,8 +346,8 @@ describe.skipIf(
         return outputs;
       });
       for (const result of results) {
-        expect(result.width).toBe(480);
-        expect(result.height).toBe(640);
+        expect(result.width).toBe(600);
+        expect(result.height).toBe(800);
         expect(result.corner[1]).toBeGreaterThan(150);
         expect(result.corner[0]).toBeLessThan(50);
       }

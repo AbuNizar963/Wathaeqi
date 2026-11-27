@@ -142,7 +142,7 @@ const documentWriteSchema = z.object({
   subject: z.string().trim().max(256).default(""),
   content: editorDocumentSchema,
   fieldValues: fieldValuesSchema.default({}),
-  documentDate: z.string().datetime().optional(),
+  documentDate: z.union([z.string().datetime(), z.literal(" ")]).optional(),
   templateId: z.string().min(1).max(36).nullable().optional(),
   templateRevision: z.number().int().positive().nullable().optional(),
 });
@@ -462,7 +462,9 @@ export const documentStudioRouter = router({
         title: z.string().trim().min(1).max(256),
         category: z.string().trim().min(1).max(100).default("general"),
         subject: z.string().trim().max(256).default(""),
-        documentDate: z.string().datetime().optional(),
+        documentDate: z
+          .union([z.string().datetime(), z.literal(" ")])
+          .optional(),
         storageKey: z.string().trim().min(1).max(512),
         fileName: z.string().trim().min(1).max(256),
         mimeType: z.string().trim().min(1).max(160),
@@ -514,7 +516,7 @@ export const documentStudioRouter = router({
         subject: input.subject,
         content: { type: "doc", content: [{ type: "paragraph" }] },
         fieldValues: {},
-        documentDate: input.documentDate ?? new Date().toISOString(),
+        documentDate: input.documentDate ?? "",
         organizationId: scope.organizationId,
         templateId: null,
         templateRevision: null,
@@ -623,7 +625,7 @@ export const documentStudioRouter = router({
         subject: input.subject,
         content: input.content,
         fieldValues: input.fieldValues,
-        documentDate: input.documentDate ?? new Date().toISOString(),
+        documentDate: input.documentDate ?? "",
         organizationId: scope.organizationId,
         ...snapshot,
       });
@@ -697,7 +699,7 @@ export const documentStudioRouter = router({
             subject: input.subject,
             content: input.content,
             fieldValues: input.fieldValues,
-            documentDate: input.documentDate ?? new Date().toISOString(),
+            documentDate: input.documentDate ?? "",
             organizationId: existing.organizationId,
             ...snapshot,
           }

@@ -17,11 +17,25 @@ type DocumentForm = Pick<
 type SavedDocument = Pick<OfficialDocument, keyof DocumentForm>;
 
 export function parseDocumentDate(value: string): string | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T12:00:00.000Z`);
+  const normalized = value
+    .trim()
+    .replace(/[٠-٩]/gu, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/[۰-۹]/gu, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
+  if (!normalized) return null;
+  const parts = normalized.split(/[/-]/u).map(part => part.trim());
+  let isoValue = normalized;
+  if (parts.length === 3 && parts.every(part => /^\d+$/.test(part))) {
+    const [first, second, third] = parts;
+    isoValue =
+      first.length === 4
+        ? `${first}-${second.padStart(2, "0")}-${third.padStart(2, "0")}`
+        : `${third.padStart(4, "0")}-${second.padStart(2, "0")}-${first.padStart(2, "0")}`;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoValue)) return null;
+  const date = new Date(`${isoValue}T12:00:00.000Z`);
   if (!Number.isFinite(date.getTime())) return null;
   const iso = date.toISOString();
-  return iso.slice(0, 10) === value ? iso : null;
+  return iso.slice(0, 10) === isoValue ? iso : null;
 }
 
 export function isDocumentFormDirty(

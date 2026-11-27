@@ -1,4 +1,6 @@
-export const DEFAULT_PRINT_PIXEL_RATIO = 4;
+// A4 at ratio 5 remains below the practical canvas memory ceiling while
+// producing noticeably sharper PNG exports and printed raster pages.
+export const DEFAULT_PRINT_PIXEL_RATIO = 5;
 export const MAX_RASTER_PIXELS = 24_000_000;
 export const MAX_RASTER_EDGE = 16_000;
 

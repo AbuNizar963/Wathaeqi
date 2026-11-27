@@ -46,8 +46,11 @@ describe("document editor safety", () => {
     expect(isDocumentFormDirty(saved, { ...form, ...patch })).toBe(true);
   });
 
-  it("accepts a valid date and safely rejects an empty or invalid date", () => {
+  it("accepts typed date formats and safely rejects invalid dates", () => {
     expect(parseDocumentDate("2026-11-23")).toBe("2026-11-23T12:00:00.000Z");
+    expect(parseDocumentDate("2026/11/23")).toBe("2026-11-23T12:00:00.000Z");
+    expect(parseDocumentDate("23/11/2026")).toBe("2026-11-23T12:00:00.000Z");
+    expect(parseDocumentDate("٢٣/١١/٢٠٢٦")).toBe("2026-11-23T12:00:00.000Z");
     expect(parseDocumentDate("")).toBeNull();
     expect(parseDocumentDate("2026-02-30")).toBeNull();
     expect(parseDocumentDate("invalid")).toBeNull();

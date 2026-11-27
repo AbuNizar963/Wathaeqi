@@ -1,5 +1,6 @@
 import {
   Archive,
+  CalendarDays,
   Download,
   Eye,
   EyeOff,
@@ -120,12 +121,12 @@ function formatArabicDate(value: string): string {
 
 function dateInputValue(value: string): string {
   const date = new Date(value);
-  if (!Number.isFinite(date.getTime()))
-    return new Date().toISOString().slice(0, 10);
+  if (!Number.isFinite(date.getTime())) return "";
   return date.toISOString().slice(0, 10);
 }
 
 function makeDocumentDate(value: string): string {
+  if (value.length > 0 && !value.trim()) return " ";
   return parseDocumentDate(value) ?? "";
 }
 
@@ -208,9 +209,7 @@ export default function DocumentStudioPage() {
   const [documentTitle, setDocumentTitle] = useState("");
   const [documentCategory, setDocumentCategory] = useState("general");
   const [documentSubject, setDocumentSubject] = useState("");
-  const [documentDate, setDocumentDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [documentDate, setDocumentDate] = useState("");
   const [documentContent, setDocumentContent] = useState(
     EMPTY_DOCUMENT_CONTENT
   );
@@ -234,6 +233,7 @@ export default function DocumentStudioPage() {
     []
   );
   const templateImportInputRef = useRef<HTMLInputElement>(null);
+  const datePickerRef = useRef<HTMLInputElement>(null);
   const [importingTemplate, setImportingTemplate] = useState(false);
 
   useEffect(() => {
@@ -614,7 +614,7 @@ export default function DocumentStudioPage() {
     setDocumentTitle("");
     setDocumentCategory("general");
     setDocumentSubject("");
-    setDocumentDate(new Date().toISOString().slice(0, 10));
+    setDocumentDate("");
     setDocumentContent(EMPTY_DOCUMENT_CONTENT);
     setDocumentFieldValues({});
     setTemplateValuesApplied(false);
@@ -631,7 +631,7 @@ export default function DocumentStudioPage() {
     setDocumentTitle(template.title);
     setDocumentCategory(template.category);
     setDocumentSubject("");
-    setDocumentDate(new Date().toISOString().slice(0, 10));
+    setDocumentDate("");
     setDocumentContent(template.content);
     setDocumentFieldValues(defaultFieldValues(template.fields));
     setTemplateValuesApplied(false);
@@ -645,8 +645,8 @@ export default function DocumentStudioPage() {
       return;
     }
     const validDate = parseDocumentDate(documentDate);
-    if (!validDate) {
-      toast.error("أدخل تاريخاً صالحاً للوثيقة أولاً");
+    if (documentDate.trim() && !validDate) {
+      toast.error("أدخل تاريخاً صالحاً أو اترك الحقل فارغاً");
       return;
     }
     const missingFields = missingRequiredTemplateFields(
@@ -682,7 +682,10 @@ export default function DocumentStudioPage() {
         normalizedFieldValues,
         documentRecipientLine
       ),
-      documentDate: validDate,
+      documentDate:
+        documentDate.length > 0 && !documentDate.trim()
+          ? " "
+          : (validDate ?? undefined),
       templateId: selectedTemplateId,
       templateRevision: selectedTemplateRevision,
     };
@@ -1957,7 +1960,7 @@ export default function DocumentStudioPage() {
                         htmlFor="document-number"
                         className="text-sm font-medium"
                       >
-                        رقم الوثيقة
+                        الرقم
                       </label>
                       <Input
                         id="document-number"
@@ -1965,18 +1968,59 @@ export default function DocumentStudioPage() {
                         onChange={event =>
                           setDocumentSubject(event.target.value)
                         }
-                        placeholder="أدخل رقم الوثيقة"
+                        placeholder="أدخل الرقم"
                         disabled={!canEditDocument}
                       />
                     </div>
                     <div className="space-y-1">
                       <label className="text-sm font-medium">التاريخ</label>
-                      <Input
-                        type="date"
-                        value={documentDate}
-                        onChange={event => setDocumentDate(event.target.value)}
-                        disabled={!canEditDocument}
-                      />
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={documentDate}
+                          onChange={event =>
+                            setDocumentDate(event.target.value)
+                          }
+                          placeholder="مثال: 2026/11/24 (اختياري)"
+                          disabled={!canEditDocument}
+                          className="pe-12"
+                          aria-label="التاريخ الاختياري"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="اختيار التاريخ من التقويم"
+                          disabled={!canEditDocument}
+                          className="absolute end-1 top-1/2 size-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            const picker = datePickerRef.current;
+                            if (!picker) return;
+                            if (typeof picker.showPicker === "function")
+                              picker.showPicker();
+                            else picker.click();
+                          }}
+                        >
+                          <CalendarDays className="size-4" />
+                        </Button>
+                        <input
+                          ref={datePickerRef}
+                          type="date"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                          value={
+                            parseDocumentDate(documentDate)?.slice(0, 10) ?? ""
+                          }
+                          onChange={event =>
+                            setDocumentDate(event.target.value)
+                          }
+                          className="pointer-events-none absolute size-px opacity-0"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        اتركه فارغًا إذا لم ترد إظهار التاريخ في الوثيقة.
+                      </p>
                     </div>
                   </div>
 
