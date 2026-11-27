@@ -60,10 +60,7 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
 
     syncInstalledState();
     displayMode.addEventListener("change", syncInstalledState);
-    window.addEventListener(
-      "beforeinstallprompt",
-      handleBeforeInstallPrompt
-    );
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
     return () => {
