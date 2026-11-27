@@ -250,7 +250,6 @@ describe("platform document settings UI normalization", () => {
     ).toBe("both:yyyy/MM/dd");
   });
 
-
   it("preserves the additional professional frame styles", () => {
     expect(
       normalizePlatformDocumentSettings({ frameStyle: "classic" }).frameStyle
