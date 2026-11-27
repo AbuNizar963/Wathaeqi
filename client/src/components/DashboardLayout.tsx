@@ -792,38 +792,30 @@ function DashboardLayoutContent({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-11 w-11 shrink-0 rounded-lg"
+                className="h-10 w-10 shrink-0 rounded-xl"
                 aria-label="فتح القائمة الجانبية الكاملة"
                 aria-expanded={openMobile}
                 onClick={() => setOpenMobile(true)}
               >
-                <PanelLeft className="h-[18px] w-[18px]" />
+                <PanelLeft className="h-5 w-5" />
               </Button>
               <h1 className="min-w-0 truncate text-sm font-semibold text-foreground">
                 {activeMenuItem?.label ?? "مساحة العمل"}
               </h1>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 shrink-0 rounded-lg"
-              aria-label="فتح البحث السريع"
-              onClick={() => setSearchOpen(true)}
-            >
-              <Search className="h-[18px] w-[18px]" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 shrink-0 rounded-lg"
-              aria-label="الإشعارات"
-              onClick={() => setLocation("/notifications")}
-            >
-              <Bell className="h-[18px] w-[18px]" />
-            </Button>
-            <HeaderActions showMenu={false} />
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl"
+                aria-label="الإشعارات"
+                onClick={() => setLocation("/notifications")}
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
+              <HeaderActions showTheme showMenu={false} />
+            </div>
           </div>
         )}
         <main
@@ -853,7 +845,7 @@ function DashboardLayoutContent({
       {isMobile ? (
         <nav
           aria-label="التنقل الرئيسي"
-          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
+          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
           style={{
             paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
           }}
@@ -894,24 +886,20 @@ function DashboardLayoutContent({
             className="flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-primary"
           >
             <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25 ring-4 ring-background">
-              <Plus className="h-6 w-6" />
+              <Plus className="h-5 w-5" />
             </span>
             <span>إنشاء جديد</span>
           </button>
-          <div className="mobile-bottom-nav-account flex min-h-14 items-center justify-center">
-            <HeaderActions showTheme={false} />
-          </div>
           <button
             type="button"
-            onClick={() => setOpenMobile(true)}
-            aria-expanded={openMobile}
+            onClick={() => setSearchOpen(true)}
+            aria-label="فتح البحث السريع"
             className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70"
           >
-            <PanelLeft className="h-5 w-5" />
-            <span>المزيد</span>
+            <Search className="h-5 w-5" />
+            <span>بحث</span>
           </button>
         </nav>
-      ) : null}
     </>
   );
 }
