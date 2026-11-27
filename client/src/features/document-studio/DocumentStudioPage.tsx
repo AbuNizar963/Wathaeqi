@@ -2090,7 +2090,10 @@ export default function DocumentStudioPage() {
                           settings={platformDocumentSettings.data}
                         />
                       </div>
-                      <footer className="space-y-1 pb-8 pt-4 text-xs text-slate-500">
+                      <footer
+                        className="space-y-1 pb-8 pt-4 text-xs text-slate-500"
+                        data-document-print-section="footer"
+                      >
                         {platformDocumentSettings.data?.pageFooterRows?.map(
                           (row, index) => (
                             <div
