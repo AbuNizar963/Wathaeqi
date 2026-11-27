@@ -400,8 +400,9 @@ assert(
 );
 
 assert(
-  workspacePage.includes('className="hidden min-h-12 rounded-xl') &&
-    workspacePage.includes('className="hidden min-h-11 rounded-xl') &&
+  workspacePage.includes(
+    'className="hidden shrink-0 flex-col gap-2 md:flex md:min-w-44"'
+  ) &&
     workspacePage.includes(
       'className="mt-4 hidden rounded-xl md:inline-flex"'
     ) &&
