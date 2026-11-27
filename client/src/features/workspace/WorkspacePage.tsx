@@ -364,8 +364,52 @@ export default function WorkspacePage({
       ) : null}
 
       {section === "dashboard" ? (
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="space-y-6">
+          <section className="relative isolate overflow-hidden rounded-[1.75rem] border border-slate-700/70 bg-[#0B1120] px-5 py-6 text-white shadow-xl shadow-slate-950/10 sm:px-7 sm:py-8">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-16 -top-24 -z-10 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-28 right-1/3 -z-10 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl"
+            />
+            <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-2xl">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  أرشيف موثوق — قرار أوضح
+                </div>
+                <h2 className="text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
+                  أهلاً بك في وثائقي
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">
+                  أنشئ وثائقك الرسمية، نظّم أرشيفك، واطبع مستنداتك بهوية موحّدة
+                  من مساحة عمل واحدة.
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col gap-2 sm:min-w-44">
+                <Button
+                  type="button"
+                  className="min-h-12 rounded-xl bg-emerald-500 px-5 font-bold text-slate-950 shadow-lg shadow-emerald-950/20 hover:bg-emerald-400"
+                  onClick={() => setLocation("/documents?create=1")}
+                >
+                  <Plus className="ml-2 h-4 w-4" />
+                  إنشاء وثيقة جديدة
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11 rounded-xl border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                  onClick={() => setLocation("/documents")}
+                >
+                  <FileText className="ml-2 h-4 w-4" />
+                  استعراض الأرشيف
+                </Button>
+              </div>
+            </div>
+          </section>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
             <SummaryCard
               label="إجمالي الوثائق"
               value={documentsQuery.data?.length}
@@ -405,20 +449,25 @@ export default function WorkspacePage({
               icon={<FileText className="h-4 w-4" />}
               tone="violet"
             />
-            <SummaryCard
-              label="المستخدمون"
-              value={
-                canOpenAdvancedManagement
-                  ? administrationQuery.data?.totals.users
-                  : undefined
-              }
-              icon={<Users className="h-4 w-4" />}
-              tone="cyan"
-            />
+            {canOpenAdvancedManagement ? (
+              <SummaryCard
+                label="المستخدمون"
+                value={administrationQuery.data?.totals.users}
+                icon={<Users className="h-4 w-4" />}
+                tone="cyan"
+              />
+            ) : null}
           </div>
-          <Card className="space-y-3 p-4 sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold">أحدث الوثائق</h2>
+          <Card className="space-y-4 rounded-[1.5rem] border-border/70 p-4 shadow-sm sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold tracking-tight">
+                  أحدث الوثائق
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  آخر ما أُضيف إلى مكتبتك الرسمية
+                </p>
+              </div>
               <Badge variant="secondary">
                 {documentsQuery.data?.length ?? 0}
               </Badge>
@@ -445,7 +494,7 @@ export default function WorkspacePage({
                 </Button>
               </div>
             ) : (
-              <div className="divide-y divide-border/70">
+              <div className="divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70">
                 {(documentsQuery.data ?? []).slice(0, 8).map(item => {
                   const documentId = encodeURIComponent(item.id);
                   const documentUrl = `/documents?document=${documentId}`;
@@ -455,7 +504,7 @@ export default function WorkspacePage({
                   return (
                     <article
                       key={item.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"
+                      className="flex flex-wrap items-center justify-between gap-3 bg-card p-4 transition-colors hover:bg-muted/30"
                     >
                       <button
                         type="button"
