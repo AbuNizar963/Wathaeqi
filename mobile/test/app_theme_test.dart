@@ -80,16 +80,15 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: WathaeqiBrandMark(size: 36),
-            ),
-          ),
+          home: Scaffold(body: Center(child: WathaeqiBrandMark(size: 36))),
         ),
       );
 
       expect(find.bySemanticsLabel('شعار وثائقي'), findsOneWidget);
-      expect(tester.getSize(find.byType(WathaeqiBrandMark)), const Size(36, 36));
+      expect(
+        tester.getSize(find.byType(WathaeqiBrandMark)),
+        const Size(36, 36),
+      );
     });
 
     testWidgets('semantic status colors follow the active theme', (
