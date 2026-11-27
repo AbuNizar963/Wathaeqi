@@ -23,6 +23,8 @@ interface PwaInstallContextValue {
   installApp: () => Promise<PwaInstallOutcome | null>;
 }
 
+type DeferredInstallPrompt = BeforeInstallPromptEvent | null;
+
 const PwaInstallContext = createContext<PwaInstallContextValue | null>(null);
 
 export async function requestPwaInstall(
@@ -34,9 +36,8 @@ export async function requestPwaInstall(
 }
 
 export function PwaInstallProvider({ children }: { children: ReactNode }) {
-  const [deferredPrompt, setDeferredPrompt] = useState<
-    BeforeInstallPromptEvent | null
-  >(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<DeferredInstallPrompt>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
