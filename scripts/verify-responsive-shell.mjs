@@ -69,7 +69,8 @@ assert(
     '<h1 className="min-w-0 truncate text-sm font-semibold text-foreground">'
   ) &&
     dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
-    dashboardLayout.includes('aria-label="الإشعارات"'),
+    dashboardLayout.includes('aria-label="الإشعارات"') &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"'),
   "The mobile dashboard header must expose the page title, full navigation drawer, and notifications."
 );
 
@@ -130,6 +131,7 @@ assert(
 assert(
   dashboardLayout.includes('event.key.toLowerCase() === "k"') &&
     dashboardLayout.includes('aria-label="البحث السريع، الاختصار Ctrl K"') &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
     dashboardLayout.includes("<CommandDialog"),
   "The desktop shell must expose a searchable command palette with the Ctrl+K shortcut."
 );
@@ -177,13 +179,13 @@ assert(
 assert(
   appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--background: #f1f5f9"
+      "--background: #f4f7f6"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--card: #131c31"
+      "--card: #152832"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--primary: #0ea5e9"
+      "--primary: #0f766e"
     ),
   "The crisp light theme must be the initial preference while remaining switchable."
 );
