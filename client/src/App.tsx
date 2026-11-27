@@ -9,6 +9,7 @@ import PlatformDocumentSettingsPage from "./features/platform-settings/PlatformD
 import WorkspacePage from "./features/workspace/WorkspacePage";
 import { legacyWorkspaceTarget } from "./features/document-studio/workspaceRoutes";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { PwaInstallProvider } from "./contexts/PwaInstallContext";
 
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const DocumentStudioPage = lazy(
@@ -116,10 +117,12 @@ export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <PwaInstallProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </PwaInstallProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
