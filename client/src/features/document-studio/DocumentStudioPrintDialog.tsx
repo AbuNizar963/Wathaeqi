@@ -218,6 +218,8 @@ export default function DocumentStudioPrintDialog({
       return;
     }
     setError(null);
+    setShowDocumentHeader(true);
+    setShowDocumentFooter(true);
     setLayoutMode("sequential");
     setPagesPerSheet(1);
     setCopiesPerSheet(2);
