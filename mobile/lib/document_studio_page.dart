@@ -1694,7 +1694,14 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
                       selected: selected,
                       showCheckmark: false,
                       avatar: segment.icon ?? const SizedBox.shrink(),
-                      label: segment.label,
+                      label:
+                          segment.label ??
+                          Text(switch (segment.value) {
+                            DocumentStudioTab.documents => 'الوثائق',
+                            DocumentStudioTab.templates => 'القوالب',
+                            DocumentStudioTab.archive => 'الأرشيف',
+                            DocumentStudioTab.files => 'الملفات',
+                          }),
                       onSelected: _saving
                           ? null
                           : (value) {
