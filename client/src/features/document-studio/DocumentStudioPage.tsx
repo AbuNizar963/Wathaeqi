@@ -1193,7 +1193,7 @@ export default function DocumentStudioPage() {
 
       {showMobileDocumentTabs ? (
         <nav
-          className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
+          className="sticky top-[calc(52px+env(safe-area-inset-top))] z-30 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
           role="tablist"
           aria-label="خطوات إعداد الوثيقة"
         >
