@@ -174,7 +174,9 @@ assert(
 
 assert(
   dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
-    dashboardLayout.includes('aria-label="التنقل الرئيسي"\n          dir="rtl"') &&
+    dashboardLayout.includes(
+      'aria-label="التنقل الرئيسي"\n          dir="rtl"'
+    ) &&
     dashboardLayout.includes("grid grid-cols-4") &&
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
