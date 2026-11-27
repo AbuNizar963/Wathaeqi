@@ -218,8 +218,11 @@ assert(
     ) &&
     headerActions.includes('setLocation("/terms")') &&
     headerActions.includes('setLocation("/about")') &&
+    headerActions.includes("الملف الشخصي") &&
+    headerActions.includes("تثبيت التطبيق") &&
     headerActions.includes("الشروط والأحكام") &&
-    headerActions.includes("حول النظام وميزاته"),
+    headerActions.includes("حول النظام وميزاته") &&
+    headerActions.includes("تسجيل الخروج"),
   "The top-bar drawer trigger must remain independent while the bottom account menu retains working terms and About routes."
 );
 
