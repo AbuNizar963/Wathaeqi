@@ -767,9 +767,9 @@ function DashboardLayoutContent({
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="h-11 w-11 rounded-lg"
+                className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
                 aria-label="الإشعارات"
                 onClick={() => setLocation("/notifications")}
               >
@@ -807,9 +807,9 @@ function DashboardLayoutContent({
             <div className="flex shrink-0 items-center gap-1">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-xl"
+                className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
                 aria-label="الإشعارات"
                 onClick={() => setLocation("/notifications")}
               >
