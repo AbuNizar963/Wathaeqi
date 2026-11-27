@@ -232,6 +232,10 @@ export default function PlatformDocumentSettings() {
                   ))}
                 </select>
               </label>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                خيارات الجمع تعرض التاريخ الميلادي والهجري معاً وفق تقويم أم
+                القرى، مع إبقاء اليوم نفسه ثابتاً في المعاينة والطباعة.
+              </p>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1 text-sm">
                   رتبة رئيس الوحدة
