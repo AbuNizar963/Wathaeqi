@@ -15,6 +15,10 @@ function assert(condition, message) {
 
 const [
   indexHtml,
+  manifest,
+  brandMark,
+  brandIcon,
+  maskableIcon,
   dashboardLayout,
   headerActions,
   sidebarLayout,
@@ -35,6 +39,10 @@ const [
 ] = await Promise.all(
   [
     "client/index.html",
+    "client/public/manifest.json",
+    "client/src/components/BrandMark.tsx",
+    "client/public/icon.svg",
+    "client/public/icon-maskable.svg",
     "client/src/components/DashboardLayout.tsx",
     "client/src/components/HeaderActions.tsx",
     "client/src/components/ui/sidebar.tsx",
@@ -65,11 +73,30 @@ assert(
 );
 
 assert(
+  brandMark.includes("#10262d") &&
+    brandMark.includes("#c49a5b") &&
+    brandMark.includes("#0f766e") &&
+    brandIcon.includes("#10262d") &&
+    maskableIcon.includes('viewBox="0 0 512 512"') &&
+    maskableIcon.includes('transform="translate(56 56) scale(.78)"') &&
+    manifest.includes('"src": "/icon-maskable.svg"') &&
+    manifest.includes('"purpose": "maskable"') &&
+    manifest.includes('"theme_color": "#10262d"') &&
+    manifest.includes('"src": "/icon.svg"') &&
+    manifest.includes('"/icon-192.png"') &&
+    manifest.includes('"/icon-512.png"') &&
+    indexHtml.includes('href="/apple-touch-icon.png"') &&
+    indexHtml.includes('content="#10262d"'),
+  "The in-app mark, browser icon, PWA manifest, and browser chrome must share the refreshed Wathaeqi identity."
+);
+
+assert(
   dashboardLayout.includes(
     '<h1 className="min-w-0 truncate text-sm font-semibold text-foreground">'
   ) &&
     dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
-    dashboardLayout.includes('aria-label="الإشعارات"'),
+    dashboardLayout.includes('aria-label="الإشعارات"') &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"'),
   "The mobile dashboard header must expose the page title, full navigation drawer, and notifications."
 );
 
@@ -130,6 +157,7 @@ assert(
 assert(
   dashboardLayout.includes('event.key.toLowerCase() === "k"') &&
     dashboardLayout.includes('aria-label="البحث السريع، الاختصار Ctrl K"') &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
     dashboardLayout.includes("<CommandDialog"),
   "The desktop shell must expose a searchable command palette with the Ctrl+K shortcut."
 );
@@ -177,13 +205,13 @@ assert(
 assert(
   appRoutes.includes('ThemeProvider defaultTheme="light" switchable') &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--background: #f1f5f9"
+      "--background: #f4f7f6"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--card: #131c31"
+      "--card: #152832"
     ) &&
     (await readProjectFile("client/src/index.css")).includes(
-      "--primary: #0ea5e9"
+      "--primary: #0f766e"
     ),
   "The crisp light theme must be the initial preference while remaining switchable."
 );
@@ -191,6 +219,23 @@ assert(
 assert(
   headerActions.includes("if (!user) {\n    return null;\n  }"),
   "Header actions must not render before an authenticated user is available."
+);
+
+assert(
+  globalStyles.includes("@media (pointer: coarse)") &&
+    globalStyles.includes("min-height: 44px") &&
+    globalStyles.includes("@media (prefers-reduced-motion: reduce)") &&
+    globalStyles.includes("scroll-padding-top") &&
+    globalStyles.includes("env(safe-area-inset-left)"),
+  "The responsive foundation must support touch-sized controls, reduced motion, safe areas, and anchored scrolling."
+);
+
+assert(
+  globalStyles.includes("--success: #0b6f59") &&
+    globalStyles.includes("--warning: #8a5a1f") &&
+    globalStyles.includes("--info: #2e6fae") &&
+    globalStyles.includes("--ring: #0f766e"),
+  "Semantic status colors and focus indicators must retain the shared accessible palette."
 );
 
 assert(

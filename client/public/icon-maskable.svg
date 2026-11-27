@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="أيقونة وثائقي">
+  <rect width="512" height="512" fill="#10262d"/>
+  <g transform="translate(56 56) scale(.78)">
+    <path d="M256 42 421 99v125c0 121-66 214-165 276-99-62-165-155-165-276V99L256 42Z" fill="none" stroke="#c49a5b" stroke-width="15" stroke-linejoin="round"/>
+    <path d="M174 143c0-15 12-27 27-27h91l66 66v190c0 15-12 27-27 27H201c-15 0-27-12-27-27V143Z" fill="#f5f4ed"/>
+    <path d="M292 116v67h66" fill="#d9e8e2" stroke="#c49a5b" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M211 231h91M211 270h91" fill="none" stroke="#9aaca6" stroke-width="16" stroke-linecap="round"/>
+    <path d="m216 333 35 35 76-86" fill="none" stroke="#0f766e" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
