@@ -1170,6 +1170,7 @@ export default function DocumentStudioPage() {
                     ) : (
                       <Button
                         size="sm"
+                        className="hidden md:inline-flex"
                         onClick={() => setCreationDialogOpen(true)}
                         aria-haspopup="dialog"
                         aria-expanded={creationDialogOpen}
