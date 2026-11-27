@@ -677,9 +677,9 @@ void main() {
     expect(find.text('تم حفظ إعدادات وثائق النظام'), findsOneWidget);
   });
 
-  testWidgets('keeps administrative destinations in the drawer, not the account menu', (
-    tester,
-  ) async {
+  testWidgets(
+    'keeps administrative destinations in the drawer, not the account menu',
+    (tester) async {
     _setMobileViewport(tester);
     await tester.pumpWidget(
       MaterialApp(
@@ -703,13 +703,14 @@ void main() {
     expect(find.text('إدارة المستخدمين'), findsNothing);
     expect(find.text('إعدادات النظام والوثائق'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('إعدادات الحساب'));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('فتح القائمة الجانبية'));
     await tester.pumpAndSettle();
     expect(find.text('لوحة قيادة المالك'), findsOneWidget);
     expect(find.text('إدارة المستخدمين'), findsOneWidget);
-  });
+    },
+  );
 
   testWidgets('hides owner document settings from non-owner administrators', (
     tester,
