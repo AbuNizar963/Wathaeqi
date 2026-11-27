@@ -25,6 +25,7 @@ const [
   appRoutes,
   settingsPage,
   documentStudio,
+  documentLibraryPage,
   documentStudioPrintDialog,
   documentPrintSections,
   documentLetterhead,
@@ -49,6 +50,7 @@ const [
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
+    "client/src/features/document-library/DocumentLibraryPage.tsx",
     "client/src/features/document-studio/DocumentStudioPrintDialog.tsx",
     "client/src/features/document-studio/documentPrintSections.ts",
     "client/src/features/document-studio/DocumentLetterhead.tsx",
@@ -389,6 +391,17 @@ assert(
     documentStudio.includes("setImportPrintOpen(true)") &&
     documentStudio.includes("setNativePrintOpen(true)"),
   "The mobile document workspace must expose data, A4 preview, and print tabs that open the correct print flow."
+);
+
+assert(
+  (documentLibraryPage.match(/onClick=\{\(\) => setPrintOpen\(true\)\}/g) ?? []).length ===
+    1 &&
+    (documentLibraryPage.match(
+      /deleteDocument\.mutate\(\{ id: selected\.id \}\)/g
+    ) ?? []).length === 1 &&
+    documentLibraryPage.includes('title="حذف الوثيقة"') &&
+    documentLibraryPage.includes('className="sticky bottom-0'),
+  "The document file preview must expose one print action and one delete action, without duplicate controls in the header and action dock."
 );
 
 assert(
