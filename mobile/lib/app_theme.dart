@@ -4,54 +4,54 @@ import 'package:flutter/material.dart';
 /// docs/DESIGN_SYSTEM_WEB_MOBILE_AR.md. Keep platform layouts native while
 /// keeping the shared visual identity stable.
 abstract final class AppPalette {
-  static const navy = Color(0xFF102E3C);
+  static const navy = Color(0xFF10262D);
   static const brandBlue = Color(0xFF0F766E);
-  static const darkMint = Color(0xFF0F9F9A);
-  static const gold = Color(0xFFC9964D);
-  static const canvas = Color(0xFFF4F7F8);
+  static const darkMint = Color(0xFF2DD4BF);
+  static const gold = Color(0xFFC49A5B);
+  static const canvas = Color(0xFFF4F7F6);
   static const surface = Color(0xFFFFFFFF);
-  static const ink = Color(0xFF172B36);
-  static const muted = Color(0xFFEEF2F6);
-  static const mutedInk = Color(0xFF5B6B7C);
-  static const border = Color(0xFFDBE5E8);
+  static const ink = Color(0xFF14252C);
+  static const muted = Color(0xFFE6EEEB);
+  static const mutedInk = Color(0xFF52676A);
+  static const border = Color(0xFFD2DFDB);
   static const danger = Color(0xFFC2414D);
-  static const success = Color(0xFF147A66);
-  static const warning = Color(0xFF8C570F);
+  static const success = Color(0xFF0F8B70);
+  static const warning = Color(0xFFB98543);
   static const info = Color(0xFF3978C5);
-  static const sidebarAccent = Color(0xFF1D4054);
+  static const sidebarAccent = Color(0xFF1D3740);
 
-  static const darkCanvas = Color(0xFF0C1722);
-  static const darkSurface = Color(0xFF142536);
-  static const darkInk = Color(0xFFECF3F8);
-  static const darkMuted = Color(0xFF1D3345);
-  static const darkMutedInk = Color(0xFFAFC0CE);
+  static const darkCanvas = Color(0xFF0E1C23);
+  static const darkSurface = Color(0xFF152832);
+  static const darkInk = Color(0xFFF2F7F5);
+  static const darkMuted = Color(0xFF1D3740);
+  static const darkMutedInk = Color(0xFFD2DFDB);
   static const darkBorder = Color(0xFF294154);
   static const darkOutline = Color(0xFF3A5368);
-  static const darkSidebarAccent = Color(0xFF1D4054);
-  static const darkSuccess = Color(0xFF54D5C9);
+  static const darkSidebarAccent = Color(0xFF1D3740);
+  static const darkSuccess = Color(0xFF2DD4BF);
   static const darkWarning = Color(0xFFF2C36B);
   static const darkInfo = Color(0xFF72B6F2);
-  static const successContainer = Color(0xFFE7F6F1);
+  static const successContainer = Color(0xFFE7F6F0);
   static const darkSuccessContainer = Color(0xFF123A35);
-  static const warningContainer = Color(0xFFFFF4E2);
+  static const warningContainer = Color(0xFFFBF4E8);
   static const darkWarningContainer = Color(0xFF40331B);
-  static const infoContainer = Color(0xFFEAF2FC);
+  static const infoContainer = Color(0xFFD9EFEB);
   static const darkInfoContainer = Color(0xFF172B45);
 
   static const lightScheme = ColorScheme.light(
     primary: brandBlue,
     onPrimary: surface,
-    secondary: brandBlue,
+    secondary: navy,
     onSecondary: surface,
     surface: surface,
     onSurface: ink,
     onSurfaceVariant: mutedInk,
     tertiary: info,
     onTertiary: surface,
-    primaryContainer: Color(0xFFDDF4F1),
-    onPrimaryContainer: navy,
-    secondaryContainer: Color(0xFFDDF4F1),
-    onSecondaryContainer: navy,
+    primaryContainer: Color(0xFFD9EFEB),
+    onPrimaryContainer: Color(0xFF115E59),
+    secondaryContainer: Color(0xFFE6EEEB),
+    onSecondaryContainer: Color(0xFF344E53),
     surfaceTint: brandBlue,
     error: danger,
     onError: surface,
@@ -73,11 +73,11 @@ abstract final class AppPalette {
     onSurface: darkInk,
     onSurfaceVariant: darkMutedInk,
     tertiary: Color(0xFF72B6F2),
-    onTertiary: Color(0xFF102E3C),
-    primaryContainer: Color(0xFF1D4054),
+    onTertiary: Color(0xFF10262D),
+    primaryContainer: Color(0xFF1D3740),
     onPrimaryContainer: darkInk,
     secondaryContainer: darkMuted,
-    onSecondaryContainer: Color(0xFFDDF4F1),
+    onSecondaryContainer: Color(0xFFD9EFEB),
     surfaceTint: darkMint,
     error: Color(0xFFF97066),
     onError: Color(0xFF341118),
@@ -203,7 +203,7 @@ abstract final class AppTheme {
         ),
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
-            foregroundColor: AppPalette.navy,
+            foregroundColor: AppPalette.brandBlue,
             textStyle: const TextStyle(
               fontFamily: 'Cairo',
               fontSize: 13,
@@ -213,7 +213,7 @@ abstract final class AppTheme {
         ),
         chipTheme: ChipThemeData(
           backgroundColor: AppPalette.muted,
-          selectedColor: const Color(0xFFDDF4F1),
+          selectedColor: const Color(0xFFD9EFEB),
           secondarySelectedColor: AppPalette.muted,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           labelStyle: const TextStyle(
@@ -231,7 +231,7 @@ abstract final class AppTheme {
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Color(0xFFDBE5E8)),
+            side: const BorderSide(color: Color(0xFFD2DFDB)),
           ),
           textStyle: const TextStyle(fontFamily: 'Cairo', fontSize: 13),
         ),
@@ -245,8 +245,8 @@ abstract final class AppTheme {
           minTileHeight: 48,
           iconColor: AppPalette.mutedInk,
           textColor: AppPalette.ink,
-          selectedColor: AppPalette.navy,
-          selectedTileColor: const Color(0xFFE4EDF3),
+          selectedColor: AppPalette.brandBlue,
+          selectedTileColor: const Color(0xFFD9EFEB),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -261,7 +261,7 @@ abstract final class AppTheme {
           backgroundColor: AppPalette.surface,
           indicatorColor: Color(0xFFE4EDF3),
           iconTheme: WidgetStateProperty<IconThemeData>.fromMap({
-            WidgetState.selected: IconThemeData(color: AppPalette.navy),
+            WidgetState.selected: IconThemeData(color: AppPalette.brandBlue),
             WidgetState.any: IconThemeData(color: AppPalette.mutedInk),
           }),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -302,7 +302,7 @@ abstract final class AppTheme {
         ),
         progressIndicatorTheme: const ProgressIndicatorThemeData(
           color: AppPalette.brandBlue,
-          linearTrackColor: Color(0xFFDDF4F1),
+          linearTrackColor: Color(0xFFD9EFEB),
         ),
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: AppPalette.brandBlue,
@@ -313,7 +313,7 @@ abstract final class AppTheme {
           ),
         ),
         dividerTheme: const DividerThemeData(
-          color: Color(0xFFDBE5E8),
+          color: Color(0xFFD2DFDB),
           thickness: 1,
         ),
       ).copyWith(
@@ -321,8 +321,8 @@ abstract final class AppTheme {
         iconTheme: const IconThemeData(color: AppPalette.navy, size: 20),
         primaryIconTheme: const IconThemeData(color: AppPalette.navy, size: 20),
         textSelectionTheme: const TextSelectionThemeData(
-          cursorColor: AppPalette.navy,
-          selectionColor: Color(0x330F9F9A),
+          cursorColor: AppPalette.brandBlue,
+          selectionColor: Color(0x330F766E),
           selectionHandleColor: AppPalette.navy,
         ),
       );
@@ -485,7 +485,7 @@ abstract final class AppTheme {
               width: 1.6,
             ),
           ),
-          labelStyle: const TextStyle(color: Color(0xFFAFC0CE)),
+          labelStyle: const TextStyle(color: Color(0xFFD2DFDB)),
           floatingLabelStyle: const TextStyle(color: AppPalette.darkMint),
         ),
         popupMenuTheme: PopupMenuThemeData(
