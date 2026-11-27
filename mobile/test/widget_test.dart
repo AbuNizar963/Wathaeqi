@@ -682,6 +682,53 @@ void main() {
     expect(find.text('إعدادات النظام والوثائق'), findsNothing);
   });
 
+  testWidgets('dashboard navigation adapts to phone and tablet widths', (
+    tester,
+  ) async {
+    _setMobileViewport(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashboardPage(
+          api: _TestPoliceApi(signedIn: true),
+          account: const {'id': 1, 'name': 'مشغل النظام', 'role': 'admin'},
+          outbox: _EmptyTelegramOutbox(),
+        ),
+      ),
+    );
+    await _pumpDashboardFrames(tester, frameCount: 8);
+
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('الوثائق'), findsOneWidget);
+    expect(find.text('الاستوديو'), findsOneWidget);
+
+    await tester.tap(find.text('المزيد'));
+    await tester.pumpAndSettle();
+    expect(find.text('التنقل الرئيسي'), findsOneWidget);
+    expect(find.text('مكتبة الوثائق'), findsOneWidget);
+    expect(find.text('استوديو الوثائق'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    tester.view.physicalSize = const Size(900, 1024);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashboardPage(
+          api: _TestPoliceApi(signedIn: true),
+          account: const {'id': 1, 'name': 'مشغل النظام', 'role': 'admin'},
+          outbox: _EmptyTelegramOutbox(),
+        ),
+      ),
+    );
+    await _pumpDashboardFrames(tester, frameCount: 8);
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('مكتبة الوثائق'), findsOneWidget);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  });
+
   test('mandatory app lock requires an exact four-digit PIN', () async {
     await expectLater(AppLockService.savePin('12345'), throwsFormatException);
 
