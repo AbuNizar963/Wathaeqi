@@ -37,6 +37,7 @@ const [
   documentWatermarkComponent,
   platformDocumentPreview,
   workspacePage,
+  workspaceWelcome,
   workspaceRouter,
   globalStyles,
   pwaInstallContext,
@@ -62,6 +63,7 @@ const [
     "client/src/features/document-studio/DocumentWatermark.tsx",
     "client/src/features/platform-settings/PlatformDocumentPreview.tsx",
     "client/src/features/workspace/WorkspacePage.tsx",
+    "client/src/features/document-studio/WorkspaceWelcome.tsx",
     "server/features/workspace/workspaceRouter.ts",
     "client/src/index.css",
     "client/src/contexts/PwaInstallContext.tsx",
@@ -395,6 +397,23 @@ assert(
     documentStudio.includes("setImportPrintOpen(true)") &&
     documentStudio.includes("setNativePrintOpen(true)"),
   "The mobile document workspace must expose data, A4 preview, and print tabs that open the correct print flow."
+);
+
+assert(
+  workspacePage.includes(
+    'className="hidden shrink-0 flex-col gap-2 md:flex md:min-w-44"'
+  ) &&
+    workspacePage.includes(
+      'className="mt-4 hidden rounded-xl md:inline-flex"'
+    ) &&
+    workspaceWelcome.includes('className="hidden md:inline-flex"') &&
+    !workspacePage.includes(">معاينة</Button>") &&
+    !workspacePage.includes("documentsQuery.data?.length ?? 0") &&
+    documentStudio.includes(
+      'className="hidden md:inline-flex"\n                        onClick={() => setCreationDialogOpen(true)}'
+    ) &&
+    documentLibraryPage.includes("{!embedded ? ("),
+  "The mobile dashboard and document workspace must not duplicate global create/navigation actions or repeat a preview button."
 );
 
 assert(

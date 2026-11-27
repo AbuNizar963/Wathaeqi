@@ -388,7 +388,7 @@ export default function WorkspacePage({
                   من مساحة عمل واحدة.
                 </p>
               </div>
-              <div className="flex shrink-0 flex-col gap-2 sm:min-w-44">
+              <div className="hidden shrink-0 flex-col gap-2 md:flex md:min-w-44">
                 <Button
                   type="button"
                   className="min-h-12 rounded-xl bg-[#c49a5b] px-5 font-bold text-[#10262d] shadow-lg shadow-black/20 hover:bg-[#d2aa70]"
@@ -468,9 +468,6 @@ export default function WorkspacePage({
                   آخر ما أُضيف إلى مكتبتك الرسمية
                 </p>
               </div>
-              <Badge variant="secondary">
-                {documentsQuery.data?.length ?? 0}
-              </Badge>
             </div>
             {isLoading ? (
               <Loading />
@@ -487,7 +484,7 @@ export default function WorkspacePage({
                 </p>
                 <Button
                   type="button"
-                  className="mt-4 rounded-xl"
+                  className="mt-4 hidden rounded-xl md:inline-flex"
                   onClick={() => setLocation("/documents?create=1")}
                 >
                   إنشاء الوثيقة الأولى
@@ -558,14 +555,6 @@ export default function WorkspacePage({
                         >
                           {formatDashboardDate(documentDate)}
                         </time>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setLocation(documentUrl)}
-                        >
-                          معاينة
-                        </Button>
                         <Button
                           type="button"
                           size="sm"

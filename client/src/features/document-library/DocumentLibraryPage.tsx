@@ -494,16 +494,18 @@ export default function DocumentLibraryPage({
         </div>
       )}
 
-      <Button
-        type="button"
-        aria-label="إنشاء وثيقة جديدة"
-        title="إنشاء وثيقة جديدة"
-        onClick={() => navigate("/documents?create=1")}
-        className="document-library-fab group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
-      >
-        <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
-        <span className="sr-only">وثيقة جديدة</span>
-      </Button>
+      {!embedded ? (
+        <Button
+          type="button"
+          aria-label="إنشاء وثيقة جديدة"
+          title="إنشاء وثيقة جديدة"
+          onClick={() => navigate("/documents?create=1")}
+          className="document-library-fab group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
+        >
+          <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
+          <span className="sr-only">وثيقة جديدة</span>
+        </Button>
+      ) : null}
 
       <Dialog open={creationOpen} onOpenChange={setCreationOpen}>
         <DialogContent className="max-w-lg" dir="rtl">

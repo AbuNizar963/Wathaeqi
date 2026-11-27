@@ -54,7 +54,7 @@ export default function WorkspaceWelcome({
         ))}
       </dl>
       <div className="flex flex-wrap gap-2">
-        <Button onClick={onCreate}>
+        <Button className="hidden md:inline-flex" onClick={onCreate}>
           <FilePlus2 className="size-4" /> إنشاء وثيقة
         </Button>
         <Button variant="outline" onClick={onTemplates}>
