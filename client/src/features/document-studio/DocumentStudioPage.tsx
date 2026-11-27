@@ -501,7 +501,9 @@ export default function DocumentStudioPage() {
         if (result.auditLogRecorded) {
           toast.success("تم حفظ النموذج");
         } else {
-          toast.warning("تم حفظ النموذج، لكن تعذر تسجيل العملية في سجل الحركات");
+          toast.warning(
+            "تم حفظ النموذج، لكن تعذر تسجيل العملية في سجل الحركات"
+          );
         }
       },
       onError: error => toast.error(error.message),
@@ -517,7 +519,9 @@ export default function DocumentStudioPage() {
         if (result.auditLogRecorded) {
           toast.success("تم تحديث النموذج");
         } else {
-          toast.warning("تم تحديث النموذج، لكن تعذر تسجيل العملية في سجل الحركات");
+          toast.warning(
+            "تم تحديث النموذج، لكن تعذر تسجيل العملية في سجل الحركات"
+          );
         }
       },
       onError: error => toast.error(error.message),
@@ -534,7 +538,9 @@ export default function DocumentStudioPage() {
           : `تم إصدار الوثيقة بالرقم ${result.document.serialCode}`
       );
       if (!result.auditLogRecorded) {
-        toast.warning("تم إصدار الوثيقة، لكن تعذر تسجيل العملية في سجل الحركات");
+        toast.warning(
+          "تم إصدار الوثيقة، لكن تعذر تسجيل العملية في سجل الحركات"
+        );
       }
     },
     onError: error => toast.error(error.message),
@@ -562,7 +568,9 @@ export default function DocumentStudioPage() {
         if (result.auditLogRecorded) {
           toast.success("تم إيقاف النموذج مع الاحتفاظ بسجلاته");
         } else {
-          toast.warning("تم إيقاف النموذج، لكن تعذر تسجيل العملية في سجل الحركات");
+          toast.warning(
+            "تم إيقاف النموذج، لكن تعذر تسجيل العملية في سجل الحركات"
+          );
         }
       },
       onError: error => toast.error(error.message),
