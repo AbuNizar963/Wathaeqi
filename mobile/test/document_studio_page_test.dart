@@ -236,14 +236,16 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final tabs = tester.widgetList<ChoiceChip>(
-        find.byType(ChoiceChip),
-      ).toList();
+      final tabs = tester
+          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+          .toList();
       expect(tabs, hasLength(DocumentStudioTab.values.length));
-      expect(
-        tabs.map((tab) => (tab.label as Text).data),
-        ['الوثائق', 'القوالب', 'الأرشيف', 'الملفات'],
-      );
+      expect(tabs.map((tab) => (tab.label as Text).data), [
+        'الوثائق',
+        'القوالب',
+        'الأرشيف',
+        'الملفات',
+      ]);
       expect(tabs.map((tab) => (tab.avatar as Icon).icon), [
         LucideIcons.fileText,
         LucideIcons.layoutTemplate,
