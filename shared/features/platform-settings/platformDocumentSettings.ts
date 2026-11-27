@@ -62,7 +62,7 @@ export const DOCUMENT_DATE_FORMAT_LABELS: Record<DocumentDateFormat, string> = {
   "dd.MM.yyyy": "25.11.2026 — يوم.شهر.سنة",
   "d MMMM yyyy": "25 نوفمبر 2026 — شهر مكتوب",
   "MMMM d, yyyy": "نوفمبر 25, 2026 — شهر مكتوب أولاً",
-  "both:yyyy/MM/dd": "2026/11/25 م — 15/06/1448 هـ (ميلادي + هجري)",
+  "both:yyyy/MM/dd": "2026/11/25 م — 1448/06/15 هـ (ميلادي + هجري)",
   "both:dd/MM/yyyy": "25/11/2026 م — 15/06/1448 هـ (يوم/شهر/سنة)",
   "both:d MMMM yyyy": "25 نوفمبر 2026 م — 15 جمادى الآخرة 1448 هـ",
 };
