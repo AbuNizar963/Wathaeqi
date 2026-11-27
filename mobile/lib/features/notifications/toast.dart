@@ -375,8 +375,11 @@ class _FallbackToast {
   }
 
   static void _removeEntry(OverlayEntry entry) {
+    var disposed = false;
+
     void disposeAfterUnmount() {
-      if (entry.mounted) return;
+      if (disposed || entry.mounted) return;
+      disposed = true;
       entry.removeListener(disposeAfterUnmount);
       entry.dispose();
     }
