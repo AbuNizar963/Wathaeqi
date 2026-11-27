@@ -963,127 +963,132 @@ export default function DocumentStudioPage() {
           aria-label="مساحات الوثائق"
           role="tablist"
         >
-          <Button
-            variant={activeTab === "documents" ? "default" : "outline"}
-            onClick={() => selectWorkspaceTab("documents")}
-            aria-pressed={activeTab === "documents"}
-            role="tab"
-            aria-selected={activeTab === "documents"}
-          >
-            <FileText className="ml-2 h-4 w-4" />
-            الوثائق
-          </Button>
-          <Button
-            variant={activeTab === "archive" ? "default" : "outline"}
-            onClick={() => selectWorkspaceTab("archive")}
-            aria-pressed={activeTab === "archive"}
-            role="tab"
-            aria-selected={activeTab === "archive"}
-          >
-            <Archive className="ml-2 h-4 w-4" />
-            الأرشيف
-          </Button>
-          <Button
-            variant={activeTab === "templates" ? "default" : "outline"}
-            onClick={() => selectWorkspaceTab("templates")}
-            aria-pressed={activeTab === "templates"}
-            role="tab"
-            aria-selected={activeTab === "templates"}
-          >
-            <LayoutTemplate className="ml-2 h-4 w-4" />
-            القوالب
-          </Button>
-          <Button
-            variant={activeTab === "files" ? "default" : "outline"}
-            onClick={() => selectWorkspaceTab("files")}
-            aria-pressed={activeTab === "files"}
-            role="tab"
-            aria-selected={activeTab === "files"}
-          >
-            <FolderOpen className="ml-2 h-4 w-4" />
-            الملفات
-          </Button>
-          {activeTab !== "files" ? (
-            <>
-              <Button
-                variant={previewMode ? "secondary" : "outline"}
-                onClick={() => setPreviewMode(current => !current)}
-              >
-                {previewMode ? (
-                  <EyeOff className="ml-2 h-4 w-4" />
-                ) : (
-                  <Eye className="ml-2 h-4 w-4" />
-                )}
-                {previewMode ? "العودة للتحرير" : "معاينة الوثيقة"}
-              </Button>
-              {activeTab === "documents" || activeTab === "archive" ? (
-                <>
-                  {!previewMode ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        disabled={Boolean(
-                          selectedDocument?.file &&
-                          !importedFileUrlQuery.data?.url
-                        )}
-                        onClick={() => {
-                          if (selectedDocument?.file) setImportPrintOpen(true);
-                          else setNativePrintOpen(true);
-                        }}
-                      >
-                        <Printer className="ml-2 h-4 w-4" />
-                        طباعة / PDF
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={
-                          !selectedDocument ||
-                          Boolean(
-                            selectedDocument.file &&
-                            !importedFileUrlQuery.data?.url
-                          )
-                        }
-                        onClick={downloadSelectedDocument}
-                      >
-                        <Download className="ml-2 h-4 w-4" />
-                        تنزيل
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={!selectedDocument}
-                        onClick={() => void shareSelectedDocument()}
-                      >
-                        <Share2 className="ml-2 h-4 w-4" />
-                        مشاركة رابط
-                      </Button>
-                    </>
-                  ) : null}
-                  {isNewDocumentWorkspace ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCreatingDocument(false)}
-                    >
-                      <FolderOpen className="ml-2 h-4 w-4" />
-                      العودة إلى الوثائق
-                    </Button>
+          <div className="document-studio-primary-tabs">
+            <Button
+              variant={activeTab === "documents" ? "default" : "outline"}
+              onClick={() => selectWorkspaceTab("documents")}
+              aria-pressed={activeTab === "documents"}
+              role="tab"
+              aria-selected={activeTab === "documents"}
+            >
+              <FileText className="ml-2 h-4 w-4" />
+              الوثائق
+            </Button>
+            <Button
+              variant={activeTab === "archive" ? "default" : "outline"}
+              onClick={() => selectWorkspaceTab("archive")}
+              aria-pressed={activeTab === "archive"}
+              role="tab"
+              aria-selected={activeTab === "archive"}
+            >
+              <Archive className="ml-2 h-4 w-4" />
+              الأرشيف
+            </Button>
+            <Button
+              variant={activeTab === "templates" ? "default" : "outline"}
+              onClick={() => selectWorkspaceTab("templates")}
+              aria-pressed={activeTab === "templates"}
+              role="tab"
+              aria-selected={activeTab === "templates"}
+            >
+              <LayoutTemplate className="ml-2 h-4 w-4" />
+              القوالب
+            </Button>
+            <Button
+              variant={activeTab === "files" ? "default" : "outline"}
+              onClick={() => selectWorkspaceTab("files")}
+              aria-pressed={activeTab === "files"}
+              role="tab"
+              aria-selected={activeTab === "files"}
+            >
+              <FolderOpen className="ml-2 h-4 w-4" />
+              الملفات
+            </Button>
+          </div>
+          <div className="document-studio-actions">
+            {activeTab !== "files" ? (
+              <>
+                <Button
+                  variant={previewMode ? "secondary" : "outline"}
+                  onClick={() => setPreviewMode(current => !current)}
+                >
+                  {previewMode ? (
+                    <EyeOff className="ml-2 h-4 w-4" />
                   ) : (
-                    <Button
-                      onClick={() => setCreationDialogOpen(true)}
-                      aria-haspopup="dialog"
-                      aria-expanded={creationDialogOpen}
-                    >
-                      <FilePlus2 className="ml-2 h-4 w-4" />+ كتاب رسمي جديد
-                    </Button>
+                    <Eye className="ml-2 h-4 w-4" />
                   )}
-                </>
-              ) : (
-                <Button onClick={startNewTemplate}>
-                  <FilePlus2 className="ml-2 h-4 w-4" />
-                  نموذج جديد
+                  {previewMode ? "العودة للتحرير" : "معاينة الوثيقة"}
                 </Button>
-              )}
-            </>
-          ) : null}
+                {activeTab === "documents" || activeTab === "archive" ? (
+                  <>
+                    {!previewMode ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          disabled={Boolean(
+                            selectedDocument?.file &&
+                            !importedFileUrlQuery.data?.url
+                          )}
+                          onClick={() => {
+                            if (selectedDocument?.file)
+                              setImportPrintOpen(true);
+                            else setNativePrintOpen(true);
+                          }}
+                        >
+                          <Printer className="ml-2 h-4 w-4" />
+                          طباعة / PDF
+                        </Button>
+                        <Button
+                          variant="outline"
+                          disabled={
+                            !selectedDocument ||
+                            Boolean(
+                              selectedDocument.file &&
+                              !importedFileUrlQuery.data?.url
+                            )
+                          }
+                          onClick={downloadSelectedDocument}
+                        >
+                          <Download className="ml-2 h-4 w-4" />
+                          تنزيل
+                        </Button>
+                        <Button
+                          variant="outline"
+                          disabled={!selectedDocument}
+                          onClick={() => void shareSelectedDocument()}
+                        >
+                          <Share2 className="ml-2 h-4 w-4" />
+                          مشاركة رابط
+                        </Button>
+                      </>
+                    ) : null}
+                    {isNewDocumentWorkspace ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsCreatingDocument(false)}
+                      >
+                        <FolderOpen className="ml-2 h-4 w-4" />
+                        العودة إلى الوثائق
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => setCreationDialogOpen(true)}
+                        aria-haspopup="dialog"
+                        aria-expanded={creationDialogOpen}
+                      >
+                        <FilePlus2 className="ml-2 h-4 w-4" />+ كتاب رسمي جديد
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <Button onClick={startNewTemplate}>
+                    <FilePlus2 className="ml-2 h-4 w-4" />
+                    نموذج جديد
+                  </Button>
+                )}
+              </>
+            ) : null}
+          </div>
         </div>
       </div>
 

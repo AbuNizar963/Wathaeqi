@@ -1218,6 +1218,18 @@
     padding-inline: 1rem;
     box-shadow: none;
   }
+  .document-studio-primary-tabs,
+  .document-studio-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .document-studio-primary-tabs > button,
+  .document-studio-actions > button {
+    min-height: 44px;
+    box-shadow: none;
+  }
   .document-studio-shell > div > aside [data-slot="card"],
   .document-studio-shell > div > main > [data-slot="card"] {
     border-color: var(--border);
@@ -1238,7 +1250,27 @@
       padding: 1rem;
     }
     .document-studio-tabs {
+      display: block;
+      overflow: visible;
+    }
+    .document-studio-primary-tabs {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+    }
+    .document-studio-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .document-studio-actions > button {
+      width: 100%;
+      min-width: 0;
+      padding-inline: 0.5rem;
+      font-size: 0.78rem;
     }
   }
 }
@@ -1411,4 +1443,125 @@
     var(--card),
     color-mix(in srgb, #192540 56%, var(--card))
   );
+}
+
+/* Mobile document workspace: keep scrolling local, actions reachable, and
+   the preview visually separate from its metadata. */
+@media (max-width: 639px) {
+  .document-page-header {
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .document-page-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .document-page-header > button {
+    width: 100%;
+  }
+
+  .document-toolbar {
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 1rem;
+  }
+
+  .document-toolbar > .relative {
+    min-width: 0;
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .document-filter-chips,
+  .document-saved-views {
+    flex-wrap: nowrap;
+    width: calc(100% + 0.25rem);
+    max-width: calc(100% + 0.25rem);
+    padding-block: 0.15rem 0.3rem;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .document-filter-chips::-webkit-scrollbar,
+  .document-saved-views::-webkit-scrollbar {
+    display: none;
+  }
+
+  .document-filter-chips > button,
+  .document-saved-views > * {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+
+  .document-toolbar .document-library-status-controls {
+    width: 100%;
+  }
+
+  .document-saved-views > input {
+    min-width: 10rem;
+    max-width: none;
+  }
+
+  .document-library-fab {
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    left: 1rem;
+  }
+
+  .document-file-dialog {
+    gap: 0.75rem;
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .document-file-dialog-header {
+    padding-inline-end: 2rem;
+  }
+
+  .document-file-dialog-header > div:first-child {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .document-file-dialog-header > div:first-child h2 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .document-file-dialog-header > div:last-child {
+    width: 100%;
+  }
+
+  .document-file-dialog-header > div:last-child > button:first-child {
+    flex: 1;
+  }
+
+  .document-file-dialog > [data-slot="dialog-description"] {
+    line-height: 1.8;
+  }
+
+  .document-file-dialog > .sticky {
+    position: sticky;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom) * -1);
+    left: 0;
+    width: calc(100% + 1.5rem);
+    margin-inline: -0.75rem;
+    border-inline: 0;
+    border-radius: 1rem 1rem 0 0;
+    padding-inline: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+
+  .document-file-dialog > .sticky .h-12 {
+    min-height: 3rem;
+  }
+
+  .mobile-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

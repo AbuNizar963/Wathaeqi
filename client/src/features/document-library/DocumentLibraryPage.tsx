@@ -279,7 +279,7 @@ export default function DocumentLibraryPage({
             className="pr-9"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="document-filter-chips flex flex-wrap gap-1.5">
           <button
             type="button"
             onClick={() => setCategory("")}
@@ -316,7 +316,7 @@ export default function DocumentLibraryPage({
           onStatusChange={setStatusFilter}
           onSortChange={setSortOrder}
         />
-        <div className="flex w-full flex-wrap items-center gap-2 pt-2">
+        <div className="document-saved-views flex w-full flex-wrap items-center gap-2 pt-2">
           <Input
             value={savedViewName}
             onChange={event => setSavedViewName(event.target.value)}
@@ -474,7 +474,7 @@ export default function DocumentLibraryPage({
         aria-label="إنشاء وثيقة جديدة"
         title="إنشاء وثيقة جديدة"
         onClick={() => navigate("/documents?create=1")}
-        className="group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
+        className="document-library-fab group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
       >
         <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
         <span className="sr-only">وثيقة جديدة</span>
@@ -547,7 +547,7 @@ export default function DocumentLibraryPage({
       >
         <DialogContent
           className={[
-            "h-[100dvh] w-screen max-w-none max-h-none",
+            "document-file-dialog h-[100dvh] w-screen max-w-none max-h-none",
             "overflow-y-auto rounded-none border-0 p-3 sm:p-6",
           ].join(" ")}
           dir="rtl"
@@ -569,7 +569,7 @@ export default function DocumentLibraryPage({
                 </div>
               ) : null}
               <DialogHeader>
-                <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="document-file-dialog-header flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <DialogTitle className="text-right text-lg">
                       {selected.title}

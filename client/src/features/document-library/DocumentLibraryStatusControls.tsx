@@ -14,7 +14,7 @@ export default function DocumentLibraryStatusControls({
   onSortChange,
 }: DocumentLibraryStatusControlsProps) {
   return (
-    <div className="flex w-full flex-wrap items-center gap-2 border-t pt-3">
+    <div className="document-library-status-controls flex w-full flex-wrap items-center gap-2 border-t pt-3">
       <label className="flex flex-1 flex-col gap-1 text-xs text-muted-foreground">
         حالة الوثيقة
         <select
