@@ -90,6 +90,7 @@ assert(
   "The in-app mark, browser icon, PWA manifest, and browser chrome must share the refreshed Wathaeqi identity."
 );
 
+// prettier-ignore
 assert(
   dashboardLayout.includes(
     '<h1 className="min-w-0 truncate text-sm font-semibold text-foreground">'
@@ -162,6 +163,7 @@ assert(
   "The desktop shell must expose a searchable command palette with the Ctrl+K shortcut."
 );
 
+// prettier-ignore
 assert(
   dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />") &&
     dashboardLayout.includes("grid grid-cols-4") &&
@@ -172,6 +174,7 @@ assert(
   "Mobile navigation must keep theme and notifications in the top bar and place search beside create without a bottom drawer control."
 );
 
+// prettier-ignore
 assert(
   dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
     dashboardLayout.includes(
@@ -220,6 +223,7 @@ assert(
   "The crisp light theme must be the initial preference while remaining switchable."
 );
 
+// prettier-ignore
 assert(
   headerActions.includes("if (!user) {\n    return null;\n  }") &&
     headerActions.includes('<SunMoon className="h-5 w-5" />') &&
