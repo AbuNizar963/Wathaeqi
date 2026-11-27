@@ -355,8 +355,19 @@ void main() {
       );
       await tester.pumpAndSettle();
       for (final tab in ['القوالب', 'الأرشيف', 'الملفات', 'الوثائق']) {
-        await tester.ensureVisible(find.text(tab).first);
-        await tester.tap(find.text(tab).first);
+        final tabFinder = find.text(tab).first;
+        final tabBounds = tester.getRect(tabFinder);
+        expect(
+          tabBounds.left,
+          greaterThanOrEqualTo(0),
+          reason: 'The $tab tab must not be clipped on a $width px screen.',
+        );
+        expect(
+          tabBounds.right,
+          lessThanOrEqualTo(width),
+          reason: 'The $tab tab must be visible without horizontal scrolling.',
+        );
+        await tester.tap(tabFinder);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       }
