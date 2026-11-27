@@ -823,7 +823,7 @@ function DashboardLayoutContent({
         <main
           id="main-content"
           tabIndex={-1}
-          className="min-w-0 flex-1 p-3 pb-24 sm:p-4 sm:pb-24 md:pb-8 lg:p-8 lg:pb-8 xl:p-10 xl:pb-10 2xl:p-12 2xl:pb-12"
+          className="min-w-0 flex-1 p-3 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:p-4 sm:pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8 lg:p-8 lg:pb-8 xl:p-10 xl:pb-10 2xl:p-12 2xl:pb-12"
         >
           {!online ? (
             <div
