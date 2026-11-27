@@ -1354,15 +1354,13 @@ class _DashboardPageState extends State<DashboardPage>
                     title: 'إعدادات الترويسة والطباعة',
                   ),
                 ),
-              if (_canManageUsers) ...[
-                PopupMenuItem<String>(
+              if (_isPlatformOwner) ...[
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
                   enabled: false,
                   height: 34,
                   child: Text(
-                    getMobileManagementMenuHeading(
-                      accountRole: _account['role']?.toString(),
-                      isPlatformOwner: _isPlatformOwner,
-                    ),
+                    'إعدادات النظام',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -1370,27 +1368,11 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                   ),
                 ),
-                if (_isPlatformOwner) ...[
-                  const PopupMenuItem(
-                    value: 'owner_dashboard',
-                    child: _AccountMenuItem(
-                      icon: Icons.dashboard_customize_outlined,
-                      title: 'لوحة قيادة المالك',
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'platform_document_settings',
-                    child: _AccountMenuItem(
-                      icon: Icons.tune_rounded,
-                      title: 'إعدادات النظام والوثائق',
-                    ),
-                  ),
-                ],
                 const PopupMenuItem(
-                  value: 'users',
+                  value: 'platform_document_settings',
                   child: _AccountMenuItem(
-                    icon: Icons.manage_accounts_outlined,
-                    title: 'إدارة المستخدمين',
+                    icon: Icons.tune_rounded,
+                    title: 'إعدادات النظام والوثائق',
                   ),
                 ),
               ],
