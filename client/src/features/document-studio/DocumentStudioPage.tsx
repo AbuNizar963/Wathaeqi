@@ -1800,6 +1800,30 @@ export default function DocumentStudioPage() {
                           أرشفة
                         </Button>
                       ) : null}
+                      {selectedDocument ? (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          disabled={
+                            deleteDocumentMutation.isPending || isSavingDocument
+                          }
+                          onClick={() => {
+                            const warning = hasUnsavedDocumentChanges
+                              ? "ستُحذف الوثيقة المحفوظة وستُفقد التعديلات غير المحفوظة. هل تريد المتابعة؟"
+                              : "هل تريد حذف هذه الوثيقة نهائيًا؟";
+                            if (window.confirm(warning)) {
+                              deleteDocumentMutation.mutate({
+                                id: selectedDocument.id,
+                              });
+                            }
+                          }}
+                        >
+                          <Trash2 className="ml-2 h-4 w-4" />
+                          {deleteDocumentMutation.isPending
+                            ? "جارٍ الحذف…"
+                            : "حذف الوثيقة"}
+                        </Button>
+                      ) : null}
                       <Button
                         onClick={saveDocument}
                         disabled={isSavingDocument || !canEditDocument}
