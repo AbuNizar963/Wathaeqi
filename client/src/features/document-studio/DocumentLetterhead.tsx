@@ -31,6 +31,7 @@ export default function DocumentLetterhead({
   return (
     <header
       className="document-letterhead"
+      data-document-print-section="header"
       style={{
         borderBottom:
           settings.headerDividerStyle === "tricolor-stars"
