@@ -1897,7 +1897,6 @@
   }
 }
 
-
 /* Adaptive interaction baseline for touch, zoom, and reduced-motion users. */
 html {
   scroll-padding-top: calc(3.5rem + env(safe-area-inset-top));
