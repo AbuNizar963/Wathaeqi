@@ -242,6 +242,15 @@ describe("platform document settings UI normalization", () => {
     ).toBe(DEFAULT_PLATFORM_DOCUMENT_SETTINGS.documentDateFormat);
   });
 
+  it("preserves a supported combined Gregorian and Hijri date format", () => {
+    expect(
+      normalizePlatformDocumentSettings({
+        documentDateFormat: "both:yyyy/MM/dd",
+      }).documentDateFormat
+    ).toBe("both:yyyy/MM/dd");
+  });
+
+
   it("preserves the additional professional frame styles", () => {
     expect(
       normalizePlatformDocumentSettings({ frameStyle: "classic" }).frameStyle
