@@ -35,4 +35,17 @@ export function normalizeDocxImageLayout(root: ParentNode): void {
       Math.max(pageScale, 0.01);
     container.style.transform = `translateX(${correction}px)`;
   });
+
+  root.querySelectorAll<HTMLElement>("table table").forEach(table => {
+    const page = table.closest<HTMLElement>(".docx");
+    if (!page) return;
+    const pageRect = page.getBoundingClientRect();
+    const tableRect = table.getBoundingClientRect();
+    if (tableRect.right <= pageRect.right) return;
+
+    const pageScale = pageRect.width / Math.max(1, page.scrollWidth);
+    const correction =
+      (pageRect.right - tableRect.right) / Math.max(pageScale, 0.01);
+    table.style.transform = `translateX(${correction}px)`;
+  });
 }
