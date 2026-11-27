@@ -606,7 +606,7 @@ export default function DocumentLibraryPage({
                       {formatDate(selected.documentDate)}
                     </DialogDescription>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="icon"
