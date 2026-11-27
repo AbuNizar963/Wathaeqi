@@ -400,6 +400,7 @@ assert(
       /deleteDocument\.mutate\(\{ id: selected\.id \}\)/g
     ) ?? []).length === 1 &&
     documentLibraryPage.includes('title="حذف الوثيقة"') &&
+    documentLibraryPage.includes('className="flex justify-end gap-2"') &&
     documentLibraryPage.includes('className="sticky bottom-0'),
   "The document file preview must expose one print action and one delete action, without duplicate controls in the header and action dock."
 );
