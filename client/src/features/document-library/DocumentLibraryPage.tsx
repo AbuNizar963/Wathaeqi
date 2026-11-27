@@ -283,7 +283,9 @@ export default function DocumentLibraryPage({
             </p>
           </div>
         </Card>
-        <Card className="flex items-center gap-3 rounded-2xl border-border/70 p-4 shadow-sm transition-shadow hover:shadow-md">
+        <Card
+          className="flex items-center gap-3 rounded-2xl border-border/70 p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
           <span className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700">
             <HardDrive className="size-5" />
           </span>
