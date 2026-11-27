@@ -77,7 +77,9 @@ assert(
     brandIcon.includes("#10262d") &&
     manifest.includes('"theme_color": "#10262d"') &&
     manifest.includes('"src": "/icon.svg"') &&
-    !manifest.includes('"/icon-192.png"') &&
+    manifest.includes('"/icon-192.png"') &&
+    manifest.includes('"/icon-512.png"') &&
+    indexHtml.includes('href="/apple-touch-icon.png"') &&
     indexHtml.includes('content="#10262d"'),
   "The in-app mark, browser icon, PWA manifest, and browser chrome must share the refreshed Wathaeqi identity."
 );
