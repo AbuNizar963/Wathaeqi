@@ -38,7 +38,10 @@ class Toast {
   static void loading(BuildContext context, String message) =>
       _show(context, message, ToastKind.loading, duration: null);
 
-  static void dismiss() => _hostKey.currentState?.dismiss();
+  static void dismiss() {
+    _hostKey.currentState?.dismiss();
+    _FallbackToast.dismiss();
+  }
 
   static void _show(
     BuildContext context,
@@ -331,28 +334,45 @@ class _FallbackToast {
     ToastKind kind,
     Duration? duration,
   ) {
-    late OverlayEntry entry;
     _timer?.cancel();
-    if (_entry?.mounted ?? false) _entry!.remove();
+    _removeCurrentEntry();
+
+    late OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) => _FallbackToastView(
         message: message,
         kind: kind,
-        close: () {
-          _timer?.cancel();
-          if (entry.mounted) entry.remove();
-          if (identical(_entry, entry)) _entry = null;
-        },
+        close: () => _dismissEntry(entry),
       ),
     );
     _entry = entry;
     overlay.insert(entry);
     if (duration != null) {
-      _timer = Timer(duration, () {
-        if (entry.mounted) entry.remove();
-        if (identical(_entry, entry)) _entry = null;
-      });
+      _timer = Timer(duration, () => _dismissEntry(entry));
     }
+  }
+
+  static void dismiss() {
+    _timer?.cancel();
+    _timer = null;
+    _removeCurrentEntry();
+  }
+
+  static void _dismissEntry(OverlayEntry entry) {
+    if (!identical(_entry, entry)) return;
+    _timer?.cancel();
+    _timer = null;
+    _entry = null;
+    if (entry.mounted) entry.remove();
+    entry.dispose();
+  }
+
+  static void _removeCurrentEntry() {
+    final entry = _entry;
+    _entry = null;
+    if (entry == null) return;
+    if (entry.mounted) entry.remove();
+    entry.dispose();
   }
 }
 
