@@ -439,21 +439,30 @@ describe("document studio authorization and API", () => {
   });
 
   it("records before and after state when a template is updated", async () => {
+    const updatedTemplate = {
+      ...template,
+      title: "كتاب تكليف معدل",
+      revision: 2,
+    };
+    mocks.updateDocumentTemplate.mockResolvedValueOnce(updatedTemplate);
     const caller = documentStudioRouter.createCaller(context());
 
     const result = await caller.updateTemplate({
       ...templateInput,
       id: template.id,
       expectedRevision: template.revision,
-      title: "كتاب تكليف معدل",
+      title: updatedTemplate.title,
     });
 
-    expect(result).toEqual({ template, auditLogRecorded: true });
+    expect(result).toEqual({
+      template: updatedTemplate,
+      auditLogRecorded: true,
+    });
     expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "document.template.updated",
         beforeState: expect.objectContaining({ title: template.title }),
-        afterState: expect.objectContaining({ title: template.title }),
+        afterState: expect.objectContaining({ title: updatedTemplate.title }),
       })
     );
   });
