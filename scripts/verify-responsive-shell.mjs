@@ -505,6 +505,26 @@ assert(
   "Owner-user editing must replace rather than stack over the management surface, and custom overlays must stay within the visible viewport with their own scroll area."
 );
 
+assert(
+  documentStudio.includes('className="relative z-auto grid grid-cols-3') &&
+    !documentStudio.includes(
+      'className="sticky top-[calc(52px+env(safe-area-inset-top))] z-30 grid grid-cols-3'
+    ),
+  "Mobile document step navigation must remain in normal flow and never cover form settings."
+);
+
+assert(
+  documentStudioPrintDialog.includes("max-h-[calc(100dvh-1rem)]") &&
+    documentStudioPrintDialog.includes("overflow-y-auto overscroll-contain") &&
+    documentStudioPrintDialog.includes("env(safe-area-inset-bottom)"),
+  "The mobile print settings dialog must scroll within the dynamic viewport and preserve the device safe area."
+);
+
+assert(
+  dashboardLayout.includes("pb-[calc(6rem+env(safe-area-inset-bottom))]"),
+  "The page content must reserve enough space for the fixed mobile navigation and device safe area."
+);
+
 console.log(
   "Responsive shell, overlay navigation, and single-organization print-only checks passed."
 );
