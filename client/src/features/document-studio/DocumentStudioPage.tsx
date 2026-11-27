@@ -387,7 +387,8 @@ export default function DocumentStudioPage() {
   const visibleDocuments = useMemo(() => {
     const source = userDocuments.filter(
       item =>
-        documentStatusFilter === "all" || item.status === documentStatusFilter
+        !item.file &&
+        (documentStatusFilter === "all" || item.status === documentStatusFilter)
     );
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (!normalizedSearch) return source;
@@ -1038,7 +1039,7 @@ export default function DocumentStudioPage() {
               aria-selected={activeTab === "files"}
             >
               <FolderOpen className="ml-2 h-4 w-4" />
-              الملفات
+              الملفات المرفقة
             </Button>
           </div>
           <div className="document-studio-actions">
@@ -1266,8 +1267,10 @@ export default function DocumentStudioPage() {
                   ["archived", "مؤرشفة"],
                 ] as const
               ).map(([status, label]) => {
-                const count = userDocuments.filter(document =>
-                  status === "all" ? true : document.status === status
+                const count = userDocuments.filter(
+                  document =>
+                    !document.file &&
+                    (status === "all" || document.status === status)
                 ).length;
                 const active = documentStatusFilter === status;
                 return (
