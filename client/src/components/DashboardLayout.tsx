@@ -900,6 +900,7 @@ function DashboardLayoutContent({
             <span>بحث</span>
           </button>
         </nav>
+      ) : null}
     </>
   );
 }
