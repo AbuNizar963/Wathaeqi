@@ -1006,6 +1006,7 @@ export default function DocumentStudioPage() {
           {activeTab !== "files" ? (
             <>
               <Button
+                className="hidden md:inline-flex"
                 variant={previewMode ? "secondary" : "outline"}
                 onClick={() => setPreviewMode(current => !current)}
               >
@@ -1021,6 +1022,7 @@ export default function DocumentStudioPage() {
                   {!previewMode ? (
                     <>
                       <Button
+                        className="hidden md:inline-flex"
                         variant="outline"
                         disabled={Boolean(
                           selectedDocument?.file &&
@@ -1086,6 +1088,67 @@ export default function DocumentStudioPage() {
           ) : null}
         </div>
       </div>
+
+      {(activeTab === "documents" || activeTab === "archive") &&
+      (selectedDocument || isCreatingDocument) ? (
+        <nav
+          className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
+          role="tablist"
+          aria-label="خطوات إعداد الوثيقة"
+        >
+          <Button
+            type="button"
+            size="sm"
+            className="h-10 gap-1 px-2 text-xs"
+            variant={!previewMode && !nativePrintOpen && !importPrintOpen ? "default" : "ghost"}
+            role="tab"
+            aria-selected={!previewMode && !nativePrintOpen && !importPrintOpen}
+            onClick={() => {
+              setPreviewMode(false);
+              setNativePrintOpen(false);
+              setImportPrintOpen(false);
+            }}
+          >
+            <FileText className="size-4" />
+            البيانات
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-10 gap-1 px-2 text-xs"
+            variant={previewMode && !nativePrintOpen && !importPrintOpen ? "default" : "ghost"}
+            role="tab"
+            aria-selected={previewMode && !nativePrintOpen && !importPrintOpen}
+            onClick={() => {
+              setPreviewMode(true);
+              setNativePrintOpen(false);
+              setImportPrintOpen(false);
+            }}
+          >
+            <Eye className="size-4" />
+            المعاينة
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="h-10 gap-1 px-2 text-xs"
+            variant={nativePrintOpen || importPrintOpen ? "default" : "ghost"}
+            role="tab"
+            aria-selected={nativePrintOpen || importPrintOpen}
+            disabled={Boolean(
+              selectedDocument?.file && !importedFileUrlQuery.data?.url
+            )}
+            onClick={() => {
+              setPreviewMode(true);
+              if (selectedDocument?.file) setImportPrintOpen(true);
+              else setNativePrintOpen(true);
+            }}
+          >
+            <Printer className="size-4" />
+            الطباعة
+          </Button>
+        </nav>
+      ) : null}
 
       {activeTab === "files" ? (
         <DocumentLibraryPage embedded />
