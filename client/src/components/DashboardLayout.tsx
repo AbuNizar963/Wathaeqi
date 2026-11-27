@@ -753,7 +753,7 @@ function DashboardLayoutContent({
               <Button
                 type="button"
                 variant="outline"
-                className="hidden h-10 w-48 justify-between rounded-lg border-border bg-background px-3 text-sm text-muted-foreground lg:flex"
+                className="hidden h-10 w-40 justify-between rounded-lg border-border bg-background px-3 text-sm text-muted-foreground md:flex lg:w-48"
                 aria-label="البحث السريع، الاختصار Ctrl K"
                 onClick={() => setSearchOpen(true)}
               >
@@ -803,6 +803,16 @@ function DashboardLayoutContent({
                 {activeMenuItem?.label ?? "مساحة العمل"}
               </h1>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 shrink-0 rounded-lg"
+              aria-label="فتح البحث السريع"
+              onClick={() => setSearchOpen(true)}
+            >
+              <Search className="h-[18px] w-[18px]" />
+            </Button>
             <Button
               type="button"
               variant="ghost"
