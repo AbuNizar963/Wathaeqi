@@ -10,7 +10,6 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
-
   testWidgets(
     'mandatory PIN setup dialog stays scrollable on a compact screen',
     (tester) async {
