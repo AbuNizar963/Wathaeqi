@@ -460,12 +460,55 @@ export const documentStudioRouter = router({
         input.id
       );
       if (!removed) throwIfNotFound("الوثيقة غير موجودة");
+
+      let fileCleanupSucceeded = true;
       if (removed.file) {
-        await getStorageProvider()
-          .remove?.(removed.file.storageKey)
-          .catch(() => undefined);
+        const storage = getStorageProvider();
+        if (!storage.remove) {
+          fileCleanupSucceeded = false;
+        } else {
+          try {
+            await storage.remove(removed.file.storageKey);
+          } catch (error) {
+            fileCleanupSucceeded = false;
+            console.error("Document attachment cleanup failed", error);
+          }
+        }
       }
-      return { success: true as const };
+
+      let auditLogRecorded = true;
+      try {
+        await writeAuditLog({
+          ...getRequestAuditContext(ctx.req),
+          actorUserId: ctx.user.id,
+          actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+          actorRole: ctx.user.role,
+          organizationId: removed.organizationId ?? undefined,
+          action: "document.deleted",
+          entityType: "document",
+          entityId: removed.id,
+          metadata: {
+            title: removed.title,
+            category: removed.category,
+            fileName: removed.file?.fileName ?? null,
+            fileCleanupSucceeded,
+          },
+          beforeState: {
+            title: removed.title,
+            status: removed.status,
+          },
+          afterState: { deleted: true },
+        });
+      } catch (error) {
+        auditLogRecorded = false;
+        console.error("Document deletion audit log failed", error);
+      }
+
+      return {
+        success: true as const,
+        auditLogRecorded,
+        fileCleanupSucceeded,
+      };
     }),
 
   createDocument: authenticatedProcedure
