@@ -186,7 +186,7 @@ export default function PlatformDocumentSettingsPage() {
   // prettier-ignore
   return (
     <div className="mx-auto max-w-5xl space-y-5" dir="rtl">
-      <header className="document-page-header document-admin-header sticky top-0 z-30 border-b border-border bg-background/95 py-3 backdrop-blur">
+      <header className="document-page-header document-admin-header sticky top-[calc(52px+env(safe-area-inset-top))] z-30 border-b border-border bg-background/95 py-3 backdrop-blur md:top-0">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Settings2 className="h-6 w-6" />

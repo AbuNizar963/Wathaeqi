@@ -518,6 +518,7 @@ function DashboardLayoutContent({
     const handleSearchShortcut = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        if (isMobile) setOpenMobile(false);
         setSearchOpen(true);
       }
     };

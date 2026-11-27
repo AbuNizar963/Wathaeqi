@@ -81,6 +81,17 @@ assert(
 );
 
 assert(
+  dashboardLayout.includes(
+    `if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        if (isMobile) setOpenMobile(false);
+        setSearchOpen(true);
+      }`
+  ),
+  "Quick search must close the mobile drawer before opening its dialog layer."
+);
+
+assert(
   brandMark.includes("#10262d") &&
     brandMark.includes("#c49a5b") &&
     brandMark.includes("#0f766e") &&
@@ -380,6 +391,10 @@ assert(
   settingsPage.includes(
     'className="hidden lg:sticky lg:top-24 lg:block lg:self-start"'
   ) &&
+    settingsPage.includes(
+      'className="document-page-header document-admin-header sticky top-[calc(52px+env(safe-area-inset-top))] z-30 border-b border-border bg-background/95 py-3 backdrop-blur md:top-0"'
+    ) &&
+    !globalStyles.includes(".document-file-dialog > .sticky") &&
     settingsPage.includes("Dialog open={previewOpen}") &&
     settingsPage.includes("معاينة الوثيقة الرسمية A4") &&
     settingsPage.includes("منطقة إسقاط شعار الجهة") &&
