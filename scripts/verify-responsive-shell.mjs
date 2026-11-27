@@ -204,7 +204,9 @@ assert(
     dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
     dashboardLayout.includes("aria-expanded={openMobile}") &&
     dashboardLayout.includes('variant="outline"') &&
-    dashboardLayout.includes("border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"),
+    dashboardLayout.includes(
+      "border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
+    ),
   "The mobile top hamburger must use the same outlined 40px action-button treatment as notifications and theme controls."
 );
 
