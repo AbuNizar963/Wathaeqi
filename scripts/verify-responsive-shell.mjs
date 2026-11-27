@@ -402,7 +402,9 @@ assert(
 assert(
   workspacePage.includes('className="hidden min-h-12 rounded-xl') &&
     workspacePage.includes('className="hidden min-h-11 rounded-xl') &&
-    workspacePage.includes('className="mt-4 hidden rounded-xl md:inline-flex"') &&
+    workspacePage.includes(
+      'className="mt-4 hidden rounded-xl md:inline-flex"'
+    ) &&
     workspaceWelcome.includes('className="hidden md:inline-flex"') &&
     !workspacePage.includes(">معاينة</Button>") &&
     documentStudio.includes(
