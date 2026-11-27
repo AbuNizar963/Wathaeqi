@@ -902,16 +902,9 @@ function DashboardLayoutContent({
             <Search className="h-5 w-5" />
             <span>بحث</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setOpenMobile(true)}
-            aria-label="فتح القائمة الجانبية الكاملة"
-            aria-expanded={openMobile}
-            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70"
-          >
-            <Menu className="h-5 w-5" aria-hidden="true" />
-            <span>القائمة</span>
-          </button>
+          <div className="mobile-bottom-nav-account flex min-h-14 items-center justify-center">
+            <HeaderActions showTheme={false} />
+          </div>
         </nav>
       ) : null}
     </>
