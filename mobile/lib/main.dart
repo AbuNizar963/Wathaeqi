@@ -875,19 +875,9 @@ class _DashboardPageState extends State<DashboardPage>
           _pushPage(DepartmentSettingsPage(api: widget.api));
         }
         break;
-      case 'owner_dashboard':
-        if (_isPlatformOwner) {
-          _pushPage(NativeOwnerDashboardPage(api: widget.api));
-        }
-        break;
       case 'platform_document_settings':
         if (_isPlatformOwner) {
           _pushPage(PlatformDocumentSettingsPage(api: widget.api));
-        }
-        break;
-      case 'users':
-        if (_canManageUsers) {
-          _pushPage(NativeUserManagementPage(api: widget.api));
         }
         break;
       case 'regions':
