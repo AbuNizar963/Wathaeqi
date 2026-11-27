@@ -444,7 +444,7 @@ class _TelegramExcelPageState extends State<TelegramExcelPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-            scrollable: true,
+          scrollable: true,
           title: closableDialogTitle(
             dialogContext,
             const Text('تأكيد استيراد سجل Excel'),
