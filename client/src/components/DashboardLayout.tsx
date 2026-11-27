@@ -781,6 +781,7 @@ function DashboardLayoutContent({
         ) : null}
         {isMobile && (
           <div
+            dir="rtl"
             className="app-header sticky top-0 z-40 flex h-[52px] items-center justify-between border-b border-border bg-card px-3"
             style={{
               height: "calc(52px + env(safe-area-inset-top))",
@@ -845,6 +846,7 @@ function DashboardLayoutContent({
       {isMobile ? (
         <nav
           aria-label="التنقل الرئيسي"
+          dir="rtl"
           className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
           style={{
             paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
