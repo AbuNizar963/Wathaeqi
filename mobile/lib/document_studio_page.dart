@@ -1791,13 +1791,13 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
             children: [
               Chip(
                 label: Text(
-                  'وثائق ${_documents.where((d) => d.status != "archived").length}',
+                  'وثائق ${_documents.where((d) => d.file == null && d.status != "archived").length}',
                 ),
               ),
               Chip(label: Text('قوالب ${_templates.length}')),
               Chip(
                 label: Text(
-                  'أرشيف ${_documents.where((d) => d.status == "archived").length}',
+                  'أرشيف ${_documents.where((d) => d.file == null && d.status == "archived").length}',
                 ),
               ),
             ],
@@ -1829,6 +1829,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         .where(
           (document) =>
               !document.isLegacyStarterDraft &&
+              document.file == null &&
               (document.status == (archived ? 'archived' : 'draft') ||
                   (!archived && document.status == 'issued')),
         )
