@@ -96,8 +96,8 @@ assert(
   ) &&
     dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes('aria-label="الإشعارات"') &&
-    dashboardLayout.includes('aria-label="فتح البحث السريع"'),
-  "The mobile dashboard header must expose the page title, full navigation drawer, and notifications."
+    dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />"),
+  "The mobile top bar must expose the page title, navigation drawer, notifications, and theme controls."
 );
 
 assert(
@@ -163,18 +163,18 @@ assert(
 );
 
 assert(
-  dashboardLayout.includes("<HeaderActions showMenu={false} />") &&
-    dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
-    dashboardLayout.includes("grid grid-cols-5") &&
-    !dashboardLayout.includes(
-      'className="mt-auto border-t border-sidebar-border p-3"'
-    ),
-  "Mobile users must have theme control beside notifications and account actions beside the more item."
+  dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />") &&
+    dashboardLayout.includes("grid grid-cols-4") &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
+    !dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
+    !dashboardLayout.includes("<span>المزيد</span>") &&
+    !dashboardLayout.includes('aria-label="التنقل الرئيسي"') === false,
+  "Mobile navigation must keep theme and notifications in the top bar and place search beside create without a bottom drawer control."
 );
 
 assert(
   dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
-    dashboardLayout.includes("grid grid-cols-5") &&
+    dashboardLayout.includes("grid grid-cols-4") &&
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
@@ -182,11 +182,12 @@ assert(
       'height: "calc(52px + env(safe-area-inset-top))"'
     ) &&
     dashboardLayout.includes('paddingTop: "env(safe-area-inset-top)"') &&
-    dashboardLayout.includes("pt-[calc(1rem_+_env(safe-area-inset-top))]") &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
     dashboardLayout.includes("إنشاء جديد") &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
+    dashboardLayout.includes("<Search className=\"h-5 w-5\" />") &&
     dashboardLayout.includes("h-[52px]"),
-  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing and a 52px top bar."
+  "The mobile navigation must expose dashboard, documents, create, and search with safe-area spacing and a 52px top bar."
 );
 
 assert(
