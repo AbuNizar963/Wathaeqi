@@ -223,6 +223,14 @@ assert(
 );
 
 assert(
+  globalStyles.includes("--success: #0b6f59") &&
+    globalStyles.includes("--warning: #8a5a1f") &&
+    globalStyles.includes("--info: #2e6fae") &&
+    globalStyles.includes("--ring: #0f766e"),
+  "Semantic status colors and focus indicators must retain the shared accessible palette."
+);
+
+assert(
   appRoutes.includes('path="/settings"') &&
     settingsPage.includes("platformDocumentSettings.update"),
   "The owner workspace must expose a real Appwrite-backed document settings page."
