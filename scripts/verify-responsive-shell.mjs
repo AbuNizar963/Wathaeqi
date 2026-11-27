@@ -42,6 +42,7 @@ const [
   globalStyles,
   pwaInstallContext,
   serviceWorker,
+  ownerUserManagement,
 ] = await Promise.all(
   [
     "client/index.html",
@@ -68,6 +69,7 @@ const [
     "client/src/index.css",
     "client/src/contexts/PwaInstallContext.tsx",
     "client/public/sw.js",
+    "client/src/features/users/OwnerUserManagement.tsx",
   ].map(readProjectFile)
 );
 
@@ -489,6 +491,14 @@ assert(
   "The service worker must bypass API and non-GET requests so private responses are never cached."
 );
 
+assert(
+  ownerUserManagement.includes('editing ? "contents" : "app-modal-overlay z-[70]"') &&
+    ownerUserManagement.includes('editing ? "hidden" : "app-modal-shell max-w-6xl p-4 sm:p-7"') &&
+    globalStyles.includes("max-height: calc(100dvh - max(1.5rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));") &&
+    globalStyles.includes("overscroll-behavior: contain;"),
+  "Owner-user editing must replace rather than stack over the management surface, and custom overlays must stay within the visible viewport with their own scroll area."
+);
+
 console.log(
-  "Responsive shell and single-organization print-only checks passed."
+  "Responsive shell, overlay navigation, and single-organization print-only checks passed."
 );
