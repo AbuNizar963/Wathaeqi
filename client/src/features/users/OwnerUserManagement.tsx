@@ -309,13 +309,13 @@ export default function OwnerUserManagement() {
   if (!open) return null;
 
   return (
-    <div className="app-modal-overlay z-[70]">
+    <div className={editing ? "contents" : "app-modal-overlay z-[70]"}>
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="owner-users-title"
         dir="rtl"
-        className="app-modal-shell max-w-6xl p-4 sm:p-7"
+        className={editing ? "hidden" : "app-modal-shell max-w-6xl p-4 sm:p-7"}
       >
         <header className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -975,7 +975,7 @@ export default function OwnerUserManagement() {
         </section>
 
         {editing && (
-          <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4">
+          <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto overscroll-contain bg-slate-950/60 p-3 sm:items-center sm:p-4">
             <form
               role="dialog"
               aria-modal="true"
@@ -1015,7 +1015,7 @@ export default function OwnerUserManagement() {
                   bio: editing.bio ?? null,
                 });
               }}
-              className="max-h-[calc(100dvh-2rem)] w-full max-w-lg space-y-3 overflow-y-auto rounded-2xl bg-background p-5 shadow-xl"
+              className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-lg space-y-3 overflow-y-auto overscroll-contain rounded-2xl bg-background p-4 shadow-xl sm:p-5"
             >
               <div className="flex items-center justify-between border-b pb-3">
                 <div>
