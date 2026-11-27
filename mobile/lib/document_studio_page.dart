@@ -1646,6 +1646,29 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
 
   Widget _buildTabSelector() {
     final theme = Theme.of(context);
+    const segments = [
+      ButtonSegment(
+        value: DocumentStudioTab.documents,
+        label: Text('الوثائق'),
+        icon: Icon(LucideIcons.fileText),
+      ),
+      ButtonSegment(
+        value: DocumentStudioTab.templates,
+        label: Text('القوالب'),
+        icon: Icon(LucideIcons.layoutTemplate),
+      ),
+      ButtonSegment(
+        value: DocumentStudioTab.archive,
+        label: Text('الأرشيف'),
+        icon: Icon(LucideIcons.archive),
+      ),
+      ButtonSegment(
+        value: DocumentStudioTab.files,
+        label: Text('الملفات'),
+        icon: Icon(LucideIcons.folderOpen),
+      ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       child: Container(
@@ -1655,48 +1678,80 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: theme.colorScheme.outlineVariant),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SegmentedButton<DocumentStudioTab>(
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 520) {
+              final chipWidth = (constraints.maxWidth - 8) / 2;
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: segments.map((segment) {
+                  final selected = _tab == segment.value;
+                  return SizedBox(
+                    width: chipWidth,
+                    height: 48,
+                    child: ChoiceChip(
+                      selected: selected,
+                      showCheckmark: false,
+                      avatar: segment.icon,
+                      label: segment.label,
+                      onSelected: _saving
+                          ? null
+                          : (value) {
+                              if (value) {
+                                setState(() => _tab = segment.value);
+                              }
+                            },
+                      labelStyle: theme.textTheme.labelMedium?.copyWith(
+                        color: selected
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      selectedColor: theme.colorScheme.primaryContainer,
+                      backgroundColor: theme.colorScheme.surface,
+                      side: BorderSide(
+                        color: selected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outlineVariant,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      labelPadding: const EdgeInsetsDirectional.only(end: 4),
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+
+            return SegmentedButton<DocumentStudioTab>(
+              showSelectedIcon: false,
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                padding: const WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
-              shape: WidgetStatePropertyAll(
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            segments: const [
-              ButtonSegment(
-                value: DocumentStudioTab.documents,
-                label: Text('الوثائق'),
-                icon: Icon(LucideIcons.fileText),
-              ),
-              ButtonSegment(
-                value: DocumentStudioTab.templates,
-                label: Text('القوالب'),
-                icon: Icon(LucideIcons.layoutTemplate),
-              ),
-              ButtonSegment(
-                value: DocumentStudioTab.archive,
-                label: Text('الأرشيف'),
-                icon: Icon(LucideIcons.archive),
-              ),
-              ButtonSegment(
-                value: DocumentStudioTab.files,
-                label: Text('الملفات'),
-                icon: Icon(LucideIcons.folderOpen),
-              ),
-            ],
-            selected: {_tab},
-            onSelectionChanged: (selection) {
-              setState(() {
-                _tab = selection.first;
-              });
-            },
-          ),
+              segments: segments,
+              selected: {_tab},
+              onSelectionChanged: _saving
+                  ? null
+                  : (selection) {
+                      setState(() => _tab = selection.first);
+                    },
+            );
+          },
         ),
       ),
     );
