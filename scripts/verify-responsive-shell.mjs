@@ -403,7 +403,9 @@ assert(
 
 assert(
   documentStudio.includes('aria-label="خطوات إعداد الوثيقة"') &&
-    documentStudio.includes('className="sticky top-[calc(52px+env(safe-area-inset-top))] z-30 grid grid-cols-3') &&
+    documentStudio.includes(
+      'className="sticky top-[calc(52px+env(safe-area-inset-top))] z-30 grid grid-cols-3'
+    ) &&
     documentStudio.includes("aria-selected={isDataTabActive}") &&
     documentStudio.includes("aria-selected={isPreviewTabActive}") &&
     documentStudio.includes("aria-selected={isPrintTabActive}") &&
