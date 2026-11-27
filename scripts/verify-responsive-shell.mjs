@@ -407,6 +407,7 @@ assert(
     ) &&
     workspaceWelcome.includes('className="hidden md:inline-flex"') &&
     !workspacePage.includes(">معاينة</Button>") &&
+    !workspacePage.includes("documentsQuery.data?.length ?? 0") &&
     documentStudio.includes(
       'className="hidden md:inline-flex"\n                        onClick={() => setCreationDialogOpen(true)}'
     ) &&
