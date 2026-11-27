@@ -194,7 +194,7 @@ assert(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
     dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
-    dashboardLayout.includes('PanelLeft className="h-5 w-5"') &&
+    dashboardLayout.includes('Menu className="h-5 w-5" aria-hidden="true"') &&
     dashboardLayout.includes(
       'height: "calc(52px + env(safe-area-inset-top))"'
     ) &&
