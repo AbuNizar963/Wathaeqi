@@ -15,6 +15,9 @@ function assert(condition, message) {
 
 const [
   indexHtml,
+  manifest,
+  brandMark,
+  brandIcon,
   dashboardLayout,
   headerActions,
   sidebarLayout,
@@ -35,6 +38,9 @@ const [
 ] = await Promise.all(
   [
     "client/index.html",
+    "client/public/manifest.json",
+    "client/src/components/BrandMark.tsx",
+    "client/public/icon.svg",
     "client/src/components/DashboardLayout.tsx",
     "client/src/components/HeaderActions.tsx",
     "client/src/components/ui/sidebar.tsx",
@@ -62,6 +68,16 @@ const viewportMatch = indexHtml.match(
 assert(
   viewportMatch?.[1].includes("width=device-width"),
   "The application shell must declare a width=device-width viewport."
+);
+
+assert(
+  brandMark.includes("#10262d") &&
+    brandMark.includes("#c49a5b") &&
+    brandMark.includes("#0f766e") &&
+    brandIcon.includes("#10262d") &&
+    manifest.includes('"theme_color": "#10262d"') &&
+    indexHtml.includes('content="#10262d"'),
+  "The in-app mark, browser icon, PWA manifest, and browser chrome must share the refreshed Wathaeqi identity."
 );
 
 assert(
