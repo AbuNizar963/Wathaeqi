@@ -218,8 +218,12 @@ assert(
 );
 
 assert(
-  headerActions.includes("if (!user) {\n    return null;\n  }"),
-  "Header actions must not render before an authenticated user is available."
+  headerActions.includes("if (!user) {\n    return null;\n  }") &&
+    headerActions.includes('<SunMoon className="h-5 w-5" />') &&
+    headerActions.includes('<Menu className="h-5 w-5" />') &&
+    dashboardLayout.includes('<Bell className="h-5 w-5" />') &&
+    dashboardLayout.includes('<Search className="h-5 w-5" />'),
+  "Header and navigation action icons must share the same 20px visual size."
 );
 
 assert(
