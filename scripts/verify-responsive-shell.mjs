@@ -90,14 +90,15 @@ assert(
   "The in-app mark, browser icon, PWA manifest, and browser chrome must share the refreshed Wathaeqi identity."
 );
 
+// prettier-ignore
 assert(
   dashboardLayout.includes(
     '<h1 className="min-w-0 truncate text-sm font-semibold text-foreground">'
   ) &&
     dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
     dashboardLayout.includes('aria-label="الإشعارات"') &&
-    dashboardLayout.includes('aria-label="فتح البحث السريع"'),
-  "The mobile dashboard header must expose the page title, full navigation drawer, and notifications."
+    dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />"),
+  "The mobile top bar must expose the page title, navigation drawer, notifications, and theme controls."
 );
 
 assert(
@@ -162,19 +163,24 @@ assert(
   "The desktop shell must expose a searchable command palette with the Ctrl+K shortcut."
 );
 
+// prettier-ignore
 assert(
-  dashboardLayout.includes("<HeaderActions showMenu={false} />") &&
-    dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
-    dashboardLayout.includes("grid grid-cols-5") &&
-    !dashboardLayout.includes(
-      'className="mt-auto border-t border-sidebar-border p-3"'
-    ),
-  "Mobile users must have theme control beside notifications and account actions beside the more item."
+  dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />") &&
+    dashboardLayout.includes("grid grid-cols-4") &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
+    !dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
+    !dashboardLayout.includes("<span>المزيد</span>") &&
+    !dashboardLayout.includes("mobile-bottom-nav-account"),
+  "Mobile navigation must keep theme and notifications in the top bar and place search beside create without a bottom drawer control."
 );
 
+// prettier-ignore
 assert(
   dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
-    dashboardLayout.includes("grid grid-cols-5") &&
+    dashboardLayout.includes(
+      'aria-label="التنقل الرئيسي"\n          dir="rtl"'
+    ) &&
+    dashboardLayout.includes("grid grid-cols-4") &&
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
@@ -182,11 +188,12 @@ assert(
       'height: "calc(52px + env(safe-area-inset-top))"'
     ) &&
     dashboardLayout.includes('paddingTop: "env(safe-area-inset-top)"') &&
-    dashboardLayout.includes("pt-[calc(1rem_+_env(safe-area-inset-top))]") &&
     dashboardLayout.includes('setLocation("/documents?create=1")') &&
     dashboardLayout.includes("إنشاء جديد") &&
+    dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
+    dashboardLayout.includes("<Search className=\"h-5 w-5\" />") &&
     dashboardLayout.includes("h-[52px]"),
-  "The mobile navigation must expose dashboard, documents, create, and more actions with safe-area spacing and a 52px top bar."
+  "The mobile navigation must expose dashboard, documents, create, and search with safe-area spacing and a 52px top bar."
 );
 
 assert(
@@ -216,9 +223,14 @@ assert(
   "The crisp light theme must be the initial preference while remaining switchable."
 );
 
+// prettier-ignore
 assert(
-  headerActions.includes("if (!user) {\n    return null;\n  }"),
-  "Header actions must not render before an authenticated user is available."
+  headerActions.includes("if (!user) {\n    return null;\n  }") &&
+    headerActions.includes('<SunMoon className="h-5 w-5" />') &&
+    headerActions.includes('<Menu className="h-5 w-5" />') &&
+    dashboardLayout.includes('<Bell className="h-5 w-5" />') &&
+    dashboardLayout.includes('<Search className="h-5 w-5" />'),
+  "Header and navigation action icons must share the same 20px visual size."
 );
 
 assert(
