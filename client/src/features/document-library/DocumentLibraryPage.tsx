@@ -495,16 +495,16 @@ export default function DocumentLibraryPage({
       )}
 
       {!embedded ? (
-        <Button
-          type="button"
-          aria-label="إنشاء وثيقة جديدة"
-          title="إنشاء وثيقة جديدة"
-          onClick={() => navigate("/documents?create=1")}
-          className="document-library-fab group fixed bottom-5 left-5 z-40 h-14 w-14 rounded-full bg-primary p-0 text-primary-foreground shadow-[0_14px_30px_rgba(16,35,63,0.28)] transition-all hover:-translate-y-1 hover:bg-primary/90 hover:shadow-[0_18px_36px_rgba(16,35,63,0.36)] focus-visible:ring-2 focus-visible:ring-[#b4945a] focus-visible:ring-offset-2 sm:bottom-7 sm:left-7"
-        >
-          <MessageSquarePlus className="h-6 w-6 transition-transform group-hover:scale-110" />
-          <span className="sr-only">وثيقة جديدة</span>
-        </Button>
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            onClick={() => navigate("/documents?create=1")}
+            className="h-12 w-full gap-2 sm:w-auto"
+          >
+            <MessageSquarePlus className="h-5 w-5" />
+            إنشاء وثيقة جديدة
+          </Button>
+        </div>
       ) : null}
 
       <Dialog open={creationOpen} onOpenChange={setCreationOpen}>
@@ -582,7 +582,7 @@ export default function DocumentLibraryPage({
           {selected && selected.file ? (
             <>
               {downloadOperation.progress ? (
-                <div className="fixed inset-x-4 bottom-24 z-[100] mx-auto max-w-lg rounded-2xl border bg-card p-3 shadow-xl">
+                <div className="mb-3 w-full max-w-lg rounded-2xl border bg-card p-3 shadow-sm">
                   <DocumentOperationProgress
                     progress={downloadOperation.progress}
                   />
@@ -656,7 +656,7 @@ export default function DocumentLibraryPage({
               )}
 
               {fileUrlQuery.data?.url ? (
-                <div className="sticky bottom-0 z-10 grid grid-cols-2 gap-2 rounded-2xl border bg-card/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-sm backdrop-blur sm:static sm:grid-cols-3 sm:bg-card sm:pb-3 sm:shadow-none">
+                <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border bg-card p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:grid-cols-3 sm:pb-3">
                   <Button
                     variant="outline"
                     className="h-12 gap-2"
