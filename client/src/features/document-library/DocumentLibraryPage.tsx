@@ -608,14 +608,6 @@ export default function DocumentLibraryPage({
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      className="gap-2"
-                      onClick={() => setPrintOpen(true)}
-                      disabled={!fileUrlQuery.data?.url}
-                    >
-                      <Printer className="size-4" />
-                      طباعة
-                    </Button>
-                    <Button
                       variant="outline"
                       size="icon"
                       className="text-destructive"
@@ -735,23 +727,6 @@ export default function DocumentLibraryPage({
                   >
                     <UploadCloud className="size-4" />
                     استيراد ملف
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="h-12 gap-2"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `حذف «${selected.title}» نهائيًا من المكتبة؟`
-                        )
-                      ) {
-                        deleteDocument.mutate({ id: selected.id });
-                      }
-                    }}
-                    disabled={deleteDocument.isPending}
-                  >
-                    <Trash2 className="size-4" />
-                    حذف
                   </Button>
                 </div>
               ) : null}
