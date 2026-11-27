@@ -405,15 +405,85 @@ describe("document studio authorization and API", () => {
     expect(mocks.createOfficialDocument).not.toHaveBeenCalled();
   });
 
-  it("uses session owner for template writes", async () => {
+  it("uses session owner and records successful template creation", async () => {
     const caller = documentStudioRouter.createCaller(context());
 
-    await caller.createTemplate(templateInput);
+    const result = await caller.createTemplate(templateInput);
 
     expect(mocks.createDocumentTemplate).toHaveBeenCalledWith(ownerId, {
       ...templateInput,
       description: null,
     });
+    expect(result).toEqual({ template, auditLogRecorded: true });
+    expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.template.created",
+        entityType: "document_template",
+        entityId: template.id,
+        afterState: expect.objectContaining({ title: template.title }),
+      })
+    );
+  });
+
+  it("reports template creation when audit logging is unavailable", async () => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    dbMocks.writeAuditLog.mockRejectedValueOnce(new Error("audit unavailable"));
+    const caller = documentStudioRouter.createCaller(context());
+
+    try {
+      const result = await caller.createTemplate(templateInput);
+      expect(result).toEqual({ template, auditLogRecorded: false });
+    } finally {
+      logError.mockRestore();
+    }
+  });
+
+  it("records before and after state when a template is updated", async () => {
+    const updatedTemplate = {
+      ...template,
+      title: "كتاب تكليف معدل",
+      revision: 2,
+    };
+    mocks.updateDocumentTemplate.mockResolvedValueOnce(updatedTemplate);
+    const caller = documentStudioRouter.createCaller(context());
+
+    const result = await caller.updateTemplate({
+      ...templateInput,
+      id: template.id,
+      expectedRevision: template.revision,
+      title: updatedTemplate.title,
+    });
+
+    expect(result).toEqual({
+      template: updatedTemplate,
+      auditLogRecorded: true,
+    });
+    expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.template.updated",
+        beforeState: expect.objectContaining({ title: template.title }),
+        afterState: expect.objectContaining({ title: updatedTemplate.title }),
+      })
+    );
+  });
+
+  it("records template deactivation and keeps the saved template result", async () => {
+    const caller = documentStudioRouter.createCaller(context());
+
+    const result = await caller.deactivateTemplate({
+      id: template.id,
+      expectedRevision: template.revision,
+    });
+
+    expect(result.template.isActive).toBe(false);
+    expect(result.auditLogRecorded).toBe(true);
+    expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "document.template.deactivated",
+        beforeState: expect.objectContaining({ isActive: true }),
+        afterState: expect.objectContaining({ isActive: false }),
+      })
+    );
   });
 
   it("accepts a user-edited legacy plain-text document as canonical content", async () => {
@@ -640,8 +710,11 @@ describe("document studio authorization and API", () => {
         serialCode: expect.stringMatching(/^DOC-00012$/),
       })
     );
-    expect(dbMocks.writeAuditLog).toHaveBeenCalled();
-    expect(saved.status).toBe("issued");
+    expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "document.issue" })
+    );
+    expect(saved.document.status).toBe("issued");
+    expect(saved.auditLogRecorded).toBe(true);
   });
 
   it("validates required template values before create", async () => {
@@ -792,10 +865,10 @@ describe("document studio authorization and API", () => {
     }
   });
 
-  it("archives without physically deleting the owned document", async () => {
+  it("archives without physically deleting the owned document and reports audit status", async () => {
     const caller = documentStudioRouter.createCaller(context());
 
-    await caller.archiveDocument({
+    const result = await caller.archiveDocument({
       id: document.id,
       expectedUpdatedAt: timestamp,
     });
@@ -805,6 +878,46 @@ describe("document studio authorization and API", () => {
       document.id,
       timestamp
     );
+    expect(result.document.status).toBe("archived");
+    expect(result.auditLogRecorded).toBe(true);
+    expect(dbMocks.writeAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "document.archive" })
+    );
+  });
+
+  it("reports a successful archive when audit logging fails", async () => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    dbMocks.writeAuditLog.mockRejectedValueOnce(new Error("audit unavailable"));
+    const caller = documentStudioRouter.createCaller(context());
+
+    try {
+      const result = await caller.archiveDocument({
+        id: document.id,
+        expectedUpdatedAt: timestamp,
+      });
+      expect(result.document.status).toBe("archived");
+      expect(result.auditLogRecorded).toBe(false);
+    } finally {
+      logError.mockRestore();
+    }
+  });
+
+  it("reports issuance success separately from an audit-log failure", async () => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    dbMocks.writeAuditLog.mockRejectedValueOnce(new Error("audit unavailable"));
+    const caller = documentStudioRouter.createCaller(context());
+
+    try {
+      const result = await caller.issueDocument({
+        id: document.id,
+        expectedUpdatedAt: timestamp,
+      });
+      expect(result.document.status).toBe("issued");
+      expect(result.document.serialCode).toBe("DOC-00012");
+      expect(result.auditLogRecorded).toBe(false);
+    } finally {
+      logError.mockRestore();
+    }
   });
 
   it("rejects an invalid revision timestamp before accessing storage", async () => {
