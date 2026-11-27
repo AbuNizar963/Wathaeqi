@@ -21,6 +21,10 @@ const [
   appRoutes,
   settingsPage,
   documentStudio,
+  documentStudioPrintDialog,
+  documentPrintSections,
+  documentLetterhead,
+  documentSignatureBlock,
   documentWatermarkComponent,
   platformDocumentPreview,
   workspacePage,
@@ -37,6 +41,10 @@ const [
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
+    "client/src/features/document-studio/DocumentStudioPrintDialog.tsx",
+    "client/src/features/document-studio/documentPrintSections.ts",
+    "client/src/features/document-studio/DocumentLetterhead.tsx",
+    "client/src/features/document-studio/DocumentSignatureBlock.tsx",
     "client/src/features/document-studio/DocumentWatermark.tsx",
     "client/src/features/platform-settings/PlatformDocumentPreview.tsx",
     "client/src/features/workspace/WorkspacePage.tsx",
@@ -303,6 +311,19 @@ assert(
       "rowData(row).organizationId !== scope.organizationId"
     ),
   "Contacts and users must use mobile-safe cards and dialogs, with organization-scoped role updates."
+);
+
+assert(
+  documentStudioPrintDialog.includes("showDocumentHeader") &&
+    documentStudioPrintDialog.includes("showDocumentFooter") &&
+    documentStudioPrintDialog.includes("applyDocumentPrintVisibility") &&
+    documentStudioPrintDialog.includes("معاينة A4 خلف هذا الحوار") &&
+    documentPrintSections.includes('[data-document-print-section="header"]') &&
+    documentPrintSections.includes('[data-document-print-section="footer"]') &&
+    documentLetterhead.includes('data-document-print-section="header"') &&
+    documentSignatureBlock.includes('data-document-print-section="footer"') &&
+    documentStudio.includes('data-document-print-section="footer"'),
+  "Header and footer visibility controls must update the A4 preview and the exact sections used by print/PDF output."
 );
 
 assert(
