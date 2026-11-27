@@ -569,6 +569,24 @@ export default function DocumentStudioPage() {
       onError: error => toast.error(error.message),
     });
 
+  const deleteDocumentMutation =
+    trpc.documentStudio.deleteDocument.useMutation({
+      onSuccess: async result => {
+        await utils.documentStudio.listDocuments.invalidate();
+        setSelectedDocumentId(null);
+        setIsCreatingDocument(false);
+        setPreviewMode(false);
+        toast.success("تم حذف الوثيقة");
+        if (!result.fileCleanupSucceeded) {
+          toast.warning("حُذف سجل الوثيقة، لكن تعذر حذف الملف من التخزين.");
+        }
+        if (!result.auditLogRecorded) {
+          toast.warning("تم الحذف، لكن تعذر تسجيل العملية في سجل الحركات.");
+        }
+      },
+      onError: error => toast.error(error.message),
+    });
+
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
       onSuccess: async result => {
