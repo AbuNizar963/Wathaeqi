@@ -236,11 +236,15 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final tabs = tester.widget<SegmentedButton<DocumentStudioTab>>(
-        find.byType(SegmentedButton<DocumentStudioTab>),
+      final tabs = tester.widgetList<ChoiceChip>(
+        find.byType(ChoiceChip),
+      ).toList();
+      expect(tabs, hasLength(DocumentStudioTab.values.length));
+      expect(
+        tabs.map((tab) => (tab.label as Text).data),
+        ['الوثائق', 'القوالب', 'الأرشيف', 'الملفات'],
       );
-      expect(tabs.segments.map((s) => s.value), DocumentStudioTab.values);
-      expect(tabs.segments.map((s) => (s.icon as Icon).icon), [
+      expect(tabs.map((tab) => (tab.avatar as Icon).icon), [
         LucideIcons.fileText,
         LucideIcons.layoutTemplate,
         LucideIcons.archive,
