@@ -1,5 +1,5 @@
 name: police_telegrams
-description: تطبيق برقيات الشرطة لنظام HADIR
+description: تطبيق وثائقي لإعداد الوثائق ومعاينتها وطباعتها
 publish_to: 'none'
 version: 1.0.127+1
 environment:
