@@ -300,6 +300,7 @@ Future<void> checkAndPromptForAppUpdate(
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
+          scrollable: true,
           icon: const Icon(
             Icons.system_update_alt_rounded,
             color: AppPalette.brandBlue,
@@ -455,6 +456,7 @@ Future<void> _downloadAndInstall(
                     (data['totalBytes'] as num?)?.toInt() ?? release.apkSize;
                 final isComplete = data['status'] == 'completed';
                 return AlertDialog(
+                  scrollable: true,
                   title: const Text('تنزيل تحديث برقيات الشرطة'),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -587,6 +589,7 @@ Future<void> _showInternalInstallPermissionDialog(
     builder: (dialogContext) => Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
+        scrollable: true,
         title: const Text('السماح بتثبيت التحديث'),
         content: const Text(
           'افتح إعدادات Android وفعّل السماح بتثبيت التطبيقات من هذا المصدر، ثم ارجع إلى التطبيق واضغط «إعادة محاولة التثبيت».',
@@ -706,6 +709,7 @@ Future<void> _showInstallPermissionDialog(
     builder: (dialogContext) => Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
+        scrollable: true,
         title: const Text('السماح بتثبيت التحديث'),
         content: const Text(
           'افتح إعدادات Android وفعّل السماح بتثبيت التطبيقات من هذا المصدر. بعد العودة، اضغط «إعادة محاولة التثبيت».',
@@ -903,6 +907,7 @@ Future<bool> _resumeInternalDownload(
     builder: (dialogContext) => Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
+        scrollable: true,
         title: const Text('اكتمل تنزيل التحديث في الخلفية'),
         content: Text(
           'التحديث ${release.version}+${release.buildNumber} جاهز. تم حفظ الملف والتحقق منه بينما كان التطبيق مغلقًا.',
@@ -983,6 +988,7 @@ Future<bool> _resumePendingUpdate(
     builder: (dialogContext) => Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
+        scrollable: true,
         title: Text(downloaded ? 'التحديث جاهز للتثبيت' : 'تنزيل تحديث محفوظ'),
         content: Text(
           downloaded

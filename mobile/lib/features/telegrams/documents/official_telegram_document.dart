@@ -982,6 +982,7 @@ class _OfficialTelegramDocumentPageState
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
+            scrollable: true,
             title: const Text('إعادة إصدار البرقية'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1296,6 +1297,7 @@ class _OfficialTelegramDocumentPageState
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: const Text('موقع البرقية'),
         content: Text(message),
         actions: [
