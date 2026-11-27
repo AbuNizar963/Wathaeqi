@@ -21,7 +21,6 @@ import {
   History,
   LayoutDashboard,
   LockKeyhole,
-  Menu,
   PanelLeft,
   Plus,
   Search,
