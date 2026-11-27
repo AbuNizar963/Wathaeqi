@@ -44,10 +44,6 @@ jobs:
             echo "Retired provider runtime dependency detected"
             exit 1
           fi
-      - name: Print temporary Prettier diff for document library
-        run: |
-          pnpm exec prettier client/src/features/document-library/DocumentLibraryPage.tsx > /tmp/DocumentLibraryPage.formatted.tsx
-          diff -u client/src/features/document-library/DocumentLibraryPage.tsx /tmp/DocumentLibraryPage.formatted.tsx || true
       - name: Check document studio formatting
         run: |
           pnpm exec prettier --check client/src/features/document-studio/DocumentStudioPage.tsx client/src/features/document-studio/ResponsiveA4Preview.tsx client/src/features/document-library/DocumentLibraryPage.tsx client/src/features/document-library/PrintDialog.tsx client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx server/app.ts
