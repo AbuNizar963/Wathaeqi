@@ -1,4 +1,5 @@
 import {
+  Download,
   FileText,
   Info,
   LogOut,
@@ -23,11 +24,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/features/auth-session/useAuth";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
+import { usePwaInstall } from "@/contexts/PwaInstallContext";
 
 export default function HeaderActions() {
   const { preference, setThemePreference } = useTheme();
   const { user, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const { canInstall, installApp } = usePwaInstall();
+
+  const handleInstall = async () => {
+    try {
+      const outcome = await installApp();
+      if (outcome === "accepted") {
+        toast.info("قبل المتصفح طلب التثبيت. أكمل خطوات التثبيت الظاهرة.");
+      } else if (outcome === "dismissed") {
+        toast.info("لم يتم تثبيت التطبيق.");
+      }
+    } catch {
+      toast.error("تعذر بدء تثبيت وثائقي. حاول مرة أخرى من المتصفح.");
+    }
+  };
 
   if (!user) {
     return null;
@@ -113,6 +130,18 @@ export default function HeaderActions() {
             <UserRound className="h-4 w-4" />
             <span>الملف الشخصي</span>
           </DropdownMenuItem>
+          {canInstall ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => void handleInstall()}
+                className="cursor-pointer justify-end gap-2"
+              >
+                <Download className="h-4 w-4" />
+                <span>تثبيت التطبيق</span>
+              </DropdownMenuItem>
+            </>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => {
