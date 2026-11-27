@@ -77,6 +77,13 @@ assert(
 );
 
 assert(
+  dashboardLayout.includes('isMobile\n                    ? "إغلاق القائمة الجانبية"') &&
+    dashboardLayout.includes('<X className="h-4 w-4" />') &&
+    dashboardLayout.includes('title={\n                  isMobile\n                    ? "إغلاق القائمة"'),
+  "The mobile drawer must expose a clearly labeled close control instead of the desktop collapse action."
+);
+
+assert(
   dashboardLayout.includes("const isMobile = useIsMobile();") &&
     dashboardLayout.includes("useState(() => !isMobile)") &&
     dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
