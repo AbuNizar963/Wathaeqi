@@ -450,7 +450,10 @@
     @apply min-h-0 w-full overflow-x-hidden overflow-y-auto rounded-2xl bg-background shadow-2xl;
     height: auto;
     min-height: 0;
-    max-height: calc(100dvh - max(1.5rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    max-height: calc(
+      100dvh -
+        max(1.5rem, env(safe-area-inset-top) + env(safe-area-inset-bottom))
+    );
     margin-block: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
