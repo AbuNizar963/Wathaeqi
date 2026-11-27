@@ -13,6 +13,10 @@ function assert(condition, message) {
   }
 }
 
+function countOccurrences(source, needle) {
+  return source.split(needle).length - 1;
+}
+
 const [
   indexHtml,
   manifest,
@@ -25,6 +29,7 @@ const [
   appRoutes,
   settingsPage,
   documentStudio,
+  documentLibraryPage,
   documentStudioPrintDialog,
   documentPrintSections,
   documentLetterhead,
@@ -49,6 +54,7 @@ const [
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
+    "client/src/features/document-library/DocumentLibraryPage.tsx",
     "client/src/features/document-studio/DocumentStudioPrintDialog.tsx",
     "client/src/features/document-studio/documentPrintSections.ts",
     "client/src/features/document-studio/DocumentLetterhead.tsx",
@@ -389,6 +395,16 @@ assert(
     documentStudio.includes("setImportPrintOpen(true)") &&
     documentStudio.includes("setNativePrintOpen(true)"),
   "The mobile document workspace must expose data, A4 preview, and print tabs that open the correct print flow."
+);
+
+assert(
+  countOccurrences(documentLibraryPage, "setPrintOpen(true)") === 1 &&
+    countOccurrences(documentLibraryPage, "deleteDocument.mutate") === 1 &&
+    documentStudio.includes("!item.file &&") &&
+    documentLibraryPage.includes('title="حذف الوثيقة"') &&
+    documentLibraryPage.includes('className="flex justify-end gap-2"') &&
+    documentLibraryPage.includes('className="sticky bottom-0'),
+  "The document file preview must expose one print action and one delete action, without duplicate controls in the header and action dock."
 );
 
 assert(
