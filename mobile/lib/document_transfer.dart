@@ -173,7 +173,7 @@ class _DocumentOutputDialogState extends State<_DocumentOutputDialog> {
         if (!didPop) _transfer.cancel();
       },
       child: AlertDialog(
-               scrollable: true,
+        scrollable: true,
         title: Text(widget.title),
         content: Column(
           mainAxisSize: MainAxisSize.min,
