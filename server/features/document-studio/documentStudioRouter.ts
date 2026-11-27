@@ -40,6 +40,19 @@ import {
   MAX_DOCUMENT_UPLOAD_BYTES,
 } from "./documentUploadValidation";
 
+async function recordAuditEvent(
+  entry: Parameters<typeof writeAuditLog>[0],
+  operation: string
+): Promise<boolean> {
+  try {
+    await writeAuditLog(entry);
+    return true;
+  } catch (error) {
+    console.error(`${operation} audit log failed`, error);
+    return false;
+  }
+}
+
 function isEditorNode(value: unknown, depth = 0): boolean {
   if (
     depth > 100 ||
@@ -258,12 +271,36 @@ export const documentStudioRouter = router({
 
   createTemplate: authenticatedProcedure
     .input(templateWriteSchema)
-    .mutation(async ({ ctx, input }) =>
-      createDocumentTemplate(ctx.user.authUserId, {
+    .mutation(async ({ ctx, input }) => {
+      const saved = await createDocumentTemplate(ctx.user.authUserId, {
         ...input,
         description: input.description ?? null,
-      })
-    ),
+      });
+      const auditLogRecorded = await recordAuditEvent(
+        {
+          ...getRequestAuditContext(ctx.req),
+          actorUserId: ctx.user.id,
+          actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+          actorRole: ctx.user.role,
+          action: "document.template.created",
+          entityType: "document_template",
+          entityId: saved.id,
+          metadata: {
+            title: saved.title,
+            category: saved.category,
+            revision: saved.revision,
+          },
+          afterState: {
+            title: saved.title,
+            category: saved.category,
+            isActive: saved.isActive,
+            revision: saved.revision,
+          },
+        },
+        "Document template creation"
+      );
+      return { template: saved, auditLogRecorded };
+    }),
 
   updateTemplate: authenticatedProcedure
     .input(
@@ -273,6 +310,8 @@ export const documentStudioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const existing = await getDocumentTemplate(ctx.user.authUserId, input.id);
+      if (!existing) throwIfNotFound("النموذج غير موجود");
       try {
         const saved = await updateDocumentTemplate(
           ctx.user.authUserId,
@@ -287,7 +326,36 @@ export const documentStudioRouter = router({
           }
         );
         if (!saved) throwIfNotFound("النموذج غير موجود");
-        return saved;
+        const auditLogRecorded = await recordAuditEvent(
+          {
+            ...getRequestAuditContext(ctx.req),
+            actorUserId: ctx.user.id,
+            actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+            actorRole: ctx.user.role,
+            action: "document.template.updated",
+            entityType: "document_template",
+            entityId: saved.id,
+            metadata: {
+              title: saved.title,
+              category: saved.category,
+              revision: saved.revision,
+            },
+            beforeState: {
+              title: existing.title,
+              category: existing.category,
+              isActive: existing.isActive,
+              revision: existing.revision,
+            },
+            afterState: {
+              title: saved.title,
+              category: saved.category,
+              isActive: saved.isActive,
+              revision: saved.revision,
+            },
+          },
+          "Document template update"
+        );
+        return { template: saved, auditLogRecorded };
       } catch (error) {
         throwConflict(error);
       }
@@ -301,6 +369,8 @@ export const documentStudioRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const existing = await getDocumentTemplate(ctx.user.authUserId, input.id);
+      if (!existing) throwIfNotFound("النموذج غير موجود");
       try {
         const saved = await deactivateDocumentTemplate(
           ctx.user.authUserId,
@@ -308,7 +378,33 @@ export const documentStudioRouter = router({
           input.expectedRevision
         );
         if (!saved) throwIfNotFound("النموذج غير موجود");
-        return saved;
+        const auditLogRecorded = await recordAuditEvent(
+          {
+            ...getRequestAuditContext(ctx.req),
+            actorUserId: ctx.user.id,
+            actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+            actorRole: ctx.user.role,
+            action: "document.template.deactivated",
+            entityType: "document_template",
+            entityId: saved.id,
+            metadata: {
+              title: saved.title,
+              revision: saved.revision,
+            },
+            beforeState: {
+              title: existing.title,
+              isActive: existing.isActive,
+              revision: existing.revision,
+            },
+            afterState: {
+              title: saved.title,
+              isActive: saved.isActive,
+              revision: saved.revision,
+            },
+          },
+          "Document template deactivation"
+        );
+        return { template: saved, auditLogRecorded };
       } catch (error) {
         throwConflict(error);
       }
@@ -666,25 +762,29 @@ export const documentStudioRouter = router({
           input.expectedUpdatedAt
         );
         if (!saved) throwIfNotFound("الوثيقة غير موجودة");
-        if (existing.status !== "archived") {
-          try {
-            await writeAuditLog({
-              ...getRequestAuditContext(ctx.req),
-              actorUserId: ctx.user.id,
-              actorName: ctx.user.name ?? ctx.user.email ?? "User",
-              action: "document.archive",
-              entityType: "document",
-              entityId: saved.id,
-              organizationId: saved.organizationId ?? undefined,
-              metadata: JSON.stringify({ status: saved.status }),
-              beforeState: JSON.stringify({ status: existing.status }),
-              afterState: JSON.stringify({ status: saved.status }),
-            });
-          } catch (error) {
-            console.error("Document archive audit log failed", error);
-          }
-        }
-        return toClientDocument(saved);
+        const auditLogRecorded =
+          existing.status === "archived"
+            ? true
+            : await recordAuditEvent(
+                {
+                  ...getRequestAuditContext(ctx.req),
+                  actorUserId: ctx.user.id,
+                  actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+                  actorRole: ctx.user.role,
+                  action: "document.archive",
+                  entityType: "document",
+                  entityId: saved.id,
+                  organizationId: saved.organizationId ?? undefined,
+                  metadata: { status: saved.status, title: saved.title },
+                  beforeState: {
+                    status: existing.status,
+                    title: existing.title,
+                  },
+                  afterState: { status: saved.status, title: saved.title },
+                },
+                "Document archive"
+              );
+        return { document: toClientDocument(saved), auditLogRecorded };
       } catch (error) {
         throwConflict(error);
       }
@@ -700,7 +800,13 @@ export const documentStudioRouter = router({
     .mutation(async ({ ctx, input }) => {
       const existing = await getOfficialDocument(ctx.user.authUserId, input.id);
       if (!existing) throwIfNotFound("الوثيقة غير موجودة");
-      if (existing.status === "issued") return toClientDocument(existing);
+      if (existing.status === "issued") {
+        return {
+          document: toClientDocument(existing),
+          auditLogRecorded: true,
+          alreadyIssued: true,
+        };
+      }
       if (existing.status !== "draft") {
         throw new TRPCError({
           code: "CONFLICT",
@@ -755,33 +861,34 @@ export const documentStudioRouter = router({
           }
         );
         if (!saved) throwIfNotFound("الوثيقة غير موجودة");
-        if (saved.serialNumber === serialNumber) {
-          try {
-            await writeAuditLog({
-              ...getRequestAuditContext(ctx.req),
-              actorUserId: ctx.user.id,
-              actorName: ctx.user.name ?? ctx.user.email ?? "User",
-              action: "document.issue",
-              entityType: "document",
-              entityId: saved.id,
-              organizationId,
-              metadata: JSON.stringify({
-                serialNumber: saved.serialNumber,
-                serialCode: saved.serialCode,
-                issuedAt: saved.issuedAt,
-              }),
-              beforeState: JSON.stringify({ status: "draft" }),
-              afterState: JSON.stringify({
-                status: "issued",
-                serialNumber: saved.serialNumber,
-                serialCode: saved.serialCode,
-              }),
-            });
-          } catch (error) {
-            console.error("Document issuance audit log failed", error);
-          }
-        }
-        return toClientDocument(saved);
+        const auditLogRecorded =
+          saved.serialNumber === serialNumber
+            ? await recordAuditEvent(
+                {
+                  ...getRequestAuditContext(ctx.req),
+                  actorUserId: ctx.user.id,
+                  actorName: ctx.user.name ?? ctx.user.email ?? "مستخدم",
+                  actorRole: ctx.user.role,
+                  action: "document.issue",
+                  entityType: "document",
+                  entityId: saved.id,
+                  organizationId,
+                  metadata: {
+                    serialNumber: saved.serialNumber,
+                    serialCode: saved.serialCode,
+                    issuedAt: saved.issuedAt,
+                  },
+                  beforeState: { status: "draft" },
+                  afterState: {
+                    status: "issued",
+                    serialNumber: saved.serialNumber,
+                    serialCode: saved.serialCode,
+                  },
+                },
+                "Document issuance"
+              )
+            : true;
+        return { document: toClientDocument(saved), auditLogRecorded };
       } catch (error) {
         throwConflict(error);
       }
