@@ -1324,7 +1324,7 @@ class _DashboardPageState extends State<DashboardPage>
           PopupMenuButton<String>(
             tooltip: 'إعدادات الحساب',
             onSelected: _handleAccountAction,
-            icon: const Icon(LucideIcons.ellipsis),
+            icon: const Icon(LucideIcons.menu),
             itemBuilder: (context) => [
               const PopupMenuItem(
                 value: 'profile',

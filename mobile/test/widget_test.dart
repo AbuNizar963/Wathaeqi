@@ -677,6 +677,37 @@ void main() {
     expect(find.text('تم حفظ إعدادات وثائق النظام'), findsOneWidget);
   });
 
+  testWidgets('preserves the original account menu options and policy links', (
+    tester,
+  ) async {
+    _setMobileViewport(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DashboardPage(
+          api: _TestPoliceApi(signedIn: true),
+          account: const {
+            'id': 1,
+            'name': 'مالك المنصة',
+            'role': 'admin',
+            'isPlatformOwner': true,
+          },
+          outbox: _EmptyTelegramOutbox(),
+        ),
+      ),
+    );
+    await _pumpDashboardFrames(tester, frameCount: 8);
+
+    await tester.tap(find.byTooltip('إعدادات الحساب'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('الشروط والأحكام'), findsOneWidget);
+    expect(find.text('حول وثائقي وميزاته'), findsOneWidget);
+    expect(find.text('حول التطبيق والتحديثات'), findsOneWidget);
+    expect(find.text('لوحة قيادة المالك'), findsOneWidget);
+    expect(find.text('إدارة المستخدمين'), findsOneWidget);
+    expect(find.text('إعدادات النظام والوثائق'), findsOneWidget);
+  });
+
   testWidgets('hides owner document settings from non-owner administrators', (
     tester,
   ) async {
