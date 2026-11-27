@@ -8,6 +8,38 @@ import { normalizeDocxLayout } from "./normalizeDocxImages";
 import { appwriteApiUrl } from "@/lib/appwriteApi";
 import { getSessionToken } from "@/lib/sessionToken";
 
+async function renderWordPreviewFromUrl(
+  url: string,
+  host: HTMLDivElement
+): Promise<void> {
+  const [{ renderAsync }] = await Promise.all([import("docx-preview")]);
+  const response = await fetch(url, { credentials: "omit" });
+  if (!response.ok) throw new Error("تعذر تنزيل الملف");
+  const buffer = await response.arrayBuffer();
+  host.innerHTML = "";
+  await renderAsync(buffer, host, undefined, {
+    className: "docx",
+    inWrapper: true,
+    breakPages: true,
+    ignoreLastRenderedPageBreak: false,
+    renderHeaders: true,
+    renderFooters: true,
+    useBase64URL: true,
+  });
+  await Promise.all(
+    Array.from(host.querySelectorAll("img")).map(image =>
+      image.complete
+        ? image.decode?.().catch(() => undefined)
+        : new Promise<void>(resolve => {
+            image.addEventListener("load", () => resolve(), { once: true });
+            image.addEventListener("error", () => resolve(), { once: true });
+          })
+    )
+  );
+  await window.document.fonts?.ready;
+  normalizeDocxLayout(host);
+}
+
 export default function FilePreview({
   url,
   fileName,
@@ -118,7 +150,25 @@ export default function FilePreview({
             setPdfPageCount(document.numPages);
           }
         } catch (previewError) {
-          if (!cancelled) {
+          if (kind === "word" && documentId) {
+            const host = wordHost.current;
+            if (!cancelled && host) {
+              try {
+                await renderWordPreviewFromUrl(url, host);
+                if (!cancelled) measureWordLayout();
+              } catch {
+                if (!cancelled) {
+                  setError(
+                    "تعذر عرض ملف Word. تحقق من اتصال الإنترنت ثم أعد المحاولة."
+                  );
+                }
+              }
+            } else if (!cancelled) {
+              setError(
+                "تعذر عرض ملف Word. تحقق من اتصال الإنترنت ثم أعد المحاولة."
+              );
+            }
+          } else if (!cancelled) {
             setError(
               previewError instanceof Error
                 ? previewError.message
@@ -138,44 +188,14 @@ export default function FilePreview({
 
     void (async () => {
       try {
-        const [{ renderAsync }] = await Promise.all([import("docx-preview")]);
-        const response = await fetch(url, { credentials: "omit" });
-        if (!response.ok) throw new Error("تعذر تنزيل الملف");
-        const buffer = await response.arrayBuffer();
-        if (cancelled || !wordHost.current) return;
-        wordHost.current.innerHTML = "";
-        await renderAsync(buffer, wordHost.current, undefined, {
-          className: "docx",
-          inWrapper: true,
-          breakPages: true,
-          ignoreLastRenderedPageBreak: false,
-          renderHeaders: true,
-          renderFooters: true,
-          useBase64URL: true,
-        });
-        await Promise.all(
-          Array.from(wordHost.current.querySelectorAll("img")).map(image =>
-            image.complete
-              ? image.decode?.().catch(() => undefined)
-              : new Promise<void>(resolve => {
-                  image.addEventListener("load", () => resolve(), {
-                    once: true,
-                  });
-                  image.addEventListener("error", () => resolve(), {
-                    once: true,
-                  });
-                })
-          )
-        );
-        await window.document.fonts?.ready;
-        normalizeDocxLayout(wordHost.current);
-        measureWordLayout();
-      } catch (previewError) {
+        const host = wordHost.current;
+        if (cancelled || !host) return;
+        await renderWordPreviewFromUrl(url, host);
+        if (!cancelled) measureWordLayout();
+      } catch {
         if (!cancelled) {
           setError(
-            previewError instanceof Error
-              ? previewError.message
-              : "تعذر عرض ملف Word"
+            "تعذر عرض ملف Word. تحقق من اتصال الإنترنت ثم أعد المحاولة."
           );
         }
       } finally {

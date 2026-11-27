@@ -11,6 +11,17 @@ const chromiumPath =
   (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined);
 const docxMimeType =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+type PreviewFetchCall = {
+  url: string;
+  method: string;
+  credentials?: RequestCredentials;
+};
+type PreviewTestWindow = Window & {
+  fixtureUrl: string;
+  fixtureMime: string;
+  fixtureDocumentId: string;
+  previewFetchCalls: PreviewFetchCall[];
+};
 
 function makeDocx(): Buffer {
   return Buffer.from(
@@ -31,14 +42,14 @@ function makeDocx(): Buffer {
 describe.skipIf(
   !chromiumPath && !(process.platform === "linux" && process.arch === "x64")
 )("Word preview in Chromium", () => {
-  it("centers the entire page in RTL at narrow and wide viewport sizes", async () => {
+  it("falls back to the signed original DOCX when PDF conversion fails", async () => {
     const bundle = await build({
       stdin: {
         contents: `import React from "react";
           import { createRoot } from "react-dom/client";
           import FilePreview from "./client/src/features/document-library/FilePreview.tsx";
           createRoot(document.getElementById("root")).render(
-            React.createElement(FilePreview, {url: window.fixtureUrl, fileName: "sample.docx", mimeType: window.fixtureMime})
+            React.createElement(FilePreview, {url: window.fixtureUrl, fileName: "sample.docx", mimeType: window.fixtureMime, documentId: window.fixtureDocumentId})
           );`,
         resolveDir: resolve("."),
         loader: "tsx",
@@ -57,12 +68,14 @@ describe.skipIf(
               namespace: "pdfjs-stub",
             }));
             builder.onLoad({ filter: /.*/, namespace: "pdfjs-stub" }, () => ({
-              contents: 'export default "";',
+              contents:
+                'export const GlobalWorkerOptions = {}; export function getDocument() { throw new Error("Unexpected PDF load"); } export default "";',
               loader: "js",
             }));
           },
         },
       ],
+      define: { "import.meta.env.VITE_APPWRITE_API_URL": '""' },
     });
     const browser = await chromium.launch({
       executablePath:
@@ -87,7 +100,33 @@ describe.skipIf(
       </style></head><body><div id="root"></div></body></html>`);
       await page.evaluate(
         ({ url, mime }) => {
-          Object.assign(window, { fixtureUrl: url, fixtureMime: mime });
+          const testWindow = window as PreviewTestWindow;
+          Object.assign(testWindow, {
+            fixtureUrl: url,
+            fixtureMime: mime,
+            fixtureDocumentId: "imported-document-1",
+            previewFetchCalls: [],
+          });
+          const nativeFetch = window.fetch.bind(window);
+          window.fetch = async (input, init) => {
+            const target =
+              typeof input === "string"
+                ? input
+                : input instanceof Request
+                  ? input.url
+                  : input.toString();
+            testWindow.previewFetchCalls.push({
+              url: target,
+              method: init?.method ?? "GET",
+              credentials: init?.credentials,
+            });
+            if (
+              target.includes("/api/documents/imported-document-1/print-pdf")
+            ) {
+              return new Response("conversion unavailable", { status: 502 });
+            }
+            return nativeFetch(input, init);
+          };
         },
         {
           url: `data:${docxMimeType};base64,${makeDocx().toString("base64")}`,
@@ -96,6 +135,22 @@ describe.skipIf(
       );
       await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
       await page.waitForSelector(".docx-wrapper > .docx");
+      const fetchCalls = await page.evaluate(
+        () => (window as PreviewTestWindow).previewFetchCalls
+      );
+      expect(fetchCalls).toHaveLength(2);
+      expect(fetchCalls[0]).toMatchObject({
+        method: "POST",
+        credentials: "include",
+      });
+      expect(fetchCalls[0]?.url).toContain(
+        "/api/documents/imported-document-1/print-pdf"
+      );
+      expect(fetchCalls[1]).toMatchObject({
+        method: "GET",
+        credentials: "omit",
+      });
+      expect(fetchCalls[1]?.url).toMatch(/^data:/);
       await page.waitForFunction(() => {
         const host = document.querySelector<HTMLElement>(
           ".document-word-preview"
@@ -142,6 +197,10 @@ describe.skipIf(
           ).toBeLessThan(2);
         }
       }
+
+      expect(await page.locator(".docx-wrapper").innerText()).toContain(
+        "First page"
+      );
 
       await page.evaluate(() => {
         const root = document.querySelector<HTMLElement>("#root")!;
