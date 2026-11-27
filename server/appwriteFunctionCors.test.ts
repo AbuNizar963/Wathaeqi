@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyCorsHeaders,
+  createCorsHeaders,
   getRequestHeader,
 } from "../appwrite/functions/wathaeqi-api/src/main";
 
