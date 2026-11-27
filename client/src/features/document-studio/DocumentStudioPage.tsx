@@ -1804,15 +1804,13 @@ export default function DocumentStudioPage() {
                         <Button
                           type="button"
                           variant="destructive"
-                          disabled={
-                            deleteDocumentMutation.isPending ||
-                            isSavingDocument
-                          }
+                          disabled={deleteDocumentMutation.isPending}
                           onClick={() => {
-                            const warning = hasUnsavedDocumentChanges
-                              ? "ستُحذف الوثيقة المحفوظة وستُفقد التعديلات غير المحفوظة. هل تريد المتابعة؟"
-                              : "هل تريد حذف هذه الوثيقة نهائيًا؟";
-                            if (window.confirm(warning)) {
+                            if (
+                              window.confirm(
+                                "حذف الوثيقة نهائيًا؟ ستُفقد التعديلات غير المحفوظة."
+                              )
+                            ) {
                               deleteDocumentMutation.mutate({
                                 id: selectedDocument.id,
                               });
