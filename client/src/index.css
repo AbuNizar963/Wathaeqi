@@ -1585,23 +1585,6 @@
     line-height: 1.8;
   }
 
-  .document-file-dialog > .sticky {
-    position: sticky;
-    right: 0;
-    bottom: calc(env(safe-area-inset-bottom) * -1);
-    left: 0;
-    width: calc(100% + 1.5rem);
-    margin-inline: -0.75rem;
-    border-inline: 0;
-    border-radius: 1rem 1rem 0 0;
-    padding-inline: 0.75rem;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-  }
-
-  .document-file-dialog > .sticky .h-12 {
-    min-height: 3rem;
-  }
-
   .mobile-bottom-nav {
     padding-bottom: env(safe-area-inset-bottom);
   }
