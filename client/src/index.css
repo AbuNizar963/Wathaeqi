@@ -1585,10 +1585,6 @@
     width: 100%;
   }
 
-  .document-file-dialog-header > div:last-child > button:first-child {
-    flex: 1;
-  }
-
   .document-file-dialog > [data-slot="dialog-description"] {
     line-height: 1.8;
   }
