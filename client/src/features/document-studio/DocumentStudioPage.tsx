@@ -944,8 +944,7 @@ export default function DocumentStudioPage() {
     fontWeight: platformDocumentSettings.data?.recipientFontWeight ?? 600,
     color: platformDocumentSettings.data?.recipientFontColor ?? "#0f172a",
   };
-  const isDataTabActive =
-    !previewMode && !nativePrintOpen && !importPrintOpen;
+  const isDataTabActive = !previewMode && !nativePrintOpen && !importPrintOpen;
   const isPreviewTabActive =
     previewMode && !nativePrintOpen && !importPrintOpen;
   const isPrintTabActive = nativePrintOpen || importPrintOpen;
@@ -1172,7 +1171,6 @@ export default function DocumentStudioPage() {
       </div>
 
       {showMobileDocumentTabs ? (
-        // prettier-ignore
         <nav
           className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
           role="tablist"
