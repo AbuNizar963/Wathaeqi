@@ -212,7 +212,9 @@ export default function DocumentLibraryPage({
 
   return (
     <div className="document-library-shell space-y-5" dir="rtl">
-      <div className="document-page-header document-library-header relative isolate overflow-hidden rounded-[1.75rem] border border-[#c49a5b]/30 bg-[#10262d] px-5 py-6 text-white shadow-lg shadow-slate-950/10 sm:px-7 sm:py-8">
+      <div
+        className="document-page-header document-library-header relative isolate overflow-hidden rounded-[1.75rem] border border-[#c49a5b]/30 bg-[#10262d] px-5 py-6 text-white shadow-lg shadow-slate-950/10 sm:px-7 sm:py-8"
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -left-16 -top-24 -z-10 size-64 rounded-full bg-[#c49a5b]/20 blur-3xl"
@@ -221,12 +223,18 @@ export default function DocumentLibraryPage({
           aria-hidden="true"
           className="pointer-events-none absolute -bottom-28 right-1/3 -z-10 size-64 rounded-full bg-[#0f766e]/30 blur-3xl"
         />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div className="document-library-heading max-w-2xl">
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-[#e2bd86]">
+            <p
+              className="text-[11px] font-semibold tracking-[0.18em] text-[#e2bd86]"
+            >
               الأرشيف الرقمي
             </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            <h1
+              className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl"
+            >
               {embedded ? "الملفات" : "مساحة الوثائق"}
             </h1>
             <p className="mt-2 text-sm leading-6 text-white/75">
@@ -247,7 +255,9 @@ export default function DocumentLibraryPage({
       </div>
 
       <div className="document-stats-grid grid gap-3 sm:grid-cols-3">
-        <Card className="document-card flex items-center gap-3 rounded-2xl border-border/70 p-4 shadow-sm transition-shadow hover:shadow-md">
+        <Card
+          className="document-card flex items-center gap-3 rounded-2xl border-border/70 p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
           <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <FolderOpen className="size-5" />
           </span>
@@ -260,7 +270,9 @@ export default function DocumentLibraryPage({
             </p>
           </div>
         </Card>
-        <Card className="flex items-center gap-3 rounded-2xl border-border/70 p-4 shadow-sm transition-shadow hover:shadow-md">
+        <Card
+          className="flex items-center gap-3 rounded-2xl border-border/70 p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
           <span className="flex size-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-700">
             <Layers className="size-5" />
           </span>
@@ -282,7 +294,9 @@ export default function DocumentLibraryPage({
         </Card>
       </div>
 
-      <Card className="document-toolbar document-library-toolbar flex flex-wrap items-center gap-2 rounded-2xl border-border/70 bg-card/95 p-3 shadow-sm sm:gap-3 sm:p-4">
+      <Card
+        className="document-toolbar document-library-toolbar flex flex-wrap items-center gap-2 rounded-2xl border-border/70 bg-card/95 p-3 shadow-sm sm:gap-3 sm:p-4"
+      >
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -432,7 +446,9 @@ export default function DocumentLibraryPage({
           )}
         </Card>
       ) : (
-        <div className="document-library-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:gap-4">
+        <div
+          className="document-library-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:gap-4"
+        >
           {filtered.map(document => {
             const file = document.file;
             if (!file) return null;
@@ -452,7 +468,9 @@ export default function DocumentLibraryPage({
                 }}
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10">
+                  <span
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/[0.08] text-primary ring-1 ring-primary/10"
+                  >
                     <FileGlyph
                       fileName={file.fileName}
                       mimeType={file.mimeType}
