@@ -26,6 +26,7 @@ const [
   workspacePage,
   workspaceRouter,
   globalStyles,
+  pwaInstallContext,
 ] = await Promise.all(
   [
     "client/index.html",
@@ -40,6 +41,7 @@ const [
     "client/src/features/workspace/WorkspacePage.tsx",
     "server/features/workspace/workspaceRouter.ts",
     "client/src/index.css",
+    "client/src/contexts/PwaInstallContext.tsx",
   ].map(readProjectFile)
 );
 
@@ -299,6 +301,16 @@ assert(
       "rowData(row).organizationId !== scope.organizationId"
     ),
   "Contacts and users must use mobile-safe cards and dialogs, with organization-scoped role updates."
+);
+
+assert(
+  pwaInstallContext.includes('"beforeinstallprompt"') &&
+    pwaInstallContext.includes('"appinstalled"') &&
+    pwaInstallContext.includes('"(display-mode: standalone)"') &&
+    pwaInstallContext.includes("requestPwaInstall") &&
+    headerActions.includes("canInstall") &&
+    headerActions.includes("تثبيت التطبيق"),
+  "The PWA install action must be captured at app startup and shown only when the browser offers installation."
 );
 
 console.log(
