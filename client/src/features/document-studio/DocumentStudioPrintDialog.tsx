@@ -287,7 +287,7 @@ export default function DocumentStudioPrintDialog({
       }}
     >
       <DialogContent
-        className="max-h-[92vh] max-w-5xl overflow-y-auto"
+        className="max-h-[calc(100dvh-1rem)] min-h-0 w-[calc(100%-1rem)] max-w-5xl overflow-x-hidden overflow-y-auto overscroll-contain p-3 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100%-2rem)] sm:p-6"
         dir="rtl"
       >
         <DialogHeader>
