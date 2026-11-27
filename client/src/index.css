@@ -105,9 +105,9 @@
   --info: #0f766e;
   --info-foreground: #ffffff;
   --info-tint: #d9efeb;
-  --brand-wash: rgb(2 132 199 / 0.055);
-  --ambient-wash: rgb(217 119 6 / 0.04);
-  --shadow-color: rgb(15 23 42 / 0.07);
+  --brand-wash: rgb(15 118 110 / 0.06);
+  --ambient-wash: rgb(185 133 67 / 0.045);
+  --shadow-color: rgb(20 37 44 / 0.07);
   --radius: 0.75rem;
   --sidebar-background: #ffffff;
   --sidebar-foreground: #14252c;
@@ -151,9 +151,9 @@
   --info: #2dd4bf;
   --info-foreground: #0b292a;
   --info-tint: rgb(14 165 233 / 0.14);
-  --brand-wash: rgb(56 189 248 / 0.08);
-  --ambient-wash: rgb(245 158 11 / 0.055);
-  --shadow-color: rgb(2 8 23 / 0.32);
+  --brand-wash: rgb(45 212 191 / 0.08);
+  --ambient-wash: rgb(196 154 91 / 0.06);
+  --shadow-color: rgb(2 15 18 / 0.32);
   --sidebar-background: #152832;
   --sidebar-foreground: #f2f7f5;
   --sidebar-primary: #14b8a6;
