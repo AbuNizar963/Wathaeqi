@@ -254,6 +254,7 @@ class _MandatoryPinSetupDialogState extends State<_MandatoryPinSetupDialog> {
     child: Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
+        scrollable: true,
         title: const Text('إنشاء رمز PIN إلزامي'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -966,6 +967,7 @@ class _AppLockSettingsSectionState extends State<AppLockSettingsSection> {
         builder: (dialogContext) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
+        scrollable: true,
             title: Text(confirm ? 'تغيير رمز PIN' : 'إعداد رمز PIN'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
