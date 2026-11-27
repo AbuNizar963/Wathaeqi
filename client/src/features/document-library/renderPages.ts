@@ -5,7 +5,7 @@ import {
   DEFAULT_PRINT_PIXEL_RATIO,
   getBoundedPixelRatio,
 } from "./renderQuality";
-import { normalizeDocxImageLayout } from "./normalizeDocxImages";
+import { normalizeDocxLayout } from "./normalizeDocxImages";
 
 const RENDER_SCALE = DEFAULT_PRINT_PIXEL_RATIO;
 const MAX_PAGES = 300;
@@ -85,8 +85,8 @@ async function renderWordPages(
       renderFooters: true,
       useBase64URL: true,
     });
-    normalizeDocxImageLayout(host);
     await window.document.fonts?.ready;
+    normalizeDocxLayout(host);
     let sections = Array.from(
       host.querySelectorAll<HTMLElement>("section.docx")
     );

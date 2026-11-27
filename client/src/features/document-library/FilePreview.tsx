@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, FileWarning, Loader2 } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { fileKind } from "./types";
 import { calculatePdfPreviewScale } from "./pdfPreviewSizing";
-import { normalizeDocxImageLayout } from "./normalizeDocxImages";
+import { normalizeDocxLayout } from "./normalizeDocxImages";
 
 export default function FilePreview({
   url,
@@ -117,7 +117,8 @@ export default function FilePreview({
           renderFooters: true,
           useBase64URL: true,
         });
-        normalizeDocxImageLayout(wordHost.current);
+        await window.document.fonts?.ready;
+        normalizeDocxLayout(wordHost.current);
         measureWordLayout();
       } catch (previewError) {
         if (!cancelled) {
@@ -282,8 +283,9 @@ export default function FilePreview({
         dir="auto"
         className="document-word-preview mx-auto w-max min-w-full bg-white shadow"
         style={{
-          transform: `translateX(-50%) scale(${wordLayout.scale})`,
+          transform: "translateX(-50%)",
           transformOrigin: "top center",
+          zoom: wordLayout.scale,
           position: "absolute",
           left: "50%",
           top: "8px",
