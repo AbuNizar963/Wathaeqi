@@ -168,7 +168,7 @@ assert(
     dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
     !dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
     !dashboardLayout.includes("<span>المزيد</span>") &&
-    !dashboardLayout.includes('aria-label="التنقل الرئيسي"') === false,
+    !dashboardLayout.includes("mobile-bottom-nav-account"),
   "Mobile navigation must keep theme and notifications in the top bar and place search beside create without a bottom drawer control."
 );
 
