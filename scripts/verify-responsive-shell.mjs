@@ -81,6 +81,17 @@ assert(
 );
 
 assert(
+  dashboardLayout.includes(
+    `if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        if (isMobile) setOpenMobile(false);
+        setSearchOpen(true);
+      }`
+  ),
+  "Quick search must close the mobile drawer before opening its dialog layer."
+);
+
+assert(
   brandMark.includes("#10262d") &&
     brandMark.includes("#c49a5b") &&
     brandMark.includes("#0f766e") &&
