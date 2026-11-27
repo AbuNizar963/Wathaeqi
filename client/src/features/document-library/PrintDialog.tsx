@@ -12,7 +12,11 @@ import {
 import FilePreview from "./FilePreview";
 import PrintSettingsPanel, { CutMarksControls } from "./PrintSettingsPanel";
 import { openOriginalPrintWindow } from "./printOriginal";
-import { DEFAULT_CUT_MARGIN_MM, fileKind } from "./types";
+import {
+  DEFAULT_CUT_MARGIN_MM,
+  DEFAULT_SHOW_CUT_MARKS,
+  fileKind,
+} from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
 import DocumentOperationProgress from "../document-progress/DocumentOperationProgress";
 import { useDocumentProgress } from "../document-progress/useDocumentProgress";
@@ -43,7 +47,7 @@ export default function PrintDialog({
   const [marginMm, setMarginMm] = useState(0);
   const [cutMarginMm, setCutMarginMm] = useState(DEFAULT_CUT_MARGIN_MM);
   const [showPageNumbers, setShowPageNumbers] = useState(false);
-  const [showCutMarks, setShowCutMarks] = useState(false);
+  const [showCutMarks, setShowCutMarks] = useState(DEFAULT_SHOW_CUT_MARKS);
   const [imageTiles, setImageTiles] = useState<1 | 4 | 9 | 16>(1);
   const [imageCopiesPerSheet, setImageCopiesPerSheet] =
     useState<PagesPerSheet>(1);
@@ -71,7 +75,7 @@ export default function PrintDialog({
     setMarginMm(0);
     setCutMarginMm(DEFAULT_CUT_MARGIN_MM);
     setShowPageNumbers(false);
-    setShowCutMarks(false);
+    setShowCutMarks(DEFAULT_SHOW_CUT_MARKS);
     setImageTiles(1);
     setImageCopiesPerSheet(1);
   }, [open, url, fileName, mimeType]);

@@ -98,9 +98,9 @@ function escapeHtml(value: string): string {
 
 export const PRINT_CUT_MARKS_CSS = `
   .cut-marks { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
-  .cut-mark { position: absolute; display: block; box-sizing: content-box; transform: translate(-50%, -50%); border-color: #1f2937; }
-  .cut-mark--vertical { width: 0; height: var(--cut-mark-length); border-left: var(--cut-mark-thickness) solid #1f2937; }
-  .cut-mark--horizontal { width: var(--cut-mark-length); height: 0; border-top: var(--cut-mark-thickness) solid #1f2937; }
+  .cut-mark { position: absolute; display: block; box-sizing: content-box; }
+  .cut-mark--vertical { width: 0; border-left: 0.15mm dotted #64748b; transform: translateX(-50%); }
+  .cut-mark--horizontal { height: 0; border-top: 0.15mm dotted #64748b; transform: translateY(-50%); }
 `;
 
 function gridAxisPosition(
@@ -114,7 +114,14 @@ function gridAxisPosition(
   return `calc(${percentValue} ${gapOffset < 0 ? "-" : "+"} ${Math.abs(gapOffset).toFixed(4)}mm)`;
 }
 
-/** Add short cut guides only where two real cells share an internal gutter. */
+function gridAxisLength(cellCount: number, cutMarginMm: number): string {
+  const percent = (100 / cellCount).toFixed(4);
+  const gapOffset = ((cellCount - 1) / cellCount) * cutMarginMm;
+  if (gapOffset < 0.0001) return `${percent}%`;
+  return `calc(${percent}% - ${gapOffset.toFixed(4)}mm)`;
+}
+
+/** Add tiny dotted guides across shared page edges, staying inside real gutters. */
 export function createCutMarksMarkup(
   pageCount: number,
   pagesPerSheet: PagesPerSheet,
@@ -126,15 +133,19 @@ export function createCutMarksMarkup(
 
   const { columns, rows } = getPrintGridDimensions(pagesPerSheet, orientation);
   const actualPageCount = Math.min(pageCount, pagesPerSheet);
-  const markLength = Math.min(2, gap);
-  const markThickness = Math.min(0.35, Math.max(0.15, gap * 0.12));
+  const rowHeight = gridAxisLength(rows, gap);
+  const columnWidth = gridAxisLength(columns, gap);
   const markers: string[] = [];
 
   for (let index = 0; index < actualPageCount; index += 1) {
     const row = Math.floor(index / columns);
     const column = index % columns;
-    const markerStyle = (left: string, top: string) =>
-      `left:${left};top:${top};--cut-mark-length:${markLength.toFixed(3)}mm;--cut-mark-thickness:${markThickness.toFixed(3)}mm`;
+    const markerStyle = (
+      left: string,
+      top: string,
+      dimension: "height" | "width",
+      length: string
+    ) => `left:${left};top:${top};${dimension}:${length}`;
 
     if (column < columns - 1 && index + 1 < actualPageCount) {
       const left = gridAxisPosition(
@@ -142,28 +153,20 @@ export function createCutMarksMarkup(
         (column + 1) / columns - 0.5,
         gap
       );
-      const top = gridAxisPosition(
-        (row + 0.5) / rows,
-        (row - (rows - 1) / 2) / rows,
-        gap
-      );
+      const top = gridAxisPosition(row / rows, row / rows, gap);
       markers.push(
-        `<span class="cut-mark cut-mark--vertical" style="${markerStyle(left, top)}"></span>`
+        `<span class="cut-mark cut-mark--vertical" style="${markerStyle(left, top, "height", rowHeight)}"></span>`
       );
     }
     if (row < rows - 1 && index + columns < actualPageCount) {
-      const left = gridAxisPosition(
-        (column + 0.5) / columns,
-        (column - (columns - 1) / 2) / columns,
-        gap
-      );
+      const left = gridAxisPosition(column / columns, column / columns, gap);
       const top = gridAxisPosition(
         (row + 1) / rows,
         (row + 1) / rows - 0.5,
         gap
       );
       markers.push(
-        `<span class="cut-mark cut-mark--horizontal" style="${markerStyle(left, top)}"></span>`
+        `<span class="cut-mark cut-mark--horizontal" style="${markerStyle(left, top, "width", columnWidth)}"></span>`
       );
     }
   }

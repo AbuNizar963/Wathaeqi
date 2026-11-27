@@ -4,6 +4,7 @@ import {
   buildPrintSheets,
   createCutMarksMarkup,
   groupPages,
+  PRINT_CUT_MARKS_CSS,
 } from "./printSheets";
 import type { PrintOptions, SourcePage } from "./types";
 
@@ -165,10 +166,13 @@ describe("document print sheet layout", () => {
     expect(html.match(/class="cut-mark cut-mark--/g)).toHaveLength(4);
   });
 
-  it("centers cut marks in real gutters and omits them without space or adjacency", () => {
+  it("draws tiny dotted guides across real cut edges and omits them without space or adjacency", () => {
     const portrait = createCutMarksMarkup(4, 4, "portrait", 3);
     expect(portrait.match(/cut-mark--vertical/g)).toHaveLength(2);
     expect(portrait.match(/cut-mark--horizontal/g)).toHaveLength(2);
+    expect(portrait).toContain("height:calc(50.0000% - 1.5000mm)");
+    expect(portrait).toContain("width:calc(50.0000% - 1.5000mm)");
+    expect(PRINT_CUT_MARKS_CSS).toContain("0.15mm dotted");
     expect(createCutMarksMarkup(2, 2, "landscape", 5)).toContain(
       "cut-mark--vertical"
     );

@@ -203,12 +203,17 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
           root.querySelectorAll<HTMLElement>(".cut-mark"),
           mark => {
             const rect = mark.getBoundingClientRect();
+            const style = getComputedStyle(mark);
             return {
               className: mark.className,
               left: rect.left,
               right: rect.right,
               top: rect.top,
               bottom: rect.bottom,
+              borderLeftStyle: style.borderLeftStyle,
+              borderLeftWidth: style.borderLeftWidth,
+              borderTopStyle: style.borderTopStyle,
+              borderTopWidth: style.borderTopWidth,
             };
           }
         );
@@ -271,15 +276,28 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
       expect(verticalMarks).toHaveLength(2);
       expect(horizontalMarks).toHaveLength(2);
       expect(
+        verticalMarks.every(
+          mark =>
+            mark.borderLeftStyle === "dotted" &&
+            Number.parseFloat(mark.borderLeftWidth) <= 1
+        )
+      ).toBe(true);
+      expect(
+        horizontalMarks.every(
+          mark =>
+            mark.borderTopStyle === "dotted" &&
+            Number.parseFloat(mark.borderTopWidth) <= 1
+        )
+      ).toBe(true);
+      expect(
         (verticalMarks[0]!.left + verticalMarks[0]!.right) / 2
       ).toBeCloseTo(
         (geometry.cells[0]!.right + geometry.cells[1]!.left) / 2,
         0
       );
-      expect(
-        (verticalMarks[0]!.top + verticalMarks[0]!.bottom) / 2
-      ).toBeCloseTo(
-        (geometry.cells[0]!.top + geometry.cells[0]!.bottom) / 2,
+      expect(verticalMarks[0]!.top).toBeCloseTo(geometry.cells[0]!.top, 0);
+      expect(verticalMarks[0]!.bottom).toBeCloseTo(
+        geometry.cells[0]!.bottom,
         0
       );
       expect(
@@ -288,10 +306,9 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
         (geometry.cells[0]!.bottom + geometry.cells[2]!.top) / 2,
         0
       );
-      expect(
-        (horizontalMarks[0]!.left + horizontalMarks[0]!.right) / 2
-      ).toBeCloseTo(
-        (geometry.cells[0]!.left + geometry.cells[0]!.right) / 2,
+      expect(horizontalMarks[0]!.left).toBeCloseTo(geometry.cells[0]!.left, 0);
+      expect(horizontalMarks[0]!.right).toBeCloseTo(
+        geometry.cells[0]!.right,
         0
       );
       expect(geometry.cells.map(cell => cell.right - cell.left)).toEqual([

@@ -95,6 +95,7 @@ export default function ResponsiveA4Preview({
           transformOrigin: "top center",
           padding: pagePadding,
           boxSizing: "border-box",
+          backgroundImage: "none",
           border: "none",
           boxShadow: "none",
         }}

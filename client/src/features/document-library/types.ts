@@ -4,6 +4,7 @@ export type PrintOrientation = "portrait" | "landscape";
 
 export const DEFAULT_CUT_MARGIN_MM = 3;
 export const MAX_CUT_MARGIN_MM = 20;
+export const DEFAULT_SHOW_CUT_MARKS = true;
 
 export function normalizeCutMarginMm(value?: number): number {
   const numericValue =

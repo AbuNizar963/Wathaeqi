@@ -116,7 +116,8 @@ export function CutMarksControls({
         <span>
           <span className="block font-medium">إظهار نقاط القص</span>
           <span className="block text-xs text-muted-foreground">
-            علامات قصيرة في منتصف الفواصل، من دون تغطية محتوى الوثائق.
+            نقاط دقيقة متتابعة على كامل خط القص داخل الفاصل، دون ملامسة محتوى
+            الوثائق.
           </span>
         </span>
       </label>

@@ -1,4 +1,4 @@
-import { fileKind } from "./types";
+import { DEFAULT_SHOW_CUT_MARKS, fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
 import { normalizeCutMarginMm } from "./types";
 import {
@@ -61,7 +61,7 @@ export async function openOriginalPrintWindow(
     headerText: "",
     footerText: "",
     showPageNumbers: options.showPageNumbers ?? false,
-    showCutMarks: options.showCutMarks ?? false,
+    showCutMarks: options.showCutMarks ?? DEFAULT_SHOW_CUT_MARKS,
   };
   try {
     // Refresh the short-lived URL without creating a popup or changing auth.
@@ -308,7 +308,7 @@ export async function openOriginalPrintWindow(
       orientation,
       showPageNumbers: options.showPageNumbers ?? false,
       cutMarginMm: layoutOptions.cutMarginMm,
-      showCutMarks: options.showCutMarks ?? false,
+      showCutMarks: options.showCutMarks ?? DEFAULT_SHOW_CUT_MARKS,
     });
     await invokePagePrint(wordSession.root, options);
   } catch (error) {

@@ -1045,18 +1045,10 @@
   }
 }
 
-/* Responsive A4 page breaks and centered watermark for every preview sheet. */
+/* Keep the preview surface clean; repeated footer stripes resemble a page border. */
 .document-a4-page {
   background-color: white;
-  background-image: linear-gradient(
-    to bottom,
-    #fff 0,
-    #fff calc(var(--document-page-height, 1122.52px) - 12px),
-    #e2e8f0 calc(var(--document-page-height, 1122.52px) - 12px),
-    #e2e8f0 var(--document-page-height, 1122.52px)
-  );
-  background-size: 100% var(--document-page-height, 1122.52px);
-  background-repeat: repeat-y;
+  background-image: none;
 }
 
 .page-watermark {

@@ -61,6 +61,7 @@ describe("ResponsiveA4Preview", () => {
 
     expect(DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle).toBe("none");
     expect(markup).toContain("document-a4-preview-page");
+    expect(markup).toContain("background-image:none;");
     expect(markup).not.toContain("data-document-frame=");
     expect(markup).toContain("محتوى الوثيقة");
     expect(markup).not.toContain("تكبير معاينة الورقة");

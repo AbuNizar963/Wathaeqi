@@ -135,7 +135,6 @@ describe.skipIf(
               pagesPerSheet,
               fileName,
               cutMarginMm: 5,
-              showCutMarks: pagesPerSheet > 1,
             }),
           { url, mimeType: docxMimeType, pagesPerSheet, fileName }
         );

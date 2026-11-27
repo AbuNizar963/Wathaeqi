@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { fileKind } from "./types";
+import { DEFAULT_SHOW_CUT_MARKS, fileKind } from "./types";
 
 const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+describe("print defaults", () => {
+  it("enables cut guides by default", () => {
+    expect(DEFAULT_SHOW_CUT_MARKS).toBe(true);
+  });
+});
 
 describe("fileKind", () => {
   it("routes matching DOCX metadata to the Word preview/print path", () => {

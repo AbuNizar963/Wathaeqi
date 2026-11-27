@@ -26,7 +26,10 @@ import type {
   PrintOrientation,
   SourcePage,
 } from "../document-library/types";
-import { DEFAULT_CUT_MARGIN_MM } from "../document-library/types";
+import {
+  DEFAULT_CUT_MARGIN_MM,
+  DEFAULT_SHOW_CUT_MARKS,
+} from "../document-library/types";
 import {
   DEFAULT_PRINT_PIXEL_RATIO,
   canvasToPngObjectUrl,
@@ -207,7 +210,7 @@ export default function DocumentStudioPrintDialog({
   const [marginMm, setMarginMm] = useState(0);
   const [cutMarginMm, setCutMarginMm] = useState(DEFAULT_CUT_MARGIN_MM);
   const [showPageNumbers, setShowPageNumbers] = useState(false);
-  const [showCutMarks, setShowCutMarks] = useState(false);
+  const [showCutMarks, setShowCutMarks] = useState(DEFAULT_SHOW_CUT_MARKS);
   const [showDocumentHeader, setShowDocumentHeader] = useState(true);
   const [showDocumentFooter, setShowDocumentFooter] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -230,7 +233,7 @@ export default function DocumentStudioPrintDialog({
     setMarginMm(0);
     setCutMarginMm(DEFAULT_CUT_MARGIN_MM);
     setShowPageNumbers(false);
-    setShowCutMarks(false);
+    setShowCutMarks(DEFAULT_SHOW_CUT_MARKS);
   }, [open, title]);
 
   useEffect(() => {
