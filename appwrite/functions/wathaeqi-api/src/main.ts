@@ -198,7 +198,7 @@ function getAllowedOrigins(): Set<string> {
   );
 }
 
-function createCorsHeaders(origin: string | undefined): Headers {
+export function createCorsHeaders(origin: string | undefined): Headers {
   const headers = new Headers({
     "Cache-Control": "no-store",
     Vary: "Origin",
@@ -218,7 +218,19 @@ function createCorsHeaders(origin: string | undefined): Headers {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
   });
-  if (origin) headers.set("Access-Control-Allow-Origin", origin);
+  // Appwrite's function gateway can omit Origin on forwarded preflight
+  // requests. When it does, use the first explicitly configured production
+  // origin so the browser receives a valid CORS response. A supplied but
+  // unapproved origin is never reflected here (and is rejected by main()).
+  const allowedOrigins = getAllowedOrigins();
+  const responseOrigin = origin
+    ? allowedOrigins.has(origin)
+      ? origin
+      : undefined
+    : allowedOrigins.values().next().value;
+  if (responseOrigin) {
+    headers.set("Access-Control-Allow-Origin", responseOrigin);
+  }
   return headers;
 }
 
