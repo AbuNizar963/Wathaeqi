@@ -18,6 +18,7 @@ const [
   manifest,
   brandMark,
   brandIcon,
+  maskableIcon,
   dashboardLayout,
   headerActions,
   sidebarLayout,
@@ -41,6 +42,7 @@ const [
     "client/public/manifest.json",
     "client/src/components/BrandMark.tsx",
     "client/public/icon.svg",
+    "client/public/icon-maskable.svg",
     "client/src/components/DashboardLayout.tsx",
     "client/src/components/HeaderActions.tsx",
     "client/src/components/ui/sidebar.tsx",
@@ -75,6 +77,10 @@ assert(
     brandMark.includes("#c49a5b") &&
     brandMark.includes("#0f766e") &&
     brandIcon.includes("#10262d") &&
+    maskableIcon.includes('viewBox="0 0 512 512"') &&
+    maskableIcon.includes('transform="translate(56 56) scale(.78)"') &&
+    manifest.includes('"src": "/icon-maskable.svg"') &&
+    manifest.includes('"purpose": "maskable"') &&
     manifest.includes('"theme_color": "#10262d"') &&
     manifest.includes('"src": "/icon.svg"') &&
     manifest.includes('"/icon-192.png"') &&
