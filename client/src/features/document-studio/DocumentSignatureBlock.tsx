@@ -58,6 +58,7 @@ export default function DocumentSignatureBlock({
       }}
       dir="rtl"
       data-testid="document-signature-block"
+      data-document-print-section="footer"
     >
       {visibleLines.map((line, index) => (
         <p key={index} className="whitespace-pre-wrap">
