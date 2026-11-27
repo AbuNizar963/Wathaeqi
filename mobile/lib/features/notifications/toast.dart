@@ -375,17 +375,28 @@ class _FallbackToast {
   }
 
   static void _removeEntry(OverlayEntry entry) {
+    var disposeScheduled = false;
     var disposed = false;
 
     void disposeAfterUnmount() {
-      if (disposed || entry.mounted) return;
-      disposed = true;
-      entry.removeListener(disposeAfterUnmount);
-      entry.dispose();
+      if (disposed || entry.mounted || disposeScheduled) return;
+      disposeScheduled = true;
+
+      // OverlayEntry notifies listeners while its subtree is unmounting.
+      // Defer disposal until that notification cycle and frame have ended.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (disposed) return;
+        disposeScheduled = false;
+        if (entry.mounted) {
+          disposeAfterUnmount();
+          return;
+        }
+        disposed = true;
+        entry.removeListener(disposeAfterUnmount);
+        entry.dispose();
+      });
     }
 
-    // Removing an entry schedules the Overlay rebuild. Dispose only after
-    // the entry's subtree has actually unmounted.
     entry.addListener(disposeAfterUnmount);
     entry.remove();
     disposeAfterUnmount();
