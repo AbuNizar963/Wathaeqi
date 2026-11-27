@@ -468,9 +468,6 @@ export default function WorkspacePage({
                   آخر ما أُضيف إلى مكتبتك الرسمية
                 </p>
               </div>
-              <Badge variant="secondary">
-                {documentsQuery.data?.length ?? 0}
-              </Badge>
             </div>
             {isLoading ? (
               <Loading />
