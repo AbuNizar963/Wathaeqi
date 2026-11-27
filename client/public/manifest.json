@@ -11,8 +11,8 @@
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "any",
   "prefer_related_applications": false,
-  "background_color": "#0B1120",
-  "theme_color": "#0B1120",
+  "background_color": "#10262d",
+  "theme_color": "#10262d",
   "categories": ["business", "productivity"],
   "icons": [
     {
