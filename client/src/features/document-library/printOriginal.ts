@@ -14,6 +14,7 @@ import {
   type DocumentOperationOptions,
 } from "../document-progress/documentProgress";
 import { canvasToPngObjectUrl, getBoundedPixelRatio } from "./renderQuality";
+import { normalizeDocxImageLayout } from "./normalizeDocxImages";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 
 export async function openOriginalPrintWindow(
@@ -283,6 +284,7 @@ export async function openOriginalPrintWindow(
       renderFooters: true,
       useBase64URL: true,
     });
+    normalizeDocxImageLayout(host);
     for (const style of host.querySelectorAll("style"))
       style.textContent = scopePrintCss(style.textContent ?? "");
     await waitForPrintAssets(wordSession.root, options);
