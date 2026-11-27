@@ -335,6 +335,7 @@ class _FallbackToast {
     Duration? duration,
   ) {
     _timer?.cancel();
+    _timer = null;
     _removeCurrentEntry();
 
     late OverlayEntry entry;
