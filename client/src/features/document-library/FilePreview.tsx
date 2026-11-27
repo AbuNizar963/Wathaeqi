@@ -33,18 +33,33 @@ export default function FilePreview({
     const host = wordHost.current;
     if (!viewport || !host) return;
     const page = host.querySelector<HTMLElement>(".docx");
+    const zoom = Number.parseFloat(window.getComputedStyle(host).zoom) || 1;
+    const pageRect = page?.getBoundingClientRect();
+    const hostRect = host.getBoundingClientRect();
+    // ResizeObserver also fires after `zoom` changes. Reading scrollWidth at
+    // that point measures the already-scaled page and causes an endless
+    // feedback loop where every pass makes the Word page smaller.
     const naturalWidth = Math.max(
-      host.scrollWidth,
-      page?.scrollWidth ?? 0,
-      page?.getBoundingClientRect().width ?? 0
+      (pageRect?.width ?? 0) / zoom,
+      page?.offsetWidth ?? 0,
+      (hostRect.width || 0) / zoom
     );
-    const naturalHeight = Math.max(host.scrollHeight, page?.scrollHeight ?? 0);
+    const naturalHeight = Math.max(
+      (hostRect.height || 0) / zoom,
+      page?.offsetHeight ?? 0,
+      host.offsetHeight
+    );
     if (!naturalWidth || !naturalHeight) return;
     const availableWidth = Math.max(1, viewport.clientWidth - 16);
     const scale = fitToViewport
       ? Math.min(1, availableWidth / naturalWidth)
       : 1;
-    setWordLayout({ scale, height: Math.ceil(naturalHeight * scale) });
+    const height = Math.ceil(naturalHeight * scale);
+    setWordLayout(current =>
+      Math.abs(current.scale - scale) < 0.001 && current.height === height
+        ? current
+        : { scale, height }
+    );
   }
 
   useEffect(() => {
@@ -117,6 +132,20 @@ export default function FilePreview({
           renderFooters: true,
           useBase64URL: true,
         });
+        await Promise.all(
+          Array.from(wordHost.current.querySelectorAll("img")).map(image =>
+            image.complete
+              ? image.decode?.().catch(() => undefined)
+              : new Promise<void>(resolve => {
+                  image.addEventListener("load", () => resolve(), {
+                    once: true,
+                  });
+                  image.addEventListener("error", () => resolve(), {
+                    once: true,
+                  });
+                })
+          )
+        );
         await window.document.fonts?.ready;
         normalizeDocxLayout(wordHost.current);
         measureWordLayout();
@@ -195,7 +224,6 @@ export default function FilePreview({
     if (!viewport || !host) return;
     const observer = new ResizeObserver(() => measureWordLayout());
     observer.observe(viewport);
-    observer.observe(host);
     return () => observer.disconnect();
   }, [kind, fitToViewport, loading]);
 

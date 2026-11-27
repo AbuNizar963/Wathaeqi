@@ -142,6 +142,27 @@ describe.skipIf(
           ).toBeLessThan(2);
         }
       }
+
+      await page.evaluate(() => {
+        const root = document.querySelector<HTMLElement>("#root")!;
+        root.style.width = "350px";
+      });
+      await page.waitForTimeout(250);
+      const firstScale = await page.evaluate(() => {
+        const host = document.querySelector<HTMLElement>(
+          ".document-word-preview"
+        )!;
+        return Number.parseFloat(getComputedStyle(host).zoom);
+      });
+      await page.waitForTimeout(750);
+      const secondScale = await page.evaluate(() => {
+        const host = document.querySelector<HTMLElement>(
+          ".document-word-preview"
+        )!;
+        return Number.parseFloat(getComputedStyle(host).zoom);
+      });
+      expect(firstScale).toBeGreaterThan(0.01);
+      expect(Math.abs(secondScale - firstScale)).toBeLessThan(0.01);
     } finally {
       await browser.close();
     }

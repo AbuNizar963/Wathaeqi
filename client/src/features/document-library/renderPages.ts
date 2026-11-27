@@ -85,6 +85,16 @@ async function renderWordPages(
       renderFooters: true,
       useBase64URL: true,
     });
+    await Promise.all(
+      Array.from(host.querySelectorAll("img")).map(image =>
+        image.complete
+          ? image.decode?.().catch(() => undefined)
+          : new Promise<void>(resolve => {
+              image.addEventListener("load", () => resolve(), { once: true });
+              image.addEventListener("error", () => resolve(), { once: true });
+            })
+      )
+    );
     await window.document.fonts?.ready;
     normalizeDocxLayout(host);
     let sections = Array.from(
