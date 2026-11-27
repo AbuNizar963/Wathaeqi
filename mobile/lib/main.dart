@@ -1637,7 +1637,7 @@ class _DashboardPageState extends State<DashboardPage>
       bottomNavigationBar: Builder(
         builder: (context) => LayoutBuilder(
           builder: (context, constraints) {
-            if (MediaQuery.sizeOf(context).width >= 600) {
+            if (constraints.maxWidth >= 600) {
               return const SizedBox.shrink();
             }
             return SafeArea(
