@@ -1805,7 +1805,8 @@ export default function DocumentStudioPage() {
                           type="button"
                           variant="destructive"
                           disabled={
-                            deleteDocumentMutation.isPending || isSavingDocument
+                            deleteDocumentMutation.isPending ||
+                            isSavingDocument
                           }
                           onClick={() => {
                             const warning = hasUnsavedDocumentChanges
