@@ -975,7 +975,7 @@ export default function DocumentStudioPage() {
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
       {downloadOperation.progress ? (
-        <div className="fixed inset-x-4 bottom-24 z-[100] mx-auto max-w-lg rounded-2xl border bg-card p-3 shadow-xl">
+        <div className="mb-3 w-full max-w-lg rounded-2xl border bg-card p-3 shadow-sm">
           <DocumentOperationProgress progress={downloadOperation.progress} />
           <Button
             className="mt-2"
