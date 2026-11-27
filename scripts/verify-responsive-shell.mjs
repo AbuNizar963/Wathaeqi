@@ -212,6 +212,15 @@ assert(
 );
 
 assert(
+  globalStyles.includes("@media (pointer: coarse)") &&
+    globalStyles.includes("min-height: 44px") &&
+    globalStyles.includes("@media (prefers-reduced-motion: reduce)") &&
+    globalStyles.includes("scroll-padding-top") &&
+    globalStyles.includes("env(safe-area-inset-left)"),
+  "The responsive foundation must support touch-sized controls, reduced motion, safe areas, and anchored scrolling."
+);
+
+assert(
   appRoutes.includes('path="/settings"') &&
     settingsPage.includes("platformDocumentSettings.update"),
   "The owner workspace must expose a real Appwrite-backed document settings page."
