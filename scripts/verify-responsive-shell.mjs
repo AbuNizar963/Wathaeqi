@@ -398,6 +398,17 @@ assert(
 );
 
 assert(
+  workspacePage.includes('className="hidden min-h-12 rounded-xl') &&
+    workspacePage.includes('className="hidden min-h-11 rounded-xl') &&
+    !workspacePage.includes(">معاينة</Button>") &&
+    documentStudio.includes(
+      'className="hidden md:inline-flex"\n                        onClick={() => setCreationDialogOpen(true)}'
+    ) &&
+    documentLibraryPage.includes("{!embedded ? ("),
+  "The mobile dashboard and document workspace must not duplicate global create/navigation actions or repeat a preview button."
+);
+
+assert(
   countOccurrences(documentLibraryPage, "setPrintOpen(true)") === 1 &&
     countOccurrences(documentLibraryPage, "deleteDocument.mutate") === 1 &&
     documentStudio.includes("!item.file &&") &&
