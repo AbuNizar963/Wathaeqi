@@ -217,7 +217,10 @@ assert(
       "border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
     ) &&
     headerActions.includes('setLocation("/terms")') &&
+    headerActions.includes('setLocation("/privacy")') &&
     headerActions.includes('setLocation("/about")') &&
+    headerActions.includes("سياسة الخصوصية") &&
+    appRoutes.includes('Route path="/privacy" component={Privacy} />') &&
     headerActions.includes("الملف الشخصي") &&
     headerActions.includes("تثبيت التطبيق") &&
     headerActions.includes("الشروط والأحكام") &&
