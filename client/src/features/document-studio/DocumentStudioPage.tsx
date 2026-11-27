@@ -9,6 +9,7 @@ import {
   PenLine,
   FolderOpen,
   LayoutTemplate,
+  MoreHorizontal,
   Printer,
   Save,
   Search,
@@ -21,6 +22,14 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -950,21 +959,22 @@ export default function DocumentStudioPage() {
           </Button>
         </div>
       ) : null}
-      <div className="document-page-header document-studio-header flex flex-col items-stretch justify-between gap-3 document-studio-no-print sm:flex-row sm:items-start">
-        <div>
+      <div className="document-page-header document-studio-header document-studio-no-print">
+        <div className="document-studio-heading">
           <p className="document-section-label mb-1">وثائقي · إدارة الوثائق</p>
           <h1 className="text-2xl font-bold text-foreground">إدارة الوثائق</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             أنشئ، نظّم، واطبع. وثائقك وقوالبك وملفاتك في مكان واحد.
           </p>
         </div>
-        <div
-          className="document-studio-tabs grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end"
-          aria-label="مساحات الوثائق"
-          role="tablist"
-        >
-          <div className="document-studio-primary-tabs">
+        <div className="document-studio-controls">
+          <div
+            className="document-studio-tabs"
+            aria-label="مساحات الوثائق"
+            role="tablist"
+          >
             <Button
+              size="sm"
               variant={activeTab === "documents" ? "default" : "outline"}
               onClick={() => selectWorkspaceTab("documents")}
               aria-pressed={activeTab === "documents"}
@@ -1009,6 +1019,7 @@ export default function DocumentStudioPage() {
             {activeTab !== "files" ? (
               <>
                 <Button
+                  size="sm"
                   variant={previewMode ? "secondary" : "outline"}
                   onClick={() => setPreviewMode(current => !current)}
                 >
@@ -1022,8 +1033,9 @@ export default function DocumentStudioPage() {
                 {activeTab === "documents" || activeTab === "archive" ? (
                   <>
                     {!previewMode ? (
-                      <>
+                      <div className="document-studio-secondary-actions">
                         <Button
+                          size="sm"
                           variant="outline"
                           disabled={Boolean(
                             selectedDocument?.file &&
@@ -1039,6 +1051,7 @@ export default function DocumentStudioPage() {
                           طباعة / PDF
                         </Button>
                         <Button
+                          size="sm"
                           variant="outline"
                           disabled={
                             !selectedDocument ||
@@ -1053,6 +1066,7 @@ export default function DocumentStudioPage() {
                           تنزيل
                         </Button>
                         <Button
+                          size="sm"
                           variant="outline"
                           disabled={!selectedDocument}
                           onClick={() => void shareSelectedDocument()}
@@ -1060,10 +1074,64 @@ export default function DocumentStudioPage() {
                           <Share2 className="ml-2 h-4 w-4" />
                           مشاركة رابط
                         </Button>
-                      </>
+                      </div>
+                    ) : null}
+                    {!previewMode ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="document-studio-more-actions"
+                            aria-label="إجراءات الوثيقة الإضافية"
+                          >
+                            <MoreHorizontal className="size-4" />
+                            <span>المزيد</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuLabel>إجراءات الوثيقة</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            disabled={Boolean(
+                              selectedDocument?.file &&
+                              !importedFileUrlQuery.data?.url
+                            )}
+                            onSelect={() => {
+                              if (selectedDocument?.file)
+                                setImportPrintOpen(true);
+                              else setNativePrintOpen(true);
+                            }}
+                          >
+                            <Printer className="size-4" />
+                            طباعة / PDF
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={
+                              !selectedDocument ||
+                              Boolean(
+                                selectedDocument.file &&
+                                !importedFileUrlQuery.data?.url
+                              )
+                            }
+                            onSelect={() => void downloadSelectedDocument()}
+                          >
+                            <Download className="size-4" />
+                            تنزيل الملف
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            disabled={!selectedDocument}
+                            onSelect={() => void shareSelectedDocument()}
+                          >
+                            <Share2 className="size-4" />
+                            مشاركة الرابط
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     ) : null}
                     {isNewDocumentWorkspace ? (
                       <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => setIsCreatingDocument(false)}
                       >
@@ -1072,6 +1140,7 @@ export default function DocumentStudioPage() {
                       </Button>
                     ) : (
                       <Button
+                        size="sm"
                         onClick={() => setCreationDialogOpen(true)}
                         aria-haspopup="dialog"
                         aria-expanded={creationDialogOpen}
@@ -1081,7 +1150,7 @@ export default function DocumentStudioPage() {
                     )}
                   </>
                 ) : (
-                  <Button onClick={startNewTemplate}>
+                  <Button size="sm" onClick={startNewTemplate}>
                     <FilePlus2 className="ml-2 h-4 w-4" />
                     نموذج جديد
                   </Button>
@@ -1099,7 +1168,7 @@ export default function DocumentStudioPage() {
           {activeTab === "documents" || activeTab === "archive" ? (
             <nav
               aria-label="تصفية الوثائق حسب الحالة"
-              className="document-studio-no-print flex flex-wrap items-center gap-2"
+              className="document-studio-no-print document-status-tabs"
             >
               {(
                 [

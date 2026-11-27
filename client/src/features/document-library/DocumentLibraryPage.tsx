@@ -211,9 +211,9 @@ export default function DocumentLibraryPage({
   });
 
   return (
-    <div className="space-y-5" dir="rtl">
-      <div className="document-page-header">
-        <div>
+    <div className="document-library-shell space-y-5" dir="rtl">
+      <div className="document-page-header document-library-header">
+        <div className="document-library-heading">
           <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground">
             الأرشيف الرقمي
           </p>
@@ -233,7 +233,7 @@ export default function DocumentLibraryPage({
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="document-stats-grid grid gap-3 sm:grid-cols-3">
         <Card className="document-card flex items-center gap-3 p-4">
           <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <FolderOpen className="size-5" />
@@ -269,7 +269,7 @@ export default function DocumentLibraryPage({
         </Card>
       </div>
 
-      <Card className="document-toolbar flex flex-wrap items-center gap-2 p-3">
+      <Card className="document-toolbar document-library-toolbar flex flex-wrap items-center gap-2 p-3">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -419,14 +419,14 @@ export default function DocumentLibraryPage({
           )}
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="document-library-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map(document => {
             const file = document.file;
             if (!file) return null;
             return (
               <Card
                 key={document.id}
-                className="document-card group flex cursor-pointer flex-col gap-3 p-4"
+                className="document-card document-library-card group flex cursor-pointer flex-col gap-3 p-4"
                 onClick={() => setSelectedId(document.id)}
               >
                 <div className="flex items-start gap-3">

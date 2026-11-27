@@ -1598,3 +1598,292 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* WATHAEQI UI system: one calm, RTL-first workspace rhythm. */
+@layer components {
+  :root {
+    --ui-space-1: 0.5rem;
+    --ui-space-2: 1rem;
+    --ui-space-3: 1.5rem;
+    --ui-space-4: 2rem;
+    --ui-radius-card: 1rem;
+    --ui-radius-control: 0.7rem;
+    --ui-control-height: 2.5rem;
+  }
+
+  .document-page-header,
+  .document-studio-header,
+  .document-library-header {
+    gap: var(--ui-space-3);
+    border-radius: var(--ui-radius-card);
+    padding: var(--ui-space-3);
+  }
+
+  .document-studio-header {
+    display: grid;
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+    border-inline-start: 3px solid var(--brand-accent);
+  }
+
+  .document-studio-heading,
+  .document-library-heading {
+    min-width: 0;
+  }
+
+  .document-studio-heading h1,
+  .document-library-heading h1 {
+    letter-spacing: -0.03em;
+  }
+
+  .document-studio-controls {
+    display: grid;
+    min-width: 0;
+    gap: var(--ui-space-2);
+  }
+
+  .document-studio-tabs,
+  .document-studio-actions,
+  .document-studio-secondary-actions {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: var(--ui-space-1);
+  }
+
+  .document-studio-tabs {
+    overflow-x: auto;
+    padding-block: 0.125rem;
+    scrollbar-width: thin;
+  }
+
+  .document-studio-tabs > button,
+  .document-studio-actions > button,
+  .document-studio-secondary-actions > button {
+    min-height: var(--ui-control-height);
+    border-radius: var(--ui-radius-control);
+    white-space: nowrap;
+  }
+
+  .document-studio-tabs > button {
+    flex: 0 0 auto;
+  }
+
+  .document-studio-actions {
+    justify-content: flex-start;
+    padding-block-start: var(--ui-space-2);
+    border-block-start: 1px solid var(--border);
+  }
+
+  .document-studio-more-actions {
+    display: none;
+  }
+
+  .document-status-tabs {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: var(--ui-space-1);
+    overflow-x: auto;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--ui-radius-card);
+    background: var(--card);
+    scrollbar-width: thin;
+  }
+
+  .document-status-tabs > button {
+    min-height: 2.5rem;
+    flex: 0 0 auto;
+    border-radius: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .document-library-toolbar {
+    align-items: stretch;
+    gap: var(--ui-space-1);
+    border-radius: var(--ui-radius-card);
+  }
+
+  .document-library-toolbar > .relative {
+    min-width: min(100%, 18rem);
+  }
+
+  .document-filter-chips {
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-block: 0.125rem;
+    scrollbar-width: thin;
+  }
+
+  .document-filter-chips > button {
+    flex: 0 0 auto;
+    min-height: 2.25rem;
+    white-space: nowrap;
+  }
+
+  .document-stats-grid > [data-slot="card"] {
+    min-height: 5.5rem;
+    border-radius: var(--ui-radius-card);
+  }
+
+  .document-library-card {
+    min-height: 10.5rem;
+    border-radius: var(--ui-radius-card);
+  }
+
+  .document-library-card > div:first-child {
+    min-width: 0;
+  }
+
+  .document-library-card p {
+    overflow-wrap: anywhere;
+  }
+
+  .document-library-card [data-slot="badge"] {
+    max-width: 7rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .document-library-grid {
+    align-items: stretch;
+  }
+
+  .document-library-grid > [data-slot="card"] {
+    min-width: 0;
+  }
+
+  [data-slot="button"] {
+    border-radius: var(--ui-radius-control);
+  }
+}
+
+@media (min-width: 768px) {
+  .document-studio-header {
+    grid-template-columns: minmax(15rem, 0.8fr) minmax(0, 1.8fr);
+  }
+
+  .document-studio-controls {
+    justify-items: end;
+  }
+
+  .document-studio-tabs,
+  .document-studio-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 767px) {
+  .document-page-header,
+  .document-studio-header,
+  .document-library-header {
+    padding: var(--ui-space-2);
+    border-radius: 0.9rem;
+  }
+
+  .document-studio-header {
+    gap: var(--ui-space-2);
+  }
+
+  .document-studio-heading h1,
+  .document-library-heading h1 {
+    font-size: 1.35rem;
+  }
+
+  .document-studio-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .document-studio-actions > button,
+  .document-studio-more-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .document-studio-secondary-actions {
+    display: none;
+  }
+
+  .document-studio-more-actions {
+    display: inline-flex;
+  }
+
+  .document-studio-actions > button,
+  .document-studio-more-actions {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .document-studio-actions > button:last-child {
+    grid-column: span 1;
+  }
+
+  .document-studio-actions > button > span,
+  .document-studio-more-actions > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .document-library-toolbar > .relative {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .document-saved-views {
+    align-items: stretch;
+  }
+
+  .document-saved-views > input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .document-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .document-stats-grid > [data-slot="card"] {
+    min-height: 5rem;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .document-stats-grid > [data-slot="card"] > span {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .document-stats-grid > [data-slot="card"] p:first-child {
+    font-size: 0.65rem;
+  }
+
+  .document-stats-grid > [data-slot="card"] p:last-child {
+    font-size: 1rem;
+  }
+
+  .document-library-card {
+    min-height: 0;
+    padding: 1rem;
+  }
+
+  .document-library-card .text-xs {
+    line-height: 1.7;
+  }
+}
+
+@media (max-width: 380px) {
+  .document-studio-tabs > button,
+  .document-status-tabs > button {
+    padding-inline: 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .document-stats-grid > [data-slot="card"] {
+    padding-inline: 0.5rem;
+  }
+}
