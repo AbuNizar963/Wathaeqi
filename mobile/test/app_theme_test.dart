@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/app_theme.dart';
+import 'package:police_telegrams/widgets/wathaeqi_brand_mark.dart';
 
 double _contrastRatio(Color first, Color second) {
   final firstLuminance = first.computeLuminance();
@@ -21,17 +22,21 @@ void main() {
 
       expect(theme.useMaterial3, isTrue);
       expect(theme.colorScheme.primary, AppPalette.brandBlue);
-      expect(theme.colorScheme.secondary, AppPalette.brandBlue);
+      expect(theme.colorScheme.secondary, AppPalette.navy);
+      expect(
+        _contrastRatio(AppPalette.brandBlue, AppPalette.surface),
+        greaterThanOrEqualTo(4.5),
+      );
       expect(theme.scaffoldBackgroundColor, AppPalette.canvas);
       expect(theme.iconTheme.color, AppPalette.navy);
       expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
       expect(theme.cardTheme.color, AppPalette.surface);
       expect(AppPalette.brandBlue, const Color(0xFF0F766E));
-      expect(AppPalette.canvas, const Color(0xFFF4F7F8));
-      expect(AppPalette.navy, const Color(0xFF102E3C));
-      expect(AppPalette.ink, const Color(0xFF172B36));
-      expect(AppPalette.border, const Color(0xFFDBE5E8));
-      expect(AppPalette.gold, const Color(0xFFC9964D));
+      expect(AppPalette.canvas, const Color(0xFFF4F7F6));
+      expect(AppPalette.navy, const Color(0xFF10262D));
+      expect(AppPalette.ink, const Color(0xFF14252C));
+      expect(AppPalette.border, const Color(0xFFD2DFDB));
+      expect(AppPalette.gold, const Color(0xFFC49A5B));
       expect(
         _contrastRatio(AppPalette.mutedInk, AppPalette.muted),
         greaterThanOrEqualTo(4.5),
@@ -42,6 +47,10 @@ void main() {
       );
       expect(
         _contrastRatio(AppPalette.warning, AppPalette.canvas),
+        greaterThanOrEqualTo(4.5),
+      );
+      expect(
+        _contrastRatio(AppPalette.info, AppPalette.canvas),
         greaterThanOrEqualTo(4.5),
       );
     });
@@ -61,6 +70,25 @@ void main() {
         _contrastRatio(AppPalette.darkMutedInk, AppPalette.darkMuted),
         greaterThanOrEqualTo(4.5),
       );
+    });
+
+    testWidgets('brand mark scales and exposes an accessible label', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: Center(child: WathaeqiBrandMark(size: 36))),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('شعار وثائقي'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(WathaeqiBrandMark)),
+        const Size(36, 36),
+      );
+      semantics.dispose();
     });
 
     testWidgets('semantic status colors follow the active theme', (

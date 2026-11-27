@@ -10,7 +10,8 @@
     <application
         android:label="وثائقي"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@drawable/wathaeqi_launcher"
+        android:roundIcon="@drawable/wathaeqi_launcher">
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="police_telegram_general_v1" />

@@ -236,11 +236,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final tabs = tester.widget<SegmentedButton<DocumentStudioTab>>(
-        find.byType(SegmentedButton<DocumentStudioTab>),
-      );
-      expect(tabs.segments.map((s) => s.value), DocumentStudioTab.values);
-      expect(tabs.segments.map((s) => (s.icon as Icon).icon), [
+      final tabs = tester
+          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+          .toList();
+      expect(tabs, hasLength(DocumentStudioTab.values.length));
+      expect(tabs.map((tab) => (tab.label as Text).data), [
+        'الوثائق',
+        'القوالب',
+        'الأرشيف',
+        'الملفات',
+      ]);
+      expect(tabs.map((tab) => (tab.avatar as Icon).icon), [
         LucideIcons.fileText,
         LucideIcons.layoutTemplate,
         LucideIcons.archive,
@@ -355,8 +361,19 @@ void main() {
       );
       await tester.pumpAndSettle();
       for (final tab in ['القوالب', 'الأرشيف', 'الملفات', 'الوثائق']) {
-        await tester.ensureVisible(find.text(tab).first);
-        await tester.tap(find.text(tab).first);
+        final tabFinder = find.text(tab).first;
+        final tabBounds = tester.getRect(tabFinder);
+        expect(
+          tabBounds.left,
+          greaterThanOrEqualTo(0),
+          reason: 'The $tab tab must not be clipped on a $width px screen.',
+        );
+        expect(
+          tabBounds.right,
+          lessThanOrEqualTo(width),
+          reason: 'The $tab tab must be visible without horizontal scrolling.',
+        );
+        await tester.tap(tabFinder);
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull);
       }
