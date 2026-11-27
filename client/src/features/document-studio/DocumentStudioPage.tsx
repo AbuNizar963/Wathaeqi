@@ -975,7 +975,7 @@ export default function DocumentStudioPage() {
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
       {downloadOperation.progress ? (
-        <div className="fixed inset-x-4 bottom-24 z-[100] mx-auto max-w-lg rounded-2xl border bg-card p-3 shadow-xl">
+        <div className="mb-3 w-full max-w-lg rounded-2xl border bg-card p-3 shadow-sm">
           <DocumentOperationProgress progress={downloadOperation.progress} />
           <Button
             className="mt-2"
@@ -1193,7 +1193,7 @@ export default function DocumentStudioPage() {
 
       {showMobileDocumentTabs ? (
         <nav
-          className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
+          className="sticky top-[calc(52px+env(safe-area-inset-top))] z-30 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
           role="tablist"
           aria-label="خطوات إعداد الوثيقة"
         >

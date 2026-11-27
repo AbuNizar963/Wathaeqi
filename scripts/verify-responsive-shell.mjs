@@ -354,9 +354,14 @@ assert(
   documentStudio.includes('window.matchMedia("(max-width: 767px)").matches') &&
     documentStudio.includes("العودة إلى قائمة الوثائق") &&
     documentStudio.includes("document-preview-actions") &&
-    globalStyles.includes(".document-preview-actions {") &&
-    globalStyles.includes("env(safe-area-inset-bottom)"),
-  "Mobile document selection must open a full preview with a safe-area action dock and a return path."
+    /\.document-preview-actions\s*\{[^}]*position:\s*static/s.test(
+      globalStyles
+    ) &&
+    !/\.document-preview-actions\s*\{[^}]*position:\s*fixed/s.test(
+      globalStyles
+    ) &&
+    globalStyles.includes("padding-bottom: 1rem;"),
+  "Mobile document preview actions must remain in normal page flow and never cover settings or content."
 );
 
 assert(
@@ -398,7 +403,9 @@ assert(
 
 assert(
   documentStudio.includes('aria-label="خطوات إعداد الوثيقة"') &&
-    documentStudio.includes('className="sticky top-0 z-20 grid grid-cols-3') &&
+    documentStudio.includes(
+      'className="sticky top-[calc(52px+env(safe-area-inset-top))] z-30 grid grid-cols-3'
+    ) &&
     documentStudio.includes("aria-selected={isDataTabActive}") &&
     documentStudio.includes("aria-selected={isPreviewTabActive}") &&
     documentStudio.includes("aria-selected={isPrintTabActive}") &&
@@ -430,7 +437,9 @@ assert(
     documentStudio.includes("!item.file &&") &&
     documentLibraryPage.includes('title="حذف الوثيقة"') &&
     documentLibraryPage.includes('className="flex justify-end gap-2"') &&
-    documentLibraryPage.includes('className="sticky bottom-0'),
+    documentLibraryPage.includes('className="mt-4 grid grid-cols-2') &&
+    !documentLibraryPage.includes("sticky bottom-0") &&
+    !documentLibraryPage.includes("document-library-fab group fixed"),
   "The document file preview must expose one print action and one delete action, without duplicate controls in the header and action dock."
 );
 
