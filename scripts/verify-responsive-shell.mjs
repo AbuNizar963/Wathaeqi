@@ -354,8 +354,12 @@ assert(
   documentStudio.includes('window.matchMedia("(max-width: 767px)").matches') &&
     documentStudio.includes("العودة إلى قائمة الوثائق") &&
     documentStudio.includes("document-preview-actions") &&
-    /\.document-preview-actions\s*\{[^}]*position:\s*static/s.test(globalStyles) &&
-    !/\.document-preview-actions\s*\{[^}]*position:\s*fixed/s.test(globalStyles) &&
+    /\.document-preview-actions\s*\{[^}]*position:\s*static/s.test(
+      globalStyles
+    ) &&
+    !/\.document-preview-actions\s*\{[^}]*position:\s*fixed/s.test(
+      globalStyles
+    ) &&
     globalStyles.includes("padding-bottom: 1rem;"),
   "Mobile document preview actions must remain in normal page flow and never cover settings or content."
 );
