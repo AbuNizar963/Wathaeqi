@@ -39,7 +39,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open PIN dialog'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('إنشاء رمز PIN إلزامي'), findsOneWidget);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
