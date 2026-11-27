@@ -19,6 +19,7 @@ const AuditLogPage = lazy(() => import("./features/audit/AuditLogPage"));
 const Profile = lazy(() => import("./features/users/Profile"));
 const About = lazy(() => import("./pages/About"));
 const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
 
 function DashboardPage({ children }: { children: React.ReactNode }) {
   return (
@@ -97,6 +98,7 @@ function Router() {
           </DashboardPage>
         </Route>
         <Route path="/terms" component={Terms} />
+        <Route path="/privacy" component={Privacy} />
         <Route path="/" component={LegacyWorkspaceRoute} />
         <Route path="/404">
           <DashboardPage>
