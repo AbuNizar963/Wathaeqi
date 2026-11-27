@@ -1172,6 +1172,7 @@ export default function DocumentStudioPage() {
       </div>
 
       {showMobileDocumentTabs ? (
+        // prettier-ignore
         <nav
           className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
           role="tablist"
