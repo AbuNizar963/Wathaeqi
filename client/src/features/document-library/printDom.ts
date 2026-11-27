@@ -30,7 +30,7 @@ export function scopePrintCss(css: string): string {
         }
         if (rule instanceof CSSMediaRule)
           return `@media ${rule.conditionText}{${serialize(rule.cssRules)}}`;
-        if (rule instanceof CSSPageRule) return `@media print{${rule.cssText}}`;
+        if (rule instanceof CSSPageRule) return rule.cssText;
         if (rule instanceof CSSFontFaceRule) return rule.cssText;
         return "";
       })
@@ -51,9 +51,9 @@ export function createPrintRoot(title: string, css = "", widthMm = 210) {
   style.dataset.wathaeqiPrint = "true";
   style.textContent = `${scopePrintCss(css)}
     @media print {
-      html, body { margin:0!important; padding:0!important; height:auto!important; overflow:visible!important; background:#fff!important; }
+      html, body { width:${widthMm}mm!important; min-width:${widthMm}mm!important; margin:0!important; padding:0!important; height:auto!important; overflow:visible!important; background:#fff!important; }
       body > *:not(#${PRINT_ROOT_ID}) { display:none!important; }
-      #${PRINT_ROOT_ID} { position:static!important; inset:auto!important; display:block!important; width:auto!important; height:auto!important; min-height:0!important; margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
+      #${PRINT_ROOT_ID} { position:static!important; inset:auto!important; display:block!important; width:${widthMm}mm!important; max-width:none!important; height:auto!important; min-height:0!important; margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
       #${PRINT_ROOT_ID}, #${PRINT_ROOT_ID} * { visibility:visible!important; -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important; }
     }`;
   const previousTitle = document.title;

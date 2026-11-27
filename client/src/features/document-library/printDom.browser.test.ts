@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { build } from "esbuild";
 import { chromium } from "playwright-core";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { describe, expect, it } from "vitest";
 
 const chromiumPath =
@@ -98,6 +99,87 @@ describe.skipIf(!chromiumPath)("same-page print lifecycle", () => {
       expect(await page.locator("#wathaeqi-print-root").count()).toBe(0);
       expect(await page.title()).toBe("Application title");
       expect(await page.locator("#application-fixture").isVisible()).toBe(true);
+    } finally {
+      await browser.close();
+    }
+  });
+  it("keeps the print root at physical A4 width on a narrow mobile viewport", async () => {
+    const bundle = await build({
+      entryPoints: [
+        resolve("client/src/features/document-library/printDom.ts"),
+      ],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "printDomTest",
+      platform: "browser",
+    });
+    const browser = await chromium.launch({
+      executablePath: chromiumPath,
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 360, height: 800 },
+      });
+      await page.setContent("<title>Application title</title><main>App</main>");
+      await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      await page.evaluate(async () => {
+        const api = (
+          window as unknown as {
+            printDomTest: {
+              createPrintRoot: (
+                title: string,
+                css: string,
+                widthMm: number
+              ) => { root: HTMLElement; cleanup: () => void };
+              invokePagePrint: (root: HTMLElement) => Promise<void>;
+            };
+          }
+        ).printDomTest;
+        window.print = () => undefined;
+        const session = api.createPrintRoot(
+          "A4 print",
+          "@page { size: A4 portrait; margin: 0; } .sheet { width: 210mm; height: 297mm; }",
+          210
+        );
+        session.root.innerHTML = '<section class="sheet">A4 content</section>';
+        await api.invokePagePrint(session.root);
+      });
+      await page.emulateMedia({ media: "print" });
+      const geometry = await page.evaluate(() => {
+        const root = document.getElementById("wathaeqi-print-root")!;
+        const style = document.querySelector<HTMLStyleElement>(
+          "style[data-wathaeqi-print]"
+        )!;
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          bodyWidth: document.body.getBoundingClientRect().width,
+          hasTopLevelPageRule: Array.from(style.sheet!.cssRules).some(
+            rule => rule instanceof CSSPageRule
+          ),
+        };
+      });
+      expect(geometry.rootWidth).toBeCloseTo((210 * 96) / 25.4, 0);
+      expect(geometry.bodyWidth).toBeCloseTo((210 * 96) / 25.4, 0);
+      expect(geometry.hasTopLevelPageRule).toBe(true);
+
+      const pdf = await page.pdf({
+        preferCSSPageSize: true,
+        printBackground: true,
+      });
+      const loadingTask = getDocument({ data: new Uint8Array(pdf) });
+      const pdfDocument = await loadingTask.promise;
+      try {
+        expect(pdfDocument.numPages).toBe(1);
+        const printedPage = await pdfDocument.getPage(1);
+        const pageBox = printedPage.getViewport({ scale: 1 });
+        expect(pageBox.width).toBeCloseTo(595.28, 0);
+        expect(pageBox.height).toBeCloseTo(841.89, 0);
+      } finally {
+        await loadingTask.destroy();
+      }
     } finally {
       await browser.close();
     }

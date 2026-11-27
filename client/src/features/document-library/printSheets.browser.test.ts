@@ -133,6 +133,141 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
     90_000
   );
 
+  it("keeps four-up pages evenly spaced on a mobile A4 print root", async () => {
+    const bundle = await build({
+      entryPoints: [
+        resolve("client/src/features/document-library/printSheets.ts"),
+      ],
+      bundle: true,
+      write: false,
+      format: "iife",
+      globalName: "printSheetsTest",
+      platform: "browser",
+    });
+    const browser = await chromium.launch({
+      executablePath: chromiumPath,
+      headless: true,
+      args: ["--no-sandbox"],
+    });
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 360, height: 800 },
+      });
+      await page.goto("data:text/html,<html><body></body></html>");
+      await page.addScriptTag({ content: bundle.outputFiles[0]!.text });
+      await page.evaluate(async () => {
+        window.print = () => undefined;
+        const api = (
+          window as unknown as {
+            printSheetsTest: {
+              openPrintWindow: (content: unknown) => Promise<void>;
+            };
+          }
+        ).printSheetsTest;
+        await api.openPrintWindow({
+          pages: Array.from({ length: 4 }, (_, index) => ({
+            src: `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123"><rect width="794" height="1123" fill="rgb(${index * 50},80,140)"/></svg>`)}`,
+            width: 794,
+            height: 1123,
+          })),
+          options: {
+            pagesPerSheet: 4,
+            marginMm: 8,
+            orientation: "portrait",
+            headerText: "",
+            footerText: "",
+            showPageNumbers: false,
+          },
+        });
+      });
+      await page.emulateMedia({ media: "print" });
+      const geometry = await page.evaluate(() => {
+        const root = document.getElementById("wathaeqi-print-root")!;
+        const sheet = root.querySelector<HTMLElement>(".sheet")!;
+        const sheetRect = sheet.getBoundingClientRect();
+        const cells = Array.from(
+          root.querySelectorAll<HTMLElement>(".cell"),
+          cell => {
+            const rect = cell.getBoundingClientRect();
+            return {
+              left: rect.left,
+              top: rect.top,
+              right: rect.right,
+              bottom: rect.bottom,
+            };
+          }
+        );
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          bodyWidth: document.body.getBoundingClientRect().width,
+          sheet: {
+            left: sheetRect.left,
+            top: sheetRect.top,
+            right: sheetRect.right,
+            bottom: sheetRect.bottom,
+            width: sheetRect.width,
+            height: sheetRect.height,
+          },
+          cells,
+        };
+      });
+      const mmToCssPixels = 96 / 25.4;
+      expect(geometry.rootWidth).toBeCloseTo(210 * mmToCssPixels, 0);
+      expect(geometry.bodyWidth).toBeCloseTo(210 * mmToCssPixels, 0);
+      expect(geometry.sheet.width).toBeCloseTo(210 * mmToCssPixels, 0);
+      expect(geometry.sheet.height).toBeCloseTo(297 * mmToCssPixels, 0);
+      expect(geometry.cells).toHaveLength(4);
+      expect(geometry.cells[0]!.left - geometry.sheet.left).toBeCloseTo(
+        8 * mmToCssPixels,
+        0
+      );
+      expect(geometry.sheet.right - geometry.cells[1]!.right).toBeCloseTo(
+        8 * mmToCssPixels,
+        0
+      );
+      expect(geometry.cells[0]!.top - geometry.sheet.top).toBeCloseTo(
+        8 * mmToCssPixels,
+        0
+      );
+      expect(geometry.sheet.bottom - geometry.cells[3]!.bottom).toBeCloseTo(
+        8 * mmToCssPixels,
+        0
+      );
+      expect(geometry.cells[1]!.left - geometry.cells[0]!.right).toBeCloseTo(
+        3 * mmToCssPixels,
+        0
+      );
+      expect(geometry.cells[2]!.top - geometry.cells[0]!.bottom).toBeCloseTo(
+        3 * mmToCssPixels,
+        0
+      );
+      expect(geometry.cells.map(cell => cell.right - cell.left)).toEqual([
+        expect.closeTo(geometry.cells[0]!.right - geometry.cells[0]!.left, 0),
+        expect.closeTo(geometry.cells[0]!.right - geometry.cells[0]!.left, 0),
+        expect.closeTo(geometry.cells[0]!.right - geometry.cells[0]!.left, 0),
+        expect.closeTo(geometry.cells[0]!.right - geometry.cells[0]!.left, 0),
+      ]);
+
+      const pdf = await page.pdf({
+        preferCSSPageSize: true,
+        printBackground: true,
+      });
+      const loadingTask = getDocument({ data: new Uint8Array(pdf) });
+      const pdfDocument = await loadingTask.promise;
+      try {
+        expect(pdfDocument.numPages).toBe(1);
+        const printedPage = await pdfDocument.getPage(1);
+        const pageBox = printedPage.getViewport({ scale: 1 });
+        expect(pageBox.width).toBeCloseTo(595.28, 0);
+        expect(pageBox.height).toBeCloseTo(841.89, 0);
+      } finally {
+        await loadingTask.destroy();
+      }
+    } finally {
+      await browser.close();
+    }
+  });
+
   it("prints repeated copies of each same source page on separate sheets", async () => {
     const bundle = await build({
       entryPoints: [
