@@ -277,6 +277,8 @@ abstract final class AppTheme {
         dialogTheme: const DialogThemeData(
           backgroundColor: AppPalette.surface,
           surfaceTintColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          constraints: BoxConstraints(maxWidth: 560),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
@@ -345,6 +347,8 @@ abstract final class AppTheme {
         dialogTheme: const DialogThemeData(
           backgroundColor: AppPalette.darkSurface,
           surfaceTintColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          constraints: BoxConstraints(maxWidth: 560),
         ),
         bottomSheetTheme: const BottomSheetThemeData(
           backgroundColor: AppPalette.darkSurface,

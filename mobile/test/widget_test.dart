@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:police_telegrams/app_theme.dart';
 import 'package:police_telegrams/features/auth_session/app_lock.dart';
 import 'package:police_telegrams/api.dart';
 import 'package:police_telegrams/features/telegrams/documents/official_telegram_document.dart';
@@ -954,6 +955,61 @@ void main() {
       expect(biometricSwitch.onChanged, isNotNull);
     },
   );
+
+  testWidgets('responsive dialog keeps long content and actions reachable', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: FilledButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    scrollable: true,
+                    title: const Text('إعدادات طويلة'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        18,
+                        (index) => ListTile(title: Text('إعداد رقم $index')),
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('حفظ وإغلاق'),
+                      ),
+                    ],
+                  ),
+                ),
+                child: const Text('فتح الإعدادات'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('فتح الإعدادات'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('إعدادات طويلة'), findsOneWidget);
+    expect(find.text('حفظ وإغلاق'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(AppTheme.light.dialogTheme.constraints?.maxWidth, 560);
+    expect(
+      AppTheme.dark.dialogTheme.insetPadding,
+      const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+    );
+  });
 
   testWidgets('shows police telegram login screen with Cairo typography', (
     tester,

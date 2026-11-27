@@ -177,6 +177,7 @@ class _DocumentLibraryPageState extends State<DocumentLibraryPage> {
         builder: (dialogContext, setDialogState) => Directionality(
           textDirection: ui.TextDirection.rtl,
           child: AlertDialog(
+            scrollable: true,
             title: closableDialogTitle(
               dialogContext,
               const Text('إضافة وثيقة إلى المكتبة'),
