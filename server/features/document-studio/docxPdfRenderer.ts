@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import type { Browser, BrowserContext, Page } from "playwright-core";
@@ -305,9 +306,28 @@ async function launchInstalledChromium(): Promise<Browser> {
       import("playwright-core"),
       import("@sparticuz/chromium"),
     ]);
+  const configuredPath = process.env.CHROMIUM_PATH?.trim();
+  const bundledPath = await sparticuzChromium.executablePath();
+  const systemCandidates = [
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome",
+  ];
+  const isElfExecutable = async (path: string) => {
+    try {
+      const header = await readFile(path, { encoding: null, flag: "r" });
+      return (
+        header.length >= 4 &&
+        header.subarray(0, 4).toString("ascii") === "\x7fELF"
+      );
+    } catch {
+      return false;
+    }
+  };
   const executablePath =
-    process.env.CHROMIUM_PATH?.trim() ||
-    (await sparticuzChromium.executablePath());
+    configuredPath ||
+    systemCandidates.find(candidate => existsSync(candidate)) ||
+    ((await isElfExecutable(bundledPath)) ? bundledPath : systemCandidates[0]);
   return playwrightChromium.launch({
     args: [
       ...sparticuzChromium.args,
@@ -401,6 +421,24 @@ const RENDER_DOCX_IN_PAGE = async (pageArguments: {
   });
   await document.fonts?.ready;
 
+  host.querySelectorAll("img").forEach(image => {
+    const page = image.closest(".docx");
+    const container = image.parentElement;
+    if (!page || !container) return;
+    const pageRect = page.getBoundingClientRect();
+    const imageRect = image.getBoundingClientRect();
+    const correction =
+      imageRect.right > pageRect.right
+        ? pageRect.right - imageRect.right
+        : imageRect.left < pageRect.left
+          ? pageRect.left - imageRect.left
+          : 0;
+    if (!correction) return;
+    const currentLeft =
+      Number.parseFloat(getComputedStyle(container).left) || 0;
+    container.style.left = `${currentLeft + correction}px`;
+  });
+
   let sections = Array.from(host.querySelectorAll<HTMLElement>("section.docx"));
   if (sections.length === 0) {
     sections = Array.from(
@@ -466,7 +504,8 @@ export function createDocxToPdfConverter(
       await page.addStyleTag({
         content: [
           "html,body{margin:0!important;padding:0!important}",
-          ".docx-wrapper{background:#fff!important;padding:0!important;display:block!important}",
+          ".docx-wrapper{background:#fff!important;padding:0!important;display:block!important;width:100%!important;min-width:0!important}",
+          ".docx table{width:100%!important;max-width:100%!important;table-layout:fixed}",
           ".docx-wrapper>section.docx{margin:0!important;box-shadow:none!important}",
           "section.docx{break-after:page;page-break-after:always}",
           "section.docx:last-child{break-after:auto;page-break-after:auto}",

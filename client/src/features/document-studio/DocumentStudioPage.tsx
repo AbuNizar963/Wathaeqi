@@ -2058,6 +2058,7 @@ export default function DocumentStudioPage() {
                           url={importedFileUrlQuery.data.url}
                           fileName={selectedDocument.file.fileName}
                           mimeType={selectedDocument.file.mimeType}
+                          documentId={selectedDocument.id}
                         />
                       ) : (
                         <p className="py-8 text-center text-sm text-muted-foreground">

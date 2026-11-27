@@ -5,19 +5,24 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import { fileKind } from "./types";
 import { calculatePdfPreviewScale } from "./pdfPreviewSizing";
 import { normalizeDocxLayout } from "./normalizeDocxImages";
+import { appwriteApiUrl } from "@/lib/appwriteApi";
+import { getSessionToken } from "@/lib/sessionToken";
 
 export default function FilePreview({
   url,
   fileName,
   mimeType,
   fitToViewport = true,
+  documentId,
 }: {
   url: string;
   fileName: string;
   mimeType: string;
   fitToViewport?: boolean;
+  documentId?: string;
 }) {
   const kind = fileKind(fileName, mimeType);
+  const [previewAsPdf, setPreviewAsPdf] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pdfPageUrl, setPdfPageUrl] = useState<string | null>(null);
@@ -70,6 +75,7 @@ export default function FilePreview({
     setPdfPageCount(0);
     setPdfPageNumber(1);
     pdfDocument.current = null;
+    setPreviewAsPdf(false);
     setWordLayout({ scale: 1, height: 0, width: 0 });
     if (!kind) {
       setError("صيغة الملف غير مدعومة للمعاينة");
@@ -80,12 +86,26 @@ export default function FilePreview({
       setLoading(false);
       return;
     }
-    if (kind === "pdf") {
+    if (kind === "pdf" || (kind === "word" && documentId)) {
       void (async () => {
         try {
           const pdfjs = await import("pdfjs-dist");
           pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-          const response = await fetch(url, { credentials: "omit" });
+          const sessionToken = getSessionToken();
+          const response = await fetch(
+            kind === "word" && documentId
+              ? appwriteApiUrl(`/api/documents/${documentId}/print-pdf`)
+              : url,
+            kind === "word" && documentId
+              ? {
+                  method: "POST",
+                  credentials: "include",
+                  headers: sessionToken
+                    ? { Authorization: `Bearer ${sessionToken}` }
+                    : undefined,
+                }
+              : { credentials: "omit" }
+          );
           if (!response.ok) throw new Error("تعذر تنزيل الملف");
           const document = await pdfjs.getDocument({
             data: new Uint8Array(await response.arrayBuffer()),
@@ -93,6 +113,7 @@ export default function FilePreview({
             cMapPacked: true,
           }).promise;
           if (!cancelled) {
+            setPreviewAsPdf(kind === "word");
             pdfDocument.current = document;
             setPdfPageCount(document.numPages);
           }
@@ -164,10 +185,10 @@ export default function FilePreview({
     return () => {
       cancelled = true;
     };
-  }, [url, fileName, mimeType, kind]);
+  }, [url, fileName, mimeType, kind, documentId]);
 
   useEffect(() => {
-    if (kind !== "pdf" || !pdfDocument.current) return;
+    if (!(kind === "pdf" || previewAsPdf) || !pdfDocument.current) return;
     let cancelled = false;
     let objectUrl: string | null = null;
     setLoading(true);
@@ -215,17 +236,17 @@ export default function FilePreview({
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [kind, pdfPageNumber, pdfPageCount]);
+  }, [kind, previewAsPdf, pdfPageNumber, pdfPageCount]);
 
   useEffect(() => {
-    if (kind !== "word") return;
+    if (kind !== "word" || documentId) return;
     const viewport = wordViewport.current;
     const host = wordHost.current;
     if (!viewport || !host) return;
     const observer = new ResizeObserver(() => measureWordLayout());
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [kind, fitToViewport, loading]);
+  }, [kind, documentId, fitToViewport, loading]);
 
   if (error) {
     return (
@@ -249,7 +270,7 @@ export default function FilePreview({
     );
   }
 
-  if (kind === "pdf") {
+  if (kind === "pdf" || previewAsPdf) {
     return (
       <div className="relative space-y-3 overflow-x-auto rounded-lg bg-slate-100 p-2 sm:p-3">
         {loading ? (

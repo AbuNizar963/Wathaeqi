@@ -628,6 +628,7 @@ export default function DocumentLibraryPage({
                   url={fileUrlQuery.data.url}
                   fileName={selected.file.fileName}
                   mimeType={selected.file.mimeType}
+                  documentId={selected.id}
                 />
               ) : (
                 <div className="rounded-lg border border-dashed px-6 py-12 text-center text-sm text-muted-foreground">
