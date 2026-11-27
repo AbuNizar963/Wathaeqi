@@ -698,6 +698,7 @@ void main() {
     await _pumpDashboardFrames(tester, frameCount: 8);
 
     expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.bySemanticsLabel('شعار وثائقي'), findsOneWidget);
     expect(find.text('الوثائق'), findsOneWidget);
     expect(find.text('الاستوديو'), findsOneWidget);
 
