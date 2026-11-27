@@ -76,7 +76,6 @@ void main() {
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -89,6 +88,7 @@ void main() {
         tester.getSize(find.byType(WathaeqiBrandMark)),
         const Size(36, 36),
       );
+      semantics.dispose();
     });
 
     testWidgets('semantic status colors follow the active theme', (
