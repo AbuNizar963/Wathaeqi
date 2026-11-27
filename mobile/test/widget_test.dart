@@ -867,6 +867,8 @@ void main() {
 
     await tester.tap(find.text('configure PIN'));
     await tester.pumpAndSettle();
+    final pinDialog = tester.widget<AlertDialog>(find.byType(AlertDialog));
+    expect(pinDialog.scrollable, isTrue);
     final pinFields = find.byType(TextField);
     expect(pinFields, findsNWidgets(2));
 
