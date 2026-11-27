@@ -650,8 +650,9 @@ void main() {
     _setMobileViewport(tester);
     final api = _TestPoliceApi(signedIn: true);
     await tester.pumpWidget(
-      ToastOverlayHost(
-        child: MaterialApp(home: PlatformDocumentSettingsPage(api: api)),
+      MaterialApp(
+        home: PlatformDocumentSettingsPage(api: api),
+        builder: (context, child) => ToastOverlayHost(child: child!),
       ),
     );
     await _pumpDashboardFrames(tester, frameCount: 8);
