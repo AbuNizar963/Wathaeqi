@@ -494,11 +494,15 @@ export default function DocumentStudioPage() {
 
   const createTemplateMutation = trpc.documentStudio.createTemplate.useMutation(
     {
-      onSuccess: async saved => {
+      onSuccess: async result => {
         await utils.documentStudio.listTemplates.invalidate();
-        setEditingTemplateId(saved.id);
-        setEditingTemplateRevision(saved.revision);
-        toast.success("تم حفظ النموذج");
+        setEditingTemplateId(result.template.id);
+        setEditingTemplateRevision(result.template.revision);
+        if (result.auditLogRecorded) {
+          toast.success("تم حفظ النموذج");
+        } else {
+          toast.warning("تم حفظ النموذج، لكن تعذر تسجيل العملية في سجل الحركات");
+        }
       },
       onError: error => toast.error(error.message),
     }
@@ -506,42 +510,60 @@ export default function DocumentStudioPage() {
 
   const updateTemplateMutation = trpc.documentStudio.updateTemplate.useMutation(
     {
-      onSuccess: async saved => {
+      onSuccess: async result => {
         await utils.documentStudio.listTemplates.invalidate();
-        setEditingTemplateId(saved.id);
-        setEditingTemplateRevision(saved.revision);
-        toast.success("تم تحديث النموذج");
+        setEditingTemplateId(result.template.id);
+        setEditingTemplateRevision(result.template.revision);
+        if (result.auditLogRecorded) {
+          toast.success("تم تحديث النموذج");
+        } else {
+          toast.warning("تم تحديث النموذج، لكن تعذر تسجيل العملية في سجل الحركات");
+        }
       },
       onError: error => toast.error(error.message),
     }
   );
 
   const issueDocumentMutation = trpc.documentStudio.issueDocument.useMutation({
-    onSuccess: async saved => {
+    onSuccess: async result => {
       await utils.documentStudio.listDocuments.invalidate();
-      setSelectedDocumentId(saved.id);
-      toast.success(`تم إصدار الوثيقة بالرقم ${saved.serialCode}`);
+      setSelectedDocumentId(result.document.id);
+      toast.success(
+        result.alreadyIssued
+          ? `الوثيقة صادرة مسبقاً بالرقم ${result.document.serialCode}`
+          : `تم إصدار الوثيقة بالرقم ${result.document.serialCode}`
+      );
+      if (!result.auditLogRecorded) {
+        toast.warning("تم إصدار الوثيقة، لكن تعذر تسجيل العملية في سجل الحركات");
+      }
     },
     onError: error => toast.error(error.message),
   });
 
   const archiveDocumentMutation =
     trpc.documentStudio.archiveDocument.useMutation({
-      onSuccess: async saved => {
+      onSuccess: async result => {
         await utils.documentStudio.listDocuments.invalidate();
-        setSelectedDocumentId(saved.id);
+        setSelectedDocumentId(result.document.id);
         setActiveTab("archive");
         toast.success("تم نقل الوثيقة إلى الأرشيف");
+        if (!result.auditLogRecorded) {
+          toast.warning("تمت الأرشفة، لكن تعذر تسجيل العملية في سجل الحركات");
+        }
       },
       onError: error => toast.error(error.message),
     });
 
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
-      onSuccess: async () => {
+      onSuccess: async result => {
         await utils.documentStudio.listTemplates.invalidate();
         setEditingTemplateId(null);
-        toast.success("تم إيقاف النموذج مع الاحتفاظ بسجلاته");
+        if (result.auditLogRecorded) {
+          toast.success("تم إيقاف النموذج مع الاحتفاظ بسجلاته");
+        } else {
+          toast.warning("تم إيقاف النموذج، لكن تعذر تسجيل العملية في سجل الحركات");
+        }
       },
       onError: error => toast.error(error.message),
     });
