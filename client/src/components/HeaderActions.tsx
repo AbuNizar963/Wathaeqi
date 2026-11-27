@@ -71,7 +71,7 @@ export default function HeaderActions({
               size="icon"
               aria-label="مظهر الواجهة"
               title="إعدادات المظهر"
-              className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur hover:bg-accent"
+              className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
             >
               <SunMoon className="h-5 w-5" />
             </Button>
@@ -121,7 +121,7 @@ export default function HeaderActions({
               size="icon"
               aria-label="الحساب والمساعدة"
               title="الحساب والمساعدة"
-              className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur hover:bg-accent"
+              className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
             >
               <Menu className="h-5 w-5" />
             </Button>
