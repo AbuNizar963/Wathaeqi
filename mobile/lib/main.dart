@@ -14,6 +14,7 @@ import 'api.dart';
 import 'document_studio_page.dart';
 import 'document_studio_outbox.dart';
 import 'app_theme.dart';
+import 'widgets/wathaeqi_brand_mark.dart';
 import 'app_update_page.dart';
 import 'app_update_service.dart';
 import './features/admin/mobile_access_policy.dart';
@@ -420,11 +421,9 @@ class _LoginPageState extends State<LoginPage> {
                         shape: BoxShape.circle,
                       ),
                       child: ClipOval(
-                        child: Image.asset(
-                          'assets/wathaeqi-app-icon.png',
-                          width: 78,
-                          height: 78,
-                          fit: BoxFit.cover,
+                        child: WathaeqiBrandMark(
+                          size: 78,
+                          borderRadius: BorderRadius.circular(39),
                         ),
                       ),
                     ),
@@ -1205,15 +1204,9 @@ class _DashboardPageState extends State<DashboardPage>
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
+            WathaeqiBrandMark(
+              size: 36,
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/wathaeqi-app-icon.png',
-                width: 36,
-                height: 36,
-                fit: BoxFit.contain,
-                semanticLabel: 'أيقونة وثائقي',
-              ),
             ),
             const SizedBox(width: 8),
             const Flexible(
@@ -1468,14 +1461,9 @@ class _DashboardPageState extends State<DashboardPage>
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
                   child: Row(
                     children: [
-                      ClipRRect(
+                      WathaeqiBrandMark(
+                        size: 38,
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'assets/wathaeqi-app-icon.png',
-                          width: 38,
-                          height: 38,
-                          fit: BoxFit.cover,
-                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
