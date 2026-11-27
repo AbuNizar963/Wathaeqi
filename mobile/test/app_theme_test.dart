@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:police_telegrams/app_theme.dart';
+import 'package:police_telegrams/widgets/wathaeqi_brand_mark.dart';
 
 double _contrastRatio(Color first, Color second) {
   final firstLuminance = first.computeLuminance();
@@ -22,6 +23,10 @@ void main() {
       expect(theme.useMaterial3, isTrue);
       expect(theme.colorScheme.primary, AppPalette.brandBlue);
       expect(theme.colorScheme.secondary, AppPalette.navy);
+      expect(
+        _contrastRatio(AppPalette.brandBlue, AppPalette.surface),
+        greaterThanOrEqualTo(4.5),
+      );
       expect(theme.scaffoldBackgroundColor, AppPalette.canvas);
       expect(theme.iconTheme.color, AppPalette.navy);
       expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
@@ -44,6 +49,10 @@ void main() {
         _contrastRatio(AppPalette.warning, AppPalette.canvas),
         greaterThanOrEqualTo(4.5),
       );
+      expect(
+        _contrastRatio(AppPalette.info, AppPalette.canvas),
+        greaterThanOrEqualTo(4.5),
+      );
     });
 
     test('dark theme uses readable dark surfaces and Cairo typography', () {
@@ -61,6 +70,26 @@ void main() {
         _contrastRatio(AppPalette.darkMutedInk, AppPalette.darkMuted),
         greaterThanOrEqualTo(4.5),
       );
+    });
+
+    testWidgets('brand mark scales and exposes an accessible label', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      addTearDown(semantics.dispose);
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: WathaeqiBrandMark(size: 36),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('شعار وثائقي'), findsOneWidget);
+      expect(tester.getSize(find.byType(WathaeqiBrandMark)), const Size(36, 36));
     });
 
     testWidgets('semantic status colors follow the active theme', (
