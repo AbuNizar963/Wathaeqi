@@ -847,7 +847,7 @@ function DashboardLayoutContent({
         <nav
           aria-label="التنقل الرئيسي"
           dir="rtl"
-          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
+          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
           style={{
             paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
           }}
@@ -900,6 +900,16 @@ function DashboardLayoutContent({
           >
             <Search className="h-5 w-5" />
             <span>بحث</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenMobile(true)}
+            aria-label="فتح القائمة الجانبية الكاملة"
+            aria-expanded={openMobile}
+            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70"
+          >
+            <PanelLeft className="h-5 w-5" />
+            <span>القائمة</span>
           </button>
         </nav>
       ) : null}
