@@ -336,7 +336,9 @@ export default function DocumentStudioPrintDialog({
                 className="mt-1 size-4 accent-primary"
               />
               <span>
-                <span className="block font-medium">إظهار التذييل والتوقيع</span>
+                <span className="block font-medium">
+                  إظهار التذييل والتوقيع
+                </span>
                 <span className="block text-xs text-muted-foreground">
                   بيانات التوقيع والسطور المخصصة أسفل الوثيقة.
                 </span>
