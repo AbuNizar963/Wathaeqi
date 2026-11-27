@@ -127,6 +127,25 @@ describe("platform document settings nullable Appwrite columns", () => {
     expect(settings[field as keyof typeof settings]).toBe(fallback);
   });
 
+  it("reads a combined Gregorian and Hijri date format from Appwrite", async () => {
+    mocks.listRows.mockResolvedValue({
+      rows: [
+        {
+          $id: "1",
+          data: {
+            ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,
+            documentDateFormat: "both:yyyy/MM/dd",
+            updatedAt: null,
+          },
+        },
+      ],
+    });
+
+    await expect(getPlatformDocumentSettings()).resolves.toMatchObject({
+      documentDateFormat: "both:yyyy/MM/dd",
+    });
+  });
+
   it("reads a catalogued frame preset and a 60px logo without clamping them", async () => {
     mocks.listRows.mockResolvedValue({
       rows: [

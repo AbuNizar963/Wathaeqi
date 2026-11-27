@@ -20,6 +20,18 @@ describe("formatDocumentDate", () => {
     );
   });
 
+  it("shows Gregorian and Umm al-Qura Hijri dates together", () => {
+    expect(
+      formatDocumentDate("2026-11-25T12:00:00.000Z", "both:yyyy/MM/dd")
+    ).toBe("2026/11/25 م — 1448/06/15 هـ");
+    expect(
+      formatDocumentDate("2026-11-25T12:00:00.000Z", "both:dd/MM/yyyy")
+    ).toBe("25/11/2026 م — 15/06/1448 هـ");
+    expect(
+      formatDocumentDate("2026-11-25T12:00:00.000Z", "both:d MMMM yyyy")
+    ).toBe("25 نوفمبر 2026 م — 15 جمادى الآخرة 1448 هـ");
+  });
+
   it("returns an invalid input unchanged", () => {
     expect(formatDocumentDate("not-a-date")).toBe("not-a-date");
   });
