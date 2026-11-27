@@ -21,17 +21,17 @@ void main() {
 
       expect(theme.useMaterial3, isTrue);
       expect(theme.colorScheme.primary, AppPalette.brandBlue);
-      expect(theme.colorScheme.secondary, AppPalette.brandBlue);
+      expect(theme.colorScheme.secondary, AppPalette.navy);
       expect(theme.scaffoldBackgroundColor, AppPalette.canvas);
       expect(theme.iconTheme.color, AppPalette.navy);
       expect(theme.textTheme.bodyMedium?.fontFamily, 'Cairo');
       expect(theme.cardTheme.color, AppPalette.surface);
       expect(AppPalette.brandBlue, const Color(0xFF0F766E));
-      expect(AppPalette.canvas, const Color(0xFFF4F7F8));
-      expect(AppPalette.navy, const Color(0xFF102E3C));
-      expect(AppPalette.ink, const Color(0xFF172B36));
-      expect(AppPalette.border, const Color(0xFFDBE5E8));
-      expect(AppPalette.gold, const Color(0xFFC9964D));
+      expect(AppPalette.canvas, const Color(0xFFF4F7F6));
+      expect(AppPalette.navy, const Color(0xFF10262D));
+      expect(AppPalette.ink, const Color(0xFF14252C));
+      expect(AppPalette.border, const Color(0xFFD2DFDB));
+      expect(AppPalette.gold, const Color(0xFFC49A5B));
       expect(
         _contrastRatio(AppPalette.mutedInk, AppPalette.muted),
         greaterThanOrEqualTo(4.5),
