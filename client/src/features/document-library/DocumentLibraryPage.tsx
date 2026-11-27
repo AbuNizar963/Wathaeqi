@@ -213,20 +213,32 @@ export default function DocumentLibraryPage({
   return (
     <div className="document-library-shell space-y-5" dir="rtl">
       <div className="document-page-header document-library-header relative isolate overflow-hidden rounded-[1.75rem] border border-[#c49a5b]/30 bg-[#10262d] px-5 py-6 text-white shadow-lg shadow-slate-950/10 sm:px-7 sm:py-8">
-        <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-24 -z-10 size-64 rounded-full bg-[#c49a5b]/20 blur-3xl" />
-        <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 right-1/3 -z-10 size-64 rounded-full bg-[#0f766e]/30 blur-3xl" />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-16 -top-24 -z-10 size-64 rounded-full bg-[#c49a5b]/20 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-28 right-1/3 -z-10 size-64 rounded-full bg-[#0f766e]/30 blur-3xl"
+        />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="document-library-heading max-w-2xl">
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-[#e2bd86]">الأرشيف الرقمي</p>
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-[#e2bd86]">
+              الأرشيف الرقمي
+            </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
               {embedded ? "الملفات" : "مساحة الوثائق"}
             </h1>
             <p className="mt-2 text-sm leading-6 text-white/75">
-              ارفع ملفات Word وPDF، ونظّمها، وراجعها واطبع نسخها الأصلية مع الحفاظ على الصفحات والتنسيق.
+              ارفع ملفات Word وPDF، ونظّمها، وراجعها واطبع نسخها الأصلية مع الحفاظ
+              على الصفحات والتنسيق.
             </p>
           </div>
           {!embedded ? (
-            <Button onClick={() => setCreationOpen(true)} className="min-h-11 gap-2 rounded-xl bg-[#c49a5b] px-5 font-bold text-[#10262d] shadow-md shadow-black/20 hover:bg-[#d2aa70]">
+            <Button
+              onClick={() => setCreationOpen(true)}
+              className="min-h-11 gap-2 rounded-xl bg-[#c49a5b] px-5 font-bold text-[#10262d] shadow-md shadow-black/20 hover:bg-[#d2aa70]"
+            >
               <Plus className="size-4" />
               إنشاء
             </Button>
