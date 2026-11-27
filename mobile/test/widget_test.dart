@@ -704,8 +704,20 @@ void main() {
     await tester.tap(find.text('المزيد'));
     await tester.pumpAndSettle();
     expect(find.text('التنقل الرئيسي'), findsOneWidget);
-    expect(find.text('مكتبة الوثائق'), findsOneWidget);
-    expect(find.text('استوديو الوثائق'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(Drawer),
+        matching: find.text('مكتبة الوثائق'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(Drawer),
+        matching: find.text('استوديو الوثائق'),
+      ),
+      findsOneWidget,
+    );
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -724,7 +736,13 @@ void main() {
 
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.text('مكتبة الوثائق'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(NavigationRail),
+        matching: find.text('مكتبة الوثائق'),
+      ),
+      findsOneWidget,
+    );
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
   });
