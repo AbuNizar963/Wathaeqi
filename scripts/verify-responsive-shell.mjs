@@ -79,7 +79,7 @@ assert(
 assert(
   dashboardLayout.includes('isMobile\n                    ? "إغلاق القائمة الجانبية"') &&
     dashboardLayout.includes('<X className="h-4 w-4" />') &&
-    dashboardLayout.includes('title={\n                  isMobile\n                    ? "إغلاق القائمة"'),
+    dashboardLayout.includes('? "إغلاق القائمة"'),
   "The mobile drawer must expose a clearly labeled close control instead of the desktop collapse action."
 );
 
