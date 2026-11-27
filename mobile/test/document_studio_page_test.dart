@@ -579,7 +579,7 @@ void main() {
   });
 
   testWidgets(
-    'Word documents use authorized PDF preview and keep original-file actions',
+    'imported Word documents stay in the original files tab and keep their actions',
     (tester) async {
       final api = _DocumentStudioTestApi(
         includeDocument: true,
@@ -604,8 +604,17 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('وثيقة تجريبية'));
-      await tester.pump();
+
+      // Imported originals belong to the dedicated files tab, not both lists.
+      expect(find.text('وثيقة تجريبية'), findsNothing);
+      await tester.ensureVisible(find.text('الملفات').first);
+      await tester.tap(find.text('الملفات').first);
+      await tester.pumpAndSettle();
+      expect(find.text('وثيقة تجريبية'), findsOneWidget);
+      await tester.tap(find.text('وثيقة تجريبية').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('تعديل').last);
+      await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 2));
 
       expect(find.byType(PdfPreview), findsOneWidget);
