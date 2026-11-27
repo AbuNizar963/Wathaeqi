@@ -317,6 +317,17 @@ assert(
 );
 
 assert(
+  documentStudio.includes('aria-label="خطوات إعداد الوثيقة"') &&
+    documentStudio.includes('className="sticky top-0 z-20 grid grid-cols-3') &&
+    documentStudio.includes('aria-selected={isDataTabActive}') &&
+    documentStudio.includes('aria-selected={isPreviewTabActive}') &&
+    documentStudio.includes('aria-selected={isPrintTabActive}') &&
+    documentStudio.includes("setImportPrintOpen(true)") &&
+    documentStudio.includes("setNativePrintOpen(true)"),
+  "The mobile document workspace must expose data, A4 preview, and print tabs that open the correct print flow."
+);
+
+assert(
   documentStudioPrintDialog.includes("showDocumentHeader") &&
     documentStudioPrintDialog.includes("showDocumentFooter") &&
     documentStudioPrintDialog.includes("applyDocumentPrintVisibility") &&
