@@ -173,10 +173,12 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
           options: {
             pagesPerSheet: 4,
             marginMm: 8,
+            cutMarginMm: 5,
             orientation: "portrait",
             headerText: "",
             footerText: "",
             showPageNumbers: false,
+            showCutMarks: true,
           },
         });
       });
@@ -197,6 +199,19 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
             };
           }
         );
+        const cutMarks = Array.from(
+          root.querySelectorAll<HTMLElement>(".cut-mark"),
+          mark => {
+            const rect = mark.getBoundingClientRect();
+            return {
+              className: mark.className,
+              left: rect.left,
+              right: rect.right,
+              top: rect.top,
+              bottom: rect.bottom,
+            };
+          }
+        );
         return {
           rootWidth: root.getBoundingClientRect().width,
           bodyWidth: document.body.getBoundingClientRect().width,
@@ -209,6 +224,11 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
             height: sheetRect.height,
           },
           cells,
+          cutMarks,
+          cellBorders: Array.from(
+            root.querySelectorAll<HTMLElement>(".cell"),
+            cell => getComputedStyle(cell).borderWidth
+          ),
         };
       });
       const mmToCssPixels = 96 / 25.4;
@@ -234,11 +254,44 @@ describe.skipIf(!chromiumPath)("multi-page print layout in Chromium", () => {
         0
       );
       expect(geometry.cells[1]!.left - geometry.cells[0]!.right).toBeCloseTo(
-        3 * mmToCssPixels,
+        5 * mmToCssPixels,
         0
       );
       expect(geometry.cells[2]!.top - geometry.cells[0]!.bottom).toBeCloseTo(
-        3 * mmToCssPixels,
+        5 * mmToCssPixels,
+        0
+      );
+      expect(geometry.cellBorders).toEqual(["0px", "0px", "0px", "0px"]);
+      const verticalMarks = geometry.cutMarks.filter(mark =>
+        mark.className.includes("--vertical")
+      );
+      const horizontalMarks = geometry.cutMarks.filter(mark =>
+        mark.className.includes("--horizontal")
+      );
+      expect(verticalMarks).toHaveLength(2);
+      expect(horizontalMarks).toHaveLength(2);
+      expect(
+        (verticalMarks[0]!.left + verticalMarks[0]!.right) / 2
+      ).toBeCloseTo(
+        (geometry.cells[0]!.right + geometry.cells[1]!.left) / 2,
+        0
+      );
+      expect(
+        (verticalMarks[0]!.top + verticalMarks[0]!.bottom) / 2
+      ).toBeCloseTo(
+        (geometry.cells[0]!.top + geometry.cells[0]!.bottom) / 2,
+        0
+      );
+      expect(
+        (horizontalMarks[0]!.top + horizontalMarks[0]!.bottom) / 2
+      ).toBeCloseTo(
+        (geometry.cells[0]!.bottom + geometry.cells[2]!.top) / 2,
+        0
+      );
+      expect(
+        (horizontalMarks[0]!.left + horizontalMarks[0]!.right) / 2
+      ).toBeCloseTo(
+        (geometry.cells[0]!.left + geometry.cells[0]!.right) / 2,
         0
       );
       expect(geometry.cells.map(cell => cell.right - cell.left)).toEqual([

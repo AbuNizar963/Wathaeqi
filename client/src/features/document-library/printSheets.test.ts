@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildPrintHtml, buildPrintSheets, groupPages } from "./printSheets";
+import {
+  buildPrintHtml,
+  buildPrintSheets,
+  createCutMarksMarkup,
+  groupPages,
+} from "./printSheets";
 import type { PrintOptions, SourcePage } from "./types";
 
 function page(index: number): SourcePage {
@@ -142,5 +147,40 @@ describe("document print sheet layout", () => {
     );
     expect(html).not.toContain("javascript:");
     expect(html).toContain('<img src="" alt="" />');
+  });
+
+  it("keeps the outside page margin separate from the adjustable cut margin", () => {
+    const html = buildPrintHtml(pages, {
+      ...baseOptions,
+      pagesPerSheet: 4,
+      marginMm: 8,
+      cutMarginMm: 5,
+      showCutMarks: true,
+    });
+
+    expect(html).toContain("padding: 8mm;");
+    expect(html).toContain('style="gap: 5mm"');
+    expect(html).not.toContain("border: 0.2mm solid #e2e8f0");
+    // The complete 4-up sheet has four marks; the final one-page sheet has none.
+    expect(html.match(/class="cut-mark cut-mark--/g)).toHaveLength(4);
+  });
+
+  it("centers cut marks in real gutters and omits them without space or adjacency", () => {
+    const portrait = createCutMarksMarkup(4, 4, "portrait", 3);
+    expect(portrait.match(/cut-mark--vertical/g)).toHaveLength(2);
+    expect(portrait.match(/cut-mark--horizontal/g)).toHaveLength(2);
+    expect(createCutMarksMarkup(2, 2, "landscape", 5)).toContain(
+      "cut-mark--vertical"
+    );
+    expect(createCutMarksMarkup(2, 2, "portrait", 5)).toContain(
+      "cut-mark--horizontal"
+    );
+    expect(createCutMarksMarkup(1, 4, "portrait", 3)).toBe("");
+    expect(createCutMarksMarkup(4, 4, "portrait", 0)).toBe("");
+    const oneUp = buildPrintHtml([page(1)], {
+      ...baseOptions,
+      showCutMarks: true,
+    });
+    expect(oneUp.match(/<span class="cut-mark /g)).toBeNull();
   });
 });

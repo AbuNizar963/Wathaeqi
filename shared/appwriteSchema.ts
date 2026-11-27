@@ -856,7 +856,7 @@ export const appwriteSchema: SchemaTable[] = [
         type: "varchar",
         size: 32,
         required: false,
-        default: "box",
+        default: "none",
       },
       {
         key: "frameColor",

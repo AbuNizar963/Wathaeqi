@@ -1,6 +1,11 @@
 import { fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
-import { openPrintWindow } from "./printSheets";
+import { normalizeCutMarginMm } from "./types";
+import {
+  createCutMarksMarkup,
+  openPrintWindow,
+  PRINT_CUT_MARKS_CSS,
+} from "./printSheets";
 import {
   createPrintRoot,
   invokePagePrint,
@@ -27,7 +32,9 @@ export async function openOriginalPrintWindow(
     copiesPerSheet?: PagesPerSheet;
     orientation?: PrintOrientation;
     marginMm?: number;
+    cutMarginMm?: number;
     showPageNumbers?: boolean;
+    showCutMarks?: boolean;
     imageTiles?: 1 | 4 | 9 | 16;
     resolveUrl?: () => Promise<string>;
   } & DocumentOperationOptions
@@ -50,9 +57,11 @@ export async function openOriginalPrintWindow(
     copiesPerSheet: options.copiesPerSheet ?? 1,
     orientation: options.orientation ?? "portrait",
     marginMm: options.marginMm ?? 0,
+    cutMarginMm: normalizeCutMarginMm(options.cutMarginMm),
     headerText: "",
     footerText: "",
     showPageNumbers: options.showPageNumbers ?? false,
+    showCutMarks: options.showCutMarks ?? false,
   };
   try {
     // Refresh the short-lived URL without creating a popup or changing auth.
@@ -255,9 +264,10 @@ export async function openOriginalPrintWindow(
     const wordStyle = document.createElement("style");
     wordStyle.textContent = `
       @page{size:A4 ${orientation};margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
+      ${PRINT_CUT_MARKS_CSS}
       .wathaeqi-print-docx-wrapper{background:#fff!important;padding:0!important}.wathaeqi-print-docx{box-shadow:none!important;margin:0!important}
       .sheet{width:${sheetWidth}mm;height:${sheetHeight}mm;padding:${margin}mm;display:flex;flex-direction:column;gap:2mm;direction:ltr;page-break-after:always;break-after:page;overflow:hidden;background:#fff}
-      .sheet:last-child{page-break-after:auto;break-after:auto}.grid{display:grid;flex:1 1 auto;min-height:0;gap:3mm;direction:ltr}
+      .sheet:last-child{page-break-after:auto;break-after:auto}.grid{position:relative;display:grid;flex:1 1 auto;min-height:0;gap:${layoutOptions.cutMarginMm}mm;direction:ltr}
       .per-1{grid-template-columns:1fr;grid-template-rows:1fr}.per-2{grid-template-columns:1fr;grid-template-rows:repeat(2,1fr)}
       .per-4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}.per-6{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(3,1fr)}.per-8{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(4,1fr)}
       .grid.landscape.per-2{grid-template-columns:repeat(2,1fr);grid-template-rows:1fr}.grid.landscape.per-6{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr)}.grid.landscape.per-8{grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,1fr)}
@@ -297,6 +307,8 @@ export async function openOriginalPrintWindow(
           : (options.pagesPerSheet ?? 1),
       orientation,
       showPageNumbers: options.showPageNumbers ?? false,
+      cutMarginMm: layoutOptions.cutMarginMm,
+      showCutMarks: options.showCutMarks ?? false,
     });
     await invokePagePrint(wordSession.root, options);
   } catch (error) {
@@ -314,6 +326,8 @@ function arrangeWordPages(
     count: PagesPerSheet;
     orientation: PrintOrientation;
     showPageNumbers: boolean;
+    cutMarginMm: number;
+    showCutMarks: boolean;
   }
 ): void {
   const wrapper = host.querySelector<HTMLElement>(
@@ -369,6 +383,15 @@ function arrangeWordPages(
       cell.append(page);
       grid.append(cell);
     });
+    if (options.showCutMarks) {
+      const cutMarks = createCutMarksMarkup(
+        sheetPages.length,
+        options.count,
+        options.orientation,
+        options.cutMarginMm
+      );
+      if (cutMarks) grid.insertAdjacentHTML("beforeend", cutMarks);
+    }
     sheet.append(grid);
     if (options.showPageNumbers) {
       const counter = document.createElement("footer");

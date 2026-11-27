@@ -100,7 +100,7 @@ export default function ResponsiveA4Preview({
         }}
       >
         <DocumentFrameDecoration
-          frameStyle={settings?.frameStyle ?? "box"}
+          frameStyle={settings?.frameStyle ?? "none"}
           frameColor={settings?.frameColor ?? "#000000"}
           frameWidthPt={settings?.frameWidthPt ?? 1}
           pageHeightPx={layout.pageHeight}

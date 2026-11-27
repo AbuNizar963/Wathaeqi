@@ -2,6 +2,38 @@ export type PagesPerSheet = 1 | 2 | 4 | 6 | 8;
 export type PrintLayoutMode = "sequential" | "repeat";
 export type PrintOrientation = "portrait" | "landscape";
 
+export const DEFAULT_CUT_MARGIN_MM = 3;
+export const MAX_CUT_MARGIN_MM = 20;
+
+export function normalizeCutMarginMm(value?: number): number {
+  const numericValue =
+    typeof value === "number" && Number.isFinite(value)
+      ? value
+      : DEFAULT_CUT_MARGIN_MM;
+  return Math.min(MAX_CUT_MARGIN_MM, Math.max(0, numericValue));
+}
+
+export function getPrintGridDimensions(
+  count: PagesPerSheet,
+  orientation: PrintOrientation
+): { columns: number; rows: number } {
+  const columns =
+    orientation === "landscape"
+      ? count === 1
+        ? 1
+        : count <= 2
+          ? count
+          : count <= 4
+            ? 2
+            : count <= 6
+              ? 3
+              : 4
+      : count <= 2
+        ? 1
+        : 2;
+  return { columns, rows: Math.ceil(count / columns) };
+}
+
 export type DocumentFileKind = "word" | "pdf" | "image";
 
 export interface SourcePage {
@@ -16,9 +48,11 @@ export interface PrintOptions {
   copiesPerSheet?: PagesPerSheet;
   orientation?: PrintOrientation;
   marginMm: number;
+  cutMarginMm?: number;
   headerText: string;
   footerText: string;
   showPageNumbers: boolean;
+  showCutMarks?: boolean;
 }
 
 export const DOCUMENT_CATEGORIES = [

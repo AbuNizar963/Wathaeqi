@@ -92,7 +92,7 @@ export const DEFAULT_PLATFORM_DOCUMENT_SETTINGS = {
   pageMarginRightMm: 10,
   pageMarginBottomMm: 10,
   pageMarginLeftMm: 10,
-  frameStyle: "box" as const,
+  frameStyle: "none" as const,
   frameColor: "#000000",
   frameWidthPt: 1,
   documentFontFamily: "Amiri" as const,

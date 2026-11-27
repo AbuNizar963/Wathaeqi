@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { Copy, FileStack, LayoutGrid } from "lucide-react";
+import { getPrintGridDimensions, MAX_CUT_MARGIN_MM } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
 
 const COUNTS: PagesPerSheet[] = [1, 2, 4, 6, 8];
@@ -15,6 +15,10 @@ export interface PrintSettingsPanelProps {
   onMarginChange: (value: number) => void;
   showPageNumbers: boolean;
   onShowPageNumbersChange: (value: boolean) => void;
+  cutMarginMm: number;
+  onCutMarginChange: (value: number) => void;
+  showCutMarks: boolean;
+  onShowCutMarksChange: (value: boolean) => void;
 }
 
 function CountOptions({
@@ -68,6 +72,58 @@ function CountOptions({
   );
 }
 
+export function CutMarksControls({
+  cutMarginMm,
+  onCutMarginChange,
+  showCutMarks,
+  onShowCutMarksChange,
+}: Pick<
+  PrintSettingsPanelProps,
+  "cutMarginMm" | "onCutMarginChange" | "showCutMarks" | "onShowCutMarksChange"
+>) {
+  return (
+    <div className="mt-4 space-y-4 border-t pt-4">
+      <label className="block space-y-2 text-sm">
+        <span className="flex items-center justify-between gap-3">
+          <span className="font-medium">هامش القص</span>
+          <output className="rounded-md bg-muted px-2 py-1 font-mono text-xs tabular-nums">
+            {cutMarginMm} مم
+          </output>
+        </span>
+        <input
+          type="range"
+          aria-label="هامش القص"
+          min={0}
+          max={MAX_CUT_MARGIN_MM}
+          step={1}
+          value={cutMarginMm}
+          onChange={event => onCutMarginChange(Number(event.target.value))}
+          className="w-full accent-primary"
+        />
+        <span className="block text-xs leading-5 text-muted-foreground">
+          يتحكم بالمسافة بين خانات الوثائق، ولا يغيّر هامش الورقة الخارجي. عند
+          اختيار 0 مم تتلامس الخانات ولا توجد مساحة لعلامات القص.
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          aria-label="إظهار نقاط القص"
+          checked={showCutMarks}
+          onChange={event => onShowCutMarksChange(event.target.checked)}
+          className="mt-1 size-4 accent-primary"
+        />
+        <span>
+          <span className="block font-medium">إظهار نقاط القص</span>
+          <span className="block text-xs text-muted-foreground">
+            علامات قصيرة في منتصف الفواصل، من دون تغطية محتوى الوثائق.
+          </span>
+        </span>
+      </label>
+    </div>
+  );
+}
+
 export default function PrintSettingsPanel({
   mode,
   onModeChange,
@@ -79,17 +135,12 @@ export default function PrintSettingsPanel({
   onMarginChange,
   showPageNumbers,
   onShowPageNumbersChange,
+  cutMarginMm,
+  onCutMarginChange,
+  showCutMarks,
+  onShowCutMarksChange,
 }: PrintSettingsPanelProps) {
-  const columns = useMemo(() => {
-    if (count === 1) return 1;
-    if (orientation === "landscape") {
-      if (count <= 2) return count;
-      if (count <= 4) return 2;
-      return count <= 6 ? 3 : 4;
-    }
-    return count <= 2 ? 1 : 2;
-  }, [count, orientation]);
-  const rows = Math.ceil(count / columns);
+  const { columns, rows } = getPrintGridDimensions(count, orientation);
 
   return (
     <section className="space-y-4" aria-label="إعدادات الطباعة">
@@ -199,6 +250,14 @@ export default function PrintSettingsPanel({
                 </span>
               </span>
             </label>
+            {count > 1 ? (
+              <CutMarksControls
+                cutMarginMm={cutMarginMm}
+                onCutMarginChange={onCutMarginChange}
+                showCutMarks={showCutMarks}
+                onShowCutMarksChange={onShowCutMarksChange}
+              />
+            ) : null}
           </fieldset>
         </div>
 
@@ -214,10 +273,11 @@ export default function PrintSettingsPanel({
             className={`mx-auto flex w-36 items-center justify-center rounded-md border bg-white p-2 shadow-sm ${orientation === "landscape" ? "aspect-[297/210]" : "aspect-[210/297]"}`}
           >
             <div
-              className="grid h-full w-full gap-1"
+              className="grid h-full w-full"
               style={{
                 gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+                gap: `${(cutMarginMm * 128) / (orientation === "landscape" ? 297 : 210)}px`,
               }}
             >
               {Array.from({ length: count }, (_, index) => (

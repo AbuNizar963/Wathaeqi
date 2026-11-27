@@ -134,10 +134,23 @@ describe.skipIf(
               mimeType,
               pagesPerSheet,
               fileName,
+              cutMarginMm: 5,
+              showCutMarks: pagesPerSheet > 1,
             }),
           { url, mimeType: docxMimeType, pagesPerSheet, fileName }
         );
         await printPromise;
+        const cutMarkCount = await page
+          .locator("#wathaeqi-print-root .cut-mark")
+          .count();
+        if (pagesPerSheet === 1) {
+          expect(cutMarkCount).toBe(0);
+        } else {
+          expect(
+            cutMarkCount,
+            `cut marks for ${pagesPerSheet}`
+          ).toBeGreaterThan(0);
+        }
         expect(await page.title()).toBe(`طباعة ${fileName}`);
         expect(await page.locator("#wathaeqi-print-root script").count()).toBe(
           0

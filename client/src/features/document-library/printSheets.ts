@@ -7,6 +7,7 @@ import type {
   PrintOrientation,
   SourcePage,
 } from "./types";
+import { getPrintGridDimensions, normalizeCutMarginMm } from "./types";
 
 export function groupPages(
   pages: SourcePage[],
@@ -92,7 +93,84 @@ function escapeHtml(value: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/\"/g, "&quot;");
+}
+
+export const PRINT_CUT_MARKS_CSS = `
+  .cut-marks { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  .cut-mark { position: absolute; display: block; box-sizing: content-box; transform: translate(-50%, -50%); border-color: #1f2937; }
+  .cut-mark--vertical { width: 0; height: var(--cut-mark-length); border-left: var(--cut-mark-thickness) solid #1f2937; }
+  .cut-mark--horizontal { width: var(--cut-mark-length); height: 0; border-top: var(--cut-mark-thickness) solid #1f2937; }
+`;
+
+function gridAxisPosition(
+  percent: number,
+  gapCoefficient: number,
+  cutMarginMm: number
+): string {
+  const gapOffset = gapCoefficient * cutMarginMm;
+  const percentValue = `${(percent * 100).toFixed(4)}%`;
+  if (Math.abs(gapOffset) < 0.0001) return percentValue;
+  return `calc(${percentValue} ${gapOffset < 0 ? "-" : "+"} ${Math.abs(gapOffset).toFixed(4)}mm)`;
+}
+
+/** Add short cut guides only where two real cells share an internal gutter. */
+export function createCutMarksMarkup(
+  pageCount: number,
+  pagesPerSheet: PagesPerSheet,
+  orientation: PrintOrientation,
+  cutMarginMm: number
+): string {
+  const gap = normalizeCutMarginMm(cutMarginMm);
+  if (pageCount < 2 || pagesPerSheet < 2 || gap <= 0) return "";
+
+  const { columns, rows } = getPrintGridDimensions(pagesPerSheet, orientation);
+  const actualPageCount = Math.min(pageCount, pagesPerSheet);
+  const markLength = Math.min(2, gap);
+  const markThickness = Math.min(0.35, Math.max(0.15, gap * 0.12));
+  const markers: string[] = [];
+
+  for (let index = 0; index < actualPageCount; index += 1) {
+    const row = Math.floor(index / columns);
+    const column = index % columns;
+    const markerStyle = (left: string, top: string) =>
+      `left:${left};top:${top};--cut-mark-length:${markLength.toFixed(3)}mm;--cut-mark-thickness:${markThickness.toFixed(3)}mm`;
+
+    if (column < columns - 1 && index + 1 < actualPageCount) {
+      const left = gridAxisPosition(
+        (column + 1) / columns,
+        (column + 1) / columns - 0.5,
+        gap
+      );
+      const top = gridAxisPosition(
+        (row + 0.5) / rows,
+        (row - (rows - 1) / 2) / rows,
+        gap
+      );
+      markers.push(
+        `<span class="cut-mark cut-mark--vertical" style="${markerStyle(left, top)}"></span>`
+      );
+    }
+    if (row < rows - 1 && index + columns < actualPageCount) {
+      const left = gridAxisPosition(
+        (column + 0.5) / columns,
+        (column - (columns - 1) / 2) / columns,
+        gap
+      );
+      const top = gridAxisPosition(
+        (row + 1) / rows,
+        (row + 1) / rows - 0.5,
+        gap
+      );
+      markers.push(
+        `<span class="cut-mark cut-mark--horizontal" style="${markerStyle(left, top)}"></span>`
+      );
+    }
+  }
+
+  return markers.length
+    ? `<div class="cut-marks" aria-hidden="true">${markers.join("")}</div>`
+    : "";
 }
 
 export function buildPrintHtml(
@@ -109,6 +187,7 @@ export function buildPrintHtml(
     20,
     Math.max(0, Number.isFinite(options.marginMm) ? options.marginMm : 0)
   );
+  const cutMarginMm = normalizeCutMarginMm(options.cutMarginMm);
   const header = options.headerText.trim();
   const footer = options.footerText.trim();
   const sheetMarkup = sheets
@@ -119,12 +198,15 @@ export function buildPrintHtml(
             `<div class="cell"><img src="${escapeHtml(safeImageSource(page.src))}" alt="" /></div>`
         )
         .join("");
+      const cutMarks = options.showCutMarks
+        ? createCutMarksMarkup(sheet.length, count, orientation, cutMarginMm)
+        : "";
       const counter = options.showPageNumbers
         ? `<span class="counter">ورقة ${sheetIndex + 1} من ${sheets.length}</span>`
         : "";
       return `<section class="sheet">
         ${header ? `<header class="sheet-header">${escapeHtml(header)}</header>` : ""}
-        <div class="grid ${isLandscape ? "landscape" : "portrait"} per-${count}" dir="ltr">${cells}</div>
+        <div class="grid ${isLandscape ? "landscape" : "portrait"} per-${count}" dir="ltr" style="gap: ${cutMarginMm}mm">${cells}${cutMarks}</div>
         ${
           footer || counter
             ? `<footer class="sheet-footer"><span>${escapeHtml(footer)}</span>${counter}</footer>`
@@ -177,7 +259,7 @@ export function buildPrintHtml(
     padding-top: 1.5mm;
   }
   .counter { margin-inline-start: auto; white-space: nowrap; }
-  .grid { flex: 1 1 auto; display: grid; grid-auto-flow: row; gap: 3mm; min-height: 0; direction: ltr; }
+  .grid { position: relative; flex: 1 1 auto; display: grid; grid-auto-flow: row; min-height: 0; direction: ltr; }
   .per-1 { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .per-2 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .per-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
@@ -193,11 +275,11 @@ export function buildPrintHtml(
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    border: 0.2mm solid #e2e8f0;
     background: #ffffff;
     direction: rtl;
   }
   .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  ${PRINT_CUT_MARKS_CSS}
   @media screen {
     body { background: #e2e8f0; padding: 8mm 0; }
     .sheet { margin: 0 auto 8mm; box-shadow: 0 2mm 8mm rgba(15, 23, 42, 0.18); }

@@ -10,9 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import FilePreview from "./FilePreview";
-import PrintSettingsPanel from "./PrintSettingsPanel";
+import PrintSettingsPanel, { CutMarksControls } from "./PrintSettingsPanel";
 import { openOriginalPrintWindow } from "./printOriginal";
-import { fileKind } from "./types";
+import { DEFAULT_CUT_MARGIN_MM, fileKind } from "./types";
 import type { PagesPerSheet, PrintLayoutMode, PrintOrientation } from "./types";
 import DocumentOperationProgress from "../document-progress/DocumentOperationProgress";
 import { useDocumentProgress } from "../document-progress/useDocumentProgress";
@@ -41,12 +41,22 @@ export default function PrintDialog({
   const [copiesPerSheet, setCopiesPerSheet] = useState<PagesPerSheet>(2);
   const [orientation, setOrientation] = useState<PrintOrientation>("portrait");
   const [marginMm, setMarginMm] = useState(0);
+  const [cutMarginMm, setCutMarginMm] = useState(DEFAULT_CUT_MARGIN_MM);
   const [showPageNumbers, setShowPageNumbers] = useState(false);
+  const [showCutMarks, setShowCutMarks] = useState(false);
   const [imageTiles, setImageTiles] = useState<1 | 4 | 9 | 16>(1);
   const [imageCopiesPerSheet, setImageCopiesPerSheet] =
     useState<PagesPerSheet>(1);
   const kind = fileKind(fileName, mimeType);
   const canPrint = kind !== null;
+  const activeLayoutCount =
+    kind === "image"
+      ? imageTiles === 1
+        ? imageCopiesPerSheet
+        : 1
+      : layoutMode === "repeat"
+        ? copiesPerSheet
+        : pagesPerSheet;
   const operation = useDocumentProgress();
   const printButtonLabel =
     kind === "image" ? "طباعة الصورة" : "متابعة إلى الطباعة";
@@ -59,7 +69,9 @@ export default function PrintDialog({
     setCopiesPerSheet(2);
     setOrientation("portrait");
     setMarginMm(0);
+    setCutMarginMm(DEFAULT_CUT_MARGIN_MM);
     setShowPageNumbers(false);
+    setShowCutMarks(false);
     setImageTiles(1);
     setImageCopiesPerSheet(1);
   }, [open, url, fileName, mimeType]);
@@ -85,7 +97,9 @@ export default function PrintDialog({
             kind === "image" ? imageCopiesPerSheet : copiesPerSheet,
           orientation,
           marginMm,
+          cutMarginMm,
           showPageNumbers,
+          showCutMarks,
           imageTiles,
           resolveUrl: getPrintUrl,
         })
@@ -243,6 +257,14 @@ export default function PrintDialog({
                       </span>
                     </span>
                   </label>
+                  {imageTiles === 1 && imageCopiesPerSheet > 1 ? (
+                    <CutMarksControls
+                      cutMarginMm={cutMarginMm}
+                      onCutMarginChange={setCutMarginMm}
+                      showCutMarks={showCutMarks}
+                      onShowCutMarksChange={setShowCutMarks}
+                    />
+                  ) : null}
                 </fieldset>
               ) : (
                 <PrintSettingsPanel
@@ -262,6 +284,10 @@ export default function PrintDialog({
                   onMarginChange={setMarginMm}
                   showPageNumbers={showPageNumbers}
                   onShowPageNumbersChange={setShowPageNumbers}
+                  cutMarginMm={cutMarginMm}
+                  onCutMarginChange={setCutMarginMm}
+                  showCutMarks={showCutMarks}
+                  onShowCutMarksChange={setShowCutMarks}
                 />
               )}
               {kind === "pdf" ? (
@@ -312,6 +338,17 @@ export default function PrintDialog({
                       <dd className="font-medium">
                         {orientation === "portrait" ? "عمودي" : "أفقي"} ·{" "}
                         {marginMm} مم
+                      </dd>
+                    </div>
+                  ) : null}
+                  {activeLayoutCount > 1 ? (
+                    <div className="flex justify-between gap-3 py-2">
+                      <dt className="text-muted-foreground">
+                        هامش القص / العلامات
+                      </dt>
+                      <dd className="font-medium">
+                        {cutMarginMm} مم ·{" "}
+                        {showCutMarks ? "مفعّلة" : "غير مفعّلة"}
                       </dd>
                     </div>
                   ) : null}

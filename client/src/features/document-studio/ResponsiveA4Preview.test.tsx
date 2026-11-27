@@ -52,15 +52,16 @@ describe("ResponsiveA4Preview", () => {
     expect(markup).toContain('viewBox="0 0 794 1123"');
   });
 
-  it("renders the fitted A4 page without zoom controls", () => {
+  it("renders the fitted A4 page without a default frame or zoom controls", () => {
     const markup = renderToStaticMarkup(
       <ResponsiveA4Preview>
         <p>محتوى الوثيقة</p>
       </ResponsiveA4Preview>
     );
 
+    expect(DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle).toBe("none");
     expect(markup).toContain("document-a4-preview-page");
-    expect(markup).toContain('data-document-frame="box"');
+    expect(markup).not.toContain("data-document-frame=");
     expect(markup).toContain("محتوى الوثيقة");
     expect(markup).not.toContain("تكبير معاينة الورقة");
     expect(markup).not.toContain("تصغير المعاينة");

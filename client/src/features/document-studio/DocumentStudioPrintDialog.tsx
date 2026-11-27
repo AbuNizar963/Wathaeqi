@@ -26,6 +26,7 @@ import type {
   PrintOrientation,
   SourcePage,
 } from "../document-library/types";
+import { DEFAULT_CUT_MARGIN_MM } from "../document-library/types";
 import {
   DEFAULT_PRINT_PIXEL_RATIO,
   canvasToPngObjectUrl,
@@ -204,7 +205,9 @@ export default function DocumentStudioPrintDialog({
   const [copiesPerSheet, setCopiesPerSheet] = useState<PagesPerSheet>(2);
   const [orientation, setOrientation] = useState<PrintOrientation>("portrait");
   const [marginMm, setMarginMm] = useState(0);
+  const [cutMarginMm, setCutMarginMm] = useState(DEFAULT_CUT_MARGIN_MM);
   const [showPageNumbers, setShowPageNumbers] = useState(false);
+  const [showCutMarks, setShowCutMarks] = useState(false);
   const [showDocumentHeader, setShowDocumentHeader] = useState(true);
   const [showDocumentFooter, setShowDocumentFooter] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -225,7 +228,9 @@ export default function DocumentStudioPrintDialog({
     setCopiesPerSheet(2);
     setOrientation("portrait");
     setMarginMm(0);
+    setCutMarginMm(DEFAULT_CUT_MARGIN_MM);
     setShowPageNumbers(false);
+    setShowCutMarks(false);
   }, [open, title]);
 
   useEffect(() => {
@@ -259,6 +264,8 @@ export default function DocumentStudioPrintDialog({
             headerText: "",
             footerText: "",
             showPageNumbers,
+            cutMarginMm,
+            showCutMarks,
           },
         });
       });
@@ -310,6 +317,10 @@ export default function DocumentStudioPrintDialog({
           onMarginChange={setMarginMm}
           showPageNumbers={showPageNumbers}
           onShowPageNumbersChange={setShowPageNumbers}
+          cutMarginMm={cutMarginMm}
+          onCutMarginChange={setCutMarginMm}
+          showCutMarks={showCutMarks}
+          onShowCutMarksChange={setShowCutMarks}
         />
         <fieldset className="rounded-xl border bg-card p-4">
           <legend className="px-2 text-sm font-semibold">محتوى الوثيقة</legend>

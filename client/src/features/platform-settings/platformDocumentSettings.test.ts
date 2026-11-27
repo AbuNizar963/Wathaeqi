@@ -86,6 +86,14 @@ describe("document settings for export", () => {
 });
 
 describe("platform document settings UI normalization", () => {
+  it("defaults to no frame while preserving an explicitly stored frame", () => {
+    expect(DEFAULT_PLATFORM_DOCUMENT_SETTINGS.frameStyle).toBe("none");
+    expect(normalizePlatformDocumentSettings({}).frameStyle).toBe("none");
+    expect(
+      normalizePlatformDocumentSettings({ frameStyle: "box" }).frameStyle
+    ).toBe("box");
+  });
+
   it("uses defaults for malformed fields and preserves valid false and zero", () => {
     const normalized = normalizePlatformDocumentSettings({
       ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS,

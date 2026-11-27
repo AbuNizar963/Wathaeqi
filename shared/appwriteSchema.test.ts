@@ -258,7 +258,7 @@ describe("Appwrite operational schema", () => {
         key: "frameStyle",
         type: "varchar",
         size: 32,
-        default: "box",
+        default: "none",
       })
     );
   });
