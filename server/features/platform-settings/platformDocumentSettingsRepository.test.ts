@@ -176,4 +176,27 @@ describe("platform document settings nullable Appwrite columns", () => {
       DEFAULT_PLATFORM_DOCUMENT_SETTINGS.watermarkText
     );
   });
+
+  it("filters a locally newer attribute from an older persisted row", async () => {
+    const { updatePlatformDocumentSettings } =
+      await import("./platformDocumentSettingsRepository");
+    const stored = { ...DEFAULT_PLATFORM_DOCUMENT_SETTINGS } as Record<
+      string,
+      unknown
+    >;
+    stored.id = 1;
+    stored.updatedAt = new Date().toISOString();
+    delete stored.documentDateFormat;
+    mocks.listRows.mockResolvedValue({ rows: [{ $id: "1", data: stored }] });
+    mocks.updateRow.mockResolvedValue({
+      $id: "1",
+      data: { ...stored, updatedAt: new Date().toISOString() },
+    });
+
+    await updatePlatformDocumentSettings(DEFAULT_PLATFORM_DOCUMENT_SETTINGS, 7);
+
+    const payload = mocks.updateRow.mock.calls[0][0].data;
+    expect(payload).not.toHaveProperty("documentDateFormat");
+    expect(payload).toHaveProperty("watermarkText");
+  });
 });

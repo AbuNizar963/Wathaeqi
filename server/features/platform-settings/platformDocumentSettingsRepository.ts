@@ -57,6 +57,48 @@ type AppwriteRow = Record<string, unknown> & {
   data?: Record<string, unknown>;
 };
 
+const SETTINGS_DATA_KEYS = [
+  "id",
+  "showMinistryWatermarkText",
+  "watermarkOpacityPercent",
+  "watermarkScalePercent",
+  "headerDividerColor",
+  "headerDividerStyle",
+  "headerDividerWidthPt",
+  "showVerificationQr",
+  "updatedByUserId",
+  "updatedAt",
+  "watermarkText",
+  "headerTitle",
+  "headerSubtitle",
+  "headerChiefRank",
+  "headerChiefName",
+  "headerShowLogo",
+  "headerLogoSize",
+  "documentDateFormat",
+  "headerTopPaddingMm",
+  "headerHorizontalPaddingMm",
+  "headerBottomPaddingMm",
+  "pageMarginTopMm",
+  "pageMarginRightMm",
+  "pageMarginBottomMm",
+  "pageMarginLeftMm",
+  "frameStyle",
+  "frameColor",
+  "frameWidthPt",
+  "headerAlignment",
+  "pageHeaderRows",
+  "pageFooterRows",
+  "documentFontFamily",
+  "documentFontSizePt",
+  "documentFontWeight",
+  "documentFontColor",
+  "recipientFontFamily",
+  "recipientFontSizePt",
+  "recipientFontWeight",
+  "recipientFontColor",
+] as const;
+
 function rowData(row: AppwriteRow): Record<string, unknown> {
   return row.data ?? row;
 }
@@ -306,6 +348,33 @@ async function writeSettingsRow(
   return write(data);
 }
 
+function dataForExistingRow(
+  row: AppwriteRow,
+  data: Record<string, unknown>
+): Record<string, unknown> {
+  const storedKeys = new Set(Object.keys(rowData(row)));
+  if (storedKeys.size === 0) {
+    throw new Error(
+      "Cannot safely update platform document settings: Appwrite returned an empty row"
+    );
+  }
+  // Older SDK responses and isolated repository tests may expose only the
+  // user data. In that case there is no reliable schema signal to filter by;
+  // retain the existing fail-loud write behavior.
+  if (!storedKeys.has("id") && !storedKeys.has("updatedAt")) return data;
+  const filtered = Object.fromEntries(
+    SETTINGS_DATA_KEYS.filter(key => storedKeys.has(key) && key in data).map(
+      key => [key, data[key]]
+    )
+  );
+  if (!("id" in filtered) || !("updatedAt" in filtered)) {
+    throw new Error(
+      "Cannot safely update platform document settings: required Appwrite fields are missing"
+    );
+  }
+  return filtered;
+}
+
 export async function getPlatformDocumentSettings(): Promise<PlatformDocumentSettings> {
   const row = await findSettingsRow();
   if (!row) {
@@ -333,6 +402,7 @@ export async function updatePlatformDocumentSettings(
   const existing = await findSettingsRow();
 
   if (existing) {
+    const existingData = dataForExistingRow(existing, data);
     const updated = await writeSettingsRow(
       nextData =>
         tables.updateRow({
@@ -341,7 +411,7 @@ export async function updatePlatformDocumentSettings(
           rowId: existing.$id,
           data: nextData,
         }) as Promise<AppwriteRow>,
-      data
+      existingData
     );
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
@@ -374,6 +444,7 @@ export async function updatePlatformDocumentSettings(
     }
     const raced = await findSettingsRow();
     if (!raced) throw error;
+    const racedData = dataForExistingRow(raced, data);
     const updated = await writeSettingsRow(
       nextData =>
         tables.updateRow({
@@ -382,7 +453,7 @@ export async function updatePlatformDocumentSettings(
           rowId: raced.$id,
           data: nextData,
         }) as Promise<AppwriteRow>,
-      data
+      racedData
     );
     return mapPlatformDocumentSettings(rowData(updated as AppwriteRow));
   }
