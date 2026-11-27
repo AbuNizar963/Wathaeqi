@@ -280,6 +280,10 @@ const auditRouter = router({
       z.object({
         limit: z.number().int().min(1).max(100).default(100),
         search: z.string().trim().max(120).optional(),
+        entityType: z
+          .enum(["all", "document", "user", "contact", "settings"])
+          .default("all"),
+        action: z.string().trim().max(100).optional(),
       })
     )
     .query(async ({ input }) => {
@@ -323,24 +327,37 @@ const auditRouter = router({
       });
 
       const search = input.search?.toLocaleLowerCase("ar");
-      const filtered = search
-        ? events.filter(event =>
-            [
-              event.actorName,
-              event.action,
-              event.entityType,
-              event.entityId ?? "",
-              JSON.stringify(event.metadata ?? ""),
-            ]
-              .join(" ")
-              .toLocaleLowerCase("ar")
-              .includes(search)
-          )
-        : events;
+      const filtered = events.filter(event => {
+        if (input.entityType !== "all") {
+          const isSettings =
+            input.entityType === "settings" && event.entityType === "platform";
+          if (!isSettings && event.entityType !== input.entityType)
+            return false;
+        }
+        if (input.action && event.action !== input.action) return false;
+        if (!search) return true;
+        return [
+          event.actorName,
+          event.actorRank ?? "",
+          event.actorRole ?? "",
+          event.action,
+          event.entityType,
+          event.entityId ?? "",
+          event.reason ?? "",
+          event.deviceType,
+          JSON.stringify(event.metadata ?? ""),
+          JSON.stringify(event.beforeState ?? ""),
+          JSON.stringify(event.afterState ?? ""),
+        ]
+          .join(" ")
+          .toLocaleLowerCase("ar")
+          .includes(search);
+      });
 
       return {
         events: filtered,
-        total: result.total,
+        total: filtered.length,
+        availableTotal: result.total,
         returned: filtered.length,
       };
     }),

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Archive,
   FilePlus2,
@@ -33,6 +33,11 @@ const ACTION_LABELS: Record<string, string> = {
   "contact.updated": "تعديل جهة اتصال",
   "contact.deleted": "حذف جهة اتصال",
 };
+
+const ACTION_FILTERS = [
+  ["", "كل الإجراءات"],
+  ...Object.entries(ACTION_LABELS),
+] as const;
 
 function actionLabel(action: string): string {
   return ACTION_LABELS[action] ?? action.replaceAll(".", " · ");
@@ -90,12 +95,21 @@ function deviceLabel(value: string): string {
 
 export default function AuditLogPage() {
   const [search, setSearch] = useState("");
+  const [entityType, setEntityType] = useState<
+    "all" | "document" | "user" | "contact" | "settings"
+  >("all");
+  const [action, setAction] = useState("");
   const query = trpc.workspace.audit.list.useQuery(
-    { limit: 100, search: search.trim() || undefined },
+    {
+      limit: 100,
+      search: search.trim() || undefined,
+      entityType,
+      action: action || undefined,
+    },
     { staleTime: 15_000 }
   );
   const events = query.data?.events ?? [];
-  const visibleEvents = useMemo(() => events, [events]);
+  const hasFilters = Boolean(search.trim() || action || entityType !== "all");
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5" dir="rtl">
@@ -134,7 +148,9 @@ export default function AuditLogPage() {
           <div>
             <p className="text-sm font-medium">الأحداث المسجلة</p>
             <p className="text-xs text-muted-foreground">
-              أحدث 100 حركة محفوظة في Appwrite
+              {hasFilters
+                ? `${(query.data?.total ?? 0).toLocaleString("en-US")} نتيجة مطابقة من أصل ${(query.data?.availableTotal ?? 0).toLocaleString("en-US")}`
+                : "أحدث 100 حركة محفوظة في Appwrite"}
             </p>
           </div>
         </div>
@@ -154,6 +170,55 @@ export default function AuditLogPage() {
         />
       </div>
 
+      <Card className="flex flex-wrap items-end gap-3 p-4">
+        <label className="grid min-w-[13rem] flex-1 gap-1.5 text-sm">
+          <span className="font-medium">نوع السجل</span>
+          <select
+            className="h-11 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            value={entityType}
+            onChange={event =>
+              setEntityType(event.target.value as typeof entityType)
+            }
+            aria-label="تصفية سجل التدقيق حسب نوع السجل"
+          >
+            <option value="all">كل السجلات</option>
+            <option value="document">الوثائق</option>
+            <option value="user">المستخدمون</option>
+            <option value="contact">جهات الاتصال</option>
+            <option value="settings">إعدادات المنصة</option>
+          </select>
+        </label>
+        <label className="grid min-w-[13rem] flex-1 gap-1.5 text-sm">
+          <span className="font-medium">الإجراء</span>
+          <select
+            className="h-11 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            value={action}
+            onChange={event => setAction(event.target.value)}
+            aria-label="تصفية سجل التدقيق حسب الإجراء"
+          >
+            {ACTION_FILTERS.map(([value, label]) => (
+              <option key={value || "all"} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {hasFilters ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="min-h-11"
+            onClick={() => {
+              setSearch("");
+              setAction("");
+              setEntityType("all");
+            }}
+          >
+            مسح المرشحات
+          </Button>
+        ) : null}
+      </Card>
+
       {query.isLoading ? (
         <Card
           className="p-8 text-center text-sm text-muted-foreground"
@@ -169,7 +234,7 @@ export default function AuditLogPage() {
             إعادة المحاولة
           </Button>
         </Card>
-      ) : visibleEvents.length === 0 ? (
+      ) : events.length === 0 ? (
         <Card className="space-y-2 border-dashed p-10 text-center">
           <History className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="font-semibold">لا توجد حركات مطابقة</p>
@@ -179,7 +244,7 @@ export default function AuditLogPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {visibleEvents.map(event => {
+          {events.map(event => {
             const Icon = actionIcon(event.action);
             const summary = metadataSummary(event.metadata);
             return (
