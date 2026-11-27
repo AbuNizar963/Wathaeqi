@@ -33,9 +33,9 @@ export function formatDocumentDate(
   // The stored date is an ISO timestamp created at noon UTC. Prefer its date
   // portion so the selected calendar day never shifts with the viewer's zone.
   const isoDate = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/u);
-  const year = isoDate ? Number(isoDate[1]) : parsed.getUTCFullYear();
-  const month = isoDate ? Number(isoDate[2]) : parsed.getUTCMonth() + 1;
-  const day = isoDate ? Number(isoDate[3]) : parsed.getUTCDate();
+  const year = isoDate ? Number(isoDate[1]) : parsed.getFullYear();
+  const month = isoDate ? Number(isoDate[2]) : parsed.getMonth() + 1;
+  const day = isoDate ? Number(isoDate[3]) : parsed.getDate();
   const date = new Date(Date.UTC(year, month - 1, day, 12));
   const monthDate = new Date(Date.UTC(year, month - 1, 15, 12));
   const monthLong = new Intl.DateTimeFormat("ar", {
