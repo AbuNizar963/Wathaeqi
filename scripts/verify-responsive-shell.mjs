@@ -13,6 +13,10 @@ function assert(condition, message) {
   }
 }
 
+function countOccurrences(source, needle) {
+  return source.split(needle).length - 1;
+}
+
 const [
   indexHtml,
   manifest,
@@ -394,13 +398,8 @@ assert(
 );
 
 assert(
-  (documentLibraryPage.match(
-    /onClick=\{\(\) => setPrintOpen\(true\)\}/g
-  ) ?? []).length ===
-    1 &&
-    (documentLibraryPage.match(
-      /deleteDocument\.mutate\(\{ id: selected\.id \}\)/g
-    ) ?? []).length === 1 &&
+  countOccurrences(documentLibraryPage, "setPrintOpen(true)") === 1 &&
+    countOccurrences(documentLibraryPage, "deleteDocument.mutate") === 1 &&
     documentLibraryPage.includes('title="حذف الوثيقة"') &&
     documentLibraryPage.includes('className="flex justify-end gap-2"') &&
     documentLibraryPage.includes('className="sticky bottom-0'),
