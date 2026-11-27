@@ -569,8 +569,8 @@ export default function DocumentStudioPage() {
       onError: error => toast.error(error.message),
     });
 
-  const deleteDocumentMutation =
-    trpc.documentStudio.deleteDocument.useMutation({
+  const deleteDocumentMutation = trpc.documentStudio.deleteDocument.useMutation(
+    {
       onSuccess: async result => {
         await utils.documentStudio.listDocuments.invalidate();
         setSelectedDocumentId(null);
@@ -585,7 +585,8 @@ export default function DocumentStudioPage() {
         }
       },
       onError: error => toast.error(error.message),
-    });
+    }
+  );
 
   const deactivateTemplateMutation =
     trpc.documentStudio.deactivateTemplate.useMutation({
