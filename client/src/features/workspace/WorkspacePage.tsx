@@ -365,18 +365,18 @@ export default function WorkspacePage({
 
       {section === "dashboard" ? (
         <div className="space-y-6">
-          <section className="relative isolate overflow-hidden rounded-[1.75rem] border border-slate-700/70 bg-[#0B1120] px-5 py-6 text-white shadow-xl shadow-slate-950/10 sm:px-7 sm:py-8">
+          <section className="relative isolate overflow-hidden rounded-[1.75rem] border border-slate-700/70 bg-[#10262d] px-5 py-6 text-white shadow-xl shadow-slate-950/10 sm:px-7 sm:py-8">
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -left-16 -top-24 -z-10 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl"
+              className="pointer-events-none absolute -left-16 -top-24 -z-10 h-64 w-64 rounded-full bg-[#c49a5b]/20 blur-3xl"
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-28 right-1/3 -z-10 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl"
+              className="pointer-events-none absolute -bottom-28 right-1/3 -z-10 h-64 w-64 rounded-full bg-[#0f766e]/25 blur-3xl"
             />
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="max-w-2xl">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#c49a5b]/35 bg-[#c49a5b]/10 px-3 py-1 text-xs font-semibold text-[#e2bd86]">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   أرشيف موثوق — قرار أوضح
                 </div>
@@ -391,7 +391,7 @@ export default function WorkspacePage({
               <div className="flex shrink-0 flex-col gap-2 sm:min-w-44">
                 <Button
                   type="button"
-                  className="min-h-12 rounded-xl bg-emerald-500 px-5 font-bold text-slate-950 shadow-lg shadow-emerald-950/20 hover:bg-emerald-400"
+                  className="min-h-12 rounded-xl bg-[#c49a5b] px-5 font-bold text-[#10262d] shadow-lg shadow-black/20 hover:bg-[#d2aa70]"
                   onClick={() => setLocation("/documents?create=1")}
                 >
                   <Plus className="ml-2 h-4 w-4" />
