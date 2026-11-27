@@ -18,5 +18,21 @@ export function normalizeDocxImageLayout(root: ParentNode): void {
     container.style.height = `${height}px`;
     image.style.width = `${width}px`;
     image.style.height = `${height}px`;
+
+    const page = image.closest<HTMLElement>(".docx");
+    if (!page) return;
+    const pageRect = page.getBoundingClientRect();
+    const imageRect = image.getBoundingClientRect();
+    const imageIsOutsidePage =
+      imageRect.left < pageRect.left || imageRect.right > pageRect.right;
+    if (!imageIsOutsidePage) return;
+
+    const pageScale = pageRect.width / Math.max(1, page.scrollWidth);
+    const correction =
+      (pageRect.left +
+        pageRect.width / 2 -
+        (imageRect.left + imageRect.width / 2)) /
+      Math.max(pageScale, 0.01);
+    container.style.transform = `translateX(${correction}px)`;
   });
 }
