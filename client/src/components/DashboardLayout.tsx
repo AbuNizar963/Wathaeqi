@@ -791,9 +791,9 @@ function DashboardLayoutContent({
             <div className="flex min-w-0 items-center gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="icon"
-                className="h-10 w-10 shrink-0 rounded-xl"
+                className="h-10 w-10 shrink-0 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
                 aria-label="فتح القائمة الجانبية الكاملة"
                 aria-expanded={openMobile}
                 onClick={() => setOpenMobile(true)}
