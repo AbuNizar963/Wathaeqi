@@ -12,6 +12,7 @@ import 'package:police_telegrams/main.dart';
 import 'package:police_telegrams/mobile_pages.dart' show DepartmentSettingsPage;
 import 'package:police_telegrams/features/platform_settings/platform_document_settings_page.dart';
 import 'package:police_telegrams/features/notifications/push_notifications.dart';
+import 'package:police_telegrams/features/notifications/toast.dart';
 import 'package:police_telegrams/telegram_outbox.dart';
 
 const _telegramSubject = 'وضع الحراسة اللازمة على السجين علي قوجه';
@@ -957,6 +958,31 @@ void main() {
       expect(biometricSwitch.onChanged, isNotNull);
     },
   );
+
+  testWidgets('fallback loading toast can be dismissed', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Toast.loading(context, 'جارٍ حفظ الوثيقة'),
+              child: const Text('إظهار إشعار التحميل'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('إظهار إشعار التحميل'));
+    await tester.pump();
+
+    expect(find.text('جارٍ حفظ الوثيقة'), findsOneWidget);
+    Toast.dismiss();
+    await tester.pump();
+
+    expect(find.text('جارٍ حفظ الوثيقة'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('responsive dialog keeps long content and actions reachable', (
     tester,
