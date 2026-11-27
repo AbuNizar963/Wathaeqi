@@ -175,12 +175,13 @@ assert(
 // prettier-ignore
 assert(
   dashboardLayout.includes("<HeaderActions showTheme showMenu={false} />") &&
+    dashboardLayout.includes('<HeaderActions showTheme={false} />') &&
+    dashboardLayout.includes("mobile-bottom-nav-account") &&
     dashboardLayout.includes("grid grid-cols-5") &&
     dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
-    !dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
-    !dashboardLayout.includes("<span>المزيد</span>") &&
-    !dashboardLayout.includes("mobile-bottom-nav-account"),
-  "Mobile navigation must keep theme and notifications in the top bar and expose the hamburger drawer control in the bottom bar."
+    dashboardLayout.includes('aria-label="فتح القائمة الجانبية الكاملة"') &&
+    dashboardLayout.includes("onClick={() => setOpenMobile(true)}"),
+  "The mobile bottom bar must restore the account/help options menu while the separate top-bar control continues to open the navigation drawer."
 );
 
 // prettier-ignore
@@ -193,8 +194,8 @@ assert(
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&
-    dashboardLayout.includes("onClick={() => setOpenMobile(true)}") &&
-    dashboardLayout.includes('Menu className="h-5 w-5" aria-hidden="true"') &&
+    dashboardLayout.includes("mobile-bottom-nav-account") &&
+    dashboardLayout.includes('<HeaderActions showTheme={false} />') &&
     dashboardLayout.includes(
       'height: "calc(52px + env(safe-area-inset-top))"'
     ) &&
@@ -204,7 +205,7 @@ assert(
     dashboardLayout.includes('aria-label="فتح البحث السريع"') &&
     dashboardLayout.includes("<Search className=\"h-5 w-5\" />") &&
     dashboardLayout.includes("h-[52px]"),
-  "The mobile navigation must expose dashboard, documents, create, and search with safe-area spacing and a 52px top bar."
+  "The mobile navigation must keep dashboard, documents, create, and search alongside the restored account/help menu with safe-area spacing."
 );
 
 assert(
@@ -214,8 +215,15 @@ assert(
     dashboardLayout.includes('variant="outline"') &&
     dashboardLayout.includes(
       "border-border/70 bg-background/95 shadow-sm backdrop-blur transition-colors hover:bg-accent"
-    ),
-  "The mobile top hamburger must use the same outlined 40px action-button treatment as notifications and theme controls."
+    ) &&
+    headerActions.includes('setLocation("/terms")') &&
+    headerActions.includes('setLocation("/about")') &&
+    headerActions.includes("الملف الشخصي") &&
+    headerActions.includes("تثبيت التطبيق") &&
+    headerActions.includes("الشروط والأحكام") &&
+    headerActions.includes("حول النظام وميزاته") &&
+    headerActions.includes("تسجيل الخروج"),
+  "The top-bar drawer trigger must remain independent while the bottom account menu retains working terms and About routes."
 );
 
 assert(
