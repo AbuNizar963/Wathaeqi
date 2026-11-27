@@ -5,6 +5,7 @@ import {
   LogOut,
   Menu,
   Monitor,
+  ShieldCheck,
   Moon,
   Sun,
   SunMoon,
@@ -160,6 +161,15 @@ export default function HeaderActions({
             >
               <FileText className="h-4 w-4" />
               <span>الشروط والأحكام</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                setLocation("/privacy");
+              }}
+              className="cursor-pointer justify-end gap-2"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              <span>سياسة الخصوصية</span>
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => {
