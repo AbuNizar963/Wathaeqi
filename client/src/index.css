@@ -961,10 +961,13 @@
   line-height: 1.85;
 }
 
-/* Imported Word pages keep their native width; narrow screens scroll instead
-   of squeezing the page and changing its layout. */
+/* Imported Word pages keep their native width. FilePreview owns the visual
+   scale, so the docx-preview wrapper must remain aligned to the page rather
+   than expanding to its internal max-content width (which displaces floating
+   images, including logos, outside the visible sheet). */
 .document-word-preview .docx-wrapper {
-  min-width: max-content;
+  width: 100% !important;
+  min-width: 0 !important;
   padding: 0 !important;
   background: #e2e8f0 !important;
 }
@@ -972,6 +975,12 @@
 .document-word-preview .docx {
   margin: 0 auto 12px !important;
   box-shadow: 0 1px 6px rgb(15 23 42 / 14%) !important;
+}
+
+.document-word-preview .docx table {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed;
 }
 
 .document-editor-print-copy {

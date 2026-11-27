@@ -26,29 +26,27 @@ export default function FilePreview({
   const pdfDocument = useRef<PDFDocumentProxy | null>(null);
   const wordHost = useRef<HTMLDivElement | null>(null);
   const wordViewport = useRef<HTMLDivElement | null>(null);
-  const [wordLayout, setWordLayout] = useState({ scale: 1, height: 0 });
+  const [wordLayout, setWordLayout] = useState({
+    scale: 1,
+    height: 0,
+    width: 0,
+  });
 
   function measureWordLayout() {
     const viewport = wordViewport.current;
     const host = wordHost.current;
     if (!viewport || !host) return;
-    const page = host.querySelector<HTMLElement>(".docx");
-    const zoom = Number.parseFloat(window.getComputedStyle(host).zoom) || 1;
-    const pageRect = page?.getBoundingClientRect();
-    const hostRect = host.getBoundingClientRect();
-    // ResizeObserver also fires after `zoom` changes. Reading scrollWidth at
-    // that point measures the already-scaled page and causes an endless
-    // feedback loop where every pass makes the Word page smaller.
+    const pages = Array.from(host.querySelectorAll<HTMLElement>(".docx"));
+    const page = pages[0];
+    // Measure the native Word sheets, not the wrapper's max-content width.
+    // The wrapper can be several thousand pixels wide because docx-preview
+    // keeps its internal layout unscaled. Including that wrapper width here
+    // made the visual zoom converge to ~12%, hiding logos and fine details.
     const naturalWidth = Math.max(
-      (pageRect?.width ?? 0) / zoom,
-      page?.offsetWidth ?? 0,
-      (hostRect.width || 0) / zoom
+      ...pages.map(currentPage => currentPage.offsetWidth),
+      page?.offsetWidth ?? 0
     );
-    const naturalHeight = Math.max(
-      (hostRect.height || 0) / zoom,
-      page?.offsetHeight ?? 0,
-      host.offsetHeight
-    );
+    const naturalHeight = Math.max(host.offsetHeight, page?.offsetHeight ?? 0);
     if (!naturalWidth || !naturalHeight) return;
     const availableWidth = Math.max(1, viewport.clientWidth - 16);
     const scale = fitToViewport
@@ -56,9 +54,11 @@ export default function FilePreview({
       : 1;
     const height = Math.ceil(naturalHeight * scale);
     setWordLayout(current =>
-      Math.abs(current.scale - scale) < 0.001 && current.height === height
+      Math.abs(current.scale - scale) < 0.001 &&
+      current.height === height &&
+      current.width === naturalWidth
         ? current
-        : { scale, height }
+        : { scale, height, width: naturalWidth }
     );
   }
 
@@ -70,7 +70,7 @@ export default function FilePreview({
     setPdfPageCount(0);
     setPdfPageNumber(1);
     pdfDocument.current = null;
-    setWordLayout({ scale: 1, height: 0 });
+    setWordLayout({ scale: 1, height: 0, width: 0 });
     if (!kind) {
       setError("صيغة الملف غير مدعومة للمعاينة");
       setLoading(false);
@@ -309,11 +309,12 @@ export default function FilePreview({
       <div
         ref={wordHost}
         dir="auto"
-        className="document-word-preview mx-auto w-max min-w-full bg-white shadow"
+        className="document-word-preview mx-auto bg-white shadow"
         style={{
           transform: "translateX(-50%)",
           transformOrigin: "top center",
           zoom: wordLayout.scale,
+          width: wordLayout.width ? `${wordLayout.width}px` : undefined,
           position: "absolute",
           left: "50%",
           top: "8px",
