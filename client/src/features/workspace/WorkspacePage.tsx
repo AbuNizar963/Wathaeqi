@@ -487,7 +487,7 @@ export default function WorkspacePage({
                 </p>
                 <Button
                   type="button"
-                  className="mt-4 rounded-xl"
+                  className="mt-4 hidden rounded-xl md:inline-flex"
                   onClick={() => setLocation("/documents?create=1")}
                 >
                   إنشاء الوثيقة الأولى
