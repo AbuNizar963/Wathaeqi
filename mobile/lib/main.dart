@@ -682,6 +682,7 @@ class _DashboardPageState extends State<DashboardPage>
   bool _updateCheckInProgress = false;
   bool _forceUpdateCheckQueued = false;
   DateTime? _lastUpdateCheckAt;
+  int _selectedNavigationIndex = 0;
 
   String get _currentOrganizationLabel {
     final value =
@@ -911,6 +912,31 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _pushPage(Widget page) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+  }
+
+  void _selectPrimaryNavigation(BuildContext context, int index) {
+    if (index == 2) {
+      Scaffold.of(context).openDrawer();
+      return;
+    }
+
+    if (index == 0) {
+      setState(() => _selectedNavigationIndex = 0);
+      return;
+    }
+
+    setState(() => _selectedNavigationIndex = 1);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DocumentStudioPage(
+          api: widget.api,
+          outbox: _documentStudioOutbox,
+        ),
+      ),
+    ).then((_) {
+      if (mounted) setState(() => _selectedNavigationIndex = 0);
+    });
   }
 
   void _openAppUpdate() {
@@ -1530,20 +1556,16 @@ class _DashboardPageState extends State<DashboardPage>
                 ListTile(
                   leading: const Icon(Icons.description_outlined),
                   title: const Text('مكتبة الوثائق'),
-                  selected: true,
+                  selected: _selectedNavigationIndex == 0,
                   onTap: () => Navigator.pop(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
                   title: const Text('استوديو الوثائق'),
+                  selected: _selectedNavigationIndex == 1,
                   onTap: () {
                     Navigator.pop(context);
-                    _pushPage(
-                      DocumentStudioPage(
-                        api: widget.api,
-                        outbox: _documentStudioOutbox,
-                      ),
-                    );
+                    _selectPrimaryNavigation(context, 1);
                   },
                 ),
                 ListTile(
@@ -1612,16 +1634,96 @@ class _DashboardPageState extends State<DashboardPage>
         child: const Icon(LucideIcons.plus),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: DocumentLibraryPage(
-        api: widget.api,
-        onEditDocument: (document) => _pushPage(
-          DocumentStudioPage(
-            api: widget.api,
-            outbox: _documentStudioOutbox,
-            initialTab: DocumentStudioTab.documents,
-            initialDocumentId: document.id,
-          ),
+      bottomNavigationBar: Builder(
+        builder: (context) => LayoutBuilder(
+          builder: (context, constraints) {
+            if (MediaQuery.sizeOf(context).width >= 600) {
+              return const SizedBox.shrink();
+            }
+            return SafeArea(
+              top: false,
+              child: NavigationBar(
+                height: 70,
+                selectedIndex: _selectedNavigationIndex,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                onDestinationSelected: (index) =>
+                    _selectPrimaryNavigation(context, index),
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.description_outlined),
+                    selectedIcon: Icon(Icons.description_rounded),
+                    label: 'الوثائق',
+                    tooltip: 'مكتبة الوثائق',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.edit_outlined),
+                    selectedIcon: Icon(Icons.edit_rounded),
+                    label: 'الاستوديو',
+                    tooltip: 'استوديو الوثائق',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.more_horiz_rounded),
+                    selectedIcon: Icon(Icons.more_horiz_rounded),
+                    label: 'المزيد',
+                    tooltip: 'بقية خيارات النظام',
+                  ),
+                ],
+              ),
+            );
+          },
         ),
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final library = DocumentLibraryPage(
+            api: widget.api,
+            onEditDocument: (document) => _pushPage(
+              DocumentStudioPage(
+                api: widget.api,
+                outbox: _documentStudioOutbox,
+                initialTab: DocumentStudioTab.documents,
+                initialDocumentId: document.id,
+              ),
+            ),
+          );
+
+          if (constraints.maxWidth < 600) return library;
+
+          final extended = constraints.maxWidth >= 900;
+          return Row(
+            children: [
+              NavigationRail(
+                selectedIndex: _selectedNavigationIndex,
+                extended: extended,
+                labelType: extended ? null : NavigationRailLabelType.all,
+                minWidth: 76,
+                minExtendedWidth: 216,
+                groupAlignment: -1,
+                onDestinationSelected: (index) =>
+                    _selectPrimaryNavigation(context, index),
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.description_outlined),
+                    selectedIcon: Icon(Icons.description_rounded),
+                    label: Text('مكتبة الوثائق'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.edit_outlined),
+                    selectedIcon: Icon(Icons.edit_rounded),
+                    label: Text('استوديو الوثائق'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.more_horiz_rounded),
+                    selectedIcon: Icon(Icons.more_horiz_rounded),
+                    label: Text('المزيد'),
+                  ),
+                ],
+              ),
+              const VerticalDivider(width: 1, thickness: 1),
+              Expanded(child: library),
+            ],
+          );
+        },
       ),
     ),
   );
