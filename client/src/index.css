@@ -1896,3 +1896,52 @@
     padding-inline: 0.5rem;
   }
 }
+
+
+/* Adaptive interaction baseline for touch, zoom, and reduced-motion users. */
+html {
+  scroll-padding-top: calc(3.5rem + env(safe-area-inset-top));
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  [role="menuitem"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="button"] {
+    min-height: 44px;
+  }
+
+  button[data-icon-only="true"],
+  [role="button"][data-icon-only="true"] {
+    min-width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 639px) {
+  #main-content {
+    padding-inline: max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .document-toolbar {
+    align-items: stretch;
+  }
+
+  .document-toolbar > * {
+    max-width: 100%;
+  }
+}
