@@ -447,6 +447,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final choice = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(dialogContext, const Text('إنشاء وثيقة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -507,6 +508,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final selected = await showDialog<DocumentTemplate>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(
           dialogContext,
           const Text('اختر نموذج الوثيقة'),
@@ -551,6 +553,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(dialogContext, const Text('إعداد الطباعة')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -586,6 +589,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     return showDialog<int>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(
           dialogContext,
           const Text('تقسيم الصورة للطباعة'),
@@ -1141,6 +1145,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(
           dialogContext,
           const Text('استعادة نسخة سابقة'),
@@ -1389,6 +1394,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(dialogContext, const Text('إصدار الوثيقة')),
         content: const Text(
           'سيتم تخصيص رقم صادر نهائي للوثيقة. لا يمكن تغيير الرقم بعد الإصدار.',
@@ -1435,6 +1441,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(dialogContext, const Text('أرشفة الوثيقة')),
         content: const Text('سيتم نقل الوثيقة إلى الأرشيف دون حذفها.'),
         actions: [
@@ -1601,6 +1608,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: closableDialogTitle(dialogContext, const Text('إيقاف النموذج')),
         content: const Text(
           'سيُخفى النموذج عن الاستخدام الجديد مع الاحتفاظ بالوثائق المرتبطة به.',
@@ -2829,6 +2837,7 @@ class DocumentStudioPageState extends State<DocumentStudioPage> {
         context: context,
         builder: (dialogContext) => StatefulBuilder(
           builder: (context, setDialogState) => AlertDialog(
+            scrollable: true,
             title: closableDialogTitle(
               dialogContext,
               const Text('إعدادات الوثيقة الرسمية'),
