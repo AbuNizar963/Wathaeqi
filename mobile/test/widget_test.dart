@@ -678,7 +678,7 @@ void main() {
   });
 
   testWidgets(
-    'keeps administrative destinations in the drawer, not the account menu',
+    'preserves the original account menu options and policy links',
     (tester) async {
       _setMobileViewport(tester);
       await tester.pumpWidget(
@@ -699,16 +699,13 @@ void main() {
 
       await tester.tap(find.byTooltip('إعدادات الحساب'));
       await tester.pumpAndSettle();
-      expect(find.text('لوحة قيادة المالك'), findsNothing);
-      expect(find.text('إدارة المستخدمين'), findsNothing);
-      expect(find.text('إعدادات النظام والوثائق'), findsOneWidget);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('فتح القائمة الجانبية'));
-      await tester.pumpAndSettle();
+      expect(find.text('الشروط والأحكام'), findsOneWidget);
+      expect(find.text('حول وثائقي وميزاته'), findsOneWidget);
+      expect(find.text('حول التطبيق والتحديثات'), findsOneWidget);
       expect(find.text('لوحة قيادة المالك'), findsOneWidget);
       expect(find.text('إدارة المستخدمين'), findsOneWidget);
+      expect(find.text('إعدادات النظام والوثائق'), findsOneWidget);
     },
   );
 
