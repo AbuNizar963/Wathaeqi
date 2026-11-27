@@ -27,6 +27,7 @@ const [
   workspaceRouter,
   globalStyles,
   pwaInstallContext,
+  serviceWorker,
 ] = await Promise.all(
   [
     "client/index.html",
@@ -42,6 +43,7 @@ const [
     "server/features/workspace/workspaceRouter.ts",
     "client/src/index.css",
     "client/src/contexts/PwaInstallContext.tsx",
+    "client/public/sw.js",
   ].map(readProjectFile)
 );
 
@@ -311,6 +313,14 @@ assert(
     headerActions.includes("canInstall") &&
     headerActions.includes("تثبيت التطبيق"),
   "The PWA install action must be captured at app startup and shown only when the browser offers installation."
+);
+
+assert(
+  serviceWorker.includes('url.pathname === "/api"') &&
+    serviceWorker.includes('url.pathname.startsWith("/api/")') &&
+    serviceWorker.includes('request.method !== "GET"') &&
+    serviceWorker.includes("url.origin !== self.location.origin"),
+  "The service worker must bypass API and non-GET requests so private responses are never cached."
 );
 
 console.log(
