@@ -466,7 +466,10 @@ export default function DocumentLibraryPage({
                       {file.fileName}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="shrink-0 rounded-full px-2.5 py-1 text-[10px]">
+                  <Badge
+                    variant="secondary"
+                    className="shrink-0 rounded-full px-2.5 py-1 text-[10px]"
+                  >
                     {statusLabel(document.status)}
                   </Badge>
                 </div>
