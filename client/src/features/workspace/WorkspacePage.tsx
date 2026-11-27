@@ -384,7 +384,8 @@ export default function WorkspacePage({
                   أهلاً بك في وثائقي
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">
-                  أنشئ وثائقك الرسمية، نظّم أرشيفك، واطبع مستنداتك بهوية موحّدة من مساحة عمل واحدة.
+                  أنشئ وثائقك الرسمية، نظّم أرشيفك، واطبع مستنداتك بهوية موحّدة
+                  من مساحة عمل واحدة.
                 </p>
               </div>
               <div className="flex shrink-0 flex-col gap-2 sm:min-w-44">
@@ -460,8 +461,12 @@ export default function WorkspacePage({
           <Card className="space-y-4 rounded-[1.5rem] border-border/70 p-4 shadow-sm sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold tracking-tight">أحدث الوثائق</h2>
-                <p className="mt-1 text-xs text-muted-foreground">آخر ما أُضيف إلى مكتبتك الرسمية</p>
+                <h2 className="text-lg font-bold tracking-tight">
+                  أحدث الوثائق
+                </h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  آخر ما أُضيف إلى مكتبتك الرسمية
+                </p>
               </div>
               <Badge variant="secondary">
                 {documentsQuery.data?.length ?? 0}
