@@ -135,15 +135,18 @@ assert(
 );
 
 assert(
-  dashboardLayout.includes("<HeaderActions />") &&
-    dashboardLayout.includes(
+  dashboardLayout.includes("<HeaderActions showMenu={false} />") &&
+    dashboardLayout.includes("<HeaderActions showTheme={false} />") &&
+    dashboardLayout.includes("grid grid-cols-5") &&
+    !dashboardLayout.includes(
       'className="mt-auto border-t border-sidebar-border p-3"'
     ),
-  "Mobile users must retain theme and account controls inside the drawer, not the top bar."
+  "Mobile users must have theme control beside notifications and account actions beside the more item."
 );
 
 assert(
   dashboardLayout.includes('aria-label="التنقل الرئيسي"') &&
+    dashboardLayout.includes("grid grid-cols-5") &&
     dashboardLayout.includes(
       'paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))"'
     ) &&

@@ -661,11 +661,6 @@ function DashboardLayoutContent({
               );
             })}
           </SidebarContent>
-          {isMobile ? (
-            <div className="mt-auto border-t border-sidebar-border p-3">
-              <HeaderActions />
-            </div>
-          ) : null}
         </Sidebar>
         <div
           className={`absolute top-0 left-0 z-20 h-full w-1 cursor-col-resize transition-colors hover:bg-primary/20 ${isCollapsed ? "hidden" : ""}`}
@@ -818,6 +813,7 @@ function DashboardLayoutContent({
             >
               <Bell className="h-[18px] w-[18px]" />
             </Button>
+            <HeaderActions showMenu={false} />
           </div>
         )}
         <main
@@ -847,7 +843,7 @@ function DashboardLayoutContent({
       {isMobile ? (
         <nav
           aria-label="التنقل الرئيسي"
-          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
+          className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border/80 bg-card/95 px-2 pt-2 shadow-[0_-8px_28px_rgba(2,8,23,0.10)] backdrop-blur-xl md:hidden"
           style={{
             paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
           }}
@@ -892,6 +888,9 @@ function DashboardLayoutContent({
             </span>
             <span>إنشاء جديد</span>
           </button>
+          <div className="mobile-bottom-nav-account flex min-h-14 items-center justify-center">
+            <HeaderActions showTheme={false} />
+          </div>
           <button
             type="button"
             onClick={() => setOpenMobile(true)}

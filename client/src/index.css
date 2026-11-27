@@ -1448,6 +1448,39 @@
 /* Mobile document workspace: keep scrolling local, actions reachable, and
    the preview visually separate from its metadata. */
 @media (max-width: 639px) {
+  .app-header h1,
+  .mobile-bottom-nav span,
+  [data-sidebar="menu-button"] span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-bottom-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.125rem;
+  }
+
+  .mobile-bottom-nav > button,
+  .mobile-bottom-nav-account,
+  .mobile-bottom-nav-account > div,
+  .mobile-bottom-nav-account button {
+    min-width: 0;
+  }
+
+  .mobile-bottom-nav-account button {
+    height: 3.5rem;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  [data-sidebar="menu-button"] {
+    min-width: 0;
+  }
+
   .document-page-header {
     align-items: stretch;
     gap: 0.75rem;
