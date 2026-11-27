@@ -470,21 +470,17 @@
 
 @media (max-width: 767px) {
   .document-preview-actions {
-    position: fixed;
-    z-index: 60;
-    right: 1rem;
-    bottom: calc(0.75rem + env(safe-area-inset-bottom));
-    left: 1rem;
-    margin-top: 0;
-    padding: 0.5rem;
+    position: static;
+    margin-top: 1rem;
+    padding: 0.75rem;
     border: 1px solid var(--border);
     border-radius: 1rem;
     background: var(--card);
-    box-shadow: 0 12px 32px rgb(15 23 42 / 0.16);
+    box-shadow: none;
   }
 
   .document-studio-shell:has(.document-preview-actions) {
-    padding-bottom: 6.5rem;
+    padding-bottom: 1rem;
   }
 
   .document-workspace-list {
