@@ -758,7 +758,7 @@ function DashboardLayoutContent({
                 onClick={() => setSearchOpen(true)}
               >
                 <span className="flex items-center gap-2">
-                  <Search className="h-4 w-4" />
+                  <Search className="h-5 w-5" />
                   بحث سريع
                 </span>
                 <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px]">
@@ -773,7 +773,7 @@ function DashboardLayoutContent({
                 aria-label="الإشعارات"
                 onClick={() => setLocation("/notifications")}
               >
-                <Bell className="h-[18px] w-[18px]" />
+                <Bell className="h-5 w-5" />
               </Button>
               <HeaderActions />
             </div>
