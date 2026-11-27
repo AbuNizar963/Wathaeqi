@@ -1354,46 +1354,6 @@ class _DashboardPageState extends State<DashboardPage>
                     title: 'إعدادات الترويسة والطباعة',
                   ),
                 ),
-              if (_canManageUsers) ...[
-                PopupMenuItem<String>(
-                  enabled: false,
-                  height: 34,
-                  child: Text(
-                    getMobileManagementMenuHeading(
-                      accountRole: _account['role']?.toString(),
-                      isPlatformOwner: _isPlatformOwner,
-                    ),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF7A8493),
-                    ),
-                  ),
-                ),
-                if (_isPlatformOwner) ...[
-                  const PopupMenuItem(
-                    value: 'owner_dashboard',
-                    child: _AccountMenuItem(
-                      icon: Icons.dashboard_customize_outlined,
-                      title: 'لوحة قيادة المالك',
-                    ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'platform_document_settings',
-                    child: _AccountMenuItem(
-                      icon: Icons.tune_rounded,
-                      title: 'إعدادات النظام والوثائق',
-                    ),
-                  ),
-                ],
-                const PopupMenuItem(
-                  value: 'users',
-                  child: _AccountMenuItem(
-                    icon: Icons.manage_accounts_outlined,
-                    title: 'إدارة المستخدمين',
-                  ),
-                ),
-              ],
               const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'terms',
@@ -1538,6 +1498,15 @@ class _DashboardPageState extends State<DashboardPage>
                     onTap: () {
                       Navigator.pop(context);
                       _pushPage(NativeOwnerDashboardPage(api: widget.api));
+                    },
+                  ),
+                if (_isPlatformOwner)
+                  ListTile(
+                    leading: const Icon(Icons.tune_rounded),
+                    title: const Text('إعدادات النظام والوثائق'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pushPage(PlatformDocumentSettingsPage(api: widget.api));
                     },
                   ),
                 if (_canViewAuditLogs)
