@@ -935,6 +935,11 @@ export default function DocumentStudioPage() {
     fontWeight: platformDocumentSettings.data?.recipientFontWeight ?? 600,
     color: platformDocumentSettings.data?.recipientFontColor ?? "#0f172a",
   };
+  const isDataTabActive =
+    !previewMode && !nativePrintOpen && !importPrintOpen;
+  const isPreviewTabActive =
+    previewMode && !nativePrintOpen && !importPrintOpen;
+  const isPrintTabActive = nativePrintOpen || importPrintOpen;
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1100,9 +1105,9 @@ export default function DocumentStudioPage() {
             type="button"
             size="sm"
             className="h-10 gap-1 px-2 text-xs"
-            variant={!previewMode && !nativePrintOpen && !importPrintOpen ? "default" : "ghost"}
+            variant={isDataTabActive ? "default" : "ghost"}
             role="tab"
-            aria-selected={!previewMode && !nativePrintOpen && !importPrintOpen}
+            aria-selected={isDataTabActive}
             onClick={() => {
               setPreviewMode(false);
               setNativePrintOpen(false);
@@ -1116,9 +1121,9 @@ export default function DocumentStudioPage() {
             type="button"
             size="sm"
             className="h-10 gap-1 px-2 text-xs"
-            variant={previewMode && !nativePrintOpen && !importPrintOpen ? "default" : "ghost"}
+            variant={isPreviewTabActive ? "default" : "ghost"}
             role="tab"
-            aria-selected={previewMode && !nativePrintOpen && !importPrintOpen}
+            aria-selected={isPreviewTabActive}
             onClick={() => {
               setPreviewMode(true);
               setNativePrintOpen(false);
@@ -1132,9 +1137,9 @@ export default function DocumentStudioPage() {
             type="button"
             size="sm"
             className="h-10 gap-1 px-2 text-xs"
-            variant={nativePrintOpen || importPrintOpen ? "default" : "ghost"}
+            variant={isPrintTabActive ? "default" : "ghost"}
             role="tab"
-            aria-selected={nativePrintOpen || importPrintOpen}
+            aria-selected={isPrintTabActive}
             disabled={Boolean(
               selectedDocument?.file && !importedFileUrlQuery.data?.url
             )}
