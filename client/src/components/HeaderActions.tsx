@@ -73,7 +73,7 @@ export default function HeaderActions({
               title="إعدادات المظهر"
               className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur hover:bg-accent"
             >
-              <SunMoon className="h-[18px] w-[18px]" />
+              <SunMoon className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={8} className="w-56">
@@ -123,7 +123,7 @@ export default function HeaderActions({
               title="الحساب والمساعدة"
               className="h-10 w-10 rounded-xl border-border/70 bg-background/95 shadow-sm backdrop-blur hover:bg-accent"
             >
-              <Menu className="h-[19px] w-[19px]" />
+              <Menu className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" sideOffset={8} className="w-64">
