@@ -19,6 +19,7 @@ import {
 } from "../document-progress/documentProgress";
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
 import { countA4Pages, measureA4Page } from "./a4PrintLayout";
+import { applyDocumentPrintVisibility } from "./documentPrintSections";
 import type {
   PagesPerSheet,
   PrintLayoutMode,
@@ -204,12 +205,18 @@ export default function DocumentStudioPrintDialog({
   const [orientation, setOrientation] = useState<PrintOrientation>("portrait");
   const [marginMm, setMarginMm] = useState(0);
   const [showPageNumbers, setShowPageNumbers] = useState(false);
+  const [showDocumentHeader, setShowDocumentHeader] = useState(true);
+  const [showDocumentFooter, setShowDocumentFooter] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const operation = useDocumentProgress();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setShowDocumentHeader(true);
+      setShowDocumentFooter(true);
+      return;
+    }
     setError(null);
     setLayoutMode("sequential");
     setPagesPerSheet(1);
@@ -218,6 +225,14 @@ export default function DocumentStudioPrintDialog({
     setMarginMm(0);
     setShowPageNumbers(false);
   }, [open, title]);
+
+  useEffect(() => {
+    if (!open || !pageElement) return;
+    return applyDocumentPrintVisibility(pageElement, {
+      showHeader: showDocumentHeader,
+      showFooter: showDocumentFooter,
+    });
+  }, [open, pageElement, showDocumentHeader, showDocumentFooter]);
 
   async function handlePrint() {
     setLoading(true);
@@ -294,6 +309,43 @@ export default function DocumentStudioPrintDialog({
           showPageNumbers={showPageNumbers}
           onShowPageNumbersChange={setShowPageNumbers}
         />
+        <fieldset className="rounded-xl border bg-card p-4">
+          <legend className="px-2 text-sm font-semibold">محتوى الوثيقة</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={showDocumentHeader}
+                onChange={event => setShowDocumentHeader(event.target.checked)}
+                className="mt-1 size-4 accent-primary"
+              />
+              <span>
+                <span className="block font-medium">إظهار الترويسة</span>
+                <span className="block text-xs text-muted-foreground">
+                  الشعار والبيانات ورقم الوثيقة وتاريخها.
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={showDocumentFooter}
+                onChange={event => setShowDocumentFooter(event.target.checked)}
+                className="mt-1 size-4 accent-primary"
+              />
+              <span>
+                <span className="block font-medium">إظهار التذييل والتوقيع</span>
+                <span className="block text-xs text-muted-foreground">
+                  بيانات التوقيع والسطور المخصصة أسفل الوثيقة.
+                </span>
+              </span>
+            </label>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            تتغير معاينة A4 خلف هذا الحوار فوراً، وتُطبّق الخيارات نفسها على
+            الطباعة والحفظ بصيغة PDF.
+          </p>
+        </fieldset>
         <DocumentOperationProgress progress={operation.progress} />
         {error ? (
           <p
