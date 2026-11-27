@@ -41,10 +41,7 @@ class _WathaeqiBrandPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.scale(size.width / 512, size.height / 512);
-    canvas.drawRect(
-      const Rect.fromLTWH(0, 0, 512, 512),
-      Paint()..color = _ink,
-    );
+    canvas.drawRect(const Rect.fromLTWH(0, 0, 512, 512), Paint()..color = _ink);
 
     final shield = Path()
       ..moveTo(256, 42)
