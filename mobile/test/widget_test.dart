@@ -680,35 +680,35 @@ void main() {
   testWidgets(
     'keeps administrative destinations in the drawer, not the account menu',
     (tester) async {
-    _setMobileViewport(tester);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: DashboardPage(
-          api: _TestPoliceApi(signedIn: true),
-          account: const {
-            'id': 1,
-            'name': 'مالك المنصة',
-            'role': 'admin',
-            'isPlatformOwner': true,
-          },
-          outbox: _EmptyTelegramOutbox(),
+      _setMobileViewport(tester);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: DashboardPage(
+            api: _TestPoliceApi(signedIn: true),
+            account: const {
+              'id': 1,
+              'name': 'مالك المنصة',
+              'role': 'admin',
+              'isPlatformOwner': true,
+            },
+            outbox: _EmptyTelegramOutbox(),
+          ),
         ),
-      ),
-    );
-    await _pumpDashboardFrames(tester, frameCount: 8);
+      );
+      await _pumpDashboardFrames(tester, frameCount: 8);
 
-    await tester.tap(find.byTooltip('إعدادات الحساب'));
-    await tester.pumpAndSettle();
-    expect(find.text('لوحة قيادة المالك'), findsNothing);
-    expect(find.text('إدارة المستخدمين'), findsNothing);
-    expect(find.text('إعدادات النظام والوثائق'), findsOneWidget);
+      await tester.tap(find.byTooltip('إعدادات الحساب'));
+      await tester.pumpAndSettle();
+      expect(find.text('لوحة قيادة المالك'), findsNothing);
+      expect(find.text('إدارة المستخدمين'), findsNothing);
+      expect(find.text('إعدادات النظام والوثائق'), findsOneWidget);
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('فتح القائمة الجانبية'));
-    await tester.pumpAndSettle();
-    expect(find.text('لوحة قيادة المالك'), findsOneWidget);
-    expect(find.text('إدارة المستخدمين'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('فتح القائمة الجانبية'));
+      await tester.pumpAndSettle();
+      expect(find.text('لوحة قيادة المالك'), findsOneWidget);
+      expect(find.text('إدارة المستخدمين'), findsOneWidget);
     },
   );
 
