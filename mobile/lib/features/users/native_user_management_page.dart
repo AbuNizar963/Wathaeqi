@@ -136,6 +136,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
       builder: (dialogContext) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
+          scrollable: true,
           title: closableDialogTitle(dialogContext, Text(title)),
           content: TextField(
             controller: controller,
@@ -321,6 +322,7 @@ class _NativeUserManagementPageState extends State<NativeUserManagementPage> {
         builder: (dialogContext) => Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
+            scrollable: true,
             title: Text(title),
             content: Text(message),
             actions: [
@@ -774,6 +776,7 @@ class _UserFormDialogState extends State<_UserFormDialog> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: AlertDialog(
+      scrollable: true,
       title: closableDialogTitle(
         context,
         Text(_editing ? 'تعديل الحساب' : 'إنشاء حساب ضمن قسم شرطة الشهباء'),
@@ -919,6 +922,7 @@ class _EnableUserDialogState extends State<_EnableUserDialog> {
   Widget build(BuildContext context) => Directionality(
     textDirection: TextDirection.rtl,
     child: AlertDialog(
+      scrollable: true,
       title: closableDialogTitle(context, const Text('إعادة تفعيل الحساب')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
