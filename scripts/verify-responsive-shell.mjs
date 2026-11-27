@@ -394,7 +394,9 @@ assert(
 );
 
 assert(
-  (documentLibraryPage.match(/onClick=\{\(\) => setPrintOpen\(true\)\}/g) ?? []).length ===
+  (documentLibraryPage.match(
+    /onClick=\{\(\) => setPrintOpen\(true\)\}/g
+  ) ?? []).length ===
     1 &&
     (documentLibraryPage.match(
       /deleteDocument\.mutate\(\{ id: selected\.id \}\)/g
