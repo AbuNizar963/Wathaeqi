@@ -37,6 +37,7 @@ const [
   documentWatermarkComponent,
   platformDocumentPreview,
   workspacePage,
+  workspaceWelcome,
   workspaceRouter,
   globalStyles,
   pwaInstallContext,
@@ -62,6 +63,7 @@ const [
     "client/src/features/document-studio/DocumentWatermark.tsx",
     "client/src/features/platform-settings/PlatformDocumentPreview.tsx",
     "client/src/features/workspace/WorkspacePage.tsx",
+    "client/src/features/document-studio/WorkspaceWelcome.tsx",
     "server/features/workspace/workspaceRouter.ts",
     "client/src/index.css",
     "client/src/contexts/PwaInstallContext.tsx",
@@ -400,6 +402,8 @@ assert(
 assert(
   workspacePage.includes('className="hidden min-h-12 rounded-xl') &&
     workspacePage.includes('className="hidden min-h-11 rounded-xl') &&
+    workspacePage.includes('className="mt-4 hidden rounded-xl md:inline-flex"') &&
+    workspaceWelcome.includes('className="hidden md:inline-flex"') &&
     !workspacePage.includes(">معاينة</Button>") &&
     documentStudio.includes(
       'className="hidden md:inline-flex"\n                        onClick={() => setCreationDialogOpen(true)}'
