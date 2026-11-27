@@ -3,7 +3,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -35,16 +34,17 @@ export async function requestPwaInstall(
 }
 
 export function PwaInstallProvider({ children }: { children: ReactNode }) {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<
+    BeforeInstallPromptEvent | null
+  >(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
     const displayMode = window.matchMedia("(display-mode: standalone)");
     const syncInstalledState = () => {
-      const legacyStandalone =
-        (navigator as Navigator & { standalone?: boolean }).standalone ===
-        true;
+      const legacyStandalone = Boolean(
+        (navigator as Navigator & { standalone?: boolean }).standalone
+      );
       setIsInstalled(displayMode.matches || legacyStandalone);
     };
 
@@ -82,17 +82,14 @@ export function PwaInstallProvider({ children }: { children: ReactNode }) {
     return requestPwaInstall(prompt);
   }, [deferredPrompt, isInstalled]);
 
-  const value = useMemo(
-    () => ({
-      canInstall: Boolean(deferredPrompt) && !isInstalled,
-      isInstalled,
-      installApp,
-    }),
-    [deferredPrompt, isInstalled, installApp]
-  );
-
   return (
-    <PwaInstallContext.Provider value={value}>
+    <PwaInstallContext.Provider
+      value={{
+        canInstall: Boolean(deferredPrompt) && !isInstalled,
+        isInstalled,
+        installApp,
+      }}
+    >
       {children}
     </PwaInstallContext.Provider>
   );
