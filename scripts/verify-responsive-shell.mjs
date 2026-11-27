@@ -400,6 +400,7 @@ assert(
 assert(
   countOccurrences(documentLibraryPage, "setPrintOpen(true)") === 1 &&
     countOccurrences(documentLibraryPage, "deleteDocument.mutate") === 1 &&
+    documentStudio.includes("!item.file &&") &&
     documentLibraryPage.includes('title="حذف الوثيقة"') &&
     documentLibraryPage.includes('className="flex justify-end gap-2"') &&
     documentLibraryPage.includes('className="sticky bottom-0'),
