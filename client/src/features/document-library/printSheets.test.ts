@@ -62,6 +62,22 @@ describe("document print sheet layout", () => {
     expect(html).toContain("ورقة 1 من 2");
   });
 
+  it("defaults two pages to landscape but keeps four pages portrait", () => {
+    const twoUp = buildPrintHtml(pages.slice(0, 2), {
+      ...baseOptions,
+      pagesPerSheet: 2,
+    });
+    expect(twoUp).toContain("@page { size: A4 landscape; margin: 0; }");
+    expect(twoUp).toContain('class="grid landscape per-2" dir="ltr"');
+
+    const fourUp = buildPrintHtml(pages.slice(0, 4), {
+      ...baseOptions,
+      pagesPerSheet: 4,
+    });
+    expect(fourUp).toContain("@page { size: A4 portrait; margin: 0; }");
+    expect(fourUp).toContain('class="grid portrait per-4" dir="ltr"');
+  });
+
   it("repeats each source page in its own sheet without mixing sequential pages", () => {
     const sheets = buildPrintSheets(pages.slice(0, 3), "repeat", 4);
     expect(sheets).toHaveLength(3);

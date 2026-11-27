@@ -183,7 +183,11 @@ export function buildPrintHtml(
   const mode = options.layoutMode ?? "sequential";
   const count =
     mode === "repeat" ? (options.copiesPerSheet ?? 1) : options.pagesPerSheet;
-  const orientation = options.orientation ?? "portrait";
+  // The common n-up default is landscape for two pages side by side. Four,
+  // six, and eight pages remain portrait by default so their denser grids
+  // retain the expected vertical reading direction.
+  const orientation: PrintOrientation =
+    options.orientation ?? (count === 2 ? "landscape" : "portrait");
   const isLandscape = orientation === "landscape";
   const sheets = buildPrintSheets(pages, mode, count);
   const margin = Math.min(

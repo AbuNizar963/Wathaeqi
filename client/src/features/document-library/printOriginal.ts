@@ -55,7 +55,7 @@ export async function openOriginalPrintWindow(
     pagesPerSheet: options.pagesPerSheet ?? 1,
     layoutMode: options.layoutMode ?? "sequential",
     copiesPerSheet: options.copiesPerSheet ?? 1,
-    orientation: options.orientation ?? "portrait",
+    orientation: options.orientation,
     marginMm: options.marginMm ?? 0,
     cutMarginMm: normalizeCutMarginMm(options.cutMarginMm),
     headerText: "",
@@ -257,7 +257,12 @@ export async function openOriginalPrintWindow(
       message: "جارٍ تجهيز جميع صفحات Word وتنسيقها…",
     });
     const [{ renderAsync }] = await Promise.all([import("docx-preview")]);
-    const orientation = options.orientation ?? "portrait";
+    const layoutCount =
+      options.layoutMode === "repeat"
+        ? (options.copiesPerSheet ?? 1)
+        : (options.pagesPerSheet ?? 1);
+    const orientation: PrintOrientation =
+      options.orientation ?? (layoutCount === 2 ? "landscape" : "portrait");
     const sheetWidth = orientation === "landscape" ? 297 : 210;
     const sheetHeight = orientation === "landscape" ? 210 : 297;
     const margin = Math.min(20, Math.max(0, options.marginMm ?? 0));

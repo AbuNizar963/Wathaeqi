@@ -141,6 +141,16 @@ export default function PrintSettingsPanel({
   showCutMarks,
   onShowCutMarksChange,
 }: PrintSettingsPanelProps) {
+  const handleCountChange = (value: PagesPerSheet) => {
+    onCountChange(value);
+    onOrientationChange(value === 2 ? "landscape" : "portrait");
+  };
+
+  const handleModeChange = (value: PrintLayoutMode) => {
+    onModeChange(value);
+    onOrientationChange(count === 2 ? "landscape" : "portrait");
+  };
+
   const { columns, rows } = getPrintGridDimensions(count, orientation);
 
   return (
@@ -153,7 +163,7 @@ export default function PrintSettingsPanel({
           <button
             type="button"
             aria-pressed={mode === "sequential"}
-            onClick={() => onModeChange("sequential")}
+            onClick={() => handleModeChange("sequential")}
             className={`rounded-lg border p-3 text-right transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === "sequential" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}
           >
             <span className="flex items-center gap-2 font-semibold">
@@ -167,7 +177,7 @@ export default function PrintSettingsPanel({
           <button
             type="button"
             aria-pressed={mode === "repeat"}
-            onClick={() => onModeChange("repeat")}
+            onClick={() => handleModeChange("repeat")}
             className={`rounded-lg border p-3 text-right transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${mode === "repeat" ? "border-primary bg-primary/5 ring-1 ring-primary" : "hover:border-primary/50"}`}
           >
             <span className="flex items-center gap-2 font-semibold">
@@ -191,7 +201,7 @@ export default function PrintSettingsPanel({
             </legend>
             <CountOptions
               value={count}
-              onChange={onCountChange}
+              onChange={handleCountChange}
               label={mode === "repeat" ? "نسخة" : "صفحة"}
             />
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
