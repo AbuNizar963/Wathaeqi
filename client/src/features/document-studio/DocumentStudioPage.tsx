@@ -949,6 +949,9 @@ export default function DocumentStudioPage() {
   const isPreviewTabActive =
     previewMode && !nativePrintOpen && !importPrintOpen;
   const isPrintTabActive = nativePrintOpen || importPrintOpen;
+  const showMobileDocumentTabs =
+    (activeTab === "documents" || activeTab === "archive") &&
+    (selectedDocument || isCreatingDocument);
 
   return (
     <div className="document-studio-shell space-y-4" dir="rtl">
@@ -1168,8 +1171,7 @@ export default function DocumentStudioPage() {
         </div>
       </div>
 
-      {(activeTab === "documents" || activeTab === "archive") &&
-      (selectedDocument || isCreatingDocument) ? (
+      {showMobileDocumentTabs ? (
         <nav
           className="sticky top-0 z-20 grid grid-cols-3 gap-1 rounded-xl border bg-card p-1 shadow-sm md:hidden"
           role="tablist"
