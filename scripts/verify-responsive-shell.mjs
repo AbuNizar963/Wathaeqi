@@ -492,9 +492,15 @@ assert(
 );
 
 assert(
-  ownerUserManagement.includes('editing ? "contents" : "app-modal-overlay z-[70]"') &&
-    ownerUserManagement.includes('editing ? "hidden" : "app-modal-shell max-w-6xl p-4 sm:p-7"') &&
-    globalStyles.includes("max-height: calc(100dvh - max(1.5rem, env(safe-area-inset-top) + env(safe-area-inset-bottom)));") &&
+  ownerUserManagement.includes(
+    'editing ? "contents" : "app-modal-overlay z-[70]"'
+  ) &&
+    ownerUserManagement.includes(
+      'editing ? "hidden" : "app-modal-shell max-w-6xl p-4 sm:p-7"'
+    ) &&
+    globalStyles.includes(
+      "max-height: calc(\n      100dvh -\n        max(1.5rem, env(safe-area-inset-top) + env(safe-area-inset-bottom))\n    );"
+    ) &&
     globalStyles.includes("overscroll-behavior: contain;"),
   "Owner-user editing must replace rather than stack over the management surface, and custom overlays must stay within the visible viewport with their own scroll area."
 );
