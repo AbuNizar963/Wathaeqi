@@ -364,16 +364,28 @@ class _FallbackToast {
     _timer?.cancel();
     _timer = null;
     _entry = null;
-    if (entry.mounted) entry.remove();
-    entry.dispose();
+    _removeEntry(entry);
   }
 
   static void _removeCurrentEntry() {
     final entry = _entry;
     _entry = null;
     if (entry == null) return;
-    if (entry.mounted) entry.remove();
-    entry.dispose();
+    _removeEntry(entry);
+  }
+
+  static void _removeEntry(OverlayEntry entry) {
+    void disposeAfterUnmount() {
+      if (entry.mounted) return;
+      entry.removeListener(disposeAfterUnmount);
+      entry.dispose();
+    }
+
+    // Removing an entry schedules the Overlay rebuild. Dispose only after
+    // the entry's subtree has actually unmounted.
+    entry.addListener(disposeAfterUnmount);
+    entry.remove();
+    disposeAfterUnmount();
   }
 }
 
