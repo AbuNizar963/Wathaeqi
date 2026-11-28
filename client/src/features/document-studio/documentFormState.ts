@@ -16,6 +16,15 @@ type DocumentForm = Pick<
 
 type SavedDocument = Pick<OfficialDocument, keyof DocumentForm>;
 
+/**
+ * A whitespace-only document number is an intentional handwritten placeholder.
+ * Keep normal values trimmed as before, while preserving the explicit marker.
+ */
+export function makeDocumentNumber(value: string): string {
+  if (value.length > 0 && !value.trim()) return "الرقم بالوثيقة";
+  return value.trim();
+}
+
 export function parseDocumentDate(value: string): string | null {
   const normalized = value
     .trim()
