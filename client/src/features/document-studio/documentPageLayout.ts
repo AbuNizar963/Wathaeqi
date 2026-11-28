@@ -1,13 +1,17 @@
 export const A4_PREVIEW_WIDTH = 794;
 export const A4_PAGE_HEIGHT_RATIO = 297 / 210;
 export const A4_PREVIEW_PAGE_HEIGHT = A4_PREVIEW_WIDTH * A4_PAGE_HEIGHT_RATIO;
+export const A4_PAGE_ROUNDING_TOLERANCE_PX = 1;
 
 export function getDocumentPreviewPageHeight(contentHeight: number): number {
   if (!Number.isFinite(contentHeight)) return A4_PREVIEW_PAGE_HEIGHT;
 
   const pages = Math.max(
     1,
-    Math.ceil(Math.max(0, contentHeight) / A4_PREVIEW_PAGE_HEIGHT)
+    Math.ceil(
+      Math.max(0, contentHeight - A4_PAGE_ROUNDING_TOLERANCE_PX) /
+        A4_PREVIEW_PAGE_HEIGHT
+    )
   );
   return pages * A4_PREVIEW_PAGE_HEIGHT;
 }
