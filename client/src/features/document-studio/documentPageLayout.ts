@@ -41,9 +41,7 @@ export function getA4PagePixelBounds(
     ? Math.max(0, Math.floor(pageIndex))
     : 0;
   const safeScale = Number.isFinite(pixelScale) ? Math.max(0, pixelScale) : 1;
-  const top = Math.round(
-    safePageIndex * A4_PREVIEW_PAGE_HEIGHT * safeScale
-  );
+  const top = Math.round(safePageIndex * A4_PREVIEW_PAGE_HEIGHT * safeScale);
   const bottom = Math.round(
     (safePageIndex + 1) * A4_PREVIEW_PAGE_HEIGHT * safeScale
   );
