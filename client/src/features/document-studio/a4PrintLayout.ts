@@ -1,4 +1,7 @@
-import { A4_PAGE_HEIGHT_RATIO } from "./documentPageLayout";
+import {
+  A4_PAGE_HEIGHT_RATIO,
+  A4_PAGE_ROUNDING_TOLERANCE_PX,
+} from "./documentPageLayout";
 
 export type A4PageBoxMetrics = Pick<
   HTMLElement,
@@ -46,5 +49,5 @@ export function countA4Pages(height: number, width: number): number {
     return 1;
   }
 
-  return Math.max(1, Math.ceil(Math.max(0, height) / pageHeight));
+  return Math.max(1, Math.ceil(Math.max(0, height - A4_PAGE_ROUNDING_TOLERANCE_PX) / pageHeight));
 }
