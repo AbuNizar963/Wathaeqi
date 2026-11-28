@@ -837,7 +837,42 @@
   background: #eef1f5;
 }
 
+.document-a4-page-break-marker {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.document-a4-page-break-marker::before,
+.document-a4-page-break-marker::after {
+  content: "";
+  flex: 1 1 0;
+  border-top: 1.5px dashed #64748b;
+}
+
+.document-a4-page-break-marker__label {
+  flex: 0 0 auto;
+  border: 1px dashed #64748b;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 12%);
+}
+
 @media print {
+  .document-a4-page-break-marker {
+    display: none !important;
+  }
+
   .document-a4-preview-viewport {
     height: auto !important;
     overflow: visible !important;
@@ -960,9 +995,15 @@
 
 .document-editor-copy {
   min-height: 570px;
+  padding: 0.75rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  line-height: 1.85;
+  line-height: 2;
+}
+
+.document-editor-input {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* Imported Word pages keep their native width. FilePreview owns the visual
@@ -1172,7 +1213,7 @@
 }
 
 .document-paragraph {
-  min-height: 1.85em;
+  min-height: 2em;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1193,11 +1234,6 @@
     position: sticky;
     top: 0;
     z-index: 4;
-  }
-
-  .document-editor-input {
-    min-height: 55dvh !important;
-    line-height: 2 !important;
   }
 }
 

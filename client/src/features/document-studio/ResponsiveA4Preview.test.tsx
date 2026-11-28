@@ -1,6 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import ResponsiveA4Preview from "./ResponsiveA4Preview";
+import ResponsiveA4Preview, {
+  DocumentPageBreakMarkers,
+} from "./ResponsiveA4Preview";
 import DocumentFrameDecoration from "./DocumentFrameDecoration";
 import { DEFAULT_PLATFORM_DOCUMENT_SETTINGS } from "@shared/features/platform-settings/platformDocumentSettings";
 
@@ -64,9 +66,21 @@ describe("ResponsiveA4Preview", () => {
     expect(markup).toContain("background-image:none;");
     expect(markup).not.toContain("data-document-frame=");
     expect(markup).toContain("محتوى الوثيقة");
+    expect(markup).not.toContain("document-a4-page-break-marker");
     expect(markup).not.toContain("تكبير معاينة الورقة");
     expect(markup).not.toContain("تصغير المعاينة");
     expect(markup).not.toContain("إعادة ضبط التكبير");
+  });
+
+  it("renders a visible marker at the start of the second page", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentPageBreakMarkers pageHeight={2246} scale={0.5} />
+    );
+
+    expect(markup).toContain('class="document-a4-page-break-marker"');
+    expect(markup).toContain("بداية الصفحة 2");
+    expect(markup).toContain("top:561.5px");
+    expect(markup).toContain('aria-hidden="true"');
   });
 
   it("repeats the frame tile for every A4 sheet in a long document", () => {

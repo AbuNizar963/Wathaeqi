@@ -57,6 +57,67 @@ function paragraphText(node: Record<string, unknown>): string {
   return collectText(node).replace(/\n+$/g, "");
 }
 
+function autoResizeTextarea(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) return;
+
+  const resizeToContent = () => {
+    textarea.style.height = "auto";
+    const minHeight = Number.parseFloat(
+      window.getComputedStyle(textarea).minHeight
+    );
+    textarea.style.height = `${Math.max(
+      textarea.scrollHeight,
+      Number.isFinite(minHeight) ? minHeight : 0
+    )}px`;
+    textarea.style.overflowY = "hidden";
+  };
+  const getLayoutStyle = () => {
+    const style = window.getComputedStyle(textarea);
+    return [
+      style.fontFamily,
+      style.fontSize,
+      style.fontWeight,
+      style.lineHeight,
+      style.paddingBlock,
+    ].join("|");
+  };
+
+  resizeToContent();
+  textarea.addEventListener("input", resizeToContent);
+  let previousWidth = textarea.clientWidth;
+  const resizeObserver =
+    typeof ResizeObserver === "undefined"
+      ? null
+      : new ResizeObserver(() => {
+          const width = textarea.clientWidth;
+          if (width === previousWidth) return;
+          previousWidth = width;
+          resizeToContent();
+        });
+  resizeObserver?.observe(textarea.parentElement ?? textarea);
+
+  let previousLayoutStyle = getLayoutStyle();
+  const styleObserver =
+    typeof MutationObserver === "undefined"
+      ? null
+      : new MutationObserver(() => {
+          const layoutStyle = getLayoutStyle();
+          if (layoutStyle === previousLayoutStyle) return;
+          previousLayoutStyle = layoutStyle;
+          resizeToContent();
+        });
+  styleObserver?.observe(textarea, {
+    attributes: true,
+    attributeFilter: ["style"],
+  });
+
+  return () => {
+    textarea.removeEventListener("input", resizeToContent);
+    resizeObserver?.disconnect();
+    styleObserver?.disconnect();
+  };
+}
+
 function previewParagraphs(content: EditorContentValue): ReactNode {
   if (content.type !== "doc" || !Array.isArray(content.content)) return null;
   return content.content.map((rawNode, index) => {
@@ -76,7 +137,7 @@ function previewParagraphs(content: EditorContentValue): ReactNode {
         style={{
           textAlign: align as "right" | "center" | "left" | "justify",
           lineHeight:
-            lineHeight === "loose" ? 2.25 : lineHeight === "relaxed" ? 2 : 1.85,
+            lineHeight === "loose" ? 2.25 : lineHeight === "relaxed" ? 2 : 2,
         }}
       >
         {isHeading ? (
@@ -117,18 +178,19 @@ export default function DocumentEditor({
       ) : null}
       {canEditText ? (
         <Textarea
+          ref={autoResizeTextarea}
           value={text}
           onChange={event =>
             onChange(updatePlainTextDocument(content, event.target.value))
           }
           placeholder={placeholder}
           aria-label="نص الوثيقة"
-          className="document-editor-input min-h-[570px] resize-y rounded-none border-0 bg-transparent p-3 text-right text-[16px] leading-8 shadow-none focus-visible:ring-0"
+          className="document-editor-input min-h-[570px] resize-none overflow-hidden rounded-none border-0 bg-transparent p-3 text-right text-[16px] leading-[2] shadow-none focus-visible:ring-0"
           style={textStyle}
         />
       ) : null}
       <div
-        className={`document-editor-copy text-right text-[16px] ${canEditText ? "document-editor-print-copy" : ""}`}
+        className={`document-editor-copy p-3 text-right text-[16px] leading-[2] ${canEditText ? "document-editor-print-copy" : ""}`}
         style={textStyle}
         aria-hidden={canEditText ? true : undefined}
       >

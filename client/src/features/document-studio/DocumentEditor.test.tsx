@@ -36,5 +36,10 @@ describe("DocumentEditor", () => {
     expect(markup).toMatch(
       /class="[^"]*document-editor-copy[^\"]*text-\[16px\]/
     );
+    expect(markup).toMatch(/<textarea[^>]*class="[^"]*p-3[^"]*leading-\[2\]/);
+    expect(markup).toMatch(
+      /class="[^"]*document-editor-copy[^"]*p-3[^"]*leading-\[2\]/
+    );
+    expect(markup).toContain("line-height:2");
   });
 });

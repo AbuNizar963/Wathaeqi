@@ -1,15 +1,43 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PlatformDocumentSettings } from "@shared/features/platform-settings/platformDocumentSettings";
 import DocumentFrameDecoration from "./DocumentFrameDecoration";
-
-const A4_PREVIEW_WIDTH = 794;
-const A4_PREVIEW_MIN_HEIGHT = 1123;
+import {
+  A4_PREVIEW_PAGE_HEIGHT,
+  A4_PREVIEW_WIDTH,
+  getDocumentPageBreakOffsets,
+  getDocumentPreviewPageHeight,
+} from "./documentPageLayout";
 
 type ResponsiveA4PreviewProps = {
   children: ReactNode;
   pageRef?: { current: HTMLDivElement | null };
   settings?: PlatformDocumentSettings;
 };
+
+export function DocumentPageBreakMarkers({
+  pageHeight,
+  scale,
+}: {
+  pageHeight: number;
+  scale: number;
+}) {
+  return getDocumentPageBreakOffsets(pageHeight, scale).map((top, index) => (
+    <div
+      key={`a4-page-break-${index + 1}`}
+      aria-hidden="true"
+      className="document-a4-page-break-marker"
+      style={{
+        left: "50%",
+        top,
+        width: A4_PREVIEW_WIDTH * scale,
+      }}
+    >
+      <span className="document-a4-page-break-marker__label">
+        بداية الصفحة {index + 2}
+      </span>
+    </div>
+  ));
+}
 
 /**
  * Keeps the document at its native A4 layout width and scales only the
@@ -25,8 +53,8 @@ export default function ResponsiveA4Preview({
   const internalPageRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState({
     scale: 1,
-    height: A4_PREVIEW_MIN_HEIGHT,
-    pageHeight: A4_PREVIEW_MIN_HEIGHT,
+    height: A4_PREVIEW_PAGE_HEIGHT,
+    pageHeight: A4_PREVIEW_PAGE_HEIGHT,
   });
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -40,14 +68,8 @@ export default function ResponsiveA4Preview({
       if (availableWidth <= 0) return;
 
       const scale = Math.min(1, availableWidth / A4_PREVIEW_WIDTH);
-      const contentHeight = Math.max(
-        A4_PREVIEW_MIN_HEIGHT,
-        page.scrollHeight,
-        page.offsetHeight
-      );
-      const pageHeight =
-        Math.ceil(contentHeight / A4_PREVIEW_MIN_HEIGHT) *
-        A4_PREVIEW_MIN_HEIGHT;
+      const contentHeight = Math.max(page.scrollHeight, page.offsetHeight);
+      const pageHeight = getDocumentPreviewPageHeight(contentHeight);
 
       setLayout({ scale, height: Math.ceil(pageHeight * scale), pageHeight });
     };
@@ -108,6 +130,10 @@ export default function ResponsiveA4Preview({
         />
         {children}
       </div>
+      <DocumentPageBreakMarkers
+        pageHeight={layout.pageHeight}
+        scale={layout.scale}
+      />
     </div>
   );
 }
