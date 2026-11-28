@@ -47,36 +47,10 @@ async function renderA4Pages(
   });
   await document.fonts?.ready;
   throwIfAborted(options.signal);
-  const editorOverflow = Array.from(
-    element.querySelectorAll<HTMLTextAreaElement>(".document-editor-input")
-  ).reduce(
-    (total, editor) =>
-      total + Math.max(0, editor.scrollHeight - editor.clientHeight),
-    0
-  );
-  const computedStyle = window.getComputedStyle(element);
-  const borderWidths = {
-    horizontal:
-      (Number.parseFloat(computedStyle.borderLeftWidth) || 0) +
-      (Number.parseFloat(computedStyle.borderRightWidth) || 0),
-    vertical:
-      (Number.parseFloat(computedStyle.borderTopWidth) || 0) +
-      (Number.parseFloat(computedStyle.borderBottomWidth) || 0),
-  };
-  const { width, height } = measureA4Page(
-    element,
-    borderWidths,
-    editorOverflow
-  );
-  if (width <= 0 || height <= 0) {
-    throw new Error("تعذر تحديد أبعاد صفحة الوثيقة للطباعة");
-  }
 
-  // html-to-image renders the real DOM through an SVG foreignObject, so Arabic
-  // shaping and the letterhead layout match the on-screen page exactly.
   const { toCanvas } = await import("html-to-image");
   const inputs = Array.from(
-    element.querySelectorAll<HTMLElement>(".document-editor-input")
+    element.querySelectorAll<HTMLTextAreaElement>(".document-editor-input")
   );
   const warnings = Array.from(
     element.querySelectorAll<HTMLElement>(".document-editor-warning")
@@ -87,14 +61,41 @@ async function renderA4Pages(
   const previous = [...inputs, ...warnings, ...printCopies].map(
     node => node.style.display
   );
-  [...inputs, ...warnings].forEach(node => {
-    node.style.display = "none";
-  });
-  printCopies.forEach(node => {
-    node.style.display = "block";
-  });
-  let canvas: HTMLCanvasElement;
+
+  let width = 0;
+  let height = 0;
+  let canvas: HTMLCanvasElement | null = null;
+
   try {
+    // Measure the exact DOM variant that will be captured. Measuring the
+    // textarea first and swapping to the print copy afterwards can change
+    // wrapping and height by a fraction of a line.
+    [...inputs, ...warnings].forEach(node => {
+      node.style.display = "none";
+    });
+    printCopies.forEach(node => {
+      node.style.display = "block";
+    });
+
+    // Force layout after switching the editor to its print representation.
+    element.getBoundingClientRect();
+    const computedStyle = window.getComputedStyle(element);
+    const borderWidths = {
+      horizontal:
+        (Number.parseFloat(computedStyle.borderLeftWidth) || 0) +
+        (Number.parseFloat(computedStyle.borderRightWidth) || 0),
+      vertical:
+        (Number.parseFloat(computedStyle.borderTopWidth) || 0) +
+        (Number.parseFloat(computedStyle.borderBottomWidth) || 0),
+    };
+    const measured = measureA4Page(element, borderWidths);
+    width = measured.width;
+    height = measured.height;
+
+    if (width <= 0 || height <= 0) {
+      throw new Error("تعذر تحديد أبعاد صفحة الوثيقة للطباعة");
+    }
+
     options.onProgress?.({
       phase: "render",
       message: "جارٍ رسم محتوى الوثيقة؛ نسبة الرسم غير قابلة للقياس",
@@ -123,23 +124,28 @@ async function renderA4Pages(
     });
   }
 
+  if (!canvas) {
+    throw new Error("تعذر تجهيز صورة الوثيقة للطباعة");
+  }
+
   const scale = canvas.width / width;
-  const pageHeight = (width * 297) / 210;
-  const pageHeightPixels = Math.max(1, Math.round(pageHeight * scale));
   const pageCount = countA4Pages(height, width);
   const pages: SourcePage[] = [];
+
   try {
     for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
       throwIfAborted(options.signal);
-      const sourceTop = pageIndex * pageHeightPixels;
-      if (sourceTop >= canvas.height) break;
+      const pageBounds = getA4PagePixelBounds(pageIndex, scale);
+      if (pageBounds.top >= canvas.height) break;
+
       const sourceHeight = Math.min(
-        pageHeightPixels,
-        canvas.height - sourceTop
+        pageBounds.height,
+        canvas.height - pageBounds.top
       );
       const pageCanvas = document.createElement("canvas");
       pageCanvas.width = canvas.width;
-      pageCanvas.height = pageHeightPixels;
+      pageCanvas.height = pageBounds.height;
+
       try {
         const context = pageCanvas.getContext("2d", { alpha: false });
         if (!context) {
@@ -150,7 +156,7 @@ async function renderA4Pages(
         context.drawImage(
           canvas,
           0,
-          sourceTop,
+          pageBounds.top,
           canvas.width,
           sourceHeight,
           0,
