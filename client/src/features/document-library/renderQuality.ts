@@ -1,7 +1,8 @@
-// A4 at ratio 5 remains below the practical canvas memory ceiling while
-// producing noticeably sharper PNG exports and printed raster pages.
-export const DEFAULT_PRINT_PIXEL_RATIO = 5;
-export const MAX_RASTER_PIXELS = 24_000_000;
+// A4 at 600 DPI (6.25 CSS pixels per CSS pixel at 96 CSS DPI) is about
+// 35 MP. Keep a small budget margin for canvas implementations and page
+// splitting while avoiding the multi-hundred-megabyte allocations of 1200 DPI.
+export const DEFAULT_PRINT_PIXEL_RATIO = 6.25;
+export const MAX_RASTER_PIXELS = 36_000_000;
 export const MAX_RASTER_EDGE = 16_000;
 
 /**
