@@ -24,7 +24,7 @@ export function parseDocumentDate(value: string): string | null {
   if (!normalized) return null;
 
   // Accept common date separators, including spaces typed on mobile keyboards.
-  const parts = normalized.split(/[\/-\s]+/u);
+  const parts = normalized.split(/[\/\s-]+/u);
   let isoValue = normalized;
   if (parts.length === 3 && parts.every(part => /^\d+$/.test(part))) {
     const [first, second, third] = parts;
