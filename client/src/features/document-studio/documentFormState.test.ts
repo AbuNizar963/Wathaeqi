@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isDocumentFormDirty,
+  makeDocumentNumber,
   missingRequiredTemplateFields,
   normalizeTemplateFieldValues,
   parseDocumentDate,
@@ -20,6 +21,17 @@ const form = {
   ...saved,
   documentDate: "2026-11-23",
 };
+
+describe("document number handwritten placeholder", () => {
+  it("shows the handwritten marker only when the number contains whitespace and no other characters", () => {
+    expect(makeDocumentNumber(" ")).toBe("الرقم بالوثيقة");
+    expect(makeDocumentNumber("   ")).toBe("الرقم بالوثيقة");
+    expect(makeDocumentNumber("")).toBe("");
+    expect(makeDocumentNumber("123")).toBe("123");
+    expect(makeDocumentNumber("12 34")).toBe("12 34");
+    expect(makeDocumentNumber(" 123 ")).toBe("123");
+  });
+});
 
 describe("document editor safety", () => {
   it("recognizes an unmodified saved draft", () => {
