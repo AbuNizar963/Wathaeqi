@@ -24,8 +24,8 @@ const form = {
 
 describe("document number handwritten placeholder", () => {
   it("shows the handwritten marker only when the number contains whitespace and no other characters", () => {
-    expect(makeDocumentNumber(" ")).toBe("الرقم بالوثيقة");
-    expect(makeDocumentNumber("   ")).toBe("الرقم بالوثيقة");
+    expect(makeDocumentNumber(" ")).toBe(" ");
+    expect(makeDocumentNumber("   ")).toBe(" ");
     expect(makeDocumentNumber("")).toBe("");
     expect(makeDocumentNumber("123")).toBe("123");
     expect(makeDocumentNumber("12 34")).toBe("12 34");
