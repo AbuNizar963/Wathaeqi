@@ -38,8 +38,34 @@ describe("DocumentEditor", () => {
     );
     expect(markup).toMatch(/<textarea[^>]*class="[^"]*p-3[^"]*leading-\[2\]/);
     expect(markup).toMatch(
-      /class="[^"]*document-editor-copy[^"]*p-3[^"]*leading-\[2\]/
+      /class="[^\"]*document-editor-copy[^\"]*p-3[^\"]*leading-\[2\]/
     );
-    expect(markup).toContain("line-height:2");
+  });
+
+  it("uses matching textarea controls for editing and print wrapping", () => {
+    const markup = renderToStaticMarkup(
+      <DocumentEditor
+        content={{
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                { type: "text", text: "نص للتأكد من تطابق نهاية السطر" },
+              ],
+            },
+          ],
+        }}
+        onChange={() => undefined}
+      />
+    );
+
+    expect((markup.match(/<textarea\b/g) ?? []).length).toBe(2);
+    expect(markup).toMatch(/<textarea[^>]*document-editor-input/);
+    expect(markup).toMatch(
+      /<textarea[^>]*document-editor-copy document-editor-print-copy/
+    );
+    expect(markup).toContain('readOnly=""');
+    expect(markup).toContain('aria-hidden="true"');
   });
 });

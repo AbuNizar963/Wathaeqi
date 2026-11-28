@@ -20,6 +20,7 @@ import {
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
 import { countA4Pages, measureA4Page } from "./a4PrintLayout";
 import { applyDocumentPrintVisibility } from "./documentPrintSections";
+import { showDocumentEditorPrintCopies } from "./documentEditorPrintLayout";
 import type {
   PagesPerSheet,
   PrintLayoutMode,
@@ -81,17 +82,10 @@ async function renderA4Pages(
   const warnings = Array.from(
     element.querySelectorAll<HTMLElement>(".document-editor-warning")
   );
-  const printCopies = Array.from(
-    element.querySelectorAll<HTMLElement>(".document-editor-print-copy")
-  );
-  const previous = [...inputs, ...warnings, ...printCopies].map(
-    node => node.style.display
-  );
+  const previous = [...inputs, ...warnings].map(node => node.style.display);
+  const restorePrintCopies = showDocumentEditorPrintCopies(element);
   [...inputs, ...warnings].forEach(node => {
     node.style.display = "none";
-  });
-  printCopies.forEach(node => {
-    node.style.display = "block";
   });
   let canvas: HTMLCanvasElement;
   try {
@@ -118,9 +112,10 @@ async function renderA4Pages(
       },
     });
   } finally {
-    [...inputs, ...warnings, ...printCopies].forEach((node, index) => {
+    [...inputs, ...warnings].forEach((node, index) => {
       node.style.display = previous[index] ?? "";
     });
+    restorePrintCopies();
   }
 
   const scale = canvas.width / width;

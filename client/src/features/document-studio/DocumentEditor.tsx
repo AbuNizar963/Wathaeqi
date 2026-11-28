@@ -6,6 +6,9 @@ import {
 } from "./documentEditorContent";
 
 type EditorContentValue = Record<string, unknown>;
+const EDITOR_TEXTAREA_CLASS_NAME =
+  "min-h-[570px] resize-none overflow-hidden rounded-none border-0 bg-transparent p-3 text-right text-[16px] leading-[2] shadow-none focus-visible:ring-0";
+
 type DocumentEditorProps = {
   content: EditorContentValue;
   onChange: (content: EditorContentValue) => void;
@@ -185,17 +188,27 @@ export default function DocumentEditor({
           }
           placeholder={placeholder}
           aria-label="نص الوثيقة"
-          className="document-editor-input min-h-[570px] resize-none overflow-hidden rounded-none border-0 bg-transparent p-3 text-right text-[16px] leading-[2] shadow-none focus-visible:ring-0"
+          className={`document-editor-input ${EDITOR_TEXTAREA_CLASS_NAME}`}
           style={textStyle}
         />
       ) : null}
-      <div
-        className={`document-editor-copy p-3 text-right text-[16px] leading-[2] ${canEditText ? "document-editor-print-copy" : ""}`}
-        style={textStyle}
-        aria-hidden={canEditText ? true : undefined}
-      >
-        {content.type === "doc" ? previewParagraphs(content) : text}
-      </div>
+      {canEditText ? (
+        <Textarea
+          value={text}
+          readOnly
+          tabIndex={-1}
+          aria-hidden="true"
+          className={`document-editor-copy document-editor-print-copy ${EDITOR_TEXTAREA_CLASS_NAME}`}
+          style={textStyle}
+        />
+      ) : (
+        <div
+          className="document-editor-copy p-3 text-right text-[16px] leading-[2]"
+          style={textStyle}
+        >
+          {content.type === "doc" ? previewParagraphs(content) : text}
+        </div>
+      )}
     </div>
   );
 }

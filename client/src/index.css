@@ -1062,14 +1062,8 @@
     padding: 10mm;
     overflow: visible;
   }
-  .document-a4-page .document-editor-input {
-    display: none;
-  }
   .document-a4-page .document-editor-warning {
     display: none;
-  }
-  .document-a4-page .document-editor-print-copy {
-    display: block;
   }
   .document-a4-page .document-editor-copy {
     min-height: 0;

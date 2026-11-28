@@ -8,6 +8,7 @@ import {
   DEFAULT_PRINT_PIXEL_RATIO,
   getBoundedPixelRatio,
 } from "../document-library/renderQuality";
+import { showDocumentEditorPrintCopies } from "./documentEditorPrintLayout";
 
 export type ShareResult = "shared" | "copied";
 
@@ -81,16 +82,10 @@ export async function downloadA4PageAsPng(
       ".document-studio-no-print, .document-editor-input, .document-editor-warning"
     )
   );
-  const printCopies = Array.from(
-    element.querySelectorAll<HTMLElement>(".document-editor-print-copy")
-  );
   const previousHidden = hidden.map(node => node.style.display);
-  const previousPrintCopies = printCopies.map(node => node.style.display);
+  const restorePrintCopies = showDocumentEditorPrintCopies(element);
   hidden.forEach(node => {
     node.style.display = "none";
-  });
-  printCopies.forEach(node => {
-    node.style.display = "block";
   });
   try {
     const width = Math.max(element.clientWidth, element.scrollWidth);
@@ -128,9 +123,7 @@ export async function downloadA4PageAsPng(
     hidden.forEach((node, index) => {
       node.style.display = previousHidden[index] ?? "";
     });
-    printCopies.forEach((node, index) => {
-      node.style.display = previousPrintCopies[index] ?? "";
-    });
+    restorePrintCopies();
   }
 }
 
