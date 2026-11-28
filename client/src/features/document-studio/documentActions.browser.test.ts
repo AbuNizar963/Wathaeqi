@@ -80,8 +80,8 @@ describe.skipIf(
         };
       });
       expect(output.downloadedName).toBe("fixture.png");
-      expect(output.width).toBe(600);
-      expect(output.height).toBe(800);
+      expect(output.width).toBe(750);
+      expect(output.height).toBe(1000);
       expect(output.pixel[1]).toBeGreaterThan(180);
       expect(output.background[0]).toBeGreaterThan(output.background[1]! * 2);
     } finally {
@@ -262,8 +262,8 @@ describe.skipIf(
         };
       }, reference.toString("base64"));
       expect(output.downloadedName).toBe("arabic.png");
-      expect(output.width).toBe(3970);
-      expect(output.height).toBe(1750);
+      expect(output.width).toBe(4962);
+      expect(output.height).toBe(2187);
       // Allow minor rasterizer antialiasing differences, not broken shaping.
       expect(output.differingRatio).toBeLessThan(0.008);
     } finally {
@@ -346,8 +346,8 @@ describe.skipIf(
         return outputs;
       });
       for (const result of results) {
-        expect(result.width).toBe(600);
-        expect(result.height).toBe(800);
+        expect(result.width).toBe(750);
+        expect(result.height).toBe(1000);
         expect(result.corner[1]).toBeGreaterThan(150);
         expect(result.corner[0]).toBeLessThan(50);
       }
