@@ -241,7 +241,8 @@ assert(
 
 assert(
   dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
-    dashboardLayout.includes("DEFAULT_WIDTH = 240"),
+    dashboardLayout.includes("DEFAULT_WIDTH = 240") &&
+    sidebarLayout.includes("z-[90]"),
   "The desktop navigation must use a 240px expanded rail and a 72px icon-collapsed state."
 );
 
