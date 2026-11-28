@@ -79,7 +79,7 @@ describe("ResponsiveA4Preview", () => {
 
     expect(markup).toContain('class="document-a4-page-break-marker"');
     expect(markup).toContain("بداية الصفحة 2");
-    expect(markup).toContain("top:561.5px");
+    expect(markup).toMatch(/top:561\.47\d+px/);
     expect(markup).toContain('aria-hidden="true"');
   });
 

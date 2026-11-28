@@ -1,3 +1,8 @@
+import {
+  A4_PAGE_HEIGHT_RATIO,
+  A4_PAGE_ROUNDING_TOLERANCE_PX,
+} from "./documentPageLayout";
+
 export type A4PageBoxMetrics = Pick<
   HTMLElement,
   | "clientHeight"
@@ -12,8 +17,7 @@ export type A4BorderWidths = {
   vertical: number;
 };
 
-const A4_HEIGHT_TO_WIDTH_RATIO = 297 / 210;
-const A4_ROUNDING_TOLERANCE_PX = 2;
+const A4_HEIGHT_TO_WIDTH_RATIO = A4_PAGE_HEIGHT_RATIO;
 
 /** Measure the full border box so the document frame is not clipped in print. */
 export function measureA4Page(
@@ -34,7 +38,7 @@ export function measureA4Page(
   };
 }
 
-/** Ignore sub-pixel/CSS-pixel rounding at the physical A4 boundary. */
+/** Use the same exact A4 boundary as the document preview page layout. */
 export function countA4Pages(height: number, width: number): number {
   const pageHeight = width * A4_HEIGHT_TO_WIDTH_RATIO;
   if (
@@ -47,6 +51,6 @@ export function countA4Pages(height: number, width: number): number {
 
   return Math.max(
     1,
-    Math.ceil(Math.max(0, height - A4_ROUNDING_TOLERANCE_PX) / pageHeight)
+    Math.ceil(Math.max(0, height - A4_PAGE_ROUNDING_TOLERANCE_PX) / pageHeight)
   );
 }
