@@ -106,12 +106,21 @@ async function renderA4Pages(
       width,
       height,
       style: {
+        // Keep the A4 page as the containing block for absolute watermark,
+        // frame, and decoration layers while removing only the screen scale.
         transform: "none",
-        position: "static",
+        transformOrigin: "top left",
+        position: "relative",
         left: "auto",
         top: "auto",
         margin: "0",
+        width: `${width}px`,
+        height: `${height}px`,
         minHeight: `${height}px`,
+        maxWidth: "none",
+        maxHeight: "none",
+        boxSizing: "border-box",
+        overflow: "visible",
       },
     });
   } finally {
