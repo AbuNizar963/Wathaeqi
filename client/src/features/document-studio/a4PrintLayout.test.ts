@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { countA4Pages, measureA4Page } from "./a4PrintLayout";
+import { A4_PAGE_HEIGHT_RATIO } from "./documentPageLayout";
 
 describe("A4 print layout", () => {
   it("includes the frame in the captured width and keeps rounded A4 on one sheet", () => {
@@ -21,6 +22,8 @@ describe("A4 print layout", () => {
   it("preserves an additional page when content genuinely exceeds A4", () => {
     expect(countA4Pages(1125, 794)).toBe(2);
     expect(countA4Pages(2246, 794)).toBe(2);
+    expect(countA4Pages(794 * A4_PAGE_HEIGHT_RATIO, 794)).toBe(1);
+    expect(countA4Pages(794 * A4_PAGE_HEIGHT_RATIO * 2, 794)).toBe(2);
   });
 
   it("includes editor overflow and border widths in the measured page", () => {
