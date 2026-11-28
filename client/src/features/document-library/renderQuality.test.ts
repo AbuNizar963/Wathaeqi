@@ -13,8 +13,8 @@ describe("document raster quality limits", () => {
   });
 
   it("caps large page output to the browser canvas pixel budget", () => {
-    const ratio = getBoundedPixelRatio(10_000, 10_000, 5);
-    expect(ratio).toBeLessThan(1);
+    const ratio = getBoundedPixelRatio(10_000, 10_000, DEFAULT_PRINT_PIXEL_RATIO);
+    expect(ratio).toBeLessThan(DEFAULT_PRINT_PIXEL_RATIO);
     expect(10_000 * ratio * (10_000 * ratio)).toBeLessThanOrEqual(
       MAX_RASTER_PIXELS
     );
