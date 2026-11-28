@@ -21,7 +21,7 @@ type SavedDocument = Pick<OfficialDocument, keyof DocumentForm>;
  * Keep normal values trimmed as before, while preserving the explicit marker.
  */
 export function makeDocumentNumber(value: string): string {
-  if (value.length > 0 && !value.trim()) return "الرقم بالوثيقة";
+  if (value.length > 0 && !value.trim()) return " ";
   return value.trim();
 }
 
