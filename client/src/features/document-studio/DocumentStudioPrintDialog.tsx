@@ -19,6 +19,7 @@ import {
 } from "../document-progress/documentProgress";
 import PrintSettingsPanel from "../document-library/PrintSettingsPanel";
 import { countA4Pages, measureA4Page } from "./a4PrintLayout";
+import { getA4PagePixelBounds } from "./documentPageLayout";
 import { applyDocumentPrintVisibility } from "./documentPrintSections";
 import type {
   PagesPerSheet,
