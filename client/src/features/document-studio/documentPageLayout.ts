@@ -1,5 +1,7 @@
 export const A4_PREVIEW_WIDTH = 794;
-export const A4_PREVIEW_PAGE_HEIGHT = 1123;
+export const A4_PAGE_HEIGHT_RATIO = 297 / 210;
+export const A4_PREVIEW_PAGE_HEIGHT =
+  A4_PREVIEW_WIDTH * A4_PAGE_HEIGHT_RATIO;
 
 export function getDocumentPreviewPageHeight(contentHeight: number): number {
   if (!Number.isFinite(contentHeight)) return A4_PREVIEW_PAGE_HEIGHT;
@@ -25,4 +27,26 @@ export function getDocumentPageBreakOffsets(
     { length: Math.max(0, pageCount - 1) },
     (_, index) => (index + 1) * A4_PREVIEW_PAGE_HEIGHT * safeScale
   );
+}
+
+/**
+ * Calculate each page boundary from its absolute position. Rounding each
+ * boundary avoids accumulating a fractional-pixel error across printed pages.
+ */
+export function getA4PagePixelBounds(
+  pageIndex: number,
+  pixelScale: number
+): { top: number; bottom: number; height: number } {
+  const safePageIndex = Number.isFinite(pageIndex)
+    ? Math.max(0, Math.floor(pageIndex))
+    : 0;
+  const safeScale = Number.isFinite(pixelScale) ? Math.max(0, pixelScale) : 1;
+  const top = Math.round(
+    safePageIndex * A4_PREVIEW_PAGE_HEIGHT * safeScale
+  );
+  const bottom = Math.round(
+    (safePageIndex + 1) * A4_PREVIEW_PAGE_HEIGHT * safeScale
+  );
+
+  return { top, bottom, height: Math.max(1, bottom - top) };
 }
