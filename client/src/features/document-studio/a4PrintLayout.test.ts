@@ -26,6 +26,15 @@ describe("A4 print layout", () => {
     expect(countA4Pages(794 * A4_PAGE_HEIGHT_RATIO * 2, 794)).toBe(2);
   });
 
+  it("uses the same page-count threshold as the document preview", () => {
+    const pageHeight = 794 * A4_PAGE_HEIGHT_RATIO;
+
+    expect(countA4Pages(pageHeight, 794)).toBe(1);
+    expect(countA4Pages(pageHeight + 1, 794)).toBe(2);
+    expect(countA4Pages(pageHeight * 2, 794)).toBe(2);
+    expect(countA4Pages(pageHeight * 2 + 1, 794)).toBe(3);
+  });
+
   it("includes editor overflow and border widths in the measured page", () => {
     const page = measureA4Page(
       {
