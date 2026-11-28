@@ -69,6 +69,7 @@ import { applyFieldValues, contentForSave } from "./documentEditorContent";
 import {
   isDocumentFormDirty,
   missingRequiredTemplateFields,
+  makeDocumentNumber,
   normalizeTemplateFieldValues,
   parseDocumentDate,
 } from "./documentFormState";
@@ -669,7 +670,7 @@ export default function DocumentStudioPage() {
     const input = {
       title: documentTitle.trim(),
       category: documentCategory,
-      subject: documentSubject.trim(),
+      subject: makeDocumentNumber(documentSubject),
       content: applyDocumentTemplateVariables(
         contentForSave(
           documentContent,
@@ -894,7 +895,7 @@ export default function DocumentStudioPage() {
         platformDocumentSettings.data?.documentDateFormat
       ),
       subject: documentSubject.trim(),
-      number: documentSubject.trim(),
+      number: makeDocumentNumber(documentSubject),
     };
     if (selectedDocument?.serialCode) {
       values.number = selectedDocument.serialCode;
@@ -2247,7 +2248,7 @@ export default function DocumentStudioPage() {
                         headerSettings={platformDocumentSettings.data}
                         serial={
                           selectedDocument?.serialCode ||
-                          documentSubject.trim() ||
+                          makeDocumentNumber(documentSubject) ||
                           undefined
                         }
                         date={formatDocumentDate(
