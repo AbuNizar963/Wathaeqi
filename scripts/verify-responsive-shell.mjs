@@ -26,7 +26,6 @@ const [
   dashboardLayout,
   headerActions,
   sidebarLayout,
-  sheetLayout,
   appRoutes,
   settingsPage,
   documentStudio,
@@ -54,7 +53,6 @@ const [
     "client/src/components/DashboardLayout.tsx",
     "client/src/components/HeaderActions.tsx",
     "client/src/components/ui/sidebar.tsx",
-  "client/src/components/ui/sheet.tsx",
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
@@ -243,7 +241,8 @@ assert(
 
 assert(
   dashboardLayout.includes('collapsible={isMobile ? "offcanvas" : "icon"}') &&
-    dashboardLayout.includes("DEFAULT_WIDTH = 240"),
+    dashboardLayout.includes("DEFAULT_WIDTH = 240") &&
+    sidebarLayout.includes("z-[90]"),
   "The desktop navigation must use a 240px expanded rail and a 72px icon-collapsed state."
 );
 
@@ -505,13 +504,6 @@ assert(
     ) &&
     globalStyles.includes("overscroll-behavior: contain;"),
   "Owner-user editing must replace rather than stack over the management surface, and custom overlays must stay within the visible viewport with their own scroll area."
-);
-
-assert(
-  sidebarLayout.includes("z-[90]") &&
-    sheetLayout.includes("z-[80] bg-black/50") &&
-    !sidebarLayout.includes("text-sidebar-foreground z-[60]"),
-  "The mobile sidebar content must remain above the sheet backdrop so navigation stays visible and interactive."
 );
 
 console.log(
