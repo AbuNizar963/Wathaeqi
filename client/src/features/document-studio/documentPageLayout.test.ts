@@ -10,6 +10,7 @@ describe("document preview page layout", () => {
   it("uses the same physical A4 ratio as print rendering", () => {
     expect(A4_PREVIEW_PAGE_HEIGHT).toBeCloseTo((794 * 297) / 210, 8);
     expect(getDocumentPreviewPageHeight(900)).toBe(A4_PREVIEW_PAGE_HEIGHT);
+    expect(getDocumentPreviewPageHeight(1123)).toBe(A4_PREVIEW_PAGE_HEIGHT);
     expect(getDocumentPageBreakOffsets(A4_PREVIEW_PAGE_HEIGHT, 0.5)).toEqual(
       []
     );
@@ -37,12 +38,12 @@ describe("document preview page layout", () => {
     });
     expect(getA4PagePixelBounds(1, 1)).toEqual({
       top: 1123,
-      bottom: 2247,
-      height: 1124,
+      bottom: 2246,
+      height: 1123,
     });
     expect(getA4PagePixelBounds(2, 1)).toEqual({
-      top: 2247,
-      bottom: 3370,
+      top: 2246,
+      bottom: 3369,
       height: 1123,
     });
   });
