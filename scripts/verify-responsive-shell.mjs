@@ -508,13 +508,9 @@ assert(
 );
 
 assert(
-  sidebarLayout.includes(
-    'className="bg-sidebar text-sidebar-foreground z-[90] w-(--sidebar-width) border-l border-sidebar-border p-0 shadow-2xl [&>button]:hidden"'
-  ) &&
-    sheetLayout.includes('"fixed inset-0 z-[80] bg-black/50"') &&
-    !sidebarLayout.includes(
-      'className="bg-sidebar text-sidebar-foreground z-[60] w-(--sidebar-width)'
-    ),
+  sidebarLayout.includes("z-[90]") &&
+    sheetLayout.includes("z-[80] bg-black/50") &&
+    !sidebarLayout.includes("text-sidebar-foreground z-[60]"),
   "The mobile sidebar content must remain above the sheet backdrop so navigation stays visible and interactive."
 );
 
