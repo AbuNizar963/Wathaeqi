@@ -46,8 +46,5 @@ export function countA4Pages(height: number, width: number): number {
     return 1;
   }
 
-  return Math.max(
-    1,
-    Math.ceil(Math.max(0, height) / pageHeight)
-  );
+  return Math.max(1, Math.ceil(Math.max(0, height) / pageHeight));
 }
