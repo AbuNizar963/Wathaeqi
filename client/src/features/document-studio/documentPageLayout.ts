@@ -24,7 +24,10 @@ export function getDocumentPageBreakOffsets(
     ? Math.max(A4_PREVIEW_PAGE_HEIGHT, pageHeight)
     : A4_PREVIEW_PAGE_HEIGHT;
   const safeScale = Number.isFinite(scale) ? Math.max(0, scale) : 1;
-  const pageCount = Math.ceil(safeHeight / A4_PREVIEW_PAGE_HEIGHT);
+  const pageCount = Math.ceil(
+    Math.max(0, safeHeight - A4_PAGE_ROUNDING_TOLERANCE_PX) /
+      A4_PREVIEW_PAGE_HEIGHT
+  );
 
   return Array.from(
     { length: Math.max(0, pageCount - 1) },
