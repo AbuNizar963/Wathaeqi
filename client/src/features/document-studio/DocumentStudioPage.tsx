@@ -1977,7 +1977,7 @@ export default function DocumentStudioPage() {
                       <div className="relative">
                         <Input
                           type="text"
-                          inputMode="numeric"
+                          inputMode="text"
                           value={documentDate}
                           onChange={event =>
                             setDocumentDate(event.target.value)
@@ -2175,13 +2175,8 @@ export default function DocumentStudioPage() {
                               </select>
                             ) : (
                               <Input
-                                type={
-                                  field.type === "date"
-                                    ? "date"
-                                    : field.type === "number"
-                                      ? "number"
-                                      : "text"
-                                }
+                                type="text"
+                                inputMode="text"
                                 value={documentFieldValues[field.key] ?? ""}
                                 onChange={event => {
                                   setDocumentFieldValues(current => ({
