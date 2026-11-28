@@ -1,3 +1,5 @@
+import { A4_PAGE_HEIGHT_RATIO } from "./documentPageLayout";
+
 export type A4PageBoxMetrics = Pick<
   HTMLElement,
   | "clientHeight"
@@ -11,8 +13,6 @@ export type A4BorderWidths = {
   horizontal: number;
   vertical: number;
 };
-
-import { A4_PAGE_HEIGHT_RATIO } from "./documentPageLayout";
 
 const A4_HEIGHT_TO_WIDTH_RATIO = A4_PAGE_HEIGHT_RATIO;
 const A4_ROUNDING_TOLERANCE_PX = 2;
