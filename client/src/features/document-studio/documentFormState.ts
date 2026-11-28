@@ -22,7 +22,9 @@ export function parseDocumentDate(value: string): string | null {
     .replace(/[٠-٩]/gu, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
     .replace(/[۰-۹]/gu, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)));
   if (!normalized) return null;
-  const parts = normalized.split(/[/-]/u).map(part => part.trim());
+
+  // Accept common date separators, including spaces typed on mobile keyboards.
+  const parts = normalized.split(/[\/\s-]+/u);
   let isoValue = normalized;
   if (parts.length === 3 && parts.every(part => /^\d+$/.test(part))) {
     const [first, second, third] = parts;
