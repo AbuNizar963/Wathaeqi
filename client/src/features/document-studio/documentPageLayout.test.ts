@@ -1,21 +1,48 @@
 import { describe, expect, it } from "vitest";
 import {
   A4_PREVIEW_PAGE_HEIGHT,
+  getA4PagePixelBounds,
   getDocumentPageBreakOffsets,
   getDocumentPreviewPageHeight,
 } from "./documentPageLayout";
 
 describe("document preview page layout", () => {
-  it("keeps one page for content that fits within A4", () => {
+  it("uses the same physical A4 ratio as print rendering", () => {
+    expect(A4_PREVIEW_PAGE_HEIGHT).toBeCloseTo((794 * 297) / 210, 8);
     expect(getDocumentPreviewPageHeight(900)).toBe(A4_PREVIEW_PAGE_HEIGHT);
-    expect(getDocumentPageBreakOffsets(A4_PREVIEW_PAGE_HEIGHT, 0.5)).toEqual(
-      []
-    );
+    expect(
+      getDocumentPageBreakOffsets(A4_PREVIEW_PAGE_HEIGHT, 0.5)
+    ).toEqual([]);
   });
 
   it("allocates full A4 sheets and a marker at every page boundary", () => {
-    expect(getDocumentPreviewPageHeight(1124)).toBe(2246);
-    expect(getDocumentPageBreakOffsets(2246, 0.5)).toEqual([561.5]);
-    expect(getDocumentPageBreakOffsets(3369, 1)).toEqual([1123, 2246]);
+    expect(getDocumentPreviewPageHeight(1124)).toBeCloseTo(
+      A4_PREVIEW_PAGE_HEIGHT * 2,
+      8
+    );
+    expect(
+      getDocumentPageBreakOffsets(A4_PREVIEW_PAGE_HEIGHT * 2, 0.5)
+    ).toEqual([A4_PREVIEW_PAGE_HEIGHT * 0.5]);
+    expect(
+      getDocumentPageBreakOffsets(A4_PREVIEW_PAGE_HEIGHT * 3, 1)
+    ).toEqual([A4_PREVIEW_PAGE_HEIGHT, A4_PREVIEW_PAGE_HEIGHT * 2]);
+  });
+
+  it("rounds absolute pixel boundaries without accumulating page drift", () => {
+    expect(getA4PagePixelBounds(0, 1)).toEqual({
+      top: 0,
+      bottom: 1123,
+      height: 1123,
+    });
+    expect(getA4PagePixelBounds(1, 1)).toEqual({
+      top: 1123,
+      bottom: 2247,
+      height: 1124,
+    });
+    expect(getA4PagePixelBounds(2, 1)).toEqual({
+      top: 2247,
+      bottom: 3370,
+      height: 1123,
+    });
   });
 });
