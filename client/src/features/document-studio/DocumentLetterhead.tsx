@@ -9,6 +9,20 @@ export type DocumentLetterheadProps = {
   date?: string;
 };
 
+const HANDWRITTEN_NUMBER_GAP = "\u00a0".repeat(8);
+
+function formatSerialForDisplay(serial: string | undefined): string {
+  if (serial === undefined || serial === "") return "";
+
+  const trimmedSerial = serial.trim();
+  if (!trimmedSerial) return HANDWRITTEN_NUMBER_GAP;
+
+  return trimmedSerial.replace(
+    /\/( +)\//gu,
+    (_match, gap: string) => `/${"\u00a0".repeat(Math.max(8, gap.length))}/`
+  );
+}
+
 /**
  * A4 document header shared by preview, printing and PNG export.
  * Side heading rows and the logo share one three-column line, matching the
@@ -22,7 +36,7 @@ export default function DocumentLetterhead({
   date,
 }: DocumentLetterheadProps) {
   const settings = normalizePlatformDocumentSettings(headerSettings);
-  const visibleSerial = serial?.trim() ?? "";
+  const displayedSerial = formatSerialForDisplay(serial);
   const visibleDate = date?.trim() ?? "";
   const showSerial = serial !== undefined && serial !== "";
   const showDate = date !== undefined && date !== "";
@@ -136,8 +150,8 @@ export default function DocumentLetterhead({
           data-testid="document-letterhead-metadata"
         >
           {showSerial ? (
-            <p className="whitespace-nowrap">
-              <strong>الرقم:</strong> {visibleSerial}
+            <p className="whitespace-pre">
+              <strong>الرقم:</strong> {displayedSerial}
             </p>
           ) : null}
           {showDate ? (

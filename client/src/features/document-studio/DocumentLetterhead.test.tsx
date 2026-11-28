@@ -116,7 +116,19 @@ describe("DocumentLetterhead", () => {
     expect(markup).toContain('data-testid="document-letterhead-metadata"');
     expect(markup).toContain("الرقم:");
     expect(markup).toContain("التاريخ:");
+    expect(markup).toContain(`الرقم:</strong> ${"\u00a0".repeat(8)}`);
     expect(markup).not.toContain("الرقم:</strong>  ");
+  });
+
+  it("keeps a handwriting-width gap between slash-separated number parts", () => {
+    const markup = render(tricolorSettings, { serial: "/ /" });
+    expect(markup).toContain('class="whitespace-pre"');
+    expect(markup).toContain(`/${"\u00a0".repeat(8)}/`);
+  });
+
+  it("preserves longer gaps entered between slash-separated number parts", () => {
+    const markup = render(tricolorSettings, { serial: `/${" ".repeat(9)}/` });
+    expect(markup).toContain(`/${"\u00a0".repeat(9)}/`);
   });
 
   it("keeps a plain border and no divider markup for solid dividers", () => {
