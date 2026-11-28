@@ -26,6 +26,7 @@ const [
   dashboardLayout,
   headerActions,
   sidebarLayout,
+  sheetLayout,
   appRoutes,
   settingsPage,
   documentStudio,
@@ -53,6 +54,7 @@ const [
     "client/src/components/DashboardLayout.tsx",
     "client/src/components/HeaderActions.tsx",
     "client/src/components/ui/sidebar.tsx",
+  "client/src/components/ui/sheet.tsx",
     "client/src/App.tsx",
     "client/src/features/platform-settings/PlatformDocumentSettingsPage.tsx",
     "client/src/features/document-studio/DocumentStudioPage.tsx",
@@ -503,6 +505,17 @@ assert(
     ) &&
     globalStyles.includes("overscroll-behavior: contain;"),
   "Owner-user editing must replace rather than stack over the management surface, and custom overlays must stay within the visible viewport with their own scroll area."
+);
+
+assert(
+  sidebarLayout.includes(
+    'className="bg-sidebar text-sidebar-foreground z-[90] w-(--sidebar-width) border-l border-sidebar-border p-0 shadow-2xl [&>button]:hidden"'
+  ) &&
+    sheetLayout.includes('"fixed inset-0 z-[80] bg-black/50"') &&
+    !sidebarLayout.includes(
+      'className="bg-sidebar text-sidebar-foreground z-[60] w-(--sidebar-width)'
+    ),
+  "The mobile sidebar content must remain above the sheet backdrop so navigation stays visible and interactive."
 );
 
 console.log(
